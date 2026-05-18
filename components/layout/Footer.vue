@@ -33,23 +33,23 @@ const currentYear = new Date().getFullYear();
 
         <!-- Links Grid -->
         <div v-for="section in [
-          { title: 'Catalog', links: [
+          { title: 'Categories', links: [
             { name: 'Laptops', url: '/category/laptops' },
             { name: 'New Arrivals', url: '/new-arrivals' },
             { name: 'Special Offers', url: '/offers' },
             { name: 'Components', url: '/category/components' }
           ] },
           { title: 'Support', links: [
-            { name: 'Help Center', url: '#' },
-            { name: 'Shipping Info', url: '#' },
-            { name: 'Returns', url: '#' },
-            { name: 'Warranty', url: '#' }
+            { name: 'Help Center', url: '/support/help-center' },
+            { name: 'Shipping Info', url: '/support/shipping' },
+            { name: 'Returns', url: '/support/returns' },
+            { name: 'Warranty', url: '/support/warranty' }
           ] },
           { title: 'Company', links: [
-            { name: 'About Us', url: '#' },
+            { name: 'About Us', url: '/about' },
             { name: 'Tech Blog', url: '/blog' },
-            { name: 'Careers', url: '#' },
-            { name: 'Sustainabilty', url: '#' }
+            { name: 'Careers', url: '/careers' },
+            { name: 'Sustainability', url: '/sustainability' }
           ] }
         ]" :key="section.title" class="space-y-6">
           <h4 class="font-bold text-sm uppercase tracking-widest">{{ section.title }}</h4>
