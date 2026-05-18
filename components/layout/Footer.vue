@@ -20,22 +20,42 @@ const currentYear = new Date().getFullYear();
             Enterprise e-commerce platform dedicated to professional hardware and cutting-edge digital accessories. Trusted by 250,000+ engineers worldwide.
           </p>
           <div class="flex items-center gap-4">
-            <a v-for="social in [Facebook, Twitter, Instagram, Youtube]" :key="social" href="#" class="w-10 h-10 border rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all">
-              <component :is="social" class="w-5 h-5" />
+            <a v-for="social in [
+              { icon: Facebook, label: 'Facebook' },
+              { icon: Twitter, label: 'Twitter' },
+              { icon: Instagram, label: 'Instagram' },
+              { icon: Youtube, label: 'Youtube' }
+            ]" :key="social.label" href="#" class="w-10 h-10 border rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all">
+              <component :is="social.icon" class="w-5 h-5" />
             </a>
           </div>
         </div>
 
         <!-- Links Grid -->
         <div v-for="section in [
-          { title: 'Shop', links: ['Laptops', 'Desktops', 'Workstations', 'Accessories'] },
-          { title: 'Support', links: ['Help Center', 'Shipping Info', 'Returns', 'Warranty'] },
-          { title: 'Company', links: ['About Us', 'Tech Blog', 'Careers', 'Sustainabilty'] }
+          { title: 'Catalog', links: [
+            { name: 'Laptops', url: '/category/laptops' },
+            { name: 'New Arrivals', url: '/new-arrivals' },
+            { name: 'Special Offers', url: '/offers' },
+            { name: 'Components', url: '/category/components' }
+          ] },
+          { title: 'Support', links: [
+            { name: 'Help Center', url: '#' },
+            { name: 'Shipping Info', url: '#' },
+            { name: 'Returns', url: '#' },
+            { name: 'Warranty', url: '#' }
+          ] },
+          { title: 'Company', links: [
+            { name: 'About Us', url: '#' },
+            { name: 'Tech Blog', url: '/blog' },
+            { name: 'Careers', url: '#' },
+            { name: 'Sustainabilty', url: '#' }
+          ] }
         ]" :key="section.title" class="space-y-6">
           <h4 class="font-bold text-sm uppercase tracking-widest">{{ section.title }}</h4>
           <ul class="space-y-4">
-            <li v-for="link in section.links" :key="link">
-              <NuxtLink to="#" class="text-sm text-muted-foreground hover:text-primary transition-colors">{{ link }}</NuxtLink>
+            <li v-for="link in section.links" :key="link.name">
+              <NuxtLink :to="link.url" class="text-sm text-muted-foreground hover:text-primary transition-colors">{{ link.name }}</NuxtLink>
             </li>
           </ul>
         </div>

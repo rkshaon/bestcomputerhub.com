@@ -167,6 +167,7 @@ export const products: Product[] = [
       'GPU': 'NVIDIA RTX 6000 Ada'
     },
     features: ['ISV Certified', 'ECC Memory', 'Liquid Cooled'],
+    isNew: true,
     sku: 'ZEN-Z1-WS'
   },
   {
@@ -189,6 +190,7 @@ export const products: Product[] = [
       'Cache': '36MB L3'
     },
     features: ['Unlocked', 'DDR5 Support', 'PCIe 5.0'],
+    isNew: true,
     sku: 'CF-I9-149K'
   },
   {
@@ -211,6 +213,7 @@ export const products: Product[] = [
       'Power': '320W TDP'
     },
     features: ['DLSS 3.5', 'Ray Tracing', 'Tri-Fan Cooling'],
+    isNew: true,
     sku: 'VEL-4080S'
   },
   {
@@ -255,6 +258,7 @@ export const products: Product[] = [
       'Lighting': 'Per-key RGB'
     },
     features: ['Metal Frame', 'Macro Support', 'Braided Cable'],
+    isNew: true,
     sku: 'TITAN-G1-KB'
   },
   {
@@ -276,6 +280,7 @@ export const products: Product[] = [
       'Display': 'Retina Flow'
     },
     features: ['Silent Design', 'Touch ID', 'MagSafe'],
+    isNew: true,
     sku: 'SWIFT-M3-U'
   },
   {

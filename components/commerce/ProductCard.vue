@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { Star, ShoppingCart, Heart } from 'lucide-vue-next';
 import type { Product } from '@/types';
-import { formatCurrency } from '@/utils';
+import { formatCurrency, cn } from '@/utils';
+import { useCartStore } from '@/stores/cart';
+import { useWishlistStore } from '@/stores/wishlist';
 
 const props = defineProps<{
   product: Product;
 }>();
 
 const cartStore = useCartStore();
+const wishlistStore = useWishlistStore();
 </script>
 
 <template>
@@ -29,8 +32,14 @@ const cartStore = useCartStore();
 
       <!-- Quick Actions -->
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all">
-        <button class="w-10 h-10 bg-background rounded-full flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-all shadow-lg">
-          <Heart class="w-5 h-5" />
+        <button 
+          @click.stop="wishlistStore.toggleWishlist(product)"
+          :class="cn(
+            'w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg',
+            wishlistStore.isInWishlist(product.id) ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-primary/10'
+          )"
+        >
+          <Heart :class="cn('w-5 h-5', wishlistStore.isInWishlist(product.id) && 'fill-current')" />
         </button>
       </div>
     </div>

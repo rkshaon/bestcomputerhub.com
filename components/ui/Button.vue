@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, resolveComponent } from 'vue';
 import { cn } from '@/utils';
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
   class?: string;
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
+  to?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -14,6 +16,9 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'md',
   type: 'button',
 });
+
+const isLink = computed(() => !!props.to);
+const componentTag = computed(() => isLink.value ? resolveComponent('NuxtLink') : 'button');
 
 const variants = {
   primary: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
@@ -32,10 +37,12 @@ const sizes = {
 </script>
 
 <template>
-  <button
-    :type="type"
+  <component
+    :is="componentTag"
+    :to="to"
+    :type="isLink ? undefined : type"
     :class="cn(
-      'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 shrink-0 cursor-pointer',
+      'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 shrink-0 cursor-pointer no-underline',
       variants[variant],
       sizes[size],
       props.class
@@ -43,5 +50,5 @@ const sizes = {
     :disabled="disabled"
   >
     <slot />
-  </button>
+  </component>
 </template>

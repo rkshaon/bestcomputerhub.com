@@ -36,5 +36,5 @@ export { useBlogService } from '../composables/useBlogService';
 export { useProductService } from '../composables/useProductService';
 export { cn, formatCurrency, slugify } from '../utils/index';
 export { useCartStore } from '../stores/cart';
-export { useUIStore } from '../stores/ui';
+export { useUIStore, ThemeMode } from '../stores/ui';
 export { defineStore, acceptHMRUpdate, usePinia, storeToRefs } from '../node_modules/@pinia/nuxt/dist/runtime/composables';

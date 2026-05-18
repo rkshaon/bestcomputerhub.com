@@ -1,32 +1,54 @@
 import { defineStore } from 'pinia';
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 export const useUIStore = defineStore('ui', {
   state: () => ({
-    isDarkMode: false,
+    themeMode: 'system' as ThemeMode,
     isCartOpen: false,
     isMobileMenuOpen: false,
     isSearchOpen: false,
   }),
   actions: {
-    toggleDarkMode() {
-      this.isDarkMode = !this.isDarkMode;
-      localStorage.setItem('theme', this.isDarkMode ? 'dark' : 'light');
-      if (this.isDarkMode) {
-        document.documentElement.classList.add('dark');
+    setTheme(mode: ThemeMode) {
+      this.themeMode = mode;
+      if (process.client) {
+        localStorage.setItem('theme-preference', mode);
+        this.applyTheme();
+      }
+    },
+    applyTheme() {
+      if (!process.client) return;
+
+      const html = document.documentElement;
+      let effectiveTheme = this.themeMode;
+
+      if (this.themeMode === 'system') {
+        effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+
+      if (effectiveTheme === 'dark') {
+        html.classList.add('dark');
+        html.style.colorScheme = 'dark';
       } else {
-        document.documentElement.classList.remove('dark');
+        html.classList.remove('dark');
+        html.style.colorScheme = 'light';
       }
     },
     initTheme() {
-      const savedTheme = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      
-      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-        this.isDarkMode = true;
-        document.documentElement.classList.add('dark');
-      } else {
-        this.isDarkMode = false;
-        document.documentElement.classList.remove('dark');
+      if (process.client) {
+        const savedTheme = localStorage.getItem('theme-preference') as ThemeMode | null;
+        if (savedTheme) {
+          this.themeMode = savedTheme;
+        }
+        this.applyTheme();
+
+        // Listen for system changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+          if (this.themeMode === 'system') {
+            this.applyTheme();
+          }
+        });
       }
     },
     toggleCart() {
@@ -37,6 +59,9 @@ export const useUIStore = defineStore('ui', {
     },
     toggleSearch() {
       this.isSearchOpen = !this.isSearchOpen;
+    },
+    closeMobileMenu() {
+      this.isMobileMenuOpen = false;
     }
   }
 });

@@ -1,9 +1,14 @@
 <script setup lang="ts">
-const themeStore = useUIStore();
+import { onMounted } from 'vue';
+import { useUIStore } from '@/stores/ui';
+import { useCookieStore } from '@/stores/cookies';
+const uiStore = useUIStore();
+const cookieStore = useCookieStore();
 
-// Handle theme logic
+// Handle logic
 onMounted(() => {
-  themeStore.initTheme();
+  uiStore.initTheme();
+  cookieStore.loadFromStorage();
 });
 </script>
 
@@ -12,6 +17,8 @@ onMounted(() => {
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <LayoutCookieBanner />
+    <LayoutBackToTop />
   </div>
 </template>
 

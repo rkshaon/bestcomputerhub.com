@@ -2,6 +2,8 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Tag, Clock, ArrowRight, Zap, Percent, ShoppingCart } from 'lucide-vue-next';
 import { formatCurrency } from '@/utils';
+import { useProductService } from '@/composables/useProductService';
+import { useCartStore } from '@/stores/cart';
 
 const productService = useProductService();
 const cartStore = useCartStore();
@@ -165,7 +167,7 @@ onMounted(() => {
           <h3 class="text-2xl font-bold">No active offers</h3>
           <p class="text-muted-foreground max-w-sm">Current flash sales have concluded. Check back shortly for our next hardware drop.</p>
         </div>
-        <UiButton variant="outline" class="rounded-full" @click="navigateTo('/')">Back to Catalog</UiButton>
+        <UiButton variant="outline" class="rounded-full" to="/">Back to Catalog</UiButton>
       </div>
     </section>
 

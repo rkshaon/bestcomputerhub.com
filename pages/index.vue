@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { ChevronRight, ShieldCheck, Truck, RefreshCw, Trophy } from 'lucide-vue-next';
+import { useProductService } from '@/composables/useProductService';
 
 // Explicitly use the composable (Nuxt usually auto-imports this)
 const productService = useProductService();
@@ -37,12 +38,28 @@ const homeCategories = computed(() => productService.getCategories().filter(c =>
           </p>
           
           <div class="flex flex-wrap gap-4">
-            <UiButton size="lg" class="rounded-full gap-2 px-8" @click="navigateTo('/category')">
-              Explore Collection <ChevronRight class="w-5 h-5" />
+            <UiButton size="lg" class="rounded-full gap-2 px-8" to="/products">
+              Explore Catalog <ChevronRight class="w-5 h-5" />
             </UiButton>
-            <UiButton variant="outline" size="lg" class="rounded-full text-white border-white/20 hover:bg-white/10" @click="navigateTo('/offers')">
+            <UiButton variant="outline" size="lg" class="rounded-full text-white border-white/20 hover:bg-white/10" to="/offers">
               View Special Offers
             </UiButton>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Brand Marquee (Dribbble Inspired) -->
+    <section class="w-full bg-muted/20 border-y py-10 overflow-hidden group">
+      <div class="flex whitespace-nowrap animate-marquee">
+        <!-- Double the content for seamless looping -->
+        <div v-for="i in 2" :key="i" class="flex items-center space-x-16 px-8">
+          <div v-for="brand in [
+            'Intel Core', 'NVIDIA RTX', 'ARM Architecture', 'Qualcomm', 'AMD Ryzen', 
+            'ASUS ROG', 'Samsung Semiconductor', 'TSMC', 'Seagate', 'CORSAIR'
+          ]" :key="brand" class="flex items-center gap-3 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500 cursor-pointer">
+            <div class="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center font-bold text-[10px]">TC</div>
+            <span class="text-xl font-display font-bold tracking-tight">{{ brand }}</span>
           </div>
         </div>
       </div>
@@ -72,7 +89,7 @@ const homeCategories = computed(() => productService.getCategories().filter(c =>
     <section class="container mx-auto px-4">
       <div class="flex items-center justify-between mb-10">
         <h2 class="text-3xl font-display font-bold tracking-tight">Shop by <span class="text-primary">Department</span></h2>
-        <NuxtLink to="/category" class="text-sm font-medium hover:underline flex items-center gap-1">
+        <NuxtLink to="/products" class="text-sm font-medium hover:underline flex items-center gap-1">
           Explore All <ChevronRight class="w-4 h-4" />
         </NuxtLink>
       </div>
@@ -142,5 +159,16 @@ const homeCategories = computed(() => productService.getCategories().filter(c =>
 }
 .animate-fade-in {
   animation: fade-in 0.8s ease forwards;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
 }
 </style>

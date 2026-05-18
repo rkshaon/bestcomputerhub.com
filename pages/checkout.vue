@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ChevronRight, CreditCard, ShieldCheck, Truck, PackageCheck, AlertCircle } from 'lucide-vue-next';
-import { formatCurrency } from '@/utils';
+import { ChevronRight, CreditCard, ShieldCheck, Truck, PackageCheck, AlertCircle, Smartphone, Banknote } from 'lucide-vue-next';
+import { formatCurrency, cn } from '@/utils';
 
 const cartStore = useCartStore();
 const step = ref(1);
@@ -12,9 +12,13 @@ const form = reactive({
   address: '',
   city: '',
   zip: '',
+  paymentMethod: 'card', // 'card' | 'mfs' | 'cod'
   cardNumber: '',
   expiry: '',
-  cvv: ''
+  cvv: '',
+  mfsType: 'bkash', // 'bkash' | 'nagad' | 'rocket'
+  mfsNumber: '',
+  mfsTransactionId: ''
 });
 
 const isProcessing = ref(false);
@@ -102,31 +106,94 @@ const handlePlaceOrder = () => {
             </h2>
 
             <div class="space-y-6">
-              <div class="p-4 bg-muted rounded-2xl flex items-center justify-between border-2 border-primary/20">
-                <div class="flex items-center gap-4">
-                  <div class="w-12 h-8 bg-background border rounded flex items-center justify-center font-bold text-blue-800">VISA</div>
-                  <div>
-                    <p class="font-bold text-sm">Credit or Debit Card</p>
-                    <p class="text-xs text-muted-foreground">Secure payment via Stripe Enterprise</p>
+              <!-- Payment Method Selection -->
+              <div class="grid grid-cols-1 gap-4">
+                <button 
+                  v-for="method in [
+                    { id: 'card', name: 'Bank Card', icon: CreditCard, subtitle: 'Visa, Mastercard, Amex' },
+                    { id: 'mfs', name: 'MFS', icon: Smartphone, subtitle: 'bKash, Nagad, Rocket' },
+                    { id: 'cod', name: 'Cash on Delivery', icon: Banknote, subtitle: 'Pay when you receive' }
+                  ]" 
+                  :key="method.id"
+                  @click="form.paymentMethod = method.id"
+                  :class="cn(
+                    'p-4 rounded-2xl flex items-center justify-between border-2 transition-all text-left w-full',
+                    form.paymentMethod === method.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/20 bg-background'
+                  )"
+                >
+                  <div class="flex items-center gap-4">
+                    <div :class="cn('w-12 h-12 rounded-xl flex items-center justify-center', form.paymentMethod === method.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground')">
+                      <component :is="method.icon" class="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p class="font-bold text-sm">{{ method.name }}</p>
+                      <p class="text-xs text-muted-foreground">{{ method.subtitle }}</p>
+                    </div>
                   </div>
+                  <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center" :class="form.paymentMethod === method.id ? 'border-primary' : 'border-muted-foreground/30'">
+                    <div v-if="form.paymentMethod === method.id" class="w-2.5 h-2.5 bg-primary rounded-full"></div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Card Payment Form -->
+              <div v-if="form.paymentMethod === 'card'" class="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div class="space-y-2">
+                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Card Number</label>
+                  <input v-model="form.cardNumber" type="text" placeholder="0000 0000 0000 0000" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
-                <div class="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                  <div class="w-2 h-2 bg-white rounded-full"></div>
+                <div class="grid grid-cols-2 gap-6">
+                  <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Expiry Date</label>
+                    <input v-model="form.expiry" type="text" placeholder="MM / YY" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">CVC / CVV</label>
+                    <input v-model="form.cvv" type="text" placeholder="123" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
                 </div>
               </div>
 
-              <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Card Number</label>
-                <input v-model="form.cardNumber" type="text" placeholder="0000 0000 0000 0000" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div class="grid grid-cols-2 gap-6">
-                <div class="space-y-2">
-                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Expiry Date</label>
-                  <input v-model="form.expiry" type="text" placeholder="MM / YY" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none" />
+              <!-- MFS Payment Form -->
+              <div v-if="form.paymentMethod === 'mfs'" class="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div class="grid grid-cols-3 gap-2">
+                  <button 
+                    v-for="mfs in ['bkash', 'nagad', 'rocket']" 
+                    :key="mfs"
+                    @click="form.mfsType = mfs"
+                    :class="cn(
+                      'py-2 px-4 rounded-xl border text-xs font-extrabold uppercase transition-all',
+                      form.mfsType === mfs ? 'bg-primary text-white border-primary' : 'bg-background hover:bg-muted border-muted'
+                    )"
+                  >
+                    {{ mfs }}
+                  </button>
                 </div>
                 <div class="space-y-2">
-                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">CVC / CVV</label>
-                  <input v-model="form.cvv" type="text" placeholder="123" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none" />
+                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Account Number</label>
+                  <input v-model="form.mfsNumber" type="text" placeholder="01XXX-XXXXXX" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Transaction ID (After Payment)</label>
+                  <input v-model="form.mfsTransactionId" type="text" placeholder="TRX-XXXXXXX" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div class="p-3 bg-blue-50 text-blue-700 rounded-xl text-[10px] font-medium leading-relaxed">
+                  Please complete the payment to our merchant number first, then provide the Transaction ID above.
+                </div>
+              </div>
+
+              <!-- COD Info -->
+              <div v-if="form.paymentMethod === 'cod'" class="pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div class="p-6 bg-muted rounded-2xl space-y-3">
+                  <div class="w-12 h-12 bg-background rounded-full flex items-center justify-center text-primary">
+                    <Truck class="w-6 h-6" />
+                  </div>
+                  <div class="space-y-1">
+                    <p class="font-bold">Cash payment upon delivery</p>
+                    <p class="text-xs text-muted-foreground leading-relaxed">
+                      Please keep the exact amount ({{ formatCurrency(cartStore.totalPrice) }}) ready for our delivery partner.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

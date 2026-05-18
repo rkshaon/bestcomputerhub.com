@@ -437,6 +437,9 @@ declare global {
   // @ts-ignore
   export type { PageMeta } from '../../node_modules/nuxt/dist/app/composables/pages'
   import('../../node_modules/nuxt/dist/app/composables/pages')
+  // @ts-ignore
+  export type { ThemeMode } from '../../stores/ui'
+  import('../../stores/ui')
 }
 // for vue template auto import
 import { UnwrapRef } from 'vue'
