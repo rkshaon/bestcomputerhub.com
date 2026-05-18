@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
 import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, ChevronDown, PackageSearch } from 'lucide-vue-next';
 import { cn } from '@/utils';
 

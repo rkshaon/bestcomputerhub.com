@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
 import { ChevronRight, ShieldCheck, Truck, RefreshCw, Trophy } from 'lucide-vue-next';
 
 // Explicitly use the composable (Nuxt usually auto-imports this)
 const productService = useProductService();
 const featuredProducts = productService.getFeaturedProducts();
 const newArrivals = productService.getNewArrivals();
-const homeCategories = productService.getCategories();
+const homeCategories = productService.getCategories().filter(c => !c.parentCategoryId);
 </script>
 
 <template>

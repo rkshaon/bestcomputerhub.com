@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, SlidersHorizontal, Grid, List, Search } from 'lucide-vue-next';
+import { SlidersHorizontal, Grid, List, Search } from 'lucide-vue-next';
 
 const route = useRoute();
 const productService = useProductService();
@@ -18,7 +18,7 @@ const filters = reactive({
 const searchQuery = ref('');
 const products = computed(() => {
   return productService.getProducts({
-    category: category?.id,
+    category: category?.id || category?.slug, // Try both ID and Slug
     query: searchQuery.value,
     minPrice: filters.minPrice,
     maxPrice: filters.maxPrice,

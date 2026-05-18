@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { Star, ShoppingCart, Heart } from 'lucide-vue-next';
 import type { Product } from '@/types';
 import { formatCurrency } from '@/utils';

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
 const themeStore = useUIStore();
 
 // Handle theme logic

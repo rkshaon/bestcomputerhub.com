@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, ArrowLeft, Star, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Info } from 'lucide-vue-next';
+import { ChevronRight, ArrowLeft, Star, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Info, Plus, Minus } from 'lucide-vue-next';
 import { formatCurrency } from '@/utils';
 
 const route = useRoute();
