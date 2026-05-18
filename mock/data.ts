@@ -72,6 +72,7 @@ export const products: Product[] = [
     },
     features: ['Ray Tracing', '240Hz QHD Display', 'Mechanical Keyboard'],
     isFeatured: true,
+    onSale: true,
     sku: 'QX-PRO-9000'
   },
   {
@@ -79,7 +80,8 @@ export const products: Product[] = [
     name: 'Apex Stealth 14 Gaming Laptop',
     slug: 'apex-stealth-14-gaming-laptop',
     description: 'Ultra-portable 14" gaming laptop with RTX 4070 and OLED display.',
-    price: 1999.99,
+    price: 1799.99,
+    originalPrice: 1999.99,
     category: 'cat-1',
     subCategory: 'gaming-laptops',
     brand: 'Apex',
@@ -94,7 +96,56 @@ export const products: Product[] = [
       'GPU': 'RTX 4070'
     },
     features: ['OLED 120Hz', 'Magnesium Chassis', 'Per-key RGB'],
+    onSale: true,
     sku: 'APEX-S14-G'
+  },
+  {
+    id: 'p-10',
+    name: 'AeroFlow Pro Cooling Fan',
+    slug: 'aeroflow-pro-cooling-fan',
+    description: 'Premium 120mm PWM fan with fluid dynamic bearing for silent operation.',
+    price: 19.99,
+    originalPrice: 29.99,
+    category: 'cat-3',
+    subCategory: 'cooling',
+    brand: 'AeroFlow',
+    images: ['https://images.unsplash.com/photo-1587202376732-8179263035b1?auto=format&fit=crop&q=80&w=800'],
+    stock: 200,
+    rating: 4.9,
+    reviewCount: 567,
+    specifications: {
+      'Size': '120mm',
+      'RPM': '500-2000',
+      'Noise': '18dB',
+      'Bearing': 'FDB'
+    },
+    features: ['PWM Control', 'Anti-vibration Pads', '6-year Warranty'],
+    onSale: true,
+    sku: 'AF-PRO-120'
+  },
+  {
+    id: 'p-11',
+    name: 'Lumina RGB LED Strip Kit',
+    slug: 'lumina-rgb-led-strip-kit',
+    description: 'Addressable RGB LED strips for your PC case with magnetic mounting.',
+    price: 34.99,
+    originalPrice: 49.99,
+    category: 'cat-3',
+    subCategory: 'accessories',
+    brand: 'Lumina',
+    images: ['https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800'],
+    stock: 150,
+    rating: 4.4,
+    reviewCount: 89,
+    specifications: {
+      'Length': '2x 40cm',
+      'LEDs': '60/m',
+      'Interface': '3-pin ARGB',
+      'Mounting': 'Magnetic/3M'
+    },
+    features: ['Individually Addressable', 'Diffused Light', 'Universal Sync'],
+    onSale: true,
+    sku: 'LUM-RGB-KIT'
   },
   {
     id: 'p-5',

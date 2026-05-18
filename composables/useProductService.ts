@@ -60,11 +60,16 @@ export const useProductService = () => {
     return products.filter(p => p.isNew);
   };
 
+  const getOnSaleProducts = (): Product[] => {
+    return products.filter(p => p.onSale);
+  };
+
   return {
     getProducts,
     getProductBySlug,
     getCategories,
     getFeaturedProducts,
-    getNewArrivals
+    getNewArrivals,
+    getOnSaleProducts
   };
 };

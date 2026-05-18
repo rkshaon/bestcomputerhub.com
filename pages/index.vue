@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { ChevronRight, ShieldCheck, Truck, RefreshCw, Trophy } from 'lucide-vue-next';
 
 // Explicitly use the composable (Nuxt usually auto-imports this)
 const productService = useProductService();
 const featuredProducts = productService.getFeaturedProducts();
 const newArrivals = productService.getNewArrivals();
-const homeCategories = productService.getCategories().filter(c => !c.parentCategoryId);
+const homeCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
 </script>
 
 <template>
@@ -36,10 +37,10 @@ const homeCategories = productService.getCategories().filter(c => !c.parentCateg
           </p>
           
           <div class="flex flex-wrap gap-4">
-            <UiButton size="lg" class="rounded-full gap-2 px-8">
+            <UiButton size="lg" class="rounded-full gap-2 px-8" @click="navigateTo('/category')">
               Explore Collection <ChevronRight class="w-5 h-5" />
             </UiButton>
-            <UiButton variant="outline" size="lg" class="rounded-full text-white border-white/20 hover:bg-white/10">
+            <UiButton variant="outline" size="lg" class="rounded-full text-white border-white/20 hover:bg-white/10" @click="navigateTo('/offers')">
               View Special Offers
             </UiButton>
           </div>
