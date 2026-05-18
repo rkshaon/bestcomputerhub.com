@@ -1,0 +1,6 @@
+{
+  "name": "TechCore Enterprise Store",
+  "description": "Premium enterprise-grade technology e-commerce platform for computer gadgets and accessories, featuring a catalog of 9,000+ products.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
