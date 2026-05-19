@@ -16,6 +16,8 @@ type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {},
 interface _GlobalComponents {
   CommerceCartDrawer: typeof import("../../components/commerce/CartDrawer.vue")['default']
   CommerceProductCard: typeof import("../../components/commerce/ProductCard.vue")['default']
+  LayoutBackToTop: typeof import("../../components/layout/BackToTop.vue")['default']
+  LayoutCookieBanner: typeof import("../../components/layout/CookieBanner.vue")['default']
   LayoutFooter: typeof import("../../components/layout/Footer.vue")['default']
   LayoutHeader: typeof import("../../components/layout/Header.vue")['default']
   UiButton: typeof import("../../components/ui/Button.vue")['default']
@@ -45,6 +47,8 @@ interface _GlobalComponents {
   NuxtIsland: typeof import("../../node_modules/nuxt/dist/app/components/nuxt-island")['default']
   LazyCommerceCartDrawer: LazyComponent<typeof import("../../components/commerce/CartDrawer.vue")['default']>
   LazyCommerceProductCard: LazyComponent<typeof import("../../components/commerce/ProductCard.vue")['default']>
+  LazyLayoutBackToTop: LazyComponent<typeof import("../../components/layout/BackToTop.vue")['default']>
+  LazyLayoutCookieBanner: LazyComponent<typeof import("../../components/layout/CookieBanner.vue")['default']>
   LazyLayoutFooter: LazyComponent<typeof import("../../components/layout/Footer.vue")['default']>
   LazyLayoutHeader: LazyComponent<typeof import("../../components/layout/Header.vue")['default']>
   LazyUiButton: LazyComponent<typeof import("../../components/ui/Button.vue")['default']>

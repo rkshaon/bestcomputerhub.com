@@ -7,6 +7,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@vueuse/nuxt',
   ],
+  css: ['~/assets/css/main.css'],
   app: {
     head: {
       link: [
