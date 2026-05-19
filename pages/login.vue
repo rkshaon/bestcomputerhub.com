@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { cn } from '@/utils';
 
 const authStore = useAuthStore();
+const route = useRoute();
 const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
@@ -24,7 +25,9 @@ const handleLogin = async () => {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
     authStore.login(email.value);
-    navigateTo('/account');
+    
+    const redirect = route.query.redirect as string;
+    navigateTo(redirect || '/account');
   } catch (err) {
     error.value = 'Invalid credentials. Please try again.';
   } finally {
@@ -32,9 +35,10 @@ const handleLogin = async () => {
   }
 };
 
-// If already logged in, redirect to account
+// If already logged in, redirect to account or target route
 if (authStore.isLoggedIn) {
-  navigateTo('/account');
+  const redirect = route.query.redirect as string;
+  navigateTo(redirect || '/account');
 }
 </script>
 
