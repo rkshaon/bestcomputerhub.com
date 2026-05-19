@@ -49,11 +49,11 @@ const handleSave = async () => {
       </div>
       <button 
         @click="handleSave"
-        class="bg-primary text-white px-6 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+        class="bg-primary text-primary-foreground px-6 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
         :disabled="isSaving"
       >
         <Save v-if="!isSaving" class="w-4 h-4" />
-        <span v-else class="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4 mr-1"></span>
+        <span v-else class="animate-spin border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full w-4 h-4 mr-1"></span>
         {{ isSaving ? 'Saving...' : 'Persist Changes' }}
       </button>
     </div>
@@ -73,7 +73,7 @@ const handleSave = async () => {
           :class="cn(
             'w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-bold text-sm',
             activeTab === tab.id 
-              ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
               : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent'
           )"
         >
