@@ -48,6 +48,10 @@ export const useProductService = () => {
     return products.find(p => p.slug === slug);
   };
 
+  const getProductById = (id: string): Product | undefined => {
+    return products.find(p => p.id === id);
+  };
+
   const getCategories = (): Category[] => {
     return categories;
   };
@@ -67,6 +71,7 @@ export const useProductService = () => {
   return {
     getProducts,
     getProductBySlug,
+    getProductById,
     getCategories,
     getFeaturedProducts,
     getNewArrivals,

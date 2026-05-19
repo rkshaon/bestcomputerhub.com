@@ -60,4 +60,77 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
+  role: 'admin' | 'staff' | 'customer';
+  joinedAt: string;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  items: OrderItem[];
+  totalAmount: number;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+  paymentStatus: 'paid' | 'unpaid' | 'failed' | 'refunded';
+  createdAt: string;
+  shippingAddress: {
+    street: string;
+    city: string;
+    zipCode: string;
+    country: string;
+  };
+}
+
+export interface OrderItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  image: string;
+}
+
+export interface Customer extends User {
+  totalOrders: number;
+  totalSpent: number;
+  lastOrderDate?: string;
+  status: 'active' | 'inactive' | 'blocked';
+}
+
+export interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string;
+  description: string;
+  productCount: number;
+}
+
+export interface InventoryAlert {
+  productId: string;
+  productName: string;
+  currentStock: number;
+  threshold: number;
+  status: 'low' | 'out_of_stock';
+}
+
+export interface AdminStats {
+  revenue: {
+    total: number;
+    growth: number;
+    series: number[];
+  };
+  orders: {
+    total: number;
+    growth: number;
+    series: number[];
+  };
+  customers: {
+    total: number;
+    growth: number;
+  };
+  avgOrderValue: {
+    amount: number;
+    growth: number;
+  };
 }
