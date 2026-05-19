@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Scale, Gavel, AlertTriangle, CreditCard, RefreshCw, Truck, ChevronRight, FileCheck } from 'lucide-vue-next';
+import { Scale, Gavel, TriangleAlert, CreditCard, RefreshCw, Truck, ChevronRight, FileCheck } from 'lucide-vue-next';
 
 const lastUpdated = 'May 18, 2026';
 
@@ -83,7 +83,7 @@ const sections = [
             
             <div class="p-6 bg-amber-500/5 rounded-[2rem] border border-amber-500/10 space-y-4">
               <div class="flex items-center gap-2 text-amber-600">
-                <AlertTriangle class="w-4 h-4" />
+                <TriangleAlert class="w-4 h-4" />
                 <p class="text-xs font-bold uppercase tracking-tight">Critical Note</p>
               </div>
               <p class="text-xs text-muted-foreground leading-relaxed">Violating these terms may result in immediate suspension of enterprise procurement privileges.</p>

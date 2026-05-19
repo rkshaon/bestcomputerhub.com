@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangle, Home, RefreshCcw } from 'lucide-vue-next';
+import { TriangleAlert, Home, RefreshCcw } from 'lucide-vue-next';
 
 const props = defineProps({
   error: Object
@@ -12,7 +12,7 @@ const handleError = () => clearError({ redirect: '/' });
   <div class="min-h-screen flex items-center justify-center bg-muted/20 p-6">
     <div class="max-w-md w-full text-center space-y-8">
       <div class="w-24 h-24 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto">
-        <AlertTriangle class="w-12 h-12" />
+        <TriangleAlert class="w-12 h-12" />
       </div>
       
       <div class="space-y-4 text-balance">
