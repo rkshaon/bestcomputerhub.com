@@ -256,7 +256,6 @@ const toggleReadStatus = (notification: Notification) => {
                 <button 
                   @click="toggleReadStatus(n)" 
                   class="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg bg-slate-100 dark:bg-slate-800"
-                  v-tooltip="n.isRead ? 'Mark as unread' : 'Mark as read'"
                 >
                   <component :is="n.isRead ? Mail : MailOpen" class="w-4 h-4" />
                 </button>

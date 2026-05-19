@@ -14,6 +14,7 @@ import {
   ChevronLeft, 
   Menu,
   ShieldCheck,
+  ShieldAlert,
   Search,
   User as UserIcon,
   Moon,
@@ -44,6 +45,7 @@ const navigation = [
 ];
 
 const secondaryNavigation = [
+  { name: 'Security Logs', iconKey: 'ShieldAlert', href: '/admin/security/logs' },
   { name: 'Notifications', iconKey: 'Bell', href: '/admin/notifications' },
   { name: 'Settings', iconKey: 'Settings', href: '/admin/settings' },
 ];
@@ -57,6 +59,7 @@ const iconMap = {
   ShoppingCart,
   Users,
   ShieldCheck,
+  ShieldAlert,
   BarChart3,
   Bell,
   Settings
