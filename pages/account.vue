@@ -17,6 +17,12 @@ import { useAuthStore } from '@/stores/auth';
 import { formatCurrency, cn } from '@/utils';
 
 const authStore = useAuthStore();
+
+// Redirect to login if not logged in
+if (process.client && !authStore.isLoggedIn) {
+  navigateTo('/login');
+}
+
 const activeTab = ref('orders');
 
 const tabs = [

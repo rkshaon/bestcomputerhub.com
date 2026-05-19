@@ -172,7 +172,7 @@ if (process.client) {
             </transition>
           </div>
           
-          <NuxtLink to="/account" class="p-1 hover:bg-accent rounded-full transition-colors text-muted-foreground hover:text-foreground">
+          <NuxtLink :to="authStore.isLoggedIn ? '/account' : '/login'" class="p-1 hover:bg-accent rounded-full transition-colors text-muted-foreground hover:text-foreground">
             <div v-if="authStore.isLoggedIn && authStore.user" class="w-8 h-8 rounded-full overflow-hidden border border-border">
               <img :src="authStore.user.avatar" :alt="authStore.user.name" class="w-full h-full object-cover" />
             </div>
