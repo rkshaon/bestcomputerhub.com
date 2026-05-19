@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
-  UserPlus
+  UserPlus,
+  TrendingUp
 } from 'lucide-vue-next';
 import { useAdminStore } from '@/stores/admin';
 import { formatCurrency, cn } from '@/utils';
