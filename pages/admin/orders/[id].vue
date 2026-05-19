@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { markRaw } from 'vue';
 import { 
   ChevronLeft, 
   Printer, 
@@ -32,12 +33,12 @@ if (!order.value) {
 }
 
 const statusConfig = {
-  pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-100 dark:border-amber-900', label: 'Awaiting Fulfillment' },
-  processing: { icon: Package, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-100 dark:border-blue-900', label: 'Hardware Preparation' },
-  shipped: { icon: Truck, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-950/20', border: 'border-indigo-100 dark:border-indigo-900', label: 'In Transit' },
-  delivered: { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-100 dark:border-emerald-900', label: 'Deployment Complete' },
-  cancelled: { icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-950/20', border: 'border-rose-100 dark:border-rose-900', label: 'Operational Void' },
-  refunded: { icon: CreditCard, color: 'text-slate-600', bg: 'bg-slate-50 dark:bg-slate-950/20', border: 'border-slate-100 dark:border-slate-900', label: 'Capital Reversal' },
+  pending: { icon: markRaw(Clock), color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-100 dark:border-amber-900', label: 'Awaiting Fulfillment' },
+  processing: { icon: markRaw(Package), color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-100 dark:border-blue-900', label: 'Hardware Preparation' },
+  shipped: { icon: markRaw(Truck), color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-950/20', border: 'border-indigo-100 dark:border-indigo-900', label: 'In Transit' },
+  delivered: { icon: markRaw(CheckCircle2), color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-100 dark:border-emerald-900', label: 'Deployment Complete' },
+  cancelled: { icon: markRaw(AlertCircle), color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-950/20', border: 'border-rose-100 dark:border-rose-900', label: 'Operational Void' },
+  refunded: { icon: markRaw(CreditCard), color: 'text-slate-600', bg: 'bg-slate-50 dark:bg-slate-950/20', border: 'border-slate-100 dark:border-slate-900', label: 'Capital Reversal' },
 };
 
 const timeline = [

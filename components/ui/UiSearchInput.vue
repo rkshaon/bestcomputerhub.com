@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next';
 import { cn } from '@/utils';
+import { markRaw } from 'vue';
 
 interface Props {
   modelValue: string;
@@ -10,7 +11,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: 'Search operations...',
-  icon: Search
+  icon: markRaw(Search)
 });
 
 defineEmits(['update:modelValue']);

@@ -24,6 +24,7 @@ import {
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
 import { cn } from '@/utils';
+import { markRaw } from 'vue';
 
 const authStore = useAuthStore();
 const uiStore = useUIStore();
@@ -35,20 +36,20 @@ definePageMeta({
 });
 
 const navigation = [
-  { name: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
-  { name: 'Products', icon: Package, href: '/admin/products' },
-  { name: 'Categories', icon: Layers, href: '/admin/categories' },
-  { name: 'Brands', icon: Tag, href: '/admin/brands' },
-  { name: 'Inventory', icon: Boxes, href: '/admin/inventory' },
-  { name: 'Orders', icon: ShoppingCart, href: '/admin/orders' },
-  { name: 'Customers', icon: Users, href: '/admin/customers' },
-  { name: 'Staff', icon: ShieldCheck, href: '/admin/staff' },
-  { name: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
+  { name: 'Dashboard', icon: markRaw(LayoutDashboard), href: '/admin' },
+  { name: 'Products', icon: markRaw(Package), href: '/admin/products' },
+  { name: 'Categories', icon: markRaw(Layers), href: '/admin/categories' },
+  { name: 'Brands', icon: markRaw(Tag), href: '/admin/brands' },
+  { name: 'Inventory', icon: markRaw(Boxes), href: '/admin/inventory' },
+  { name: 'Orders', icon: markRaw(ShoppingCart), href: '/admin/orders' },
+  { name: 'Customers', icon: markRaw(Users), href: '/admin/customers' },
+  { name: 'Staff', icon: markRaw(ShieldCheck), href: '/admin/staff' },
+  { name: 'Analytics', icon: markRaw(BarChart3), href: '/admin/analytics' },
 ];
 
 const secondaryNavigation = [
-  { name: 'Notifications', icon: Bell, href: '/admin/notifications' },
-  { name: 'Settings', icon: Settings, href: '/admin/settings' },
+  { name: 'Notifications', icon: markRaw(Bell), href: '/admin/notifications' },
+  { name: 'Settings', icon: markRaw(Settings), href: '/admin/settings' },
 ];
 
 const toggleSidebar = () => {

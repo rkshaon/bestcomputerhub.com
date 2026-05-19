@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { markRaw } from 'vue';
 import { 
   Users, 
   DollarSign, 
@@ -47,28 +48,28 @@ onMounted(() => {
       <DashboardStatCard 
         label="Total Revenue"
         :value="formatCurrency(adminStore.stats.revenue.total)"
-        :icon="DollarSign"
+        :icon="markRaw(DollarSign)"
         :trend="adminStore.stats.revenue.growth"
         color="bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600"
       />
       <DashboardStatCard 
         label="Completed Orders"
         :value="adminStore.stats.orders.total"
-        :icon="ShoppingBag"
+        :icon="markRaw(ShoppingBag)"
         :trend="adminStore.stats.orders.growth"
         color="bg-blue-100 dark:bg-blue-950/30 text-blue-600"
       />
       <DashboardStatCard 
         label="Market Reach"
         :value="adminStore.stats.customers.total.toLocaleString()"
-        :icon="Users"
+        :icon="markRaw(Users)"
         :trend="adminStore.stats.customers.growth"
         color="bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600"
       />
       <DashboardStatCard 
         label="Avg Order Value"
         :value="formatCurrency(adminStore.stats.avgOrderValue.amount)"
-        :icon="TrendingUp"
+        :icon="markRaw(TrendingUp)"
         :trend="adminStore.stats.avgOrderValue.growth"
         color="bg-amber-100 dark:bg-amber-950/30 text-amber-600"
       />

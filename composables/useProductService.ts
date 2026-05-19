@@ -1,5 +1,5 @@
-import { products, categories } from '@/mock/data';
-import type { Product, Category } from '@/types';
+import { products, categories, brands } from '@/mock/data';
+import type { Product, Category, Brand } from '@/types';
 
 export const useProductService = () => {
   const getProducts = (params?: { 
@@ -68,6 +68,10 @@ export const useProductService = () => {
     return products.filter(p => p.onSale);
   };
 
+  const getBrands = (): Brand[] => {
+    return brands;
+  };
+
   return {
     getProducts,
     getProductBySlug,
@@ -75,6 +79,7 @@ export const useProductService = () => {
     getCategories,
     getFeaturedProducts,
     getNewArrivals,
-    getOnSaleProducts
+    getOnSaleProducts,
+    getBrands
   };
 };

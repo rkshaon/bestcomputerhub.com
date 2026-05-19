@@ -1,4 +1,39 @@
-import type { Category, Product, BlogPost } from '@/types';
+import type { Category, Product, BlogPost, Brand } from '@/types';
+
+export const brands: Brand[] = [
+  {
+    id: 'brand-1',
+    name: 'Quantum',
+    slug: 'quantum',
+    logo: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=200',
+    description: 'Next-generation quantum computing solutions for the modern enterprise.',
+    productCount: 15
+  },
+  {
+    id: 'brand-2',
+    name: 'Apex',
+    slug: 'apex',
+    logo: 'https://images.unsplash.com/photo-1614850523459-c2f4c699952e?auto=format&fit=crop&q=80&w=200',
+    description: 'Precision-engineered hardware designed for peak performance and reliability.',
+    productCount: 22
+  },
+  {
+    id: 'brand-3',
+    name: 'VisionTech',
+    slug: 'visiontech',
+    logo: 'https://images.unsplash.com/photo-1614850523011-8f49ffc73908?auto=format&fit=crop&q=80&w=200',
+    description: 'Leading the way in high-fidelity display technology and visual processing.',
+    productCount: 18
+  },
+  {
+    id: 'brand-4',
+    name: 'Zenith',
+    slug: 'zenith',
+    logo: 'https://images.unsplash.com/photo-1614850523544-673193859666?auto=format&fit=crop&q=80&w=200',
+    description: 'Enterprise-grade workstations and server infrastructure.',
+    productCount: 12
+  }
+];
 
 export const categories: Category[] = [
   {
