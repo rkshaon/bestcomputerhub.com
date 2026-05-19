@@ -45,7 +45,7 @@ const navigation = [
 ];
 
 const secondaryNavigation = [
-  { name: 'Security Logs', iconKey: 'ShieldAlert', href: '/admin/security/logs' },
+  { name: 'Security', iconKey: 'ShieldAlert', href: '/admin/security' },
   { name: 'Notifications', iconKey: 'Bell', href: '/admin/notifications' },
   { name: 'Settings', iconKey: 'Settings', href: '/admin/settings' },
 ];
