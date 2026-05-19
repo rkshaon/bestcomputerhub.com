@@ -31,10 +31,6 @@ const uiStore = useUIStore();
 const isSidebarOpen = ref(true);
 const isMobileMenuOpen = ref(false);
 
-definePageMeta({
-  middleware: 'auth'
-});
-
 const navigation = [
   { name: 'Dashboard', iconKey: 'LayoutDashboard', href: '/admin' },
   { name: 'Products', iconKey: 'Package', href: '/admin/products' },
@@ -267,7 +263,7 @@ const breadcrumbs = computed(() => {
                   : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900'
               )"
             >
-              <component :is="item.icon" class="w-5 h-5" />
+              <component :is="iconMap[item.iconKey as keyof typeof iconMap]" class="w-5 h-5" />
               {{ item.name }}
             </NuxtLink>
           </nav>
