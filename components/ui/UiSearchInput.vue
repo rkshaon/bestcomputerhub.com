@@ -10,9 +10,10 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: 'Search operations...',
-  icon: markRaw(Search)
+  placeholder: 'Search operations...'
 });
+
+const displayIcon = computed(() => props.icon || Search);
 
 defineEmits(['update:modelValue']);
 </script>
@@ -20,7 +21,7 @@ defineEmits(['update:modelValue']);
 <template>
   <div class="relative group">
     <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
-      <component :is="icon" class="w-4 h-4" />
+      <component :is="displayIcon" class="w-4 h-4" />
     </div>
     <input 
       :value="modelValue"

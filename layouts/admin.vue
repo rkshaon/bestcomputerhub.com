@@ -36,21 +36,35 @@ definePageMeta({
 });
 
 const navigation = [
-  { name: 'Dashboard', icon: markRaw(LayoutDashboard), href: '/admin' },
-  { name: 'Products', icon: markRaw(Package), href: '/admin/products' },
-  { name: 'Categories', icon: markRaw(Layers), href: '/admin/categories' },
-  { name: 'Brands', icon: markRaw(Tag), href: '/admin/brands' },
-  { name: 'Inventory', icon: markRaw(Boxes), href: '/admin/inventory' },
-  { name: 'Orders', icon: markRaw(ShoppingCart), href: '/admin/orders' },
-  { name: 'Customers', icon: markRaw(Users), href: '/admin/customers' },
-  { name: 'Staff', icon: markRaw(ShieldCheck), href: '/admin/staff' },
-  { name: 'Analytics', icon: markRaw(BarChart3), href: '/admin/analytics' },
+  { name: 'Dashboard', iconKey: 'LayoutDashboard', href: '/admin' },
+  { name: 'Products', iconKey: 'Package', href: '/admin/products' },
+  { name: 'Categories', iconKey: 'Layers', href: '/admin/categories' },
+  { name: 'Brands', iconKey: 'Tag', href: '/admin/brands' },
+  { name: 'Inventory', iconKey: 'Boxes', href: '/admin/inventory' },
+  { name: 'Orders', iconKey: 'ShoppingCart', href: '/admin/orders' },
+  { name: 'Customers', iconKey: 'Users', href: '/admin/customers' },
+  { name: 'Staff', iconKey: 'ShieldCheck', href: '/admin/staff' },
+  { name: 'Analytics', iconKey: 'BarChart3', href: '/admin/analytics' },
 ];
 
 const secondaryNavigation = [
-  { name: 'Notifications', icon: markRaw(Bell), href: '/admin/notifications' },
-  { name: 'Settings', icon: markRaw(Settings), href: '/admin/settings' },
+  { name: 'Notifications', iconKey: 'Bell', href: '/admin/notifications' },
+  { name: 'Settings', iconKey: 'Settings', href: '/admin/settings' },
 ];
+
+const iconMap = {
+  LayoutDashboard,
+  Package,
+  Layers,
+  Tag,
+  Boxes,
+  ShoppingCart,
+  Users,
+  ShieldCheck,
+  BarChart3,
+  Bell,
+  Settings
+};
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
@@ -107,7 +121,7 @@ const breadcrumbs = computed(() => {
                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-100'
             )"
           >
-            <component :is="item.icon" :class="cn('w-5 h-5 shrink-0')" />
+            <component :is="iconMap[item.iconKey as keyof typeof iconMap]" :class="cn('w-5 h-5 shrink-0')" />
             <span v-if="isSidebarOpen" class="whitespace-nowrap">{{ item.name }}</span>
           </NuxtLink>
 
@@ -127,7 +141,7 @@ const breadcrumbs = computed(() => {
                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-100'
             )"
           >
-            <component :is="item.icon" :class="cn('w-5 h-5 shrink-0')" />
+            <component :is="iconMap[item.iconKey as keyof typeof iconMap]" :class="cn('w-5 h-5 shrink-0')" />
             <span v-if="isSidebarOpen" class="whitespace-nowrap">{{ item.name }}</span>
           </NuxtLink>
         </nav>

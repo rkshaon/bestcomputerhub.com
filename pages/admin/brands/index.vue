@@ -45,10 +45,16 @@ const handleDelete = (id: string) => {
   }
 };
 
+const iconMap = {
+  Flag,
+  Globe,
+  Award
+};
+
 const stats = computed(() => [
-  { label: 'Registered Brands', value: allBrands.value.length, icon: markRaw(Flag), color: 'bg-indigo-100 text-indigo-600' },
-  { label: 'Active Domains', value: 4, icon: markRaw(Globe), color: 'bg-emerald-100 text-emerald-600' },
-  { label: 'Premium Tier', value: 2, icon: markRaw(Award), color: 'bg-amber-100 text-amber-600' },
+  { label: 'Registered Brands', value: allBrands.value.length, iconKey: 'Flag', color: 'bg-indigo-100 text-indigo-600' },
+  { label: 'Active Domains', value: 4, iconKey: 'Globe', color: 'bg-emerald-100 text-emerald-600' },
+  { label: 'Premium Tier', value: 2, iconKey: 'Award', color: 'bg-amber-100 text-amber-600' },
 ]);
 </script>
 
@@ -71,7 +77,7 @@ const stats = computed(() => [
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <UiCard v-for="stat in stats" :key="stat.label" class="flex items-center gap-6 p-8">
         <div :class="cn('w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner', stat.color)">
-          <component :is="stat.icon" class="w-7 h-7" />
+          <component :is="iconMap[stat.iconKey as keyof typeof iconMap]" class="w-7 h-7" />
         </div>
         <div>
           <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">{{ stat.label }}</p>
