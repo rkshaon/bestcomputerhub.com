@@ -20,7 +20,7 @@ import {
   Key,
   Eye
 } from 'lucide-vue-next';
-import { cn } from '@/utils';
+import { cn } from '~/utils';
 
 definePageMeta({
   layout: 'admin'
@@ -132,7 +132,7 @@ const refreshLogs = async () => {
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div>
-        <div class="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-[0.2em] mb-2">
+        <div class="flex items-center gap-2 text-rose-500 font-bold text-[10px] uppercase tracking-[0.2em] mb-2">
           <div class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
           Secure Access Management Console
         </div>
@@ -200,10 +200,10 @@ const refreshLogs = async () => {
     </div>
 
     <!-- Main Table Container -->
-    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
+    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden animate-in fade-in">
       <!-- Table Filters -->
       <div class="p-6 border-b border-slate-50 dark:border-slate-900 bg-slate-50/20 dark:bg-slate-900/10 flex flex-col lg:flex-row gap-4">
-        <div class="flex-1 relative group">
+        <div class="flex-1 relative group animate-in">
           <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
           <input 
             v-model="searchQuery"
@@ -268,7 +268,7 @@ const refreshLogs = async () => {
                 <div class="flex flex-col gap-0.5">
                   <code class="text-xs font-mono font-bold text-slate-600 dark:text-slate-400">{{ log.ip }}</code>
                   <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-1">
-                    <Globe class="w-3 h-3" /> {{ log.location }}
+                    <Globe class="w-3" /> {{ log.location }}
                   </span>
                 </div>
               </td>
@@ -399,7 +399,7 @@ const refreshLogs = async () => {
                  </div>
                  <div>
                     <p class="text-xs font-bold">DDoS Protection</p>
-                    <p class="text-[9px] text-slate-400 font-bold uppercase">Cloudflare Tier 1</p>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase font-black">Cloudflare Tier 1</p>
                  </div>
                </div>
              </div>

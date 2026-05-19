@@ -1,67 +1,56 @@
 import { defineStore } from 'pinia';
 
-export type ThemeMode = 'light' | 'dark' | 'system';
-
 export const useUIStore = defineStore('ui', {
   state: () => ({
-    themeMode: 'system' as ThemeMode,
-    isCartOpen: false,
-    isMobileMenuOpen: false,
-    isSearchOpen: false,
+    themeMode: 'system' as 'light' | 'dark' | 'system',
+    isSidebarOpen: true,
   }),
   actions: {
-    setTheme(mode: ThemeMode) {
-      this.themeMode = mode;
+    setTheme(theme: 'light' | 'dark' | 'system') {
+      this.themeMode = theme;
       if (process.client) {
-        localStorage.setItem('theme-preference', mode);
+        localStorage.setItem('theme-mode', theme);
         this.applyTheme();
       }
     },
     applyTheme() {
       if (!process.client) return;
-
-      const html = document.documentElement;
-      let effectiveTheme = this.themeMode;
-
-      if (this.themeMode === 'system') {
-        effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      }
-
-      if (effectiveTheme === 'dark') {
-        html.classList.add('dark');
-        html.style.colorScheme = 'dark';
+      
+      const isDark = 
+        this.themeMode === 'dark' || 
+        (this.themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        
+      if (isDark) {
+        document.documentElement.classList.add('dark');
       } else {
-        html.classList.remove('dark');
-        html.style.colorScheme = 'light';
+        document.documentElement.classList.remove('dark');
       }
     },
     initTheme() {
-      if (process.client) {
-        const savedTheme = localStorage.getItem('theme-preference') as ThemeMode | null;
-        if (savedTheme) {
-          this.themeMode = savedTheme;
-        }
-        this.applyTheme();
-
-        // Listen for system changes
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (!process.client) return;
+      const saved = localStorage.getItem('theme-mode') as 'light' | 'dark' | 'system' | null;
+      this.themeMode = saved || 'system';
+      this.applyTheme();
+      
+      // Setup reactive listener for system preference change
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      try {
+        mediaQuery.addEventListener('change', () => {
+          if (this.themeMode === 'system') {
+            this.applyTheme();
+          }
+        });
+      } catch (e) {
+        // Fallback for older browsers
+        mediaQuery.addListener(() => {
           if (this.themeMode === 'system') {
             this.applyTheme();
           }
         });
       }
     },
-    toggleCart() {
-      this.isCartOpen = !this.isCartOpen;
-    },
-    toggleMobileMenu() {
-      this.isMobileMenuOpen = !this.isMobileMenuOpen;
-    },
-    toggleSearch() {
-      this.isSearchOpen = !this.isSearchOpen;
-    },
-    closeMobileMenu() {
-      this.isMobileMenuOpen = false;
+    toggleSidebar() {
+      this.isSidebarOpen = !this.isSidebarOpen;
     }
   }
 });

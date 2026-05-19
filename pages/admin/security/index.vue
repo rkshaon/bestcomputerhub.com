@@ -17,7 +17,7 @@ import {
   AlertCircle,
   Clock
 } from 'lucide-vue-next';
-import { cn } from '@/utils';
+import { cn } from '~/utils';
 
 definePageMeta({
   layout: 'admin'

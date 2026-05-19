@@ -1,54 +1,45 @@
 <script setup lang="ts">
-import { computed, resolveComponent } from 'vue';
-import { cn } from '@/utils';
+import { cn } from '~/utils';
 
 interface Props {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'rose' | 'indigo' | 'danger';
   size?: 'sm' | 'md' | 'lg' | 'icon';
-  class?: string;
-  type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
-  to?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   variant: 'primary',
   size: 'md',
-  type: 'button',
+  disabled: false,
 });
 
-const isLink = computed(() => !!props.to);
-const componentTag = computed(() => isLink.value ? resolveComponent('NuxtLink') : 'button');
-
-const variants = {
-  primary: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
-  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-  outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-  ghost: 'hover:bg-accent hover:text-accent-foreground',
-  destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+const variantClasses = {
+  primary: 'bg-slate-900 border border-slate-950 text-white hover:bg-black dark:bg-white dark:border-slate-100 dark:text-slate-950 dark:hover:bg-slate-50',
+  secondary: 'bg-slate-100 border border-slate-200/50 text-slate-800 hover:bg-slate-200/50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800',
+  outline: 'border border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900',
+  ghost: 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900 hover:text-slate-950 dark:hover:text-slate-50',
+  rose: 'bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600',
+  indigo: 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600',
+  danger: 'bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600'
 };
 
-const sizes = {
-  sm: 'h-8 px-3 text-xs',
-  md: 'h-10 px-4 py-2',
-  lg: 'h-12 px-8 text-lg',
-  icon: 'h-10 w-10 p-0',
+const sizeClasses = {
+  sm: 'h-9 px-4 text-[10px] rounded-xl font-bold uppercase tracking-widest',
+  md: 'h-11 px-6 text-[11px] rounded-2xl font-bold uppercase tracking-widest',
+  lg: 'h-13 px-8 text-xs rounded-3xl font-bold uppercase tracking-widest',
+  icon: 'h-10 w-10 flex items-center justify-center rounded-xl p-0'
 };
 </script>
 
 <template>
-  <component
-    :is="componentTag"
-    :to="to"
-    :type="isLink ? undefined : type"
-    :class="cn(
-      'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 shrink-0 cursor-pointer no-underline',
-      variants[variant],
-      sizes[size],
-      props.class
-    )"
+  <button
     :disabled="disabled"
+    :class="cn(
+      'inline-flex items-center justify-center gap-2 font-display select-none transition-all duration-200 outline-none focus:ring-4 focus:ring-primary/10 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer',
+      variantClasses[variant],
+      sizeClasses[size]
+    )"
   >
     <slot />
-  </component>
+  </button>
 </template>

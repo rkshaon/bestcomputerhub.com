@@ -1,37 +1,30 @@
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next';
-import { cn } from '@/utils';
-import { markRaw } from 'vue';
+import { cn } from '~/utils';
 
 interface Props {
-  modelValue: string;
+  modelValue?: string;
   placeholder?: string;
-  icon?: any;
+  class?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: 'Search operations...'
+  modelValue: '',
+  placeholder: 'Search...',
 });
 
-const displayIcon = computed(() => props.icon || Search);
-
-defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue']);
 </script>
 
 <template>
-  <div class="relative group">
-    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
-      <component :is="displayIcon" class="w-4 h-4" />
-    </div>
+  <div :class="cn('relative group w-full', props.class)">
+    <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
     <input 
       :value="modelValue"
-      type="text"
-      :placeholder="placeholder"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-      :class="cn(
-        'w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium',
-        $attrs.class as string
-      )"
+      @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      type="text" 
+      :placeholder="placeholder" 
+      class="w-full h-12 pl-12 pr-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-4 focus:ring-primary/5 transition-all text-xs font-medium"
     />
   </div>
 </template>

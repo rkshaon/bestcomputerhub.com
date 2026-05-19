@@ -1,57 +1,61 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
 import { 
   LayoutDashboard, 
-  Package, 
-  Layers, 
-  Tag, 
-  ShoppingCart, 
+  ShoppingBag, 
   Users, 
+  Layers, 
+  Boxes, 
+  FileText, 
+  Award, 
   BarChart3, 
+  ShieldAlert, 
   Bell, 
   Settings, 
-  LogOut, 
-  ChevronLeft, 
+  Shield,
   Menu,
-  ShieldCheck,
-  ShieldAlert,
-  Search,
-  User as UserIcon,
-  Moon,
+  X,
   Sun,
+  Moon,
   Monitor,
-  Boxes
+  ChevronDown,
+  LogOut,
+  User as UserIcon,
+  Search
 } from 'lucide-vue-next';
-import { useAuthStore } from '@/stores/auth';
-import { useUIStore } from '@/stores/ui';
-import { cn } from '@/utils';
-import { markRaw } from 'vue';
+import { useUIStore } from '~/stores/ui';
+import { cn } from '~/utils';
 
-const authStore = useAuthStore();
 const uiStore = useUIStore();
-const isSidebarOpen = ref(true);
+const route = useRoute();
+
 const isMobileMenuOpen = ref(false);
 const isThemeMenuOpen = ref(false);
+const isProfileOpen = ref(false);
 
-if (process.client) {
-  // Close theme menu on click outside
-  window.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.theme-dropdown')) {
-      isThemeMenuOpen.value = false;
-    }
-  });
-}
+const iconsMap: Record<string, any> = {
+  LayoutDashboard,
+  ShoppingBag,
+  Users,
+  Layers,
+  Boxes,
+  FileText,
+  Award,
+  BarChart3,
+  ShieldAlert,
+  Bell,
+  Settings,
+  Shield
+};
 
 const navigation = [
   { name: 'Dashboard', iconKey: 'LayoutDashboard', href: '/admin' },
-  { name: 'Products', iconKey: 'Package', href: '/admin/products' },
+  { name: 'Products', iconKey: 'ShoppingBag', href: '/admin/products' },
+  { name: 'Orders', iconKey: 'FileText', href: '/admin/orders' },
   { name: 'Categories', iconKey: 'Layers', href: '/admin/categories' },
-  { name: 'Brands', iconKey: 'Tag', href: '/admin/brands' },
   { name: 'Inventory', iconKey: 'Boxes', href: '/admin/inventory' },
-  { name: 'Orders', iconKey: 'ShoppingCart', href: '/admin/orders' },
   { name: 'Customers', iconKey: 'Users', href: '/admin/customers' },
-  { name: 'Staff', iconKey: 'ShieldCheck', href: '/admin/staff' },
+  { name: 'Staff', iconKey: 'Award', href: '/admin/staff' },
+  { name: 'Brands', iconKey: 'Shield', href: '/admin/brands' },
   { name: 'Analytics', iconKey: 'BarChart3', href: '/admin/analytics' },
 ];
 
@@ -61,276 +65,318 @@ const secondaryNavigation = [
   { name: 'Settings', iconKey: 'Settings', href: '/admin/settings' },
 ];
 
-const iconMap = {
-  LayoutDashboard,
-  Package,
-  Layers,
-  Tag,
-  Boxes,
-  ShoppingCart,
-  Users,
-  ShieldCheck,
-  ShieldAlert,
-  BarChart3,
-  Bell,
-  Settings
-};
-
-const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value;
-};
-
-const handleLogout = () => {
-  authStore.logout();
-  navigateTo('/login');
-};
-
-const breadcrumbs = computed(() => {
-  const route = useRoute();
-  const pathParts = route.path.split('/').filter(p => p !== '');
-  return pathParts.map((part, index) => ({
-    name: isNaN(Number(part.charAt(0))) ? part.charAt(0).toUpperCase() + part.slice(1) : part,
-    href: '/' + pathParts.slice(0, index + 1).join('/'),
-    current: index === pathParts.length - 1
-  }));
-});
+// Click outside helper to shut down menus
+if (process.client) {
+  window.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.theme-dropdown')) {
+      isThemeMenuOpen.value = false;
+    }
+    if (!target.closest('.profile-dropdown')) {
+      isProfileOpen.value = false;
+    }
+  });
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#F8FAFC] dark:bg-[#020617] text-slate-900 dark:text-slate-100 font-sans">
-    <!-- Sidebar for Desktop -->
+  <div class="min-h-screen flex bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 font-sans">
+    
+    <!-- Sidebar - Desktop view -->
     <aside 
       :class="cn(
-        'fixed top-0 left-0 z-40 h-screen transition-all duration-300 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950',
-        isSidebarOpen ? 'w-64' : 'w-20'
+        'hidden lg:flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shrink-0 transition-all duration-300',
+        uiStore.isSidebarOpen ? 'w-64' : 'w-20'
       )"
     >
-      <div class="flex flex-col h-full">
-        <!-- Logo Area -->
-        <div class="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800 overflow-hidden">
-          <NuxtLink to="/admin" class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-              <ShieldCheck class="w-5 h-5 text-white" />
-            </div>
-            <span v-if="isSidebarOpen" class="font-display font-bold text-lg tracking-tight whitespace-nowrap">
-              Admin<span class="text-primary">Core</span>
-            </span>
-          </NuxtLink>
+      <!-- Logo Branding -->
+      <div class="h-16 flex items-center px-6 border-b border-slate-200/50 dark:border-slate-800 gap-3">
+        <div class="w-8 h-8 rounded-xl bg-rose-600 flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/20 text-white">
+          <Shield class="w-4 h-4" />
+        </div>
+        <span 
+          v-if="uiStore.isSidebarOpen"
+          class="text-sm font-display font-bold font-black tracking-tight bg-gradient-to-r from-rose-600 to-indigo-600 bg-clip-text text-transparent animate-in fade-in"
+        >
+          TechCore Admin
+        </span>
+      </div>
+
+      <!-- Main Navigation -->
+      <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 scrollbar-thin">
+        <NuxtLink 
+          v-for="item in navigation" 
+          :key="item.name" 
+          :to="item.href"
+          :class="cn(
+            'flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all font-display text-[11px] font-black uppercase tracking-wider',
+            route.path === item.href
+              ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/10'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-slate-50 hover:bg-slate-100 dark:hover:bg-slate-900'
+          )"
+        >
+          <component :is="iconsMap[item.iconKey]" class="w-4 h-4 shrink-0" />
+          <span v-if="uiStore.isSidebarOpen" class="animate-in fade-in">{{ item.name }}</span>
+        </NuxtLink>
+
+        <!-- Spacer -->
+        <div class="my-4 border-t border-slate-100 dark:border-slate-800/60 mx-2"></div>
+        <div v-if="uiStore.isSidebarOpen" class="px-3 pb-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+          Systems & Settings
         </div>
 
-        <!-- Navigation -->
-        <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
+        <NuxtLink 
+          v-for="item in secondaryNavigation" 
+          :key="item.name" 
+          :to="item.href"
+          :class="cn(
+            'flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all font-display text-[11px] font-black uppercase tracking-wider',
+            route.path.startsWith(item.href)
+              ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 shadow-md shadow-slate-900/10'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-slate-50 hover:bg-slate-100 dark:hover:bg-slate-900'
+          )"
+        >
+          <component :is="iconsMap[item.iconKey]" class="w-4 h-4 shrink-0" />
+          <span v-if="uiStore.isSidebarOpen" class="animate-in fade-in">{{ item.name }}</span>
+        </NuxtLink>
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="p-4 border-t border-slate-100 dark:border-slate-800/60">
+        <NuxtLink to="/" class="flex items-center gap-3 p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 rounded-xl transition-all">
+          <LogOut class="w-4 h-4 shrink-0" />
+          <span v-if="uiStore.isSidebarOpen" class="text-xs font-bold uppercase tracking-wider font-display">Back to Web</span>
+        </NuxtLink>
+      </div>
+    </aside>
+
+    <!-- Mobile Drawer Sidebar (Sliding Drawer) -->
+    <div 
+      v-if="isMobileMenuOpen" 
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden flex"
+      @click="isMobileMenuOpen = false"
+    >
+      <div 
+        class="w-64 bg-white dark:bg-slate-950 h-full flex flex-col p-4 animate-in slide-in-from-left duration-300"
+        @click.stop
+      >
+        <div class="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-900">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-rose-600 flex items-center justify-center text-white">
+              <Shield class="w-4 h-4" />
+            </div>
+            <span class="text-xs font-display font-black tracking-widest uppercase">TechCore</span>
+          </div>
+          <button @click="isMobileMenuOpen = false" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl">
+            <X class="w-5 h-5 text-slate-500" />
+          </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-6 space-y-1">
           <NuxtLink 
             v-for="item in navigation" 
-            :key="item.name"
+            :key="item.name" 
             :to="item.href"
+            @click="isMobileMenuOpen = false"
             :class="cn(
-              'group flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm',
-              $route.path === item.href 
-                ? 'bg-primary/10 text-primary' 
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-100'
+              'flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all font-display text-[10px] font-bold uppercase tracking-widest',
+              route.path === item.href
+                ? 'bg-rose-500 text-white'
+                : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
             )"
           >
-            <component :is="iconMap[item.iconKey as keyof typeof iconMap]" :class="cn('w-5 h-5 shrink-0')" />
-            <span v-if="isSidebarOpen" class="whitespace-nowrap">{{ item.name }}</span>
+            <component :is="iconsMap[item.iconKey]" class="w-4 h-4 shrink-0" />
+            <span>{{ item.name }}</span>
           </NuxtLink>
 
-          <div class="pt-6 pb-2">
-            <div v-if="isSidebarOpen" class="px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">System</div>
-            <div v-else class="mx-auto w-4 border-t border-slate-200 dark:border-slate-800 my-4"></div>
-          </div>
+          <!-- Divider -->
+          <div class="my-4 border-t border-slate-100 dark:border-slate-800"></div>
 
           <NuxtLink 
             v-for="item in secondaryNavigation" 
-            :key="item.name"
+            :key="item.name" 
             :to="item.href"
+            @click="isMobileMenuOpen = false"
             :class="cn(
-              'group flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm',
-              $route.path === item.href 
-                ? 'bg-primary/10 text-primary' 
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-100'
+              'flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all font-display text-[10px] font-bold uppercase tracking-widest',
+              route.path.startsWith(item.href)
+                ? 'bg-slate-950 text-white dark:bg-slate-100 dark:text-slate-950'
+                : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
             )"
           >
-            <component :is="iconMap[item.iconKey as keyof typeof iconMap]" :class="cn('w-5 h-5 shrink-0')" />
-            <span v-if="isSidebarOpen" class="whitespace-nowrap">{{ item.name }}</span>
+            <component :is="iconsMap[item.iconKey]" class="w-4 h-4 shrink-0" />
+            <span>{{ item.name }}</span>
           </NuxtLink>
         </nav>
 
-        <!-- Sidebar Footer -->
-        <div class="p-3 border-t border-slate-200 dark:border-slate-800">
-          <button 
-            @click="handleLogout"
-            class="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 transition-all text-sm font-medium"
-          >
-            <LogOut class="w-5 h-5 shrink-0" />
-            <span v-if="isSidebarOpen">Logout</span>
-          </button>
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-900">
+          <NuxtLink to="/" class="flex items-center gap-3 p-3 text-slate-400 rounded-xl">
+            <LogOut class="w-4 h-4" />
+            <span class="text-[10px] font-bold uppercase tracking-widest">Back to Frontpage</span>
+          </NuxtLink>
         </div>
       </div>
+    </div>
 
-      <!-- Toggle Button -->
-      <button 
-        @click="toggleSidebar"
-        class="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-full flex items-center justify-center shadow-md text-slate-500 hover:text-primary transition-all z-50 hidden md:flex"
-      >
-        <ChevronLeft :class="cn('w-4 h-4 transition-transform duration-300', !isSidebarOpen && 'rotate-180')" />
-      </button>
-    </aside>
-
-    <!-- Main Content Area -->
-    <main 
-      :class="cn(
-        'transition-all duration-300 min-h-screen flex flex-col',
-        isSidebarOpen ? 'md:ml-64' : 'md:ml-20'
-      )"
-    >
-      <!-- Header -->
-      <header class="h-16 sticky top-0 z-30 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <!-- Mobile Menu Toggle -->
-          <button @click="isMobileMenuOpen = true" class="md:hidden p-2 text-slate-500">
-            <Menu class="w-6 h-6" />
+    <!-- Main Right Content Wrapper -->
+    <div class="flex-1 flex flex-col min-w-0">
+      
+      <!-- Top Navbar Header -->
+      <header class="h-16 border-b border-slate-200/50 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
+        
+        <!-- Sidebar collapse toggle trigger / Mobile burger menu trigger -->
+        <div class="flex items-center gap-3">
+          <button 
+            @click="isMobileMenuOpen = true"
+            class="p-2 lg:hidden hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl transition-colors cursor-pointer text-slate-500"
+          >
+            <Menu class="w-5 h-5" />
+          </button>
+          
+          <button 
+            @click="uiStore.toggleSidebar()"
+            class="hidden lg:flex p-2 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl transition-colors cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          >
+            <Menu class="w-5 h-5" />
           </button>
 
-          <!-- Search Bar (Placeholder) -->
-          <div class="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-1.5 w-64 lg:w-96">
-            <Search class="w-4 h-4 text-slate-400" />
-            <input type="text" placeholder="Search operations..." class="bg-transparent border-none outline-none text-xs w-full focus:ring-0" />
-            <div class="text-[10px] font-bold text-slate-400 px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border dark:border-slate-700">⌘K</div>
+          <div class="hidden md:flex relative max-w-xs">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Omnipresent query finder..." 
+              class="h-9 w-60 pl-9 pr-4 bg-slate-50 dark:bg-slate-900 text-xs rounded-xl outline-none border border-transparent focus:border-slate-200 dark:focus:border-slate-800 focus:bg-white dark:focus:bg-slate-950 font-medium placeholder:text-slate-400 transition-all duration-200"
+            />
           </div>
         </div>
 
+        <!-- Header Controls (Theme Toggle dropdown, user profiles, alert hub) -->
         <div class="flex items-center gap-3">
+          
           <!-- Theme Toggle Dropdown -->
           <div class="relative theme-dropdown">
             <button 
               @click="isThemeMenuOpen = !isThemeMenuOpen"
-              class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl transition-colors flex items-center justify-center h-9 w-9"
+              class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl transition-colors flex items-center justify-center h-9 w-9 cursor-pointer"
             >
-              <Sun v-if="uiStore.themeMode === 'light'" class="w-5 h-5" />
-              <Moon v-else-if="uiStore.themeMode === 'dark'" class="w-5 h-5" />
-              <Monitor v-else class="w-5 h-5" />
+              <Sun v-if="uiStore.themeMode === 'light'" class="w-4.5 h-4.5 text-amber-500" />
+              <Moon v-else-if="uiStore.themeMode === 'dark'" class="w-4.5 h-4.5 text-indigo-400" />
+              <Monitor v-else class="w-4.5 h-4.5 text-slate-500 dark:text-slate-400" />
             </button>
 
             <transition
-              enter-active-class="transition duration-200 ease-out"
-              enter-from-class="transform scale-95 opacity-0"
+              enter-active-class="transition duration-100 ease-out"
+              enter-from-class="transform scale-95 opacity-0 m-1"
               enter-to-class="transform scale-100 opacity-100"
               leave-active-class="transition duration-75 ease-in"
               leave-from-class="transform scale-100 opacity-100"
               leave-to-class="transform scale-95 opacity-0"
             >
-              <div v-if="isThemeMenuOpen" class="absolute top-full right-0 mt-2 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50">
+              <div 
+                v-if="isThemeMenuOpen" 
+                class="absolute top-full right-0 mt-2 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-50 animate-in fade-in"
+              >
+                <div class="px-3.5 py-2 text-[8px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-50 dark:border-slate-800/80 mb-1">
+                  Choose App Theme
+                </div>
                 <button 
                   v-for="mode in ['light', 'dark', 'system'] as const" 
                   :key="mode"
                   @click="uiStore.setTheme(mode); isThemeMenuOpen = false"
                   :class="cn(
-                    'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors',
-                    uiStore.themeMode === mode ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
+                    'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer',
+                    uiStore.themeMode === mode 
+                      ? 'bg-rose-500/10 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400' 
+                      : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-slate-100'
                   )"
                 >
-                  <Sun v-if="mode === 'light'" class="w-4 h-4" />
-                  <Moon v-else-if="mode === 'dark'" class="w-4 h-4" />
-                  <Monitor v-else class="w-4 h-4" />
-                  <span>{{ mode }}</span>
+                  <Sun v-if="mode === 'light'" class="w-3.5 h-3.5" />
+                  <Moon v-else-if="mode === 'dark'" class="w-3.5 h-3.5" />
+                  <Monitor v-else class="w-3.5 h-3.5" />
+                  <span class="capitalize">{{ mode }}</span>
                 </button>
               </div>
             </transition>
           </div>
 
-          <!-- User Profile -->
-          <div class="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
-            <div class="text-right hidden lg:block">
-              <p class="text-xs font-bold leading-none">{{ authStore.user?.name || 'Admin User' }}</p>
-              <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">Super Admin</p>
-            </div>
-            <button class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden">
-              <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" class="w-full h-full object-cover" />
-              <UserIcon v-else class="w-5 h-5 text-slate-400" />
+          <!-- Notification Hub Bubble -->
+          <NuxtLink to="/admin/notifications">
+            <button class="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl relative transition-all duration-200 btn h-9 w-9 flex items-center justify-center">
+              <Bell class="w-4.5 h-4.5" />
+              <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-950"></span>
             </button>
+          </NuxtLink>
+
+          <!-- Divider -->
+          <div class="h-6 w-px bg-slate-200 dark:bg-slate-800"></div>
+
+          <!-- User Profile Dropdown -->
+          <div class="relative profile-dropdown">
+            <button 
+              @click="isProfileOpen = !isProfileOpen"
+              class="flex items-center gap-2 p-1 pl-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors cursor-pointer"
+            >
+              <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-rose-500 to-indigo-600 flex items-center justify-center text-[10px] font-black text-white shrink-0 uppercase">
+                AD
+              </div>
+              <span class="hidden md:inline text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest leading-none">Admin</span>
+              <ChevronDown class="w-3 h-3 text-slate-400 shrink-0" />
+            </button>
+
+            <!-- Dropdown list -->
+            <transition
+              enter-active-class="transition duration-100 ease-out"
+              enter-from-class="transform scale-95 opacity-0 m-1"
+              enter-to-class="transform scale-100 opacity-100"
+              leave-active-class="transition duration-75 ease-in"
+              leave-from-class="transform scale-100 opacity-100"
+              leave-to-class="transform scale-95 opacity-0"
+            >
+              <div 
+                v-if="isProfileOpen" 
+                class="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50 text-left animate-in fade-in"
+              >
+                <div class="p-3 border-b border-slate-50 dark:border-slate-800/80 mb-2">
+                  <p class="text-xs font-black uppercase text-slate-900 dark:text-white">RK Shaon</p>
+                  <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">rkshaon.ist@gmail.com</p>
+                </div>
+                <NuxtLink 
+                  to="/admin/settings" 
+                  @click="isProfileOpen = false"
+                  class="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors uppercase tracking-wider"
+                >
+                  <Settings class="w-4 h-4 text-slate-400" />
+                  Settings
+                </NuxtLink>
+                <NuxtLink 
+                  to="/admin/security" 
+                  @click="isProfileOpen = false"
+                  class="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors uppercase tracking-wider"
+                >
+                  <Shield class="w-4 h-4 text-slate-400" />
+                  Security Console
+                </NuxtLink>
+                <div class="border-t border-slate-50 dark:border-slate-800 my-1.5"></div>
+                <NuxtLink 
+                  to="/" 
+                  @click="isProfileOpen = false"
+                  class="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition-colors uppercase tracking-wider"
+                >
+                  <LogOut class="w-4 h-4" />
+                  Logout
+                </NuxtLink>
+              </div>
+            </transition>
           </div>
+
         </div>
       </header>
 
-      <!-- Content -->
-      <div class="flex-1 p-6 lg:p-8">
-        <!-- Breadcrumbs -->
-        <nav class="flex mb-6" aria-label="Breadcrumb">
-          <ol class="flex items-center space-x-2 text-xs font-medium">
-            <li>
-              <NuxtLink to="/admin" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">Admin</NuxtLink>
-            </li>
-            <li v-for="crumb in breadcrumbs" :key="crumb.href" class="flex items-center">
-              <ChevronLeft class="w-3 h-3 text-slate-300 dark:text-slate-700 rotate-180 flex-shrink-0" />
-              <NuxtLink 
-                :to="crumb.href" 
-                :class="cn(
-                  'ml-2',
-                  crumb.current ? 'text-primary font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                )"
-                :aria-current="crumb.current ? 'page' : undefined"
-              >
-                {{ crumb.name }}
-              </NuxtLink>
-            </li>
-          </ol>
-        </nav>
-
+      <!-- Main Responsive Panel View -->
+      <main class="flex-1 overflow-y-auto p-6 md:p-8 max-w-[1600px] w-full mx-auto">
         <slot />
-      </div>
-    </main>
+      </main>
 
-    <!-- Mobile Sidebar Backdrop -->
-    <div v-if="isMobileMenuOpen" class="fixed inset-0 z-50 md:hidden overflow-hidden">
-      <div 
-        class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-        @click="isMobileMenuOpen = false"
-      ></div>
-      <div class="absolute inset-y-0 left-0 w-72 bg-white dark:bg-slate-950 shadow-2xl animate-in slide-in-from-left duration-300">
-        <!-- Re-use sidebar content for mobile -->
-        <div class="flex flex-col h-full">
-          <div class="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800">
-            <span class="font-display font-bold text-lg tracking-tight">Admin<span class="text-primary">Core</span></span>
-            <button @click="isMobileMenuOpen = false" class="ml-auto p-2 text-slate-500">
-              <ChevronLeft class="w-6 h-6" />
-            </button>
-          </div>
-          <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-            <NuxtLink 
-              v-for="item in navigation" 
-              :key="item.name"
-              :to="item.href"
-              @click="isMobileMenuOpen = false"
-              :class="cn(
-                'flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-medium text-sm',
-                $route.path === item.href 
-                  ? 'bg-primary/10 text-primary' 
-                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900'
-              )"
-            >
-              <component :is="iconMap[item.iconKey as keyof typeof iconMap]" class="w-5 h-5" />
-              {{ item.name }}
-            </NuxtLink>
-          </nav>
-        </div>
-      </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2);
-  border-radius: 10px;
-}
-.custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
-}
-</style>

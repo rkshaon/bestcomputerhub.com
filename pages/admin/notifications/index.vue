@@ -1,25 +1,16 @@
 <script setup lang="ts">
 import { 
   Bell, 
-  ShieldAlert, 
-  Info, 
-  CheckCircle2, 
+  Mail, 
+  MailOpen, 
   Trash2, 
-  MoreVertical, 
-  Package, 
-  User, 
-  CreditCard, 
-  Zap,
-  Filter,
-  Search,
-  Settings,
-  MailOpen,
-  Mail,
-  MoreHorizontal,
-  Clock,
-  ArrowRight
+  Check, 
+  RefreshCcw, 
+  BellOff, 
+  ShieldAlert, 
+  Clock 
 } from 'lucide-vue-next';
-import { cn } from '@/utils';
+import { cn } from '~/utils';
 
 definePageMeta({
   layout: 'admin'
@@ -27,310 +18,201 @@ definePageMeta({
 
 interface Notification {
   id: string;
-  type: 'order' | 'system' | 'security' | 'inventory';
-  priority: 'low' | 'medium' | 'high' | 'critical';
   title: string;
   message: string;
-  timestamp: string;
   isRead: boolean;
-  actionUrl?: string;
-  user?: {
-    name: string;
-    avatar?: string;
-  };
+  severity: 'low' | 'medium' | 'high';
+  timestamp: string;
 }
 
 const notifications = ref<Notification[]>([
   {
-    id: '1',
-    type: 'security',
-    priority: 'critical',
-    title: 'Unauthorized Access Attempt',
-    message: 'Multiple failed login attempts detected from IP 192.168.1.105 targeting the super-admin console.',
-    timestamp: '2 mins ago',
+    id: 'NOT-101',
+    title: 'High Resource CPU Usage Detected',
+    message: 'Hypervisor-08 reports aggregate core load exceeding 94%. Check resource scaling parameters.',
     isRead: false,
-    actionUrl: '/admin/security/logs'
+    severity: 'high',
+    timestamp: '2 mins ago'
   },
   {
-    id: '2',
-    type: 'inventory',
-    priority: 'high',
-    title: 'Critical Stock Level: Core Series X1',
-    message: 'Inventory for Core Series X1 has fallen below the 5% threshold in the EMEA region.',
-    timestamp: '15 mins ago',
+    id: 'NOT-102',
+    title: 'WAF Rule Modified Successfully',
+    message: 'Port forwarding configurations on rule core-ingress-02 updated by network_admin.',
     isRead: false,
-    actionUrl: '/admin/inventory'
+    severity: 'low',
+    timestamp: '1 hour ago'
   },
   {
-    id: '3',
-    type: 'order',
-    priority: 'medium',
-    title: 'High-Value Order Received',
-    message: 'New order #ORD-9942 ($12,400) placed by TechCorp Solutions.',
-    timestamp: '1 hour ago',
+    id: 'NOT-103',
+    title: 'SSH Key Rolling Cycle Failed',
+    message: 'Technician host cluster-07 reports connection timeout during scheduled ECDSA rotation.',
     isRead: true,
-    user: { name: 'Sarah Chen' }
+    severity: 'medium',
+    timestamp: '3 hours ago'
   },
   {
-    id: '4',
-    type: 'system',
-    priority: 'low',
-    title: 'System Optimization Complete',
-    message: 'Global database synchronization completed successfully. Latency lowered by 42ms.',
-    timestamp: '3 hours ago',
-    isRead: true
-  },
-  {
-    id: '5',
-    type: 'order',
-    priority: 'medium',
-    title: 'Shipment Delayed: Route Blockage',
-    message: 'Freight shipment for Batch B-42 is delayed due to weather conditions in the Pacific corridor.',
-    timestamp: '5 hours ago',
-    isRead: false,
-    actionUrl: '/admin/orders/B-42'
+    id: 'NOT-104',
+    title: 'New Account Elevation Proposal',
+    message: 'Account coordinator r_smith requested sudo elevation on billing-master Node.',
+    isRead: true,
+    severity: 'high',
+    timestamp: '1 day ago'
   }
 ]);
 
-const filter = ref('all');
-const searchQuery = ref('');
-
-const filteredNotifications = computed(() => {
-  return notifications.value.filter(n => {
-    const matchesFilter = filter.value === 'all' || 
-                          (filter.value === 'unread' && !n.isRead) ||
-                          (filter.value === n.type);
-    const matchesSearch = n.title.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                         n.message.toLowerCase().includes(searchQuery.value.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
-});
-
-const getPriorityColor = (priority: string) => {
-  switch (priority) {
-    case 'critical': return 'text-rose-600 bg-rose-50 dark:bg-rose-950/30';
-    case 'high': return 'text-amber-600 bg-amber-50 dark:bg-amber-950/30';
-    case 'medium': return 'text-blue-600 bg-blue-50 dark:bg-blue-950/30';
-    default: return 'text-slate-500 bg-slate-50 dark:bg-slate-900/50';
-  }
-};
-
-const getIcon = (type: string) => {
-  switch (type) {
-    case 'security': return ShieldAlert;
-    case 'inventory': return Package;
-    case 'order': return CreditCard;
-    case 'system': return Zap;
-    default: return Bell;
-  }
-};
-
-const markAllAsRead = () => {
-  notifications.value.forEach(n => n.isRead = true);
+const markAsRead = (id: string) => {
+  const item = notifications.value.find(n => n.id === id);
+  if (item) item.isRead = true;
 };
 
 const deleteNotification = (id: string) => {
   notifications.value = notifications.value.filter(n => n.id !== id);
 };
 
-const toggleReadStatus = (notification: Notification) => {
-  notification.isRead = !notification.isRead;
+const markAllRead = () => {
+  notifications.value.forEach(n => n.isRead = true);
+};
+
+const deleteRead = () => {
+  notifications.value = notifications.value.filter(n => !n.isRead);
 };
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700">
+  <div class="space-y-8 animate-in fade-in duration-700">
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div>
-        <div class="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-[0.2em] mb-2">
-          <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-          Central Communications Hub
+        <div class="flex items-center gap-2 text-rose-500 font-bold text-[10px] uppercase tracking-[0.2em] mb-2 font-display">
+          <Bell class="w-3.5 h-3.5 animate-bounce" />
+          Real-time Event Triggers
         </div>
-        <h1 class="text-3xl font-display font-extrabold tracking-tight">Activity Feed</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">Monitor real-time system alerts, security incidents, and operational logs.</p>
+        <h1 class="text-3xl font-display font-extrabold tracking-tight">Notification Center</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">Configure active system webhook relays and monitor defensive network triggers.</p>
       </div>
 
-      <div class="flex items-center gap-3">
-        <UiButton variant="outline" class="rounded-2xl h-11 px-6 gap-2 border-slate-200 dark:border-slate-800 font-bold text-[10px] uppercase tracking-widest" @click="markAllAsRead">
-          <MailOpen class="w-4 h-4" /> Mark all read
+      <div class="flex items-center gap-2">
+        <UiButton 
+          v-if="notifications.some(n => !n.isRead)"
+          variant="outline" 
+          class="h-10 px-5 gap-2"
+          @click="markAllRead"
+        >
+          <Check class="w-4 h-4" /> Mark All Read
         </UiButton>
-        <UiButton variant="outline" class="rounded-2xl h-11 px-4 border-slate-200 dark:border-slate-800">
-          <Settings class="w-4 h-4" />
+        <UiButton 
+          v-if="notifications.some(n => n.isRead)"
+          variant="outline" 
+          class="h-10 px-5 gap-2 border-slate-200/50 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 text-rose-500"
+          @click="deleteRead"
+        >
+          <Trash2 class="w-4 h-4" /> Purge Read Events
         </UiButton>
       </div>
     </div>
 
-    <!-- Stats Row -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-      <div v-for="stat in [
-        { label: 'Unread Alerts', value: notifications.filter(n => !n.isRead).length, color: 'text-primary' },
-        { label: 'Security Threats', value: notifications.filter(n => n.type === 'security').length, color: 'text-rose-500' },
-        { label: 'Operational Tasks', value: notifications.filter(n => n.type === 'inventory').length, color: 'text-amber-500' }
-      ]" :key="stat.label" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-6 shadow-sm overflow-hidden relative group">
-        <div class="absolute -right-2 -bottom-2 w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full scale-0 group-hover:scale-100 transition-transform duration-500"></div>
-        <div class="relative z-10 flex items-center justify-between">
-          <div>
-             <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1">{{ stat.label }}</p>
-             <p :class="cn('text-3xl font-display font-black tracking-tighter', stat.color)">{{ stat.value }}</p>
+    <!-- Main Workspace Container -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Notifications List Feed -->
+      <div class="lg:col-span-8 space-y-4">
+        <div v-if="notifications.length === 0" class="p-16 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2.5rem] bg-white dark:bg-slate-950/30">
+          <div class="w-16 h-16 rounded-3xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center mx-auto text-slate-400 mb-6">
+            <BellOff class="w-8 h-8" />
           </div>
-          <div :class="cn('w-12 h-12 rounded-2xl flex items-center justify-center opacity-10', stat.color.replace('text-', 'bg-'))">
-            <Bell class="w-6 h-6" />
-          </div>
+          <h3 class="text-sm font-black uppercase tracking-[0.2em]">Absolute Serenity</h3>
+          <p class="text-xs text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">No pending system alarms or warning logs exist. Your defensive parameter looks perfectly nominal.</p>
         </div>
-      </div>
-    </div>
 
-    <!-- Main Content Container -->
-    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
-      <!-- Search & Filters -->
-      <div class="p-4 md:p-6 border-b border-slate-50 dark:border-slate-900 bg-slate-50/20 dark:bg-slate-900/10 flex flex-col lg:flex-row gap-4">
-        <div class="flex-1 relative group">
-          <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-          <input 
-            v-model="searchQuery"
-            type="text" 
-            placeholder="Search activity by title, message, or SKU..." 
-            class="w-full h-12 pl-12 pr-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-4 focus:ring-primary/5 transition-all text-xs font-medium"
-          />
-        </div>
-        
-        <div class="flex items-center gap-3">
-          <select 
-            v-model="filter"
-            class="h-12 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-4 focus:ring-primary/5 text-[10px] font-bold uppercase tracking-widest cursor-pointer appearance-none shadow-sm min-w-[160px]"
-          >
-            <option value="all">All Events</option>
-            <option value="unread">Unread Only</option>
-            <option value="security">Security</option>
-            <option value="inventory">Logistics</option>
-            <option value="order">Transactions</option>
-          </select>
-          
-          <UiButton variant="outline" class="h-12 w-12 rounded-xl p-0 shadow-sm border-slate-200 dark:border-slate-800">
-            <Filter class="w-4 h-4" />
-          </UiButton>
-        </div>
-      </div>
-
-      <!-- Feed List -->
-      <div class="divide-y divide-slate-50 dark:divide-slate-900">
         <div 
-          v-for="n in filteredNotifications" 
-          :key="n.id" 
+          v-for="not in notifications" 
+          :key="not.id"
           :class="cn(
-            'group p-6 md:px-8 transition-all duration-300 flex flex-col md:flex-row gap-6 relative',
-            !n.isRead ? 'bg-primary/5' : 'hover:bg-slate-50/50 dark:hover:bg-slate-900/50'
+            'p-6 rounded-[2rem] border transition-all duration-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-950',
+            not.isRead 
+              ? 'opacity-70 border-slate-200/50 dark:border-slate-800/80 grayscale-[30%]' 
+              : 'border-l-4 shadow-sm border-slate-200 dark:border-slate-800',
+            !not.isRead && not.severity === 'high' && 'border-l-rose-500 shadow-rose-500/5',
+            !not.isRead && not.severity === 'medium' && 'border-l-amber-500',
+            !not.isRead && not.severity === 'low' && 'border-l-emerald-500'
           )"
         >
-          <!-- Unread Dot Indicator -->
-          <div v-if="!n.isRead" class="absolute left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-
-          <!-- Type Icon -->
-          <div class="shrink-0 flex flex-col items-center">
+          <div class="flex items-start gap-4">
             <div :class="cn(
-              'w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500', 
-              getPriorityColor(n.priority)
+              'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5',
+              not.severity === 'high' ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-500' :
+              not.severity === 'medium' ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-500' :
+              'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500'
             )">
-              <component :is="getIcon(n.type)" class="w-7 h-7" />
+              <component :is="not.severity === 'high' ? ShieldAlert : Bell" class="w-5 h-5" />
             </div>
-            <div class="mt-3 flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
-              <Clock class="w-3 h-3" /> {{ n.timestamp }}
+            
+            <div class="space-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="text-sm font-black text-slate-950 dark:text-slate-50 leading-none shadow-none border-none">{{ not.title }}</h3>
+                <span :class="cn(
+                  'px-1.5 py-0.5 rounded text-[7.5px] font-black uppercase tracking-widest leading-none border',
+                  not.severity === 'high' ? 'border-rose-200 bg-rose-50 dark:border-rose-900/50 text-rose-500' :
+                  not.severity === 'medium' ? 'border-amber-200 bg-amber-50 dark:border-amber-900/50 text-amber-500' :
+                  'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 text-emerald-500'
+                )">
+                  {{ not.severity }}
+                </span>
+                <span v-if="!not.isRead" class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+              </div>
+              <p class="text-xs text-slate-500 leading-relaxed pr-4">{{ not.message }}</p>
+              <div class="flex items-center gap-3 text-[10px] font-semibold text-slate-400">
+                <code class="font-mono bg-slate-50 dark:bg-slate-900/50 px-1 rounded">{{ not.id }}</code>
+                <span class="flex items-center gap-1"><Clock class="w-3 h-3" /> {{ not.timestamp }}</span>
+              </div>
             </div>
           </div>
 
-          <!-- Content Body -->
-          <div class="flex-1 space-y-3">
-            <div class="flex items-start justify-between">
-              <div>
-                <div class="flex items-center gap-3 mb-1">
-                  <span :class="cn('px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest', getPriorityColor(n.priority))">
-                    {{ n.priority }}
-                  </span>
-                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{{ n.type }} report</span>
-                </div>
-                <h3 class="text-sm md:text-base font-display font-bold tracking-tight text-slate-900 dark:text-white">{{ n.title }}</h3>
-              </div>
-              
-              <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  @click="toggleReadStatus(n)" 
-                  class="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg bg-slate-100 dark:bg-slate-800"
-                >
-                  <component :is="n.isRead ? Mail : MailOpen" class="w-4 h-4" />
-                </button>
-                <button 
-                   @click="deleteNotification(n.id)" 
-                   class="p-2 text-slate-400 hover:text-rose-500 transition-colors rounded-lg bg-slate-100 dark:bg-slate-800"
-                >
-                  <Trash2 class="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
-              {{ n.message }}
-            </p>
-
-            <div v-if="n.user || n.actionUrl" class="flex items-center gap-4 pt-2">
-              <div v-if="n.user" class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-800">
-                <div class="w-5 h-5 rounded-full overflow-hidden bg-slate-200">
-                  <img :src="`https://api.dicebear.com/7.x/initials/svg?seed=${n.user.name}`" />
-                </div>
-                <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">{{ n.user.name }}</span>
-              </div>
-              
-              <NuxtLink 
-                v-if="n.actionUrl" 
-                :to="n.actionUrl" 
-                class="flex items-center gap-1.5 text-[10px] font-black text-primary uppercase tracking-widest hover:underline"
-              >
-                Resolve Incident <ArrowRight class="w-3 h-3" />
-              </NuxtLink>
-            </div>
+          <div class="flex items-center gap-2 shrinks-0 md:pl-4">
+            <button 
+              v-if="!not.isRead"
+              @click="markAsRead(not.id)"
+              class="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/5 dark:hover:bg-emerald-500/10 rounded-xl transition-all h-9 w-9 flex items-center justify-center border-none cursor-pointer bg-slate-50 dark:bg-slate-900/50"
+            >
+              <MailOpen class="w-4 h-4" />
+            </button>
+            <button 
+              @click="deleteNotification(not.id)"
+              class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 rounded-xl transition-all h-9 w-9 flex items-center justify-center border-none cursor-pointer bg-slate-50 dark:bg-slate-900/50"
+            >
+              <Trash2 class="w-4 h-4" />
+            </button>
           </div>
-
-          <!-- Vertical More Action -->
-          <button class="shrink-0 p-2 text-slate-300 hover:text-slate-600 dark:hover:text-slate-400 md:self-start">
-            <MoreVertical class="w-5 h-5" />
-          </button>
-        </div>
-
-        <!-- Empty State -->
-        <div v-if="filteredNotifications.length === 0" class="py-20 flex flex-col items-center text-center px-6">
-          <div class="w-20 h-20 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-800 mb-6">
-            <CheckCircle2 class="w-12 h-12" />
-          </div>
-          <h3 class="text-xl font-display font-bold text-slate-900 dark:text-white">Zero events found</h3>
-          <p class="text-slate-500 dark:text-slate-400 mt-2 max-w-xs text-sm">Your systems are operating within optimal parameters and no alerts match your current filter.</p>
-          <UiButton @click="filter = 'all'; searchQuery = ''" variant="outline" class="mt-8 rounded-xl font-bold text-[10px] uppercase tracking-widest px-8">Reset Viewport</UiButton>
         </div>
       </div>
 
-      <!-- Footer/Pagination -->
-      <div class="p-6 border-t border-slate-50 dark:border-slate-900 bg-slate-50/20 dark:bg-slate-900/10 flex items-center justify-between">
-        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Showing <span class="text-slate-900 dark:text-white">{{ filteredNotifications.length }}</span> of {{ notifications.length }} registered events
+      <!-- Settings summary panel -->
+      <UiCard class="lg:col-span-4 p-6 h-fit space-y-6 bg-white dark:bg-slate-950">
+        <div>
+          <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-1 leading-none text-slate-950 dark:text-slate-50 border-none shadow-none">Relay Infrastructure Status</h3>
+          <p class="text-[9px] text-slate-400 font-bold uppercase">Configure webhook pathways & notification triggers</p>
         </div>
-        <div class="flex items-center gap-1.5">
-           <UiButton variant="outline" size="sm" class="h-9 rounded-lg font-bold text-[10px] uppercase tracking-widest disabled:opacity-30" disabled>Previous</UiButton>
-           <UiButton variant="outline" size="sm" class="h-9 rounded-lg font-bold text-[10px] uppercase tracking-widest">Next</UiButton>
+
+        <div class="space-y-4">
+          <div v-for="channel in [
+            { name: 'Email Dispatch Channel', status: 'Optimal', active: true },
+            { name: 'Slack Webhook Relayer', status: 'Optimal', active: true },
+            { name: 'Console Log System', status: 'Enforced', active: true }
+          ]" :key="channel.name" class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{ channel.name }}</span>
+            <div class="flex items-center gap-1.5">
+               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+               <span class="text-[9px] font-black uppercase tracking-widest text-emerald-600">{{ channel.status }}</span>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 leading-relaxed italic">
+          "Webhook notifications are sent over encrypted TLS 1.3 pathways to protect network event data structures."
+        </div>
+      </UiCard>
+
     </div>
 
-    <!-- Subscription Card -->
-    <UiCard class="p-8 bg-black text-white rounded-[2.5rem] border-none overflow-hidden relative">
-      <div class="absolute right-0 top-0 w-1/3 h-full bg-primary/20 blur-[100px] pointer-events-none"></div>
-      <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-        <div>
-          <h3 class="text-2xl font-display font-extrabold tracking-tight mb-2">Automated Alerting Protocols</h3>
-          <p class="text-slate-400 text-sm max-w-xl">Configure critical incident webhooks and email routing to ensure your dev-ops team is notified within sub-100ms of any network variance.</p>
-        </div>
-        <UiButton class="bg-white text-black hover:bg-slate-100 rounded-2xl h-14 px-8 font-black text-xs uppercase tracking-widest shrink-0 shadow-2xl">
-          CONFIGURE WEBHOOKS
-        </UiButton>
-      </div>
-    </UiCard>
   </div>
 </template>

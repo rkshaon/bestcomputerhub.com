@@ -1,36 +1,18 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { useUIStore } from '@/stores/ui';
-import { useCookieStore } from '@/stores/cookies';
-const uiStore = useUIStore();
-const cookieStore = useCookieStore();
+import { useUIStore } from '~/stores/ui';
 
-// Handle logic
+const uiStore = useUIStore();
+
+// Initialize theme on client mount
 onMounted(() => {
   uiStore.initTheme();
-  cookieStore.loadFromStorage();
 });
 </script>
 
 <template>
-  <div>
+  <div class="min-h-screen bg-slate-50/30 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 font-sans">
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
-    <LayoutCookieBanner />
-    <LayoutBackToTop />
   </div>
 </template>
-
-<style>
-/* Global transitions */
-.page-enter-active,
-.page-leave-active {
-  transition: all 0.3s ease;
-}
-.page-enter-from,
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
-</style>
