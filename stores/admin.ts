@@ -132,6 +132,11 @@ export const useAdminStore = defineStore('admin', {
     deleteProduct(productId: string) {
       // In a real app, this would call the API
       console.log(`Deleting product ${productId}`);
+    },
+
+    fetchStats() {
+      // In a real app, this would call the API to refresh metrics
+      console.log('Fetching latest system metrics...');
     }
   }
 });
