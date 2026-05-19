@@ -17,10 +17,8 @@ const allCategories = productService.getCategories();
 // Filter for top-level categories
 const categories = computed(() => allCategories.filter(c => !c.parentCategoryId));
 
-// Helper to get products for a subcategory (limited to 4)
-const getSubProducts = (subCategorySlug: string) => {
-  return productService.getProducts({ category: subCategorySlug }).slice(0, 4);
-};
+// Helper to get category by slug
+const getCategoryBySlug = (slug: string) => allCategories.find(c => c.slug === slug);
 
 const isScrolled = ref(false);
 const isThemeMenuOpen = ref(false);
@@ -104,20 +102,24 @@ if (process.client) {
             <!-- Mega Menu Dropdown -->
             <div class="absolute top-full left-1/2 -translate-x-1/2 hidden group-hover:block pt-3 z-50">
               <div class="bg-background/95 backdrop-blur-xl border border-border/50 rounded-[2.5rem] shadow-2xl p-8 w-[680px] grid grid-cols-3 gap-8 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top">
-                <div v-for="sub in cat.subCategories" :key="sub" class="space-y-4">
-                  <NuxtLink :to="`/category/${sub}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
-                    {{ sub.replace(/-/g, ' ') }}
-                  </NuxtLink>
-                  <ul class="space-y-2 border-l border-muted pl-4">
-                    <li v-for="product in getSubProducts(sub)" :key="product.id">
-                      <NuxtLink :to="`/product/${product.slug}`" class="text-xs text-muted-foreground hover:text-primary transition-colors line-clamp-1 block">
-                        {{ product.name }}
-                      </NuxtLink>
-                    </li>
-                    <li v-if="getSubProducts(sub).length === 0">
-                      <span class="text-[10px] text-muted-foreground italic uppercase tracking-tighter">Rolling out soon...</span>
-                    </li>
-                  </ul>
+                <div v-for="subSlug in cat.subCategories" :key="subSlug" class="space-y-4">
+                  <template v-if="getCategoryBySlug(subSlug)">
+                    <NuxtLink :to="`/category/${subSlug}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
+                      {{ getCategoryBySlug(subSlug)?.name }}
+                    </NuxtLink>
+                    <ul class="space-y-2 border-l border-muted pl-4">
+                      <template v-if="getCategoryBySlug(subSlug)?.subCategories?.length">
+                        <li v-for="subSubSlug in getCategoryBySlug(subSlug)?.subCategories" :key="subSubSlug">
+                          <NuxtLink :to="`/category/${subSubSlug}`" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
+                            {{ getCategoryBySlug(subSubSlug)?.name || subSubSlug.replace(/-/g, ' ') }}
+                          </NuxtLink>
+                        </li>
+                      </template>
+                      <li v-else>
+                        <span class="text-[10px] text-muted-foreground italic uppercase tracking-tighter opacity-50">Latest Models</span>
+                      </li>
+                    </ul>
+                  </template>
                 </div>
               </div>
             </div>

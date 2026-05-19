@@ -12,19 +12,76 @@ export const categories: Category[] = [
     id: 'cat-gaming-laptops',
     name: 'Gaming Laptops',
     slug: 'gaming-laptops',
-    parentCategoryId: 'cat-1'
+    parentCategoryId: 'cat-1',
+    subCategories: ['power-series', 'stealth-series', 'esports-edition']
+  },
+  {
+    id: 'cat-power-series',
+    name: 'Power Series',
+    slug: 'power-series',
+    parentCategoryId: 'cat-gaming-laptops'
+  },
+  {
+    id: 'cat-stealth-series',
+    name: 'Stealth Series',
+    slug: 'stealth-series',
+    parentCategoryId: 'cat-gaming-laptops'
+  },
+  {
+    id: 'cat-esports-edition',
+    name: 'eSports Edition',
+    slug: 'esports-edition',
+    parentCategoryId: 'cat-gaming-laptops'
   },
   {
     id: 'cat-ultrabooks',
     name: 'Ultrabooks',
     slug: 'ultrabooks',
-    parentCategoryId: 'cat-1'
+    parentCategoryId: 'cat-1',
+    subCategories: ['thin-and-light', '2-in-1-convertibles', 'executive-pro']
+  },
+  {
+    id: 'cat-thin-and-light',
+    name: 'Thin & Light',
+    slug: 'thin-and-light',
+    parentCategoryId: 'cat-ultrabooks'
+  },
+  {
+    id: 'cat-2-in-1-convertibles',
+    name: '2-in-1 Convertibles',
+    slug: '2-in-1-convertibles',
+    parentCategoryId: 'cat-ultrabooks'
+  },
+  {
+    id: 'cat-executive-pro',
+    name: 'Executive Pro',
+    slug: 'executive-pro',
+    parentCategoryId: 'cat-ultrabooks'
   },
   {
     id: 'cat-workstations',
     name: 'Workstations',
     slug: 'workstations',
-    parentCategoryId: 'cat-1'
+    parentCategoryId: 'cat-1',
+    subCategories: ['ai-development', '3d-rendering', 'scientific-computing']
+  },
+  {
+    id: 'cat-ai-development',
+    name: 'AI Development',
+    slug: 'ai-development',
+    parentCategoryId: 'cat-workstations'
+  },
+  {
+    id: 'cat-3d-rendering',
+    name: '3D Rendering',
+    slug: '3d-rendering',
+    parentCategoryId: 'cat-workstations'
+  },
+  {
+    id: 'cat-scientific-computing',
+    name: 'Scientific Computing',
+    slug: 'scientific-computing',
+    parentCategoryId: 'cat-workstations'
   },
   {
     id: 'cat-2',
@@ -34,11 +91,69 @@ export const categories: Category[] = [
     subCategories: ['gaming-desktops', 'all-in-one', 'mini-pcs']
   },
   {
+    id: 'cat-gaming-desktops',
+    name: 'Gaming Desktops',
+    slug: 'gaming-desktops',
+    parentCategoryId: 'cat-2',
+    subCategories: ['liquid-cooled', 'compact-rigs', 'pro-gaming']
+  },
+  {
+    id: 'cat-liquid-cooled',
+    name: 'Liquid Cooled',
+    slug: 'liquid-cooled',
+    parentCategoryId: 'cat-gaming-desktops'
+  },
+  {
+    id: 'cat-compact-rigs',
+    name: 'Compact Rigs',
+    slug: 'compact-rigs',
+    parentCategoryId: 'cat-gaming-desktops'
+  },
+  {
+    id: 'cat-pro-gaming',
+    name: 'Pro Gaming',
+    slug: 'pro-gaming',
+    parentCategoryId: 'cat-gaming-desktops'
+  },
+  {
     id: 'cat-3',
     name: 'Components',
     slug: 'components',
     description: 'Individual parts for building or upgrading your PC.',
-    subCategories: ['processors', 'graphics-cards', 'motherboards', 'ram', 'storage']
+    subCategories: ['processors', 'graphics-cards', 'motherboards']
+  },
+  {
+    id: 'cat-processors',
+    name: 'Processors',
+    slug: 'processors',
+    parentCategoryId: 'cat-3',
+    subCategories: ['intel-core', 'amd-ryzen', 'threadripper']
+  },
+  {
+    id: 'cat-graphics-cards',
+    name: 'Graphics Cards',
+    slug: 'graphics-cards',
+    parentCategoryId: 'cat-3',
+    subCategories: ['nvidia-rtx', 'amd-radeon', 'workstation-gpus']
+  },
+  {
+    id: 'cat-motherboards',
+    name: 'Motherboards',
+    slug: 'motherboards',
+    parentCategoryId: 'cat-3',
+    subCategories: ['z790-series', 'x670-series', 'itx-boards']
+  },
+  {
+    id: 'cat-all-in-one',
+    name: 'All-In-One',
+    slug: 'all-in-one',
+    parentCategoryId: 'cat-2'
+  },
+  {
+    id: 'cat-mini-pcs',
+    name: 'Mini PCs',
+    slug: 'mini-pcs',
+    parentCategoryId: 'cat-2'
   },
   {
     id: 'cat-4',
@@ -46,6 +161,30 @@ export const categories: Category[] = [
     slug: 'peripherals',
     description: 'Keyboards, mice, and other input devices.',
     subCategories: ['keyboards', 'mice', 'headsets', 'webcams']
+  },
+  {
+    id: 'cat-keyboards',
+    name: 'Keyboards',
+    slug: 'keyboards',
+    parentCategoryId: 'cat-4'
+  },
+  {
+    id: 'cat-mice',
+    name: 'Mice',
+    slug: 'mice',
+    parentCategoryId: 'cat-4'
+  },
+  {
+    id: 'cat-headsets',
+    name: 'Headsets',
+    slug: 'headsets',
+    parentCategoryId: 'cat-4'
+  },
+  {
+    id: 'cat-webcams',
+    name: 'Webcams',
+    slug: 'webcams',
+    parentCategoryId: 'cat-4'
   }
 ];
 
