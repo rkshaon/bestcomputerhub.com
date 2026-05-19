@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import { useUIStore } from '~/stores/ui';
+import { useCartStore } from '~/stores/cart';
+import { useWishlistStore } from '~/stores/wishlist';
+import { useAuthStore } from '~/stores/auth';
 
 const uiStore = useUIStore();
+const cartStore = useCartStore();
+const wishlistStore = useWishlistStore();
+const authStore = useAuthStore();
 
-// Initialize theme on client mount
+// Initialize stores on client mount
 onMounted(() => {
   uiStore.initTheme();
+  cartStore.initCart();
+  wishlistStore.initWishlist();
+  authStore.initAuth();
 });
 </script>
 

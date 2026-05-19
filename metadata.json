@@ -1,6 +1,6 @@
 {
-  "name": "TechCore Enterprise Portal",
-  "description": "Secure access and monitoring portal with advanced threat intelligence, analytics and unified control center.",
+  "name": "TechCore Electronics Store",
+  "description": "TechCore Premium Electronics Store - An interactive, high-performance tech and gadgets e-commerce experience with functional shopping cart, wishlist, user portal, and full admin console.",
   "requestFramePermissions": [
     "camera",
     "geolocation"
