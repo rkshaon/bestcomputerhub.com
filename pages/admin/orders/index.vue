@@ -14,7 +14,8 @@ import {
   RefreshCcw,
   ArrowUpDown,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Package
 } from 'lucide-vue-next';
 import { useAdminStore } from '@/stores/admin';
 import { formatCurrency, cn } from '@/utils';
