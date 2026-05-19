@@ -31,6 +31,17 @@ const authStore = useAuthStore();
 const uiStore = useUIStore();
 const isSidebarOpen = ref(true);
 const isMobileMenuOpen = ref(false);
+const isThemeMenuOpen = ref(false);
+
+if (process.client) {
+  // Close theme menu on click outside
+  window.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.theme-dropdown')) {
+      isThemeMenuOpen.value = false;
+    }
+  });
+}
 
 const navigation = [
   { name: 'Dashboard', iconKey: 'LayoutDashboard', href: '/admin' },
@@ -190,11 +201,43 @@ const breadcrumbs = computed(() => {
         </div>
 
         <div class="flex items-center gap-3">
-          <!-- Theme Toggle -->
-          <button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl transition-colors">
-            <Sun v-if="uiStore.themeMode === 'dark'" class="w-5 h-5" @click="uiStore.setTheme('light')" />
-            <Moon v-else class="w-5 h-5" @click="uiStore.setTheme('dark')" />
-          </button>
+          <!-- Theme Toggle Dropdown -->
+          <div class="relative theme-dropdown">
+            <button 
+              @click="isThemeMenuOpen = !isThemeMenuOpen"
+              class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl transition-colors flex items-center justify-center h-9 w-9"
+            >
+              <Sun v-if="uiStore.themeMode === 'light'" class="w-5 h-5" />
+              <Moon v-else-if="uiStore.themeMode === 'dark'" class="w-5 h-5" />
+              <Monitor v-else class="w-5 h-5" />
+            </button>
+
+            <transition
+              enter-active-class="transition duration-200 ease-out"
+              enter-from-class="transform scale-95 opacity-0"
+              enter-to-class="transform scale-100 opacity-100"
+              leave-active-class="transition duration-75 ease-in"
+              leave-from-class="transform scale-100 opacity-100"
+              leave-to-class="transform scale-95 opacity-0"
+            >
+              <div v-if="isThemeMenuOpen" class="absolute top-full right-0 mt-2 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50">
+                <button 
+                  v-for="mode in ['light', 'dark', 'system'] as const" 
+                  :key="mode"
+                  @click="uiStore.setTheme(mode); isThemeMenuOpen = false"
+                  :class="cn(
+                    'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors',
+                    uiStore.themeMode === mode ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
+                  )"
+                >
+                  <Sun v-if="mode === 'light'" class="w-4 h-4" />
+                  <Moon v-else-if="mode === 'dark'" class="w-4 h-4" />
+                  <Monitor v-else class="w-4 h-4" />
+                  <span>{{ mode }}</span>
+                </button>
+              </div>
+            </transition>
+          </div>
 
           <!-- User Profile -->
           <div class="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
