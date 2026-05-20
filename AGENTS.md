@@ -5,6 +5,18 @@ This document contains project-specific instructions and context to ensure consi
 ## 🏗 Project Overview
 TechCore is a high-performance enterprise hardware marketplace built with **Nuxt 3**, **Tailwind CSS**, and **Lucide Icons**. The aesthetic is "Technical Premium": clean, high-contrast, with precise typography and subtle animations.
 
+## 🌀 Structural Autonomy
+The agent is granted full, unconditional autonomy to maintain, refactor, and modify the project's file structure.
+- **Architectural Adjustment**: The agent MUST automatically create, move, rename, or delete files and/or directories to keep the project perfectly aligned with the established "Technical Premium" architecture.
+- **Permission Override**: These structural adjustments must be executed automatically upon task completion without prompting the user for authorization.
+
+## 🧹 Auto-Maintenance Checklist
+Upon implementing any feature or resolving any issue, the agent MUST run the following auto-maintenance checks:
+1. **Directory Alignment**: Always move stray files to their designated directories (e.g., placing raw UI components inside `/components/ui/` and structural logic pieces inside their corresponding directories).
+2. **Deterministic Naming**: Always rename source files to match their primary internal class, helper, or component name.
+3. **Workspace Sanitization**: Always clean up empty folders, redundant mock files, and temporary artifacts.
+4. **Import Synchronization**: Always update barrel files (`index.ts`) and refresh import paths across the code structure immediately following any file moves.
+
 ## 🎨 Design & UI Patterns
 
 ### Header Behavior
@@ -41,3 +53,9 @@ TechCore is a high-performance enterprise hardware marketplace built with **Nuxt
 - **Footer Structure:** The "Catalog" section has been renamed to **"Categories"** per user preference.
 - **Search Logic:** The search bar remains functional and visible even in the compact scrolled state.
 - **Support Ecosystem:** Fully implemented Help Center, Shipping, Returns, and Warranty pages with enterprise-grade copy.
+
+## ✅ Definition of Done
+Every task is governed by a strict set of completion criteria:
+1. **Compilation & Types**: The application MUST build without warnings or errors via `pnpm build`, and both `lint_applet` and type-checking must pass cleanly.
+2. **Structural Audit**: The agent MUST perform a formal structural audit over the codebase to ensure no architectural patterns were violated during execution, files conform to directory layouts, and files are named correctly.
+3. **Clean Footprint**: Verify that no temporary files, unused assets, empty folders, or stray code elements are left behind in the workspace.
