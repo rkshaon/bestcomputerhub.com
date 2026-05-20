@@ -2,6 +2,7 @@
   "name": "tech-core-enterprise",
   "version": "0.0.0",
   "private": true,
+  "packageManager": "pnpm@10.0.0",
   "type": "module",
   "scripts": {
     "build": "nuxt generate && rm -rf dist && mv .output/public dist",

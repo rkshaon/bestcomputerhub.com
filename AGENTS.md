@@ -19,6 +19,10 @@ TechCore is a high-performance enterprise hardware marketplace built with **Nuxt
 
 ## 🛠 Coding Standards
 
+### Package Management
+- **Exclusive Client**: This project uses **pnpm** exclusively as the package manager (`pnpm-lock.yaml`).
+- Do not run `npm install` or generate `package-lock.json`. Delete any accidental `package-lock.json` if created.
+
 ### TypeScript
 - All components must be typed.
 - Prefer `interface` for props and state.
