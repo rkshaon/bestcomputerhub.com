@@ -248,11 +248,11 @@ const handleCheckoutSubmit = async (e: Event) => {
                 <div class="col-span-2 space-y-2 rounded-xl">
                   <label class="text-[9px] font-black uppercase tracking-wider text-slate-400 block">Regional City</label>
                   <input 
-                    v-model="formData.city"
-                    type="text" 
-                    placeholder="Frankfurt" 
-                    class="h-11 w-full px-4 rounded-xl border bg-transparent text-xs font-semibold focus:border-rose-500 transition-all outline-none"
-                    :class="errors.city ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'"
+                     v-model="formData.city"
+                     type="text" 
+                     placeholder="Frankfurt" 
+                     class="h-11 w-full px-4 rounded-xl border bg-transparent text-xs font-semibold focus:border-rose-500 transition-all outline-none"
+                     :class="errors.city ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'"
                   />
                   <p v-if="errors.city" class="text-[8px] text-rose-500 uppercase tracking-widest">{{ errors.city }}</p>
                 </div>

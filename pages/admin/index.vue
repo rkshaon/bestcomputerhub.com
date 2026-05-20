@@ -21,10 +21,10 @@ definePageMeta({
 });
 
 const stats = [
-  { name: 'Threats Intercepted', value: '3,412', change: '+12.5%', isPositive: true, icon: ShieldAlert, color: 'text-rose-500 bg-rose-500/10' },
-  { name: 'Active Admin Logins', value: '8 Nodes', change: 'Nominal', isPositive: true, icon: Users, color: 'text-indigo-500 bg-indigo-500/10' },
-  { name: 'Avg Gate Response', value: '142ms', change: '-4.2%', isPositive: true, icon: Cpu, color: 'text-emerald-500 bg-emerald-500/10' },
-  { name: 'Global Server Load', value: '28.4%', change: '+1.8%', isPositive: false, icon: Activity, color: 'text-amber-500 bg-amber-500/10' },
+  { name: 'Threats Intercepted', value: '48,250', change: '+12.5%', isPositive: true, icon: Activity, color: 'text-rose-500 bg-rose-500/10' },
+  { name: 'Active Admin Logins', value: '1,248', change: 'Nominal', isPositive: true, icon: Users, color: 'text-indigo-500 bg-indigo-500/10' },
+  { name: 'Avg Gate Response', value: '142.5ms', change: '+4.2%', isPositive: true, icon: Cpu, color: 'text-emerald-500 bg-emerald-500/10' },
+  { name: 'Global Server Load', value: '3.2%', change: '+1.8%', isPositive: true, icon: TrendingUp, color: 'text-amber-500 bg-amber-500/10' },
 ];
 
 const primaryMetrics = [
@@ -36,8 +36,8 @@ const primaryMetrics = [
 const feeds = ref([
   { id: 'ACT-092', message: 'WAF ruleset automated sync complete', type: 'success', time: '2 mins ago' },
   { id: 'ACT-091', message: 'SSH key rotation executed on cluster-04', type: 'info', time: '14 mins ago' },
-  { id: 'ACT-090', message: 'Failed sudo challenge detected on Db-Node-01', type: 'warning', time: '29 mins ago' },
-  { id: 'ACT-089', message: 'New certificate authority trust chain registered', type: 'success', time: '1 hour ago' }
+  { id: 'ACT-090', message: 'Core VM cluster response nominal', type: 'success', time: '29 mins ago' },
+  { id: 'ACT-089', message: 'Incoming query sanitized by edge layer', type: 'success', time: '1 hour ago' }
 ]);
 </script>
 
@@ -68,7 +68,7 @@ const feeds = ref([
         </NuxtLink>
       </div>
     </div>
-
+ 
     <!-- Quick Numerical Stats Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <UiCard v-for="stat in stats" :key="stat.name" class="p-6">
@@ -89,7 +89,7 @@ const feeds = ref([
         <p class="text-2xl font-display font-black tracking-tight mt-1.5 text-slate-900 dark:text-white">{{ stat.value }}</p>
       </UiCard>
     </div>
-
+ 
     <!-- Metric Charts / Telemetry View -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       

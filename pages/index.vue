@@ -57,19 +57,19 @@ const getCategoryIcon = (slug: string) => {
           <div class="space-y-4">
             <h1 class="text-4xl sm:text-6xl font-display font-extrabold tracking-tight leading-[1.05]">
               Pragmatic Tech. <br />
-              <span class="bg-gradient-to-r from-rose-500 via-rose-400 to-indigo-400 bg-clip-text text-transparent">
+              <span class="bg-gradient-to-r from-rose-500 via-rose-300 to-indigo-300 bg-clip-text text-transparent">
                 Powering Compiles.
               </span>
             </h1>
-            <p class="text-slate-400 text-sm sm:text-base max-w-xl leading-relaxed font-medium">
-              We engineer custom computing solutions and high-fidelity sensory gears. Impeccable finishes, bespoke custom silicon, and 100% compliant local standards.
+            <p class="text-slate-300 text-sm sm:text-base max-w-xl leading-relaxed font-normal">
+              Compile code faster, analyze models with precision, and operate robust development workflows with up to 2-years of coverage.
             </p>
           </div>
 
           <div class="flex flex-col sm:flex-row gap-4">
             <NuxtLink to="/products">
               <UiButton variant="rose" size="lg" class="gap-3 shadow-xl shadow-rose-500/20">
-                Explore Shop All <ArrowRight class="w-4 h-4" />
+                Explore Full Shop <ArrowRight class="w-4 h-4" />
               </UiButton>
             </NuxtLink>
             <NuxtLink to="/category/laptops">
@@ -94,7 +94,7 @@ const getCategoryIcon = (slug: string) => {
             />
             
             <div class="mt-4 space-y-1 text-left">
-              <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Featured Silicon Node</p>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Featured Developer Machine</p>
               <h3 class="text-base font-black text-white truncate">QuantumBook Pro M3 Max</h3>
               <div class="flex justify-between items-center pt-2">
                 <span class="text-sm font-mono font-bold text-rose-400 font-black">$1,899.00 <span class="text-[10px] text-slate-500 line-through font-normal">$2,099</span></span>
@@ -118,8 +118,8 @@ const getCategoryIcon = (slug: string) => {
             <Truck class="w-6 h-6" />
           </div>
           <div>
-            <h4 class="text-xs font-black uppercase tracking-widest">Free Express Shipping</h4>
-            <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Complementary on orders above $500</p>
+            <h4 class="text-xs font-black uppercase tracking-widest">Free Express Delivery</h4>
+            <p class="text-[10px] text-slate-400 font-medium mt-0.5">Complementary on orders above $500</p>
           </div>
         </div>
 
@@ -128,8 +128,8 @@ const getCategoryIcon = (slug: string) => {
             <ShieldCheck class="w-6 h-6" />
           </div>
           <div>
-            <h4 class="text-xs font-black uppercase tracking-widest">Secure 2-Year Warranty</h4>
-            <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Coverage for every electronic layout</p>
+            <h4 class="text-xs font-black uppercase tracking-widest">2-Year Direct Warranty</h4>
+            <p class="text-[10px] text-slate-400 font-medium mt-0.5">Comprehensive hardware protection</p>
           </div>
         </div>
 
@@ -138,8 +138,8 @@ const getCategoryIcon = (slug: string) => {
             <RotateCcw class="w-6 h-6" />
           </div>
           <div>
-            <h4 class="text-xs font-black uppercase tracking-widest">30-Day Easy Returns</h4>
-            <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Absolute risk-free buyer charter</p>
+            <h4 class="text-xs font-black uppercase tracking-widest">30-Day Easy Refunds</h4>
+            <p class="text-[10px] text-slate-400 font-medium mt-0.5">Fully risk-free client satisfaction model</p>
           </div>
         </div>
       </div>
@@ -149,13 +149,13 @@ const getCategoryIcon = (slug: string) => {
     <section class="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
       <div class="flex items-end justify-between">
         <div>
-          <div class="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 flex items-center gap-2">
+          <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-500 flex items-center gap-2">
             <Zap class="w-3.5 h-3.5" /> Curated Catalog Categories
           </div>
-          <h2 class="text-2xl font-display font-extrabold tracking-tight mt-1">Shop by Hardware Pillar</h2>
+          <h2 class="text-2xl font-display font-extrabold tracking-tight mt-1">Shop by Category</h2>
         </div>
-        <NuxtLink to="/products" class="text-[10px] font-black text-rose-500 hover:underline uppercase tracking-widest flex items-center gap-1.5 shrink-0">
-          Global Catalog <ChevronRight class="w-4 h-4" />
+        <NuxtLink to="/products" class="text-[10px] font-bold text-rose-500 hover:underline uppercase tracking-widest flex items-center gap-1.5 shrink-0">
+          Browse Catalog <ChevronRight class="w-4 h-4" />
         </NuxtLink>
       </div>
 
@@ -176,8 +176,8 @@ const getCategoryIcon = (slug: string) => {
               <component :is="getCategoryIcon(cat.slug)" class="w-4 h-4" />
             </div>
             <div>
-              <p class="text-xs font-black uppercase tracking-wider leading-none">{{ cat.name }}</p>
-              <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{{ cat.count }} items</p>
+              <p class="text-xs font-bold uppercase tracking-wider leading-none">{{ cat.name }}</p>
+              <p class="text-[8px] font-medium text-slate-400 uppercase tracking-widest leading-none mt-1">{{ cat.count }} items</p>
             </div>
           </div>
         </NuxtLink>
@@ -187,12 +187,12 @@ const getCategoryIcon = (slug: string) => {
     <!-- Curated Featured Products Showcase -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
       <div class="text-center space-y-2">
-        <div class="inline-block text-[10px] font-black uppercase tracking-[0.2em] text-rose-500">
-          🚀 Flagship Offerings
+        <div class="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-rose-500">
+          🚀 Best Sellers
         </div>
-        <h2 class="text-3xl font-display font-extrabold tracking-tight">TechCore Core Featured Gear</h2>
-        <p class="text-slate-500 dark:text-slate-400 text-xs max-w-md mx-auto leading-relaxed">
-          Thoroughly inspected, hyper-performing gadget components and systems styled with modern aesthetic profiles.
+        <h2 class="text-3xl font-display font-extrabold tracking-tight">Featured Premium Gear</h2>
+        <p class="text-slate-550 dark:text-slate-400 text-xs max-w-md mx-auto leading-relaxed">
+          High-performance systems and acoustics crafted with modern aesthetics.
         </p>
       </div>
 
@@ -204,8 +204,8 @@ const getCategoryIcon = (slug: string) => {
         >
           <!-- Absolute Badges -->
           <div class="absolute top-4 left-4 z-10 flex flex-col gap-1.5 items-start">
-            <span v-if="prod.isOnSale" class="bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg leading-none">SALE</span>
-            <span v-if="prod.isNew" class="bg-indigo-600 text-white text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg leading-none">NEW</span>
+            <span v-if="prod.isOnSale" class="bg-rose-600 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg leading-none">SALE</span>
+            <span v-if="prod.isNew" class="bg-indigo-600 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg leading-none">NEW</span>
           </div>
 
           <!-- Wishlist Toggle and Product Image -->
@@ -230,7 +230,7 @@ const getCategoryIcon = (slug: string) => {
             </div>
             
             <NuxtLink :to="`/products/${prod.slug}`" class="block min-h-[36px]">
-              <h3 class="text-xs font-black uppercase tracking-tight text-slate-900 dark:text-white line-clamp-2 hover:text-rose-500 transition-colors">
+              <h3 class="text-xs font-bold uppercase tracking-tight text-slate-900 dark:text-white line-clamp-2 hover:text-rose-500 transition-colors">
                 {{ prod.name }}
               </h3>
             </NuxtLink>
@@ -243,8 +243,8 @@ const getCategoryIcon = (slug: string) => {
           <!-- Pricing & Action Buttons -->
           <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-900">
             <div class="flex flex-col">
-              <span class="text-xs font-bold text-slate-400 tracking-widest uppercase text-[8px] leading-none mb-1">MSRP</span>
-              <span class="text-base font-mono font-black text-slate-900 dark:text-white">
+              <span class="text-xs font-bold text-slate-400 tracking-widest uppercase text-[8px] leading-none mb-1">PRICE</span>
+              <span class="text-base font-mono font-bold text-slate-900 dark:text-white">
                 ${{ prod.price }}
                 <span v-if="prod.originalPrice" class="text-[10px] text-slate-400 line-through font-normal">${{ prod.originalPrice }}</span>
               </span>
@@ -253,7 +253,7 @@ const getCategoryIcon = (slug: string) => {
             <UiButton 
               size="sm" 
               variant="secondary"
-              class="h-8 text-[9px] uppercase font-black px-4 rounded-xl hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500"
+              class="h-8 text-[9px] uppercase font-bold px-4 rounded-xl hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500"
               @click="cartStore.addToCart(prod, 1)"
             >
               Add to Cart
@@ -277,7 +277,7 @@ const getCategoryIcon = (slug: string) => {
               class="w-full h-80 object-cover rounded-3xl"
             />
             <div class="absolute inset-x-8 bottom-8 p-4 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-white/5 space-y-1">
-              <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Optical Engine</p>
+              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Optical Engine</p>
               <h4 class="text-xs font-bold leading-none">1080p Virtual Viewport Matrix</h4>
             </div>
           </div>
@@ -286,31 +286,31 @@ const getCategoryIcon = (slug: string) => {
         <!-- Spec Breakdown Content -->
         <div class="lg:col-span-7 space-y-8">
           <div class="space-y-4">
-            <span class="text-[10px] font-black uppercase text-rose-400 tracking-[0.2em] flex items-center gap-2">
-              👾 NEXT-GENERATION OPTICS
+            <span class="text-[10px] font-bold uppercase text-rose-455 tracking-[0.2em] flex items-center gap-2">
+              🕶 NEXT-GENERATION OPTICS
             </span>
             <h2 class="text-3xl sm:text-5xl font-display font-extrabold tracking-tight leading-tight">
               TechCore Zenith <br />AR Spatial Glasses
             </h2>
             <p class="text-indigo-200 text-xs sm:text-sm max-w-xl leading-relaxed">
-              Cast holographic analytics dashboard elements directly onto your field of vision. High-fidelity directional sound, ECG biometric integration chips, and weighing only 72 grams total.
+              Cast navigations and elegant information layers directly onto your field of vision. High-fidelity audio, biometric connectivity, and weights only 72 grams total.
             </p>
           </div>
 
           <!-- Feature Grid -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
             <div class="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-start gap-3">
-              <span class="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg text-xs font-bold">72g</span>
+              <span class="p-1.5 bg-rose-500/10 text-rose-455 rounded-lg text-xs font-bold">72g</span>
               <div>
-                <h4 class="text-xs font-black uppercase leading-none">Aerodynamic Form</h4>
-                <p class="text-[10px] text-indigo-200 leading-none mt-1">Slightest tactical chassis weigh.</p>
+                <h4 class="text-xs font-bold uppercase leading-none">Aerodynamic Form</h4>
+                <p class="text-[10px] text-indigo-200 leading-none mt-1">Slightest lightweight frame.</p>
               </div>
             </div>
             <div class="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-start gap-3">
               <span class="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg text-xs font-bold">14h</span>
               <div>
-                <h4 class="text-xs font-black leading-none">Battery Density</h4>
-                <p class="text-[10px] text-indigo-200 leading-none mt-1">Multi-cycle charging cradle support.</p>
+                <h4 class="text-xs font-bold leading-none">Battery Density</h4>
+                <p class="text-[10px] text-indigo-200 leading-none mt-1">Cradle support and fast charging.</p>
               </div>
             </div>
           </div>
@@ -331,13 +331,13 @@ const getCategoryIcon = (slug: string) => {
     <section class="max-w-7xl mx-auto px-4 sm:px-6 space-y-8 text-left">
       <div class="flex items-end justify-between">
         <div>
-          <span class="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500">
-            📰 RESEARCH JOURNALS
+          <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-500">
+            📰 LATEST INSIGHTS & BLOG
           </span>
-          <h2 class="text-2xl font-display font-extrabold tracking-tight mt-1">The TechCore Research Journal</h2>
+          <h2 class="text-2xl font-display font-extrabold tracking-tight mt-1">The TechCore Blog</h2>
         </div>
-        <NuxtLink to="/blog" class="text-[10px] font-black text-rose-500 hover:underline uppercase tracking-widest flex items-center gap-1.5">
-          Read All Journals <ChevronRight class="w-4 h-4" />
+        <NuxtLink to="/blog" class="text-[10px] font-bold text-rose-500 hover:underline uppercase tracking-widest flex items-center gap-1.5">
+          Read All Articles <ChevronRight class="w-4 h-4" />
         </NuxtLink>
       </div>
 

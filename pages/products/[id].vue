@@ -152,21 +152,21 @@ const handleInstantCheckout = () => {
 
         <!-- Purchase increments controllers -->
         <div class="space-y-4">
-          <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-400 leading-none">Select Quantity Payload</h4>
+          <h4 class="text-[9px] font-bold uppercase tracking-widest text-slate-400 leading-none">Select Quantity Payload</h4>
           
           <div class="flex flex-wrap items-center gap-4">
             <!-- Selector -->
             <div class="flex items-center border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden h-12 bg-white dark:bg-slate-900">
               <button 
                 @click="handleQuantityChange(-1)"
-                class="px-4 text-sm font-extrabold hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-500 border-none bg-transparent cursor-pointer h-full"
+                class="px-4 text-sm font-extrabold hover:bg-slate-55 dark:hover:bg-slate-850 text-slate-500 border-none bg-transparent cursor-pointer h-full"
               >
                 -
               </button>
-              <span class="px-4 font-mono text-xs font-black text-slate-900 dark:text-white">{{ itemQty }}</span>
+              <span class="px-4 font-mono text-xs font-bold text-slate-900 dark:text-white">{{ itemQty }}</span>
               <button 
                 @click="handleQuantityChange(1)"
-                class="px-4 text-sm font-extrabold hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-500 border-none bg-transparent cursor-pointer h-full"
+                class="px-4 text-sm font-extrabold hover:bg-slate-55 dark:hover:bg-slate-850 text-slate-500 border-none bg-transparent cursor-pointer h-full"
               >
                 +
               </button>
@@ -292,16 +292,16 @@ const handleInstantCheckout = () => {
           >
             <div class="flex items-center justify-between">
               <div>
-                <h4 class="text-xs font-black uppercase tracking-tight text-slate-905 dark:text-slate-100">{{ rev.title }}</h4>
+                <h4 class="text-xs font-bold uppercase tracking-tight text-slate-900 dark:text-slate-100">{{ rev.title }}</h4>
                 <div class="flex items-center gap-2 mt-0.5">
                   <span class="text-[9px] font-bold text-slate-400 uppercase">{{ rev.author }} • {{ rev.date }}</span>
-                  <span v-if="rev.verified" class="text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded-md leading-none">VERIFIED PATRON</span>
+                  <span v-if="rev.verified" class="text-[8px] font-bold uppercase bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded-md leading-none">VERIFIED PURCHASE</span>
                 </div>
               </div>
 
               <div class="flex items-center text-amber-500 gap-0.5">
                 <Star 
-                  v-for="i in 55" 
+                  v-for="i in 5" 
                   :key="i"
                   :class="cn('w-3.5 h-3.5', i <= rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200')"
                 />
@@ -320,8 +320,8 @@ const handleInstantCheckout = () => {
     <!-- Related items Carousel -->
     <div class="py-12 space-y-8" v-if="relatedProducts.length > 0">
       <div class="text-left space-y-1">
-        <span class="text-[9px] font-black uppercase text-rose-500 tracking-[0.2em]">COMPLETE THE RIG</span>
-        <h3 class="text-lg font-display font-black tracking-tight uppercase">Complementary Hardware Modules</h3>
+        <span class="text-[9px] font-bold uppercase text-rose-500 tracking-[0.2em]">COMPLETE THE RIG</span>
+        <h3 class="text-lg font-display font-bold tracking-tight uppercase">Complementary Hardware Modules</h3>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -355,7 +355,7 @@ const handleInstantCheckout = () => {
 
           <!-- Checkout trigger -->
           <div class="flex items-center justify-between mt-4 border-t border-slate-100 dark:border-slate-900 pt-4">
-            <span class="text-sm font-mono font-black text-slate-900 dark:text-white">${{ prod.price }}</span>
+            <span class="text-sm font-mono font-bold text-slate-900 dark:text-white">${{ prod.price }}</span>
             <UiButton 
               size="sm" 
               variant="secondary"

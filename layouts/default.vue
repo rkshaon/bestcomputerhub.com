@@ -352,7 +352,7 @@ if (process.client) {
         <div class="p-6 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
           <div>
             <h3 class="text-sm font-black uppercase tracking-[0.2em] text-slate-950 dark:text-slate-50">Shopping Ledger</h3>
-            <p class="text-[9px] text-slate-400 font-bold uppercase mt-1">Review active basket payload</p>
+            <p class="text-[9px] text-slate-400 font-bold uppercase mt-1">Review active capex allocation</p>
           </div>
           <button @click="isCartOpen = false" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl text-slate-500 cursor-pointer">
             <X class="w-5 h-5" />
@@ -363,14 +363,14 @@ if (process.client) {
         <div class="flex-1 overflow-y-auto p-6 space-y-4">
           <div v-if="cartStore.items.length === 0" class="h-full flex flex-col items-center justify-center text-center space-y-4">
             <div class="w-16 h-16 rounded-3xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 mx-auto">
-              <ShoppingBag class="w-8 h-8" />
+               <ShoppingBag class="w-8 h-8" />
             </div>
             <div>
               <h4 class="text-xs font-black uppercase tracking-widest">Basket Empty</h4>
-              <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">No gadget payloads selected yet. Browse our catalog to populate the cart.</p>
+              <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">No hardware assets registered inside ledger buffer. Resume catalog review to populate entries.</p>
             </div>
             <NuxtLink to="/products" @click="isCartOpen = false">
-              <UiButton variant="rose" size="sm">Explore Products</UiButton>
+              <UiButton variant="rose" size="sm">Explore Ledger</UiButton>
             </NuxtLink>
           </div>
 
@@ -420,18 +420,18 @@ if (process.client) {
         <!-- Drawer Footer: Billing Calculation -->
         <div v-if="cartStore.items.length > 0" class="p-6 border-t border-slate-100 dark:border-slate-900 space-y-4 bg-slate-50/20 dark:bg-slate-900/5">
           <div class="space-y-2">
-            <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400">
-              <span>Subtotal</span>
+            <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
+              <span>Subtotal Assets</span>
               <span class="font-mono text-slate-950 dark:text-slate-50">${{ cartStore.subtotal.toLocaleString() }}</span>
             </div>
-            <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400">
-              <span>Tax (8.25%)</span>
+            <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
+              <span>Estimated Surcharge Tax (8.25%)</span>
               <span class="font-mono text-slate-950 dark:text-slate-50">${{ cartStore.tax.toLocaleString() }}</span>
             </div>
-            <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400">
-              <span>Shipping</span>
+            <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
+              <span>Cargo Transportation</span>
               <span class="font-mono text-slate-950 dark:text-slate-50">
-                <span v-if="cartStore.shipping === 0" class="text-emerald-500 font-bold uppercase">FREE</span>
+                <span v-if="cartStore.shipping === 0" class="text-emerald-500 font-extrabold uppercase">FREE COMPLEMENTARY</span>
                 <span v-else>${{ cartStore.shipping.toLocaleString() }}</span>
               </span>
             </div>
@@ -439,14 +439,14 @@ if (process.client) {
             <div class="h-px bg-slate-100 dark:bg-slate-900 my-2"></div>
             
             <div class="flex justify-between text-xs font-bold uppercase">
-              <span class="text-slate-950 dark:text-slate-50">Total Ledger</span>
+              <span class="text-slate-950 dark:text-slate-50 font-black">Total Ledger</span>
               <span class="font-mono text-indigo-600 dark:text-indigo-400 text-sm font-black">${{ cartStore.total.toLocaleString() }}</span>
             </div>
           </div>
 
           <NuxtLink to="/checkout" @click="isCartOpen = false">
             <UiButton variant="rose" class="w-full gap-2 shadow-lg shadow-rose-500/15 mt-2 h-12">
-              Proceed to Checkout <ArrowRight class="w-4 h-4" />
+              Pipeline Integration Checkout <ArrowRight class="w-4 h-4" />
             </UiButton>
           </NuxtLink>
         </div>
@@ -521,7 +521,7 @@ if (process.client) {
               <input 
                 v-model="emailSubscription"
                 type="email" 
-                placeholder="tech-ops@company.com" 
+                placeholder="you@example.com" 
                 required
                 class="w-full h-11 pl-9 pr-4 bg-slate-900 border border-slate-800 text-xs rounded-xl outline-none focus:border-rose-500 text-white placeholder:text-slate-600 font-semibold"
               />

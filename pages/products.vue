@@ -97,8 +97,8 @@ const clearFilters = () => {
     <!-- Top Catalog Header -->
     <div class="border-b border-slate-200/50 dark:border-slate-800 pb-8 mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div class="space-y-1">
-        <h1 class="text-3xl font-display font-black tracking-tight">TechCore Global Catalog</h1>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Advanced high-spec microchip nodes, custom computing enclosures, and audio spatial headphones.</p>
+        <h1 class="text-3xl font-display font-black tracking-tight">TechCore Shop</h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Explore our high-performance laptops, smartphones, high-fidelity audio equipment, and premium accessories.</p>
       </div>
 
       <!-- Quick Sorting and Search input -->
@@ -108,7 +108,7 @@ const clearFilters = () => {
           <input 
             v-model="searchQuery"
             type="text" 
-            placeholder="Filter catalog devices..." 
+            placeholder="Search premium products..." 
             class="h-10 pl-9 pr-4 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-xs font-semibold focus:border-rose-500 transition-colors"
           />
         </div>
@@ -143,7 +143,7 @@ const clearFilters = () => {
 
           <!-- Category Filter items -->
           <div class="space-y-3">
-            <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-400">Device Sector</h4>
+            <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-400">Product Categories</h4>
             <div class="space-y-2">
               <button 
                 @click="selectedCategory = 'all'"
@@ -154,7 +154,7 @@ const clearFilters = () => {
                     : 'border-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900'
                 )"
               >
-                <span>Global Hardware</span>
+                <span>All Products</span>
                 <span class="font-mono opacity-60">{{ PRODUCTS.length }}</span>
               </button>
 
@@ -177,7 +177,7 @@ const clearFilters = () => {
 
           <!-- Brand select items -->
           <div class="space-y-3">
-            <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-400">Origin Manufacturer</h4>
+            <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-400">Manufacturer Brands</h4>
             <div class="space-y-1.5">
               <button 
                 v-for="b in brands" 
@@ -198,7 +198,7 @@ const clearFilters = () => {
           <!-- Slider Range pricing limits -->
           <div class="space-y-3">
             <div class="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-400">
-              <span>Threshold Limits</span>
+              <span>Price Range</span>
               <span class="font-mono text-slate-900 dark:text-white font-black">${{ maxPrice }}</span>
             </div>
             <input 
@@ -213,9 +213,9 @@ const clearFilters = () => {
 
           <!-- Standard Compliance notice sidebar -->
           <div class="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-900/80">
-            <h5 class="text-[9px] font-black uppercase tracking-wider text-rose-500 leading-none">ISO/MSRP Shield</h5>
+            <h5 class="text-[9px] font-black uppercase tracking-wider text-rose-500 leading-none">Official Warranty Shield</h5>
             <p class="text-[9px] text-slate-400 leading-relaxed mt-1.5 font-semibold">
-              All prices conform to official MSRP limits. Covered under a 2-Year Direct warranty protection policy.
+              Every purchase enjoys our premium direct support and 2-year worry-free warranty protection.
             </p>
           </div>
         </div>
@@ -294,7 +294,7 @@ const clearFilters = () => {
                 class="h-8 text-[9px] uppercase font-black px-4 rounded-xl hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500"
                 @click="cartStore.addToCart(prod)"
               >
-                Add to Cart
+                Add to Basket
               </UiButton>
             </div>
           </div>
