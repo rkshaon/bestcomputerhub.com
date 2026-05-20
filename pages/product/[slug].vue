@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, ArrowLeft, Star, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Info, Plus, Minus } from 'lucide-vue-next';
+import { ChevronRight, ArrowLeft, Star, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Info, Plus, Minus, Zap, Cpu, Globe } from 'lucide-vue-next';
 import { formatCurrency, cn } from '@/utils';
 
 import { useCartStore } from '@/stores/cart';
