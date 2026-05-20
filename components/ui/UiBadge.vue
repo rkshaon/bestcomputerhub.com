@@ -1,44 +1,38 @@
 <script setup lang="ts">
 import { cn } from '@/utils';
 
-const props = defineProps({
-  variant: {
-    type: String,
-    default: 'primary'
-  },
-  size: {
-    type: String,
-    default: 'sm'
-  },
-  class: {
-    type: String,
-    default: ''
-  }
+interface Props {
+  variant?: 'primary' | 'secondary' | 'success'| 'warning' | 'error' | 'ghost';
+  size?: 'xs' | 'sm' | 'md';
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  variant: 'primary',
+  size: 'xs'
 });
 
-const variantStyles: Record<string, string> = {
+const variants = {
   primary: 'bg-primary/10 text-primary border-primary/20',
-  secondary: 'bg-muted text-muted-foreground border-border',
-  success: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  warning: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-  danger: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
-  info: 'bg-sky-500/10 text-sky-500 border-sky-500/20'
+  secondary: 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800',
+  success: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border-emerald-100 dark:border-emerald-900',
+  warning: 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 border-amber-100 dark:border-amber-900',
+  error: 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 border-rose-100 dark:border-rose-900',
+  ghost: 'bg-transparent text-slate-400 border-transparent'
 };
 
-const sizeStyles: Record<string, string> = {
-  xs: 'px-2 py-0.5 text-[10px] tracking-wider uppercase font-semibold rounded-lg',
-  sm: 'px-2.5 py-1 text-xs font-medium rounded-xl',
-  md: 'px-3 py-1.5 text-sm font-medium rounded-2xl'
+const sizes = {
+  xs: 'px-2.5 py-0.5 text-[10px]',
+  sm: 'px-3 py-1 text-xs',
+  md: 'px-4 py-1.5 text-sm'
 };
 </script>
 
 <template>
   <span 
     :class="cn(
-      'inline-flex items-center justify-center border font-display transition-all',
-      variantStyles[props.variant] || 'bg-primary/10 text-primary border-primary/20',
-      sizeStyles[props.size] || sizeStyles.sm,
-      props.class
+      'inline-flex items-center font-bold uppercase tracking-widest border rounded-full whitespace-nowrap',
+      variants[variant],
+      sizes[size]
     )"
   >
     <slot />

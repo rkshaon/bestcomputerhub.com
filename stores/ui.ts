@@ -1,59 +1,67 @@
 import { defineStore } from 'pinia';
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 export const useUIStore = defineStore('ui', {
   state: () => ({
+    themeMode: 'system' as ThemeMode,
     isCartOpen: false,
     isMobileMenuOpen: false,
-    theme: 'light' as 'light' | 'dark' | 'system',
-    themeMode: 'light' as 'light' | 'dark'
+    isSearchOpen: false,
   }),
   actions: {
+    setTheme(mode: ThemeMode) {
+      this.themeMode = mode;
+      if (process.client) {
+        localStorage.setItem('theme-preference', mode);
+        this.applyTheme();
+      }
+    },
+    applyTheme() {
+      if (!process.client) return;
+
+      const html = document.documentElement;
+      let effectiveTheme = this.themeMode;
+
+      if (this.themeMode === 'system') {
+        effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+
+      if (effectiveTheme === 'dark') {
+        html.classList.add('dark');
+        html.style.colorScheme = 'dark';
+      } else {
+        html.classList.remove('dark');
+        html.style.colorScheme = 'light';
+      }
+    },
+    initTheme() {
+      if (process.client) {
+        const savedTheme = localStorage.getItem('theme-preference') as ThemeMode | null;
+        if (savedTheme) {
+          this.themeMode = savedTheme;
+        }
+        this.applyTheme();
+
+        // Listen for system changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+          if (this.themeMode === 'system') {
+            this.applyTheme();
+          }
+        });
+      }
+    },
     toggleCart() {
       this.isCartOpen = !this.isCartOpen;
     },
     toggleMobileMenu() {
       this.isMobileMenuOpen = !this.isMobileMenuOpen;
     },
-    setTheme(newTheme: 'light' | 'dark' | 'system') {
-      this.theme = newTheme;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('theme', newTheme);
-      }
-      this.updateThemeMode();
+    toggleSearch() {
+      this.isSearchOpen = !this.isSearchOpen;
     },
-    updateThemeMode() {
-      if (this.theme === 'system') {
-        if (typeof window !== 'undefined') {
-          const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          this.themeMode = isDark ? 'dark' : 'light';
-        } else {
-          this.themeMode = 'light';
-        }
-      } else {
-        this.themeMode = this.theme;
-      }
-      this.applyThemeClass();
-    },
-    applyThemeClass() {
-      if (typeof window !== 'undefined') {
-        const root = window.document.documentElement;
-        if (this.themeMode === 'dark') {
-          root.classList.add('dark');
-        } else {
-          root.classList.remove('dark');
-        }
-      }
-    },
-    initTheme() {
-      if (typeof window !== 'undefined') {
-        const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
-        if (savedTheme) {
-          this.theme = savedTheme;
-        } else {
-          this.theme = 'system';
-        }
-        this.updateThemeMode();
-      }
+    closeMobileMenu() {
+      this.isMobileMenuOpen = false;
     }
   }
 });

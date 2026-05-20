@@ -1,39 +1,37 @@
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next';
 import { cn } from '@/utils';
+import { markRaw } from 'vue';
 
-const props = defineProps({
-  modelValue: {
-    type: String,
-    default: ''
-  },
-  placeholder: {
-    type: String,
-    default: 'Search...'
-  },
-  class: {
-    type: String,
-    default: ''
-  }
+interface Props {
+  modelValue: string;
+  placeholder?: string;
+  icon?: any;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  placeholder: 'Search operations...'
 });
 
-const emit = defineEmits(['update:modelValue']);
+const displayIcon = computed(() => props.icon || Search);
 
-const onInput = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  emit('update:modelValue', target.value);
-};
+defineEmits(['update:modelValue']);
 </script>
 
 <template>
-  <div :class="cn('relative flex items-center w-full', props.class)">
-    <Search class="absolute left-4 w-5 h-5 text-muted-foreground/60 pointer-events-none" />
+  <div class="relative group">
+    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+      <component :is="displayIcon" class="w-4 h-4" />
+    </div>
     <input 
-      type="text" 
-      :value="props.modelValue" 
-      @input="onInput"
-      :placeholder="props.placeholder"
-      class="w-full h-12 pl-12 pr-4 bg-muted/20 border border-border/80 hover:border-border focus:border-primary/50 text-foreground text-sm font-medium rounded-xl outline-none transition-all placeholder:text-muted-foreground/45"
+      :value="modelValue"
+      type="text"
+      :placeholder="placeholder"
+      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      :class="cn(
+        'w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium',
+        $attrs.class as string
+      )"
     />
   </div>
 </template>

@@ -1,136 +1,174 @@
 <script setup lang="ts">
-import { Sparkles, ArrowRight, ShieldCheck, Database, Cpu, HardDrive } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { ChevronRight, ShieldCheck, Truck, RefreshCw, Trophy } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
-import ProductCard from '@/components/commerce/ProductCard.vue';
 
+// Explicitly use the composable (Nuxt usually auto-imports this)
 const productService = useProductService();
-const categories = productService.getCategories();
 const featuredProducts = productService.getFeaturedProducts();
-
-// Map icons to categories
-const categoryIcons: Record<string, any> = {
-  cat_gpu: Cpu,
-  cat_cpu: Database,
-  cat_server: HardDrive
-};
+const newArrivals = productService.getNewArrivals();
+const homeCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
 </script>
 
 <template>
-  <div class="min-h-screen pb-24 space-y-24 bg-background text-foreground">
+  <div class="space-y-20 pb-20">
     <!-- Hero Section -->
-    <section class="relative py-28 md:py-36 overflow-hidden">
+    <section class="relative h-[640px] flex items-center overflow-hidden bg-black text-white">
       <div class="absolute inset-0 z-0">
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70rem] h-[70rem] border border-primary/5 rounded-full animate-[spin_120s_linear_infinite]"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50rem] h-[50rem] border border-primary/10 rounded-full border-dashed animate-[spin_80s_linear_infinite_reverse]"></div>
+        <img 
+          src="https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?auto=format&fit=crop&q=80&w=2000" 
+          class="w-full h-full object-cover opacity-40 mix-blend-overlay"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
       </div>
-
-      <div class="container mx-auto px-6 relative z-10 text-center space-y-10 max-w-4xl">
-        <div class="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mx-auto">
-          <Sparkles class="w-3.5 h-3.5 text-primary" /> Enterprise Systems & Silicon
-        </div>
-
-        <h1 class="text-5xl md:text-8xl font-display font-extrabold tracking-tight leading-[0.9] text-foreground">
-          Accelerating <span class="italic text-primary">Intelligence</span><br />
-          At Silicon Scale.
-        </h1>
-
-        <p class="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Premium high-performance processing hardware, deep learning acceleration nodes, and mission-critical server environments. Curated for reliability.
-        </p>
-
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-          <UiButton to="/category" class="w-full sm:w-auto h-14 px-8 font-bold rounded-full group">
-            Explore Hardware Collections <ArrowRight class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-          </UiButton>
-          <UiButton to="/new-arrivals" variant="outline" class="w-full sm:w-auto h-14 px-8 font-bold rounded-full">
-            View Live Arrivals
-          </UiButton>
-        </div>
-      </div>
-    </section>
-
-    <!-- Categories / Collections Bento Grid -->
-    <section class="container mx-auto px-6">
-      <div class="space-y-4 mb-12">
-        <div class="text-[10px] uppercase tracking-widest text-primary font-bold">Hardware Verticals</div>
-        <h2 class="text-3xl md:text-5xl font-display font-extrabold tracking-tight">Silicon Collections</h2>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div 
-          v-for="cat in categories" 
-          :key="cat.id"
-          class="group relative bg-muted/30 border border-border/60 hover:border-primary/40 rounded-[2.5rem] p-10 flex flex-col justify-between min-h-[300px] transition-all duration-500 overflow-hidden"
-        >
-          <!-- Background accent -->
-          <div class="absolute -right-16 -bottom-16 w-48 h-48 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all duration-700"></div>
-
-          <div class="space-y-6 relative z-10">
-            <div class="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center border border-primary/15">
-              <component :is="categoryIcons[cat.id] || Cpu" class="w-7 h-7" />
-            </div>
-            
-            <div class="space-y-2">
-              <h3 class="text-2xl font-display font-bold group-hover:text-primary transition-colors">{{ cat.name }}</h3>
-              <p class="text-sm text-muted-foreground leading-relaxed">{{ cat.description }}</p>
-            </div>
+      
+      <div class="container mx-auto px-4 relative z-10">
+        <div class="max-w-2xl space-y-8">
+          <div class="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-bold animate-fade-in">
+            <Trophy class="w-4 h-4" />
+            <span>#1 Tech Retailer 2026</span>
           </div>
-
-          <div class="pt-8 relative z-10">
-            <UiButton :to="`/category/${cat.slug}`" variant="outline" class="rounded-full w-full font-bold group">
-              Browse {{ cat.name }} <ArrowRight class="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
+          
+          <h1 class="text-6xl md:text-8xl font-display font-extrabold tracking-tight leading-[0.9] text-white">
+            The Future of <span class="text-primary italic">Hardware</span>
+          </h1>
+          
+          <p class="text-xl text-white/70 max-w-lg leading-relaxed">
+            Elevate your digital workflow with exclusive access to top-tier components and enterprise gadgets.
+          </p>
+          
+          <div class="flex flex-wrap gap-4">
+            <UiButton size="lg" class="rounded-full gap-2 px-8" to="/products">
+              Explore Catalog <ChevronRight class="w-5 h-5" />
+            </UiButton>
+            <UiButton variant="outline" size="lg" class="rounded-full text-white border-white/20 hover:bg-white/10" to="/offers">
+              View Special Offers
             </UiButton>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Featured Products Bento Grid -->
-    <section class="container mx-auto px-6">
-      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-        <div class="space-y-2">
-          <div class="text-[10px] uppercase tracking-widest text-primary font-bold">Selected Hardware</div>
-          <h2 class="text-3xl md:text-5xl font-display font-extrabold tracking-tight">Featured Hardware</h2>
+    <!-- Brand Marquee (Dribbble Inspired) -->
+    <section class="w-full bg-muted/20 border-y py-10 overflow-hidden group">
+      <div class="flex whitespace-nowrap animate-marquee">
+        <!-- Double the content for seamless looping -->
+        <div v-for="i in 2" :key="i" class="flex items-center space-x-16 px-8">
+          <div v-for="brand in [
+            'Intel Core', 'NVIDIA RTX', 'ARM Architecture', 'Qualcomm', 'AMD Ryzen', 
+            'ASUS ROG', 'Samsung Semiconductor', 'TSMC', 'Seagate', 'CORSAIR'
+          ]" :key="brand" class="flex items-center gap-3 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500 cursor-pointer">
+            <div class="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center font-bold text-[10px]">TC</div>
+            <span class="text-xl font-display font-bold tracking-tight">{{ brand }}</span>
+          </div>
         </div>
-        <UiButton to="/category" variant="ghost" class="rounded-full font-bold group">
-          View Entire Catalog <ArrowRight class="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
-        </UiButton>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <ProductCard 
-          v-for="product in featuredProducts" 
-          :key="product.id" 
-          :product="product" 
-        />
       </div>
     </section>
 
-    <!-- Trust Banner -->
-    <section class="container mx-auto px-6">
-      <div class="bg-primary hover:scale-[1.01] transition-transform duration-500 rounded-[3rem] p-12 md:p-20 flex flex-col md:flex-row items-center justify-between gap-12 text-black">
-        <div class="space-y-6 max-w-xl">
-          <div class="inline-flex items-center gap-2 bg-black text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-            <ShieldCheck class="w-3.5 h-3.5 text-primary" /> Verified Original Hardware
+    <!-- Value Propositions -->
+    <section class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div v-for="(item, idx) in [
+          { icon: Truck, title: 'Global Delivery', desc: 'Secure shipping to 120+ countries' },
+          { icon: ShieldCheck, title: 'Safe Payments', desc: 'Enterprise-grade encryption' },
+          { icon: RefreshCw, title: 'Easy Returns', desc: '30-day hassle-free policy' },
+          { icon: Trophy, title: 'Quality Guard', desc: '2-year minimum warranty' }
+        ]" :key="idx" class="flex gap-4 p-6 rounded-2xl bg-muted/30 border border-transparent hover:border-primary/10 transition-all group">
+          <div class="w-12 h-12 rounded-xl bg-background flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-sm">
+            <component :is="item.icon" class="w-6 h-6 text-primary" />
           </div>
-          <h3 class="text-4xl md:text-5xl font-display font-extrabold tracking-tight leading-none">
-            TechCore Enterprise Grade Compliance
-          </h3>
-          <p class="text-black/70 font-medium text-base leading-relaxed">
-            Every accelerator, compute node, and high-performance workstation matches extreme rigorous reliability protocols, backed by standard manufacturer warranty policies.
-          </p>
+          <div class="space-y-1">
+            <h4 class="font-bold text-base">{{ item.title }}</h4>
+            <p class="text-sm text-muted-foreground">{{ item.desc }}</p>
+          </div>
         </div>
+      </div>
+    </section>
 
-        <div class="grid grid-cols-2 gap-8 shrink-0">
-          <div v-for="stat in [
-            { label: 'Uptime target', val: '99.9%' },
-            { label: 'Shipment Time', val: '24-48 Hours' }
-          ]" :key="stat.label" class="space-y-1">
-            <p class="text-3xl font-display font-black text-black leading-none">{{ stat.val }}</p>
-            <p class="text-[10px] uppercase tracking-widest text-black/50 font-extrabold">{{ stat.label }}</p>
+    <!-- Categories Grid -->
+    <section class="container mx-auto px-4">
+      <div class="flex items-center justify-between mb-10">
+        <h2 class="text-3xl font-display font-bold tracking-tight">Shop by <span class="text-primary">Department</span></h2>
+        <NuxtLink to="/products" class="text-sm font-medium hover:underline flex items-center gap-1">
+          Explore All <ChevronRight class="w-4 h-4" />
+        </NuxtLink>
+      </div>
+      
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <NuxtLink 
+          v-for="cat in homeCategories" 
+          :key="cat.id" 
+          :to="`/category/${cat.slug}`"
+          class="aspect-[4/3] rounded-3xl bg-muted overflow-hidden relative group"
+        >
+          <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors z-10"></div>
+          <div class="absolute inset-0 flex flex-col justify-end p-6 z-20">
+            <h3 class="text-white text-xl font-bold tracking-tight">{{ cat.name }}</h3>
+            <p class="text-white/70 text-xs translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+              Browse products &rarr;
+            </p>
           </div>
+        </NuxtLink>
+      </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="container mx-auto px-4">
+      <div class="flex items-center justify-between mb-10">
+        <div>
+          <h2 class="text-3xl font-display font-bold tracking-tight">Weekly <span class="text-primary">Headliners</span></h2>
+          <p class="text-muted-foreground mt-1">Hand-picked premium selections for enthusiasts.</p>
         </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <CommerceProductCard v-for="product in featuredProducts" :key="product.id" :product="product" />
+      </div>
+    </section>
+
+    <!-- Special Promo Banner -->
+    <section class="container mx-auto px-4">
+      <div class="rounded-[2.5rem] bg-primary p-12 text-primary-foreground flex flex-col items-center text-center gap-8 overflow-hidden relative">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full -ml-48 -mb-48"></div>
+        
+        <span class="bg-white/10 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Enterprise Offer</span>
+        <h2 class="text-4xl md:text-6xl font-display font-bold max-w-3xl">Professional Workstations for Remote Innovation.</h2>
+        <p class="text-primary-foreground/70 max-w-xl text-lg">Save up to 40% on bulk enterprise hardware orders. Specialized configuration support included.</p>
+        <UiButton variant="secondary" size="lg" class="rounded-full shadow-2xl">Contact Solutions Expert</UiButton>
+      </div>
+    </section>
+
+    <!-- New Arrivals -->
+    <section class="container mx-auto px-4">
+      <div class="flex items-center justify-between mb-10">
+        <h2 class="text-3xl font-display font-bold tracking-tight">Fresh in <span class="text-primary">Stock</span></h2>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <CommerceProductCard v-for="product in newArrivals" :key="product.id" :product="product" />
       </div>
     </section>
   </div>
 </template>
+
+<style scoped>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.8s ease forwards;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+</style>

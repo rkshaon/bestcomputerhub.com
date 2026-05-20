@@ -3,42 +3,28 @@ import type { Product } from '@/types';
 
 export const useWishlistStore = defineStore('wishlist', {
   state: () => ({
-    items: [] as Product[]
+    items: [] as Product[],
   }),
   getters: {
-    wishlistCount(): number {
-      return this.items.length;
-    }
+    isInWishlist: (state) => (productId: string) => {
+      return state.items.some(item => item.id === productId);
+    },
+    wishlistCount: (state) => state.items.length,
   },
   actions: {
-    isInWishlist(productId: string): boolean {
-      return this.items.some(p => p.id === productId);
-    },
     toggleWishlist(product: Product) {
-      const idx = this.items.findIndex(p => p.id === product.id);
-      if (idx > -1) {
-        this.items.splice(idx, 1);
-      } else {
+      const index = this.items.findIndex(item => item.id === product.id);
+      if (index === -1) {
         this.items.push(product);
-      }
-      this.saveToStorage();
-    },
-    saveToStorage() {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('wishlist-items', JSON.stringify(this.items));
+      } else {
+        this.items.splice(index, 1);
       }
     },
-    loadFromStorage() {
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem('wishlist-items');
-        if (saved) {
-          try {
-            this.items = JSON.parse(saved);
-          } catch (e) {
-            console.error('Failed to parse wishlist items');
-          }
-        }
-      }
+    removeFromWishlist(productId: string) {
+      this.items = this.items.filter(item => item.id !== productId);
+    },
+    clearWishlist() {
+      this.items = [];
     }
   }
 });
