@@ -12,5 +12,10 @@ export default defineNuxtConfig({
   typescript: {
     strict: true
   },
+  nitro: {
+    prerender: {
+      failOnError: false
+    }
+  },
   compatibilityDate: '2025-11-01'
 })
