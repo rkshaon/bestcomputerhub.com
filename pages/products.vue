@@ -38,7 +38,7 @@ const products = computed(() => {
   });
 });
 
-const allCategories = productService.getCategories();
+const allCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
 const allBrands = Array.from(new Set(productService.getProducts().map(p => p.brand)));
 
 const updateRoute = () => {

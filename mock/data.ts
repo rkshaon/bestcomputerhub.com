@@ -9,6 +9,27 @@ export const categories: Category[] = [
     subCategories: ['nvidia-rtx', 'amd-radeon', 'datacenter-accelerators']
   },
   {
+    id: 'nvidia-rtx',
+    name: 'NVIDIA RTX',
+    slug: 'nvidia-rtx',
+    parentCategoryId: 'cat_gpu',
+    description: 'Workstation graphic processing units powered by NVIDIA architecture.'
+  },
+  {
+    id: 'amd-radeon',
+    name: 'AMD Radeon',
+    slug: 'amd-radeon',
+    parentCategoryId: 'cat_gpu',
+    description: 'High-performance graphic hardware from AMD.'
+  },
+  {
+    id: 'datacenter-accelerators',
+    name: 'Data Center Accelerators',
+    slug: 'datacenter-accelerators',
+    parentCategoryId: 'cat_gpu',
+    description: 'AI and compute accelerators for data centers.'
+  },
+  {
     id: 'cat_cpu',
     name: 'Processors',
     slug: 'processors',
@@ -16,11 +37,53 @@ export const categories: Category[] = [
     subCategories: ['intel-xeon', 'amd-epyc', 'workstation-threadripper']
   },
   {
+    id: 'intel-xeon',
+    name: 'Intel Xeon',
+    slug: 'intel-xeon',
+    parentCategoryId: 'cat_cpu',
+    description: 'Computing nodes powered by Intel Xeon series processors.'
+  },
+  {
+    id: 'amd-epyc',
+    name: 'AMD EPYC',
+    slug: 'amd-epyc',
+    parentCategoryId: 'cat_cpu',
+    description: 'Computing power powered by AMD Epyc processors.'
+  },
+  {
+    id: 'workstation-threadripper',
+    name: 'Threadripper PRO',
+    slug: 'workstation-threadripper',
+    parentCategoryId: 'cat_cpu',
+    description: 'Extreme processors for workstation compute.'
+  },
+  {
     id: 'cat_server',
     name: 'Enterprise Servers',
     slug: 'servers',
     description: 'High-density rack servers and workstation nodes designed for 24/7 reliability and computing power.',
     subCategories: ['rackmount-servers', 'blade-enclosures', 'gpu-compute-servers']
+  },
+  {
+    id: 'rackmount-servers',
+    name: 'Rackmount Servers',
+    slug: 'rackmount-servers',
+    parentCategoryId: 'cat_server',
+    description: 'High performance rackmount servers.'
+  },
+  {
+    id: 'blade-enclosures',
+    name: 'Blade Enclosures',
+    slug: 'blade-enclosures',
+    parentCategoryId: 'cat_server',
+    description: 'High density blade cabinets.'
+  },
+  {
+    id: 'gpu-compute-servers',
+    name: 'GPU Compute Servers',
+    slug: 'gpu-compute-servers',
+    parentCategoryId: 'cat_server',
+    description: 'Servers designed for dense AI acceleration.'
   }
 ];
 
