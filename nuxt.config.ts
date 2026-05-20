@@ -12,6 +12,17 @@ export default defineNuxtConfig({
   typescript: {
     strict: true
   },
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+        'clsx',
+        'lucide-vue-next',
+        'tailwind-merge'
+      ]
+    }
+  },
   nitro: {
     prerender: {
       failOnError: false
