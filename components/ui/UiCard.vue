@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import { cn } from '~/utils';
+import { cn } from '@/utils';
 
-interface Props {
-  class?: string;
-}
-
-const props = defineProps<Props>();
+const props = defineProps({
+  padding: {
+    type: String,
+    default: 'p-6'
+  },
+  class: {
+    type: String,
+    default: ''
+  }
+});
 </script>
 
 <template>
   <div 
     :class="cn(
-      'bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden transition-all duration-350',
+      'bg-card text-card-foreground border border-border/80 rounded-[2.5rem] transition-all',
+      padding === 'none' ? 'p-0' : padding,
       props.class
     )"
   >

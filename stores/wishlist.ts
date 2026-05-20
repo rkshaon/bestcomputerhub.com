@@ -1,15 +1,19 @@
 import { defineStore } from 'pinia';
-import { type Product } from '~/mock/data';
+import type { Product } from '@/types';
 
 export const useWishlistStore = defineStore('wishlist', {
   state: () => ({
-    items: [] as Product[],
+    items: [] as Product[]
   }),
   getters: {
-    wishlistCount: (state) => state.items.length,
-    isInWishlist: (state) => (productId: string) => state.items.some(p => p.id === productId)
+    wishlistCount(): number {
+      return this.items.length;
+    }
   },
   actions: {
+    isInWishlist(productId: string): boolean {
+      return this.items.some(p => p.id === productId);
+    },
     toggleWishlist(product: Product) {
       const idx = this.items.findIndex(p => p.id === product.id);
       if (idx > -1) {
@@ -19,25 +23,21 @@ export const useWishlistStore = defineStore('wishlist', {
       }
       this.saveToStorage();
     },
-    removeFromWishlist(productId: string) {
-      this.items = this.items.filter(p => p.id !== productId);
-      this.saveToStorage();
+    saveToStorage() {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('wishlist-items', JSON.stringify(this.items));
+      }
     },
-    initWishlist() {
-      if (process.client) {
-        const saved = localStorage.getItem('techcore-wishlist');
+    loadFromStorage() {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('wishlist-items');
         if (saved) {
           try {
             this.items = JSON.parse(saved);
           } catch (e) {
-            this.items = [];
+            console.error('Failed to parse wishlist items');
           }
         }
-      }
-    },
-    saveToStorage() {
-      if (process.client) {
-        localStorage.setItem('techcore-wishlist', JSON.stringify(this.items));
       }
     }
   }

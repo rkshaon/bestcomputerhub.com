@@ -1,74 +1,66 @@
 import { defineStore } from 'pinia';
-import { type Product } from '~/mock/data';
-
-export interface CartItem {
-  product: Product;
-  quantity: number;
-}
+import type { CartItem, Product } from '@/types';
 
 export const useCartStore = defineStore('cart', {
   state: () => ({
-    items: [] as CartItem[],
+    items: [] as CartItem[]
   }),
   getters: {
-    itemCount: (state) => state.items.reduce((acc, item) => acc + item.quantity, 0),
-    subtotal: (state) => state.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0),
-    shipping: (state) => {
-      const sub = state.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
-      if (sub === 0) return 0;
-      return sub > 500 ? 0 : 15; // Free shipping over $500
+    totalItems(): number {
+      return this.items.reduce((acc, item) => acc + item.quantity, 0);
     },
-    tax: (state) => {
-      const sub = state.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
-      return Math.round(sub * 0.0825 * 100) / 100; // 8.25% Tax
-    },
-    total: (state) => {
-      const sub = state.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
-      const ship = sub === 0 ? 0 : (sub > 500 ? 0 : 15);
-      const tx = Math.round(sub * 0.0825 * 100) / 100;
-      return Math.round((sub + ship + tx) * 100) / 100;
+    totalPrice(): number {
+      return this.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
     }
   },
   actions: {
     addToCart(product: Product, quantity = 1) {
-      const existing = this.items.find(item => item.product.id === product.id);
+      const existing = this.items.find(item => item.productId === product.id);
       if (existing) {
-        existing.quantity = Math.min(product.stock, existing.quantity + quantity);
+        existing.quantity += quantity;
       } else {
-        this.items.push({ product, quantity: Math.min(product.stock, quantity) });
-      }
-      this.saveToStorage();
-    },
-    updateQuantity(productId: string, quantity: number) {
-      const item = this.items.find(item => item.product.id === productId);
-      if (item) {
-        item.quantity = Math.max(1, Math.min(item.product.stock, quantity));
+        this.items.push({
+          productId: product.id,
+          quantity,
+          product
+        });
       }
       this.saveToStorage();
     },
     removeFromCart(productId: string) {
-      this.items = this.items.filter(item => item.product.id !== productId);
+      this.items = this.items.filter(item => item.productId !== productId);
       this.saveToStorage();
+    },
+    updateQuantity(productId: string, quantity: number) {
+      const existing = this.items.find(item => item.productId === productId);
+      if (existing) {
+        existing.quantity = quantity;
+        if (existing.quantity <= 0) {
+          this.removeFromCart(productId);
+        } else {
+          this.saveToStorage();
+        }
+      }
     },
     clearCart() {
       this.items = [];
       this.saveToStorage();
     },
-    initCart() {
-      if (process.client) {
-        const saved = localStorage.getItem('techcore-cart');
+    saveToStorage() {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cart-items', JSON.stringify(this.items));
+      }
+    },
+    loadFromStorage() {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('cart-items');
         if (saved) {
           try {
             this.items = JSON.parse(saved);
           } catch (e) {
-            this.items = [];
+            console.error('Failed to parse cart items');
           }
         }
-      }
-    },
-    saveToStorage() {
-      if (process.client) {
-        localStorage.setItem('techcore-cart', JSON.stringify(this.items));
       }
     }
   }

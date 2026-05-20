@@ -2,55 +2,58 @@ import { defineStore } from 'pinia';
 
 export const useUIStore = defineStore('ui', {
   state: () => ({
-    themeMode: 'system' as 'light' | 'dark' | 'system',
-    isSidebarOpen: true,
+    isCartOpen: false,
+    isMobileMenuOpen: false,
+    theme: 'light' as 'light' | 'dark' | 'system',
+    themeMode: 'light' as 'light' | 'dark'
   }),
   actions: {
-    setTheme(theme: 'light' | 'dark' | 'system') {
-      this.themeMode = theme;
-      if (process.client) {
-        localStorage.setItem('theme-mode', theme);
-        this.applyTheme();
-      }
+    toggleCart() {
+      this.isCartOpen = !this.isCartOpen;
     },
-    applyTheme() {
-      if (!process.client) return;
-      
-      const isDark = 
-        this.themeMode === 'dark' || 
-        (this.themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        
-      if (isDark) {
-        document.documentElement.classList.add('dark');
+    toggleMobileMenu() {
+      this.isMobileMenuOpen = !this.isMobileMenuOpen;
+    },
+    setTheme(newTheme: 'light' | 'dark' | 'system') {
+      this.theme = newTheme;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('theme', newTheme);
+      }
+      this.updateThemeMode();
+    },
+    updateThemeMode() {
+      if (this.theme === 'system') {
+        if (typeof window !== 'undefined') {
+          const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          this.themeMode = isDark ? 'dark' : 'light';
+        } else {
+          this.themeMode = 'light';
+        }
       } else {
-        document.documentElement.classList.remove('dark');
+        this.themeMode = this.theme;
+      }
+      this.applyThemeClass();
+    },
+    applyThemeClass() {
+      if (typeof window !== 'undefined') {
+        const root = window.document.documentElement;
+        if (this.themeMode === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
       }
     },
     initTheme() {
-      if (!process.client) return;
-      const saved = localStorage.getItem('theme-mode') as 'light' | 'dark' | 'system' | null;
-      this.themeMode = saved || 'system';
-      this.applyTheme();
-      
-      // Setup reactive listener for system preference change
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      try {
-        mediaQuery.addEventListener('change', () => {
-          if (this.themeMode === 'system') {
-            this.applyTheme();
-          }
-        });
-      } catch (e) {
-        // Fallback for older browsers
-        mediaQuery.addListener(() => {
-          if (this.themeMode === 'system') {
-            this.applyTheme();
-          }
-        });
+      if (typeof window !== 'undefined') {
+        const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
+        if (savedTheme) {
+          this.theme = savedTheme;
+        } else {
+          this.theme = 'system';
+        }
+        this.updateThemeMode();
       }
-    },
-    toggleSidebar() {
-      this.isSidebarOpen = !this.isSidebarOpen;
     }
   }
 });

@@ -1,8 +1,9 @@
 {
-  "name": "TechCore Electronics Store",
-  "description": "TechCore Premium Electronics Store - An interactive, high-performance tech and gadgets e-commerce experience with functional shopping cart, wishlist, user portal, and full admin console.",
+  "name": "TechCore Enterprise",
+  "description": "High-performance enterprise hardware marketplace built with Nuxt 3, Tailwind CSS, and Lucide Icons.",
   "requestFramePermissions": [
     "camera",
+    "microphone",
     "geolocation"
   ],
   "majorCapabilities": [
