@@ -147,10 +147,20 @@ export const useAuthStore = defineStore('auth', {
           headers['Authorization'] = `Bearer ${token}`;
         }
 
-        // Use POST /api/v1/auth/logout/ to notify backend
+        // Retrieve current refresh token to include in the request body
+        const refreshTokenCookie = useCookie<string | null>('refresh_token', { path: '/' });
+        const rToken = refreshTokenCookie.value;
+        const body: Record<string, string> = {};
+        if (rToken) {
+          body['refresh'] = rToken;
+          body['refresh_token'] = rToken;
+        }
+
+        // Use POST /api/v1/auth/logout/ to notify backend with auth token and refresh token body
         await client.request('/api/v1/auth/logout/', {
           method: 'POST',
-          headers
+          headers,
+          body
         });
       } catch (err) {
         // Fall through so local session is cleared even if server-side checkout fails
