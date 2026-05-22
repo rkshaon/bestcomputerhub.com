@@ -27,15 +27,22 @@ const handleSignUp = async () => {
   error.value = '';
 
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await authStore.signUp({
+      name: name.value,
+      email: email.value,
+      password: password.value
+    });
     isSuccess.value = true;
-    setTimeout(() => {
-      authStore.login(email.value);
-      navigateTo('/account');
+    setTimeout(async () => {
+      try {
+        await authStore.login({ email: email.value, password: password.value });
+        navigateTo('/account');
+      } catch (loginErr) {
+        navigateTo('/login');
+      }
     }, 2000);
   } catch (err) {
-    error.value = 'Sign up failed. Please try again.';
+    error.value = authStore.error || 'Sign up failed. Please try again.';
   } finally {
     isLoading.value = false;
   }

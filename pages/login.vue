@@ -22,14 +22,12 @@ const handleLogin = async () => {
   error.value = '';
 
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    authStore.login(email.value);
+    await authStore.login({ email: email.value, password: password.value });
     
     const redirect = route.query.redirect as string;
     navigateTo(redirect || '/account');
   } catch (err) {
-    error.value = 'Invalid credentials. Please try again.';
+    error.value = authStore.error || 'Invalid credentials. Please try again.';
   } finally {
     isLoading.value = false;
   }
