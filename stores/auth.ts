@@ -17,15 +17,23 @@ export const useAuthStore = defineStore('auth', {
   
   actions: {
     // 1. Core Registration Integration
-    async signUp(payload: RegisterPayload) {
+    async signUp(payload: any) {
       const client = useApiClient();
       this.isLoading = true;
       this.error = null;
       
       try {
-        const response = await client.request<any>('/api/v1/customers/', {
+        const body = {
+          full_name: payload.name || payload.full_name,
+          email: payload.email,
+          password: payload.password,
+          confirm_password: payload.confirmPassword || payload.confirm_password,
+          phone: payload.phone || ''
+        };
+
+        const response = await client.request<any>('/api/v1/auth/register/', {
           method: 'POST',
-          body: payload
+          body
         });
         
         // Handle response mapping

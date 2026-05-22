@@ -1,12 +1,107 @@
 import { ref } from 'vue';
 import { useCookie, useRuntimeConfig, navigateTo } from '#app';
 
+// Mock DB configuration for local storage persistence
+const USERS_STORAGE_KEY = 'techcore_mock_users2';
+const CUSTOMERS_STORAGE_KEY = 'techcore_mock_customers2';
+
+export interface UserEntity {
+  id: string;
+  full_name: string;
+  email: string;
+  phone?: string;
+  role: 'customer' | 'admin' | 'staff';
+  joinedAt: string;
+}
+
+export interface CustomerProfileEntity {
+  id: string;
+  user_id: string;
+  totalOrders: number;
+  totalSpent: number;
+  status: 'active' | 'inactive' | 'blocked';
+}
+
+const getLocalUsers = (): UserEntity[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const list = localStorage.getItem(USERS_STORAGE_KEY);
+    return list ? JSON.parse(list) : [
+      {
+        id: 'usr_mock_999',
+        full_name: 'Sarah Anderson',
+        email: 'sarah.a@techcore.io',
+        role: 'customer',
+        joinedAt: new Date().toISOString()
+      }
+    ];
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalUsers = (users: UserEntity[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  } catch {}
+};
+
+const getLocalCustomers = (): CustomerProfileEntity[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const list = localStorage.getItem(CUSTOMERS_STORAGE_KEY);
+    return list ? JSON.parse(list) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalCustomers = (customers: CustomerProfileEntity[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(customers));
+  } catch {}
+};
+
+// Atomic Create User Helper matching requirements
+export function create_user(data: { full_name: string; email: string; phone?: string; role?: 'customer' | 'admin' | 'staff' }): UserEntity {
+  const users = getLocalUsers();
+  const newUser: UserEntity = {
+    id: 'usr_mock_' + Math.floor(Math.random() * 1000000),
+    full_name: data.full_name,
+    email: data.email.toLowerCase().trim(),
+    phone: data.phone || '',
+    role: data.role || 'customer',
+    joinedAt: new Date().toISOString()
+  };
+  users.push(newUser);
+  saveLocalUsers(users);
+  return newUser;
+}
+
+// Atomic Create CustomerProfile Helper linked to User matching requirements
+export function create_customer_profile(userEntity: UserEntity): CustomerProfileEntity {
+  const customers = getLocalCustomers();
+  const newCustomerProfile: CustomerProfileEntity = {
+    id: 'cust_mock_' + Math.floor(Math.random() * 1000000),
+    user_id: userEntity.id,
+    totalOrders: 0,
+    totalSpent: 0,
+    status: 'active'
+  };
+  customers.push(newCustomerProfile);
+  saveLocalCustomers(customers);
+  return newCustomerProfile;
+}
+
 // Reusable typed models/interfaces
 export interface User {
   id: string;
   name: string;
   email: string;
   avatar?: string;
+  phone?: string;
   role: 'customer' | 'admin' | 'staff';
   joinedAt: string;
 }
@@ -19,9 +114,12 @@ export interface Customer extends User {
 }
 
 export interface RegisterPayload {
-  name: string;
+  name?: string;
+  full_name?: string;
   email: string;
   password?: string;
+  confirm_password?: string;
+  phone?: string;
 }
 
 export interface RegisterResponse {
@@ -186,25 +284,45 @@ export const useApiClient = () => {
     // Artificial latency for premium enterprise feel
     await new Promise((resolve) => setTimeout(resolve, 800));
 
+    const throwSimulatedError = (msg: string) => {
+      const errorObj = new Error(msg);
+      (errorObj as any).data = { message: msg };
+      (errorObj as any).status = 400;
+      throw errorObj;
+    };
+
     if (url.includes('/api/v1/auth/login')) {
       const body = options.body || {};
-      const actualCredential = body.credential || body.email || '';
-      
-      if (body.password === 'wrong') {
-        errorMsg.value = 'Invalid enterprise credentials';
-        throw new Error('Invalid enterprise credentials');
+      const actualCredential = (body.credential || body.email || '').toLowerCase().trim();
+      const enteredPassword = body.password || '';
+
+      if (enteredPassword === 'wrong') {
+        throwSimulatedError('Invalid enterprise credentials.');
       }
+
+      // Check if user is registered in our local mock system
+      const users = getLocalUsers();
+      const existingUser = users.find(u => u.email === actualCredential);
+
+      const userProfile = existingUser ? {
+        id: existingUser.id,
+        name: existingUser.full_name,
+        email: existingUser.email,
+        phone: existingUser.phone,
+        role: existingUser.role,
+        joinedAt: existingUser.joinedAt
+      } : {
+        id: 'usr_mock_999',
+        name: actualCredential.split('@')[0].toUpperCase(),
+        email: actualCredential || 'sarah.a@techcore.io',
+        role: 'customer' as const,
+        joinedAt: new Date().toISOString()
+      };
 
       const mockResponse: LoginResponse = {
         accessToken: 'simulated_access_token_jwt_xyz_123',
         refreshToken: 'simulated_refresh_token_jwt_abc_789',
-        user: {
-          id: 'usr_mock_999',
-          name: 'Sarah Anderson',
-          email: actualCredential || 'sarah.a@techcore.io',
-          role: 'customer',
-          joinedAt: new Date().toISOString()
-        }
+        user: userProfile
       };
 
       accessTokenCookie.value = mockResponse.accessToken;
@@ -214,19 +332,73 @@ export const useApiClient = () => {
       return mockResponse as unknown as T;
     }
 
-    if (url.includes('/api/v1/customers')) {
+    if (url.includes('/api/v1/auth/register') || url.includes('/auth/register') || url.includes('/api/v1/customers')) {
       const body = options.body || {};
+      const full_name = body.full_name || body.name || '';
+      const email = (body.email || '').toLowerCase().trim();
+      const password = body.password || '';
+      const confirm_password = body.confirm_password || body.confirmPassword || '';
+      const phone = body.phone || '';
+
+      // Required Field Validations
+      if (!full_name) {
+        throwSimulatedError('Full name is required.');
+      }
+      if (!email) {
+        throwSimulatedError('Email is required.');
+      }
+      if (!password) {
+        throwSimulatedError('Password is required.');
+      }
+      if (!confirm_password) {
+        throwSimulatedError('Password confirmation is required.');
+      }
+
+      // Password Matching Validator
+      if (password !== confirm_password) {
+        throwSimulatedError('Passwords do not match.');
+      }
+
+      // Password Security Validators
+      if (password.length < 8) {
+        throwSimulatedError('Password must be at least 8 characters long.');
+      }
+      if (!/[0-9]/.test(password) && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        throwSimulatedError('Password must contain at least one number or special character.');
+      }
+
+      // Email Uniqueness check
+      const users = getLocalUsers();
+      if (users.some(u => u.email === email)) {
+        throwSimulatedError('This email is already registered to an enterprise account.');
+      }
+
+      // Create User atomically using helper
+      const newUser = create_user({ full_name, email, phone });
       
-      const mockResponse: RegisterResponse = {
+      // Create CustomerProfile atomically linked to the User
+      const newProfile = create_customer_profile(newUser);
+
+      // Return customer/user details without password fields
+      const mockResponse = {
+        user: {
+          id: newUser.id,
+          name: newUser.full_name,
+          email: newUser.email,
+          phone: newUser.phone || undefined,
+          role: newUser.role,
+          joinedAt: newUser.joinedAt
+        },
         customer: {
-          id: 'usr_mock_' + Math.floor(Math.random() * 1000000),
-          name: body.name || 'Enterprise User',
-          email: body.email || 'user@enterprise.com',
-          role: 'customer',
-          joinedAt: new Date().toISOString(),
-          totalOrders: 0,
-          totalSpent: 0,
-          status: 'active'
+          id: newProfile.id,
+          user_id: newUser.id,
+          name: newUser.full_name,
+          email: newUser.email,
+          phone: newUser.phone || undefined,
+          totalOrders: newProfile.totalOrders,
+          totalSpent: newProfile.totalSpent,
+          status: newProfile.status,
+          joinedAt: newUser.joinedAt
         },
         message: 'Registration successful'
       };

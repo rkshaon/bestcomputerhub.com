@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { User, Mail, Lock, ArrowRight, ShieldCheck, Loader2, CheckCircle2 } from 'lucide-vue-next';
+import { User, Mail, Lock, Phone, ArrowRight, ShieldCheck, Loader2, CheckCircle2 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
 const name = ref('');
 const email = ref('');
+const phone = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const isLoading = ref(false);
@@ -30,7 +31,9 @@ const handleSignUp = async () => {
     await authStore.signUp({
       name: name.value,
       email: email.value,
-      password: password.value
+      password: password.value,
+      confirmPassword: confirmPassword.value,
+      phone: phone.value
     });
     isSuccess.value = true;
     setTimeout(async () => {
@@ -41,8 +44,8 @@ const handleSignUp = async () => {
         navigateTo('/login');
       }
     }, 2000);
-  } catch (err) {
-    error.value = authStore.error || 'Sign up failed. Please try again.';
+  } catch (err: any) {
+    error.value = authStore.error || err.data?.message || err.message || 'Sign up failed. Please try again.';
   } finally {
     isLoading.value = false;
   }
@@ -119,6 +122,22 @@ const handleSignUp = async () => {
                   placeholder="name@enterprise.com"
                   class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm"
                   required
+                />
+              </div>
+            </div>
+
+            <!-- Phone Field -->
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Business Phone (Optional)</label>
+              <div class="relative group">
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                  <Phone class="w-4 h-4" />
+                </div>
+                <input 
+                  v-model="phone"
+                  type="text" 
+                  placeholder="+1 (555) 019-2834"
+                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm"
                 />
               </div>
             </div>
