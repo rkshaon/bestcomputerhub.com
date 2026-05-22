@@ -28,5 +28,11 @@ export default defineNuxtConfig({
       failOnError: false
     }
   },
+  runtimeConfig: {
+    public: {
+      appUrl: '',
+      apiBase: ''
+    }
+  },
   compatibilityDate: '2025-11-01'
 })
