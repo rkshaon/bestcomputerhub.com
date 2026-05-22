@@ -61,9 +61,8 @@ const mockOrders = [
   }
 ];
 
-const handleLogout = () => {
-  authStore.logout();
-  navigateTo('/');
+const handleLogout = async () => {
+  await authStore.logout();
 };
 </script>
 

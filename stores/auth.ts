@@ -66,6 +66,19 @@ export const useAuthStore = defineStore('auth', {
           body: loginPayload
         });
 
+        // Store access and refresh tokens returned from backend if available
+        const token = response.accessToken || (response as any).access_token;
+        const rToken = response.refreshToken || (response as any).refresh_token;
+
+        if (token) {
+          const accessTokenCookie = useCookie<string | null>('access_token', { maxAge: 60 * 60 * 24 * 7, path: '/' });
+          accessTokenCookie.value = token;
+        }
+        if (rToken) {
+          const refreshTokenCookie = useCookie<string | null>('refresh_token', { maxAge: 60 * 60 * 24 * 30, path: '/' });
+          refreshTokenCookie.value = rToken;
+        }
+
         // Store active user profile
         this.user = response.user;
         const userCookie = useCookie<User | null>('auth_user', { maxAge: 60 * 60 * 24 * 7, path: '/' });
@@ -92,9 +105,18 @@ export const useAuthStore = defineStore('auth', {
       this.isLoading = true;
       
       try {
+        // Retrieve current access token before clearing the state/cookies
+        const accessTokenCookie = useCookie<string | null>('access_token', { path: '/' });
+        const token = accessTokenCookie.value;
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         // Use POST /api/v1/auth/logout/ to notify backend
         await client.request('/api/v1/auth/logout/', {
-          method: 'POST'
+          method: 'POST',
+          headers
         });
       } catch (err) {
         // Fall through so local session is cleared even if server-side checkout fails
