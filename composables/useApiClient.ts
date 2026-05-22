@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { useCookie, useRuntimeConfig, navigateTo } from '#app';
+import { useAuthStore } from '@/stores/auth';
 
 // Mock DB configuration for local storage persistence
 const USERS_STORAGE_KEY = 'techcore_mock_users2';
@@ -212,58 +213,93 @@ export const useApiClient = () => {
         headers,
         async onResponseError({ response, options: retryOptions }) {
           // Token refresh logic on 401 Unauthorized
-          if (response.status === 401 && refreshTokenCookie.value) {
-            if (!isRefreshing) {
-              isRefreshing = true;
-              try {
-                const refreshUrl = `${apiBase}/api/v1/auth/refresh/`;
-                const refreshRes = await $fetch<TokenRefreshResponse>(refreshUrl, {
-                  method: 'POST',
-                  body: {
-                    refreshToken: refreshTokenCookie.value,
-                    refresh_token: refreshTokenCookie.value,
-                    refresh: refreshTokenCookie.value
+          if (response.status === 401) {
+            if (refreshTokenCookie.value) {
+              if (!isRefreshing) {
+                isRefreshing = true;
+                try {
+                  const refreshUrl = `${apiBase}/api/v1/auth/refresh/`;
+                  const refreshRes = await $fetch<TokenRefreshResponse>(refreshUrl, {
+                    method: 'POST',
+                    body: {
+                      refreshToken: refreshTokenCookie.value,
+                      refresh_token: refreshTokenCookie.value,
+                      refresh: refreshTokenCookie.value
+                    }
+                  });
+
+                  const newToken = refreshRes.accessToken || (refreshRes as any).access_token || (refreshRes as any).access;
+                  accessTokenCookie.value = newToken;
+                  const newRefreshToken = refreshRes.refreshToken || (refreshRes as any).refresh_token || (refreshRes as any).refresh;
+                  if (newRefreshToken) {
+                    refreshTokenCookie.value = newRefreshToken;
                   }
-                });
 
-                const newToken = refreshRes.accessToken || (refreshRes as any).access_token;
-                accessTokenCookie.value = newToken;
-                if (refreshRes.refreshToken || (refreshRes as any).refresh_token) {
-                  refreshTokenCookie.value = refreshRes.refreshToken || (refreshRes as any).refresh_token;
-                }
+                  processQueue(null, newToken);
+                  isRefreshing = false;
+                } catch (refreshErr) {
+                  processQueue(refreshErr as Error, '');
+                  isRefreshing = false;
+                  
+                  // Clear all credentials and persistent cookies
+                  accessTokenCookie.value = null;
+                  refreshTokenCookie.value = null;
+                  const authUserCookie = useCookie('auth_user', { path: '/' });
+                  authUserCookie.value = null;
 
-                processQueue(null, newToken);
-                isRefreshing = false;
-              } catch (refreshErr) {
-                processQueue(refreshErr as Error, '');
-                isRefreshing = false;
-                
-                // Clear tokens and force logout
-                accessTokenCookie.value = null;
-                refreshTokenCookie.value = null;
-                navigateTo('/login');
-                throw refreshErr;
-              }
-            }
-
-            // Queue retry requests for when refresh finishes
-            return new Promise((resolve) => {
-              refreshQueue.push((token) => {
-                const rHeaders: Record<string, string> = {};
-                if (retryOptions.headers) {
-                  if (typeof (retryOptions.headers as any).forEach === 'function') {
-                    (retryOptions.headers as any).forEach((v: string, k: string) => {
-                      rHeaders[k] = v;
+                  try {
+                    const authStore = useAuthStore();
+                    authStore.$patch({
+                      user: null,
+                      isLoggedIn: false,
+                      error: 'Session expired. Please log in again.'
                     });
-                  } else {
-                    Object.assign(rHeaders, retryOptions.headers);
+                  } catch (e) {
+                    console.error('Could not patch auth store', e);
                   }
+
+                  navigateTo('/login');
+                  throw refreshErr;
                 }
-                rHeaders['Authorization'] = `Bearer ${token}`;
-                (retryOptions as any).headers = rHeaders;
-                resolve($fetch(fullUrl, retryOptions as any));
+              }
+
+              // Queue retry requests for when refresh finishes
+              return new Promise((resolve) => {
+                refreshQueue.push((token) => {
+                  const rHeaders: Record<string, string> = {};
+                  if (retryOptions.headers) {
+                    if (typeof (retryOptions.headers as any).forEach === 'function') {
+                      (retryOptions.headers as any).forEach((v: string, k: string) => {
+                        rHeaders[k] = v;
+                      });
+                    } else {
+                      Object.assign(rHeaders, retryOptions.headers);
+                    }
+                  }
+                  rHeaders['Authorization'] = `Bearer ${token}`;
+                  (retryOptions as any).headers = rHeaders;
+                  resolve($fetch(fullUrl, retryOptions as any));
+                });
               });
-            });
+            } else {
+              // No refresh token available - clear session and redirect to login
+              accessTokenCookie.value = null;
+              refreshTokenCookie.value = null;
+              const authUserCookie = useCookie('auth_user', { path: '/' });
+              authUserCookie.value = null;
+
+              try {
+                const authStore = useAuthStore();
+                authStore.$patch({
+                  user: null,
+                  isLoggedIn: false
+                });
+              } catch (e) {
+                console.error('Could not patch auth store', e);
+              }
+
+              navigateTo('/login');
+            }
           }
         }
       });
