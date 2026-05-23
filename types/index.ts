@@ -104,6 +104,7 @@ export interface Brand {
   logo: string;
   description: string;
   productCount: number;
+  is_active?: boolean;
 }
 
 export interface InventoryAlert {
