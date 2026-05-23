@@ -526,8 +526,8 @@ const statsRegistry = computed(() => {
     </div>
 
     <!-- MODAL 1: Create New Partner -->
-    <div v-if="isCreateModalOpen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300">
+    <div v-if="isCreateModalOpen" @click.self="isCreateModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
+      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
         
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
@@ -627,8 +627,8 @@ const statsRegistry = computed(() => {
     </div>
 
     <!-- MODAL 2: Edit Brand Details -->
-    <div v-if="isEditModalOpen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300">
+    <div v-if="isEditModalOpen" @click.self="isEditModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
+      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
         
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
@@ -724,8 +724,8 @@ const statsRegistry = computed(() => {
     </div>
 
     <!-- MODAL 3: Read-Only Audit Profile (Details View) -->
-    <div v-if="isViewModalOpen && selectedBrand" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-lg shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300">
+    <div v-if="isViewModalOpen && selectedBrand" @click.self="isViewModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
+      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-lg shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
         
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">

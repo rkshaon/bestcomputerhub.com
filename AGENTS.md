@@ -28,6 +28,7 @@ Upon implementing any feature or resolving any issue, the agent MUST run the fol
 - **Rounding:** Favor large radii (`rounded-[2.5rem]` or `rounded-[3rem]`) for major layout containers and cards to create a modern tech-forward look.
 - **Buttons:** Use the `UiButton` component with `primary`, `outline`, or `ghost` variants. Avoid "default" unless explicitly defined.
 - **Animations:** Use `framer-motion` (via `motion/react`) for complex transitions or standard Tailwind `transition-all duration-500` for layout shifts.
+- **Modals & Overlays:** Every modal popup or drawer overlay must support click-outside closure. Implement this by mapping the close event handler using back-propagation defense triggers (e.g., Vue's `@click.self` modifier) directly on the background backdrop overlay. Enhance spatial cueing by adding a `cursor-pointer` class to the backdrop element and a `cursor-default` class to the central modal container.
 
 ## 🛠 Coding Standards
 
