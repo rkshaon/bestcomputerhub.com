@@ -43,7 +43,8 @@ const currentYear = new Date().getFullYear();
             { name: 'Help Center', url: '/support/help-center' },
             { name: 'Shipping Info', url: '/support/shipping' },
             { name: 'Returns', url: '/support/returns' },
-            { name: 'Warranty', url: '/support/warranty' }
+            { name: 'Warranty', url: '/support/warranty' },
+            { name: 'Payments & Billing', url: '/support/payments' }
           ] },
           { title: 'Company', links: [
             { name: 'About Us', url: '/about' },
