@@ -44,6 +44,26 @@ const isEditModalOpen = ref(false);
 const isViewModalOpen = ref(false);
 const isSubmitPending = ref(false);
 
+// Focus input references
+const partnerNameInput = ref<HTMLInputElement | null>(null);
+const editPartnerNameInput = ref<HTMLInputElement | null>(null);
+
+watch(isCreateModalOpen, (newValue) => {
+  if (newValue) {
+    nextTick(() => {
+      partnerNameInput.value?.focus();
+    });
+  }
+});
+
+watch(isEditModalOpen, (newValue) => {
+  if (newValue) {
+    nextTick(() => {
+      editPartnerNameInput.value?.focus();
+    });
+  }
+});
+
 // Form payload states
 const formError = ref<string | null>(null);
 const formPayload = ref({
@@ -553,6 +573,7 @@ const statsRegistry = computed(() => {
             <div class="space-y-2">
               <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Partner Long Name</label>
               <input 
+                ref="partnerNameInput"
                 v-model="formPayload.name" 
                 @input="autoSlugify"
                 type="text" 
@@ -654,6 +675,7 @@ const statsRegistry = computed(() => {
             <div class="space-y-2">
               <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Partner Long Name</label>
               <input 
+                ref="editPartnerNameInput"
                 v-model="formPayload.name" 
                 type="text" 
                 class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
