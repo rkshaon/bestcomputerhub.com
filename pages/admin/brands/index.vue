@@ -72,7 +72,8 @@ const formPayload = ref({
   name: '',
   slug: '',
   description: '',
-  is_active: true
+  is_active: true,
+  display_order: 1
 });
 
 // Toast notification broker using global vue-sonner
@@ -149,7 +150,7 @@ const autoSlugify = () => {
 
 // Modal trigger utilities
 const openCreateModal = () => {
-  formPayload.value = { id: '', name: '', slug: '', description: '', is_active: true };
+  formPayload.value = { id: '', name: '', slug: '', description: '', is_active: true, display_order: 1 };
   formError.value = null;
   isCreateModalOpen.value = true;
 };
@@ -160,7 +161,8 @@ const openEditModal = (brand: Brand) => {
     name: brand.name,
     slug: brand.slug,
     description: brand.description || '',
-    is_active: brand.is_active !== false
+    is_active: brand.is_active !== false,
+    display_order: brand.display_order !== undefined ? brand.display_order : 1
   };
   formError.value = null;
   isEditModalOpen.value = true;
@@ -183,13 +185,20 @@ const handleCreateBrand = async () => {
     return;
   }
 
+  const parsedOrder = Number(formPayload.value.display_order);
+  if (isNaN(parsedOrder) || parsedOrder <= 0 || !Number.isInteger(parsedOrder)) {
+    formError.value = 'Display Order must be a positive integer.';
+    return;
+  }
+
   isSubmitPending.value = true;
   try {
     await brandService.createBrand({
       name: formPayload.value.name,
       slug: formPayload.value.slug,
       description: formPayload.value.description,
-      is_active: formPayload.value.is_active
+      is_active: formPayload.value.is_active,
+      display_order: parsedOrder
     });
     
     isCreateModalOpen.value = false;
@@ -214,13 +223,20 @@ const handleUpdateBrand = async () => {
     return;
   }
 
+  const parsedOrder = Number(formPayload.value.display_order);
+  if (isNaN(parsedOrder) || parsedOrder <= 0 || !Number.isInteger(parsedOrder)) {
+    formError.value = 'Display Order must be a positive integer.';
+    return;
+  }
+
   isSubmitPending.value = true;
   try {
     await brandService.updateBrand(formPayload.value.id, {
       name: formPayload.value.name,
       slug: formPayload.value.slug,
       description: formPayload.value.description,
-      is_active: formPayload.value.is_active
+      is_active: formPayload.value.is_active,
+      display_order: parsedOrder
     });
 
     isEditModalOpen.value = false;
@@ -357,6 +373,7 @@ const statsRegistry = computed(() => {
               <th class="px-8 py-5">Corporate Entity</th>
               <th class="px-6 py-5">Registry Identification</th>
               <th class="px-6 py-5">System status</th>
+              <th class="px-6 py-5">Order</th>
               <th class="px-6 py-5">Production Mapped</th>
               <th class="px-8 py-5 text-right">Actions</th>
             </tr>
@@ -399,6 +416,13 @@ const statsRegistry = computed(() => {
                 </div>
               </td>
 
+              <!-- Display Order Column -->
+              <td class="px-6 py-5">
+                <span class="font-mono text-xs font-bold text-slate-600 dark:text-slate-400">
+                  #{{ brand.display_order || 'Unassigned' }}
+                </span>
+              </td>
+
               <!-- Production counts statistics Column -->
               <td class="px-6 py-5">
                 <div class="flex items-center gap-2">
@@ -437,7 +461,7 @@ const statsRegistry = computed(() => {
 
             <!-- Empty vector list layout -->
             <tr v-if="filteredBrands.length === 0">
-              <td colspan="5" class="px-8 py-16 text-center h-64">
+              <td colspan="6" class="px-8 py-16 text-center h-64">
                 <div class="flex flex-col items-center justify-center gap-4 text-slate-400">
                   <div class="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
                     <Search class="w-7 h-7 text-slate-300" />
@@ -557,6 +581,19 @@ const statsRegistry = computed(() => {
               ></textarea>
             </div>
 
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Display Sort Order Priority</label>
+              <input 
+                v-model="formPayload.display_order" 
+                type="number" 
+                min="1"
+                step="1"
+                placeholder="e.g. 1" 
+                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
+              />
+              <p class="text-[10px] text-slate-400 ml-1">A positive integer determining the visual sequencing order of brands.</p>
+            </div>
+
             <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
               <div>
                 <p class="text-xs font-bold">Operational Priority Status</p>
@@ -654,6 +691,19 @@ const statsRegistry = computed(() => {
                 rows="4" 
                 class="w-full p-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-medium leading-relaxed"
               ></textarea>
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Display Sort Order Priority</label>
+              <input 
+                v-model="formPayload.display_order" 
+                type="number" 
+                min="1"
+                step="1"
+                placeholder="e.g. 1" 
+                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
+              />
+              <p class="text-[10px] text-slate-400 ml-1">A positive integer determining the visual sequencing order of brands.</p>
             </div>
 
             <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
@@ -759,6 +809,10 @@ const statsRegistry = computed(() => {
                 <span class="text-xs font-mono font-bold text-emerald-500 flex items-center gap-1">
                   <ShieldCheck class="w-3.5 h-3.5" /> SECURE MATCH
                 </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Display Sequencer Order</span>
+                <span class="text-xs font-mono font-bold text-slate-900 dark:text-white">{{ selectedBrand.display_order || 'Unassigned' }}</span>
               </div>
             </div>
           </div>

@@ -105,6 +105,7 @@ export interface Brand {
   description: string;
   productCount: number;
   is_active?: boolean;
+  display_order?: number;
 }
 
 export interface InventoryAlert {

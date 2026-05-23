@@ -21,10 +21,11 @@ export const useBrandService = () => {
         return JSON.parse(stored);
       }
       
-      // Default brands with is_active defaulted to true
-      const defaults: Brand[] = productService.getBrands().map(b => ({
+      // Default brands with is_active defaulted to true and mock display_order
+      const defaults: Brand[] = productService.getBrands().map((b, idx) => ({
         ...b,
-        is_active: b.is_active !== undefined ? b.is_active : true
+        is_active: b.is_active !== undefined ? b.is_active : true,
+        display_order: idx + 1
       }));
       
       localStorage.setItem(BRANDS_STORAGE_KEY, JSON.stringify(defaults));
@@ -53,11 +54,19 @@ export const useBrandService = () => {
     isLoading.value = true;
     errorMsg.value = null;
 
+    const sortByDisplayOrder = (list: Brand[]) => {
+      return list.sort((a, b) => {
+        const orderA = a.display_order !== undefined ? a.display_order : 999999;
+        const orderB = b.display_order !== undefined ? b.display_order : 999999;
+        return orderA - orderB;
+      });
+    };
+
     if (checkMockMode()) {
       // Simulate artificial latency
       await new Promise(resolve => setTimeout(resolve, 600));
       isLoading.value = false;
-      return getMockBrands();
+      return sortByDisplayOrder(getMockBrands());
     }
 
     try {
@@ -65,25 +74,24 @@ export const useBrandService = () => {
         method: 'GET'
       });
       isLoading.value = false;
+      let list: Brand[] = [];
       if (Array.isArray(data)) {
-        return data;
+        list = data;
       } else if (data && typeof data === 'object') {
         if ('data' in data && Array.isArray(data.data)) {
-          return data.data;
-        }
-        if ('results' in data && Array.isArray(data.results)) {
-          return data.results;
-        }
-        if ('brands' in data && Array.isArray(data.brands)) {
-          return data.brands;
+          list = data.data;
+        } else if ('results' in data && Array.isArray(data.results)) {
+          list = data.results;
+        } else if ('brands' in data && Array.isArray(data.brands)) {
+          list = data.brands;
         }
       }
-      return [];
+      return sortByDisplayOrder(list);
     } catch (err: any) {
       errorMsg.value = err.data?.message || err.message || 'Failed to retrieve brands registry.';
       isLoading.value = false;
       // Fallback to mock brands if API fails so the system doesn't visually crash
-      return getMockBrands();
+      return sortByDisplayOrder(getMockBrands());
     }
   };
 
@@ -114,7 +122,7 @@ export const useBrandService = () => {
   };
 
   // 3. Create Brand
-  const createBrand = async (payload: { name: string; slug: string; description: string; is_active: boolean }): Promise<Brand> => {
+  const createBrand = async (payload: { name: string; slug: string; description: string; is_active: boolean; display_order?: number }): Promise<Brand> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -152,7 +160,8 @@ export const useBrandService = () => {
         description: payload.description?.trim() || '',
         logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80', // Default modern container placeholder logo
         productCount: 0,
-        is_active: payload.is_active
+        is_active: payload.is_active,
+        display_order: payload.display_order
       };
 
       brandsList.push(newBrand);
@@ -175,7 +184,7 @@ export const useBrandService = () => {
   };
 
   // 4. Edit Brand
-  const updateBrand = async (id: string, payload: { name: string; slug: string; description: string; is_active: boolean }): Promise<Brand> => {
+  const updateBrand = async (id: string, payload: { name: string; slug: string; description: string; is_active: boolean; display_order?: number }): Promise<Brand> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -217,7 +226,8 @@ export const useBrandService = () => {
         description: payload.description?.trim() || '',
         logo: existingBrand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80',
         productCount: existingBrand.productCount || 0,
-        is_active: payload.is_active
+        is_active: payload.is_active,
+        display_order: payload.display_order
       };
 
       brandsList[idx] = updatedBrand;
