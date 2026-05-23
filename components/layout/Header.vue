@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, Monitor, ChevronDown, PackageSearch, Grid2X2 } from 'lucide-vue-next';
+import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, Monitor, ChevronDown, PackageSearch, Grid2X2, ShieldCheck } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -11,6 +11,15 @@ const uiStore = useUIStore();
 const cartStore = useCartStore();
 const wishlistStore = useWishlistStore();
 const authStore = useAuthStore();
+
+const isSuperAdmin = computed(() => {
+  return authStore.isLoggedIn && 
+         authStore.user && 
+         ((authStore.user.role as string) === 'admin' || 
+          (authStore.user.role as string) === 'staff' || 
+          (authStore.user.role as string) === 'Super Admin' || 
+          (authStore.user.role as string) === 'superadmin');
+});
 const productService = useProductService();
 const allCategories = productService.getCategories();
 
@@ -171,6 +180,27 @@ if (process.client) {
             </transition>
           </div>
           
+          <!-- Admin Panel Button (Super Admin Exclusive) -->
+          <NuxtLink 
+            v-if="isSuperAdmin" 
+            to="/admin" 
+            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 hover:bg-primary/10 border border-primary/20 text-primary rounded-full transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
+            title="Admin Protocol System"
+          >
+            <ShieldCheck class="w-4 h-4" />
+            <span class="text-[9px] font-extrabold uppercase tracking-widest">Admin</span>
+          </NuxtLink>
+
+          <!-- Mobile Admin Panel Button (Super Admin Exclusive, visible on small viewports) -->
+          <NuxtLink 
+            v-if="isSuperAdmin" 
+            to="/admin" 
+            class="sm:hidden p-2 hover:bg-primary/10 text-primary rounded-full transition-colors shrink-0" 
+            title="Admin Protocol System"
+          >
+            <ShieldCheck class="w-5 h-5" />
+          </NuxtLink>
+
           <NuxtLink :to="authStore.isLoggedIn ? '/account' : '/login'" class="p-1 hover:bg-accent rounded-full transition-colors text-muted-foreground hover:text-foreground">
             <div v-if="authStore.isLoggedIn && authStore.user" class="w-8 h-8 rounded-full overflow-hidden border border-border">
               <img :src="authStore.user.avatar" :alt="authStore.user.name" class="w-full h-full object-cover" />
