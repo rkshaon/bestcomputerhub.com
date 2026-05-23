@@ -501,7 +501,7 @@ const statsRegistry = computed(() => {
 
     <!-- MODAL 1: Create New Partner -->
     <div v-if="isCreateModalOpen" @click.self="isCreateModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
-      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
+      <form @submit.prevent="handleCreateBrand" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
         
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
@@ -509,7 +509,7 @@ const statsRegistry = computed(() => {
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-primary">System Authentication Protocol</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Integrate Hardware Partner</h3>
           </div>
-          <button @click="isCreateModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button type="button" @click="isCreateModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -584,13 +584,14 @@ const statsRegistry = computed(() => {
         <!-- Control Action bar -->
         <div class="p-8 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50">
           <button 
+            type="button"
             @click="isCreateModalOpen = false" 
             class="px-5 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
             Cancel
           </button>
           <button 
-            @click="handleCreateBrand" 
+            type="submit" 
             :disabled="isSubmitPending"
             class="bg-primary text-white hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
           >
@@ -598,12 +599,12 @@ const statsRegistry = computed(() => {
             {{ isSubmitPending ? 'Saving Record...' : 'Publish Partner Profile' }}
           </button>
         </div>
-      </div>
+      </form>
     </div>
 
     <!-- MODAL 2: Edit Brand Details -->
     <div v-if="isEditModalOpen" @click.self="isEditModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
-      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
+      <form @submit.prevent="handleUpdateBrand" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
         
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
@@ -611,7 +612,7 @@ const statsRegistry = computed(() => {
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-amber-500">Authorized Admin Override</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Modify Partner Profile</h3>
           </div>
-          <button @click="isEditModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button type="button" @click="isEditModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -682,13 +683,14 @@ const statsRegistry = computed(() => {
         <!-- Control Action bar -->
         <div class="p-8 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50">
           <button 
+            type="button"
             @click="isEditModalOpen = false" 
             class="px-5 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
             Cancel
           </button>
           <button 
-            @click="handleUpdateBrand" 
+            type="submit" 
             :disabled="isSubmitPending"
             class="bg-primary text-white hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
           >
@@ -696,7 +698,7 @@ const statsRegistry = computed(() => {
             {{ isSubmitPending ? 'Applying Overrides...' : 'Patch Partner Profile' }}
           </button>
         </div>
-      </div>
+      </form>
     </div>
 
     <!-- MODAL 3: Read-Only Audit Profile (Details View) -->
