@@ -15,6 +15,7 @@ const error = ref('');
 const handleLogin = async () => {
   if (!email.value || !password.value) {
     error.value = 'Please fill in all fields';
+    toastWarning('Please fill in all fields to log in.');
     return;
   }
 
@@ -23,11 +24,12 @@ const handleLogin = async () => {
 
   try {
     await authStore.login({ email: email.value, password: password.value });
-    
+    toastSuccess('Log in successful. Secure session established.');
     const redirect = route.query.redirect as string;
     navigateTo(redirect || '/account');
-  } catch (err) {
+  } catch (err: any) {
     error.value = authStore.error || 'Invalid credentials. Please try again.';
+    handleApiError(err, 'Invalid credentials. Please try again.');
   } finally {
     isLoading.value = false;
   }

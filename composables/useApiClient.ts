@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useCookie, useRuntimeConfig, navigateTo } from '#app';
 import { useAuthStore } from '@/stores/auth';
+import { toastError } from '@/composables/useToast';
 
 // Mock DB configuration for local storage persistence
 const USERS_STORAGE_KEY = 'techcore_mock_users2';
@@ -227,6 +228,7 @@ export const useApiClient = () => {
           refreshTokenCookie.value = null;
           const authUserCookie = useCookie('auth_user', { path: '/' });
           authUserCookie.value = null;
+          toastError('Security credential negotiation failed. Please sign in again.');
           navigateTo('/login');
           isLoading.value = false;
           throw err;
@@ -237,6 +239,7 @@ export const useApiClient = () => {
           refreshTokenCookie.value = null;
           const authUserCookie = useCookie('auth_user', { path: '/' });
           authUserCookie.value = null;
+          toastError('Your secure session was invalidated. Please re-authenticate.');
           navigateTo('/login');
           isLoading.value = false;
           throw err;
@@ -286,6 +289,7 @@ export const useApiClient = () => {
                 console.error('Could not patch auth store', e);
               }
 
+              toastError('Your session has expired. Please sign in again to restore access.');
               navigateTo('/login');
               isLoading.value = false;
               throw refreshErr;
@@ -333,6 +337,7 @@ export const useApiClient = () => {
             console.error('Could not patch auth store', e);
           }
 
+          toastError('Access denied. Please log in to view this directory.');
           navigateTo('/login');
         }
       }

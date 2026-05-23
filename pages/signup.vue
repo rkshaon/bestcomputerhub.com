@@ -16,11 +16,13 @@ const error = ref('');
 const handleSignUp = async () => {
   if (!name.value || !email.value || !password.value || !confirmPassword.value) {
     error.value = 'Please fill in all fields';
+    toastWarning('Please fill in all required fields.');
     return;
   }
 
   if (password.value !== confirmPassword.value) {
     error.value = 'Passwords do not match';
+    toastError('Passwords do not match.');
     return;
   }
 
@@ -36,6 +38,8 @@ const handleSignUp = async () => {
       phone: phone.value
     });
     isSuccess.value = true;
+    toastSuccess('Enterprise credentials registered successfully.');
+    
     setTimeout(async () => {
       try {
         await authStore.login({ email: email.value, password: password.value });
@@ -46,6 +50,7 @@ const handleSignUp = async () => {
     }, 2000);
   } catch (err: any) {
     error.value = authStore.error || err.data?.message || err.message || 'Sign up failed. Please try again.';
+    handleApiError(err, 'Sign up failed. Please try again.');
   } finally {
     isLoading.value = false;
   }

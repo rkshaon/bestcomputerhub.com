@@ -2,6 +2,9 @@
 import { onMounted } from 'vue';
 import { useUIStore } from '@/stores/ui';
 import { useCookieStore } from '@/stores/cookies';
+import { Toaster } from 'vue-sonner';
+import 'vue-sonner/style.css';
+
 const uiStore = useUIStore();
 const cookieStore = useCookieStore();
 
@@ -19,6 +22,7 @@ onMounted(() => {
     </NuxtLayout>
     <LayoutCookieBanner />
     <LayoutBackToTop />
+    <Toaster position="bottom-right" :richColors="true" :closeButton="true" />
   </div>
 </template>
 

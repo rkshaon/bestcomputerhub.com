@@ -23,6 +23,7 @@ import {
 import { useBrandService } from '@/composables/useBrandService';
 import { cn } from '@/utils';
 import type { Brand } from '@/types';
+import { toastSuccess, toastError, toastInfo } from '@/composables/useToast';
 
 definePageMeta({
   layout: 'admin'
@@ -74,26 +75,15 @@ const formPayload = ref({
   is_active: true
 });
 
-// Toast notification broker
-interface ToastMessage {
-  id: string;
-  type: 'success' | 'error' | 'info';
-  message: string;
-  timestamp: string;
-}
-const toastLogs = ref<ToastMessage[]>([]);
-
+// Toast notification broker using global vue-sonner
 const triggerToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-  const newToast: ToastMessage = {
-    id: 'tst_' + Math.random().toString(36).substring(2, 9),
-    type,
-    message,
-    timestamp: new Date().toLocaleTimeString()
-  };
-  toastLogs.value.unshift(newToast);
-  setTimeout(() => {
-    toastLogs.value = toastLogs.value.filter(t => t.id !== newToast.id);
-  }, 5000);
+  if (type === 'success') {
+    toastSuccess(message);
+  } else if (type === 'error') {
+    toastError(message);
+  } else {
+    toastInfo(message);
+  }
 };
 
 // Data integration lifecycles
@@ -277,42 +267,6 @@ const statsRegistry = computed(() => {
 <template>
   <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
     
-    <!-- Real-time Event Broadcaster (System Toast panel, fixed bottom-right) -->
-    <div class="fixed bottom-6 right-6 z-50 space-y-3 w-full max-w-sm pointer-events-none">
-      <transition-group 
-        enter-active-class="transform ease-out duration-300 transition"
-        enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-        enter-to-class="translate-y-0 opacity-100 sm:translate-x-0"
-        leave-active-class="transition ease-in duration-100 font-medium"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div 
-          v-for="toast in toastLogs" 
-          :key="toast.id" 
-          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xl flex items-start gap-3 pointer-events-auto shrink-0"
-        >
-          <div :class="cn(
-            'w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm',
-            toast.type === 'success' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400' :
-            toast.type === 'error' ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400' :
-            'bg-blue-100 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400'
-          )">
-            <Check v-if="toast.type === 'success'" class="w-4 h-4" />
-            <AlertCircle v-else-if="toast.type === 'error'" class="w-4 h-4" />
-            <Clock v-else class="w-4 h-4" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-bold text-slate-900 dark:text-slate-100">{{ toast.message }}</p>
-            <p class="text-[9px] text-slate-400 font-mono mt-0.5">{{ toast.timestamp }} — SECURE PROTOCOL</p>
-          </div>
-          <button @click="toastLogs = toastLogs.filter(t => t.id !== toast.id)" class="text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
-            <X class="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </transition-group>
-    </div>
-
     <!-- Top Action bar block -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
