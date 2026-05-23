@@ -61,14 +61,22 @@ export const useBrandService = () => {
     }
 
     try {
-      const data = await apiClient.request<Brand[] | { data: Brand[] }>('/api/v1/brands', {
+      const data = await apiClient.request<any>('/api/v1/brands/', {
         method: 'GET'
       });
       isLoading.value = false;
       if (Array.isArray(data)) {
         return data;
-      } else if (data && typeof data === 'object' && 'data' in data && Array.isArray(data.data)) {
-        return data.data;
+      } else if (data && typeof data === 'object') {
+        if ('data' in data && Array.isArray(data.data)) {
+          return data.data;
+        }
+        if ('results' in data && Array.isArray(data.results)) {
+          return data.results;
+        }
+        if ('brands' in data && Array.isArray(data.brands)) {
+          return data.brands;
+        }
       }
       return [];
     } catch (err: any) {
