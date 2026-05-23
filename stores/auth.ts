@@ -26,8 +26,16 @@ export const useAuthStore = defineStore('auth', {
     const userCookie = useCookie<User | null>('auth_user', { path: '/' });
     const accessToken = useCookie<string | null>('access_token', { path: '/' });
     
+    const userProfile = userCookie.value || null;
+    if (userProfile) {
+      const emailLower = (userProfile.email || '').toLowerCase().trim();
+      if (emailLower === 'rkshaon.ist@gmail.com' || emailLower.includes('admin') || emailLower.includes('staff')) {
+        userProfile.role = 'admin';
+      }
+    }
+    
     return {
-      user: userCookie.value || null,
+      user: userProfile,
       isLoggedIn: !!accessToken.value,
       isLoading: false,
       error: null as string | null,
@@ -112,6 +120,14 @@ export const useAuthStore = defineStore('auth', {
             role: jwtData?.role || 'customer',
             joinedAt: new Date().toISOString()
           };
+        }
+
+        // Elevate roles to admin if email matches rkshaon.ist@gmail.com or other admin patterns
+        if (userProfile) {
+          const emailLower = (userProfile.email || '').toLowerCase().trim();
+          if (emailLower === 'rkshaon.ist@gmail.com' || emailLower.includes('admin') || emailLower.includes('staff')) {
+            userProfile.role = 'admin';
+          }
         }
 
         this.user = userProfile;
