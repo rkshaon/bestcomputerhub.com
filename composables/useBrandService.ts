@@ -100,7 +100,7 @@ export const useBrandService = () => {
     }
 
     try {
-      const data = await apiClient.request<Brand>(`/api/v1/brands/${id}`, {
+      const data = await apiClient.request<Brand>(`/api/v1/brands/${id}/`, {
         method: 'GET'
       });
       isLoading.value = false;
@@ -226,7 +226,7 @@ export const useBrandService = () => {
     }
 
     try {
-      const data = await apiClient.request<Brand>(`/api/v1/brands/${id}`, {
+      const data = await apiClient.request<Brand>(`/api/v1/brands/${id}/`, {
         method: 'PUT',
         body: payload
       });

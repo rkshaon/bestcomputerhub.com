@@ -41,6 +41,9 @@ Upon implementing any feature or resolving any issue, the agent MUST run the fol
 - Prefer `interface` for props and state.
 - Use the `cn()` utility from `@/utils` (or the lib directory) for dynamic class merging.
 
+### API Endpoints & Trailing Slashes
+- **Trailing Slashes Requirement**: ALWAYS append a trailing slash (`/`) to all API endpoints/routes when making requests via `apiClient.request`. This applies to all HTTP verbs, including GET, POST, PUT, PATCH, and DELETE (e.g. `/api/v1/brands/`, `/api/v1/brands/${id}/`, `/api/v1/auth/login/`, and `/api/v1/auth/register/`). Never omit the trailing slash.
+
 ### File Structure
 - **Pages:** 
   - User-facing support pages: `/pages/support/*.vue`.
