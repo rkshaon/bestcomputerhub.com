@@ -153,7 +153,7 @@ export const useBrandService = () => {
     }
 
     try {
-      const data = await apiClient.request<Brand>('/api/v1/brands', {
+      const data = await apiClient.request<Brand>('/api/v1/brands/', {
         method: 'POST',
         body: payload
       });
