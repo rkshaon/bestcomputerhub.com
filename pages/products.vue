@@ -20,6 +20,7 @@ const router = useRouter();
 const filters = ref({
   query: (route.query.q as string) || '',
   category: (route.query.category as string) || '',
+  brand: (route.query.brand as string) || '',
   minPrice: Number(route.query.minPrice) || 0,
   maxPrice: Number(route.query.maxPrice) || 10000,
   sort: (route.query.sort as string) || 'featured'
@@ -32,6 +33,7 @@ const products = computed(() => {
   return productService.getProducts({
     query: filters.value.query,
     category: filters.value.category,
+    brand: filters.value.brand,
     minPrice: filters.value.minPrice,
     maxPrice: filters.value.maxPrice,
     sort: filters.value.sort
@@ -46,6 +48,7 @@ const updateRoute = () => {
     query: {
       q: filters.value.query || undefined,
       category: filters.value.category || undefined,
+      brand: filters.value.brand || undefined,
       minPrice: filters.value.minPrice > 0 ? filters.value.minPrice : undefined,
       maxPrice: filters.value.maxPrice < 10000 ? filters.value.maxPrice : undefined,
       sort: filters.value.sort !== 'featured' ? filters.value.sort : undefined
@@ -59,6 +62,7 @@ const clearFilters = () => {
   filters.value = {
     query: '',
     category: '',
+    brand: '',
     minPrice: 0,
     maxPrice: 10000,
     sort: 'featured'
@@ -68,6 +72,7 @@ const clearFilters = () => {
 const activeFiltersCount = computed(() => {
   let count = 0;
   if (filters.value.category) count++;
+  if (filters.value.brand) count++;
   if (filters.value.minPrice > 0 || filters.value.maxPrice < 10000) count++;
   if (filters.value.query) count++;
   return count;
@@ -242,7 +247,11 @@ const activeFiltersCount = computed(() => {
                 <button 
                   v-for="brand in allBrands" 
                   :key="brand"
-                  class="p-3 text-left bg-muted/30 border border-transparent hover:border-primary/20 rounded-xl text-sm font-medium transition-all group"
+                  @click="filters.brand = filters.brand === brand ? '' : brand"
+                  :class="cn(
+                    'p-3 text-left border rounded-xl text-sm font-semibold transition-all cursor-pointer',
+                    filters.brand === brand ? 'bg-primary border-primary text-white font-bold' : 'bg-muted/30 border-transparent hover:bg-muted text-foreground'
+                  )"
                 >
                    {{ brand }}
                 </button>

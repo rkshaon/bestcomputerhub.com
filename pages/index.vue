@@ -1,13 +1,36 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { ChevronRight, ShieldCheck, Truck, RefreshCw, Trophy } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
+import { useBrandService } from '@/composables/useBrandService';
 
-// Explicitly use the composable (Nuxt usually auto-imports this)
+// Explicitly use the composables (Nuxt usually auto-imports this)
 const productService = useProductService();
+const brandService = useBrandService();
+
 const featuredProducts = productService.getFeaturedProducts();
 const newArrivals = productService.getNewArrivals();
 const homeCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
+
+// Initialize brands with standard defaults from product service mapping for high SSR alignment and zero layout pop
+const brandsList = ref<any[]>(
+  productService.getBrands().map(b => ({
+    ...b,
+    is_active: b.is_active !== false
+  }))
+);
+
+// On mount, poll the dynamic client / mock states to capture newly registered / edited administrative partner nodes
+onMounted(async () => {
+  try {
+    const registry = await brandService.getBrandsList();
+    if (registry && registry.length > 0) {
+      brandsList.value = registry.filter(b => b.is_active !== false);
+    }
+  } catch (error) {
+    console.error('Core Protocol Exception: Failed to poll partner registry on home page slide render.', error);
+  }
+});
 </script>
 
 <template>
@@ -53,14 +76,24 @@ const homeCategories = computed(() => productService.getCategories().filter(c =>
     <section class="w-full bg-muted/20 border-y py-10 overflow-hidden group">
       <div class="flex whitespace-nowrap animate-marquee">
         <!-- Double the content for seamless looping -->
-        <div v-for="i in 2" :key="i" class="flex items-center space-x-16 px-8">
-          <div v-for="brand in [
-            'Intel Core', 'NVIDIA RTX', 'ARM Architecture', 'Qualcomm', 'AMD Ryzen', 
-            'ASUS ROG', 'Samsung Semiconductor', 'TSMC', 'Seagate', 'CORSAIR'
-          ]" :key="brand" class="flex items-center gap-3 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500 cursor-pointer">
-            <div class="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center font-bold text-[10px]">TC</div>
-            <span class="text-xl font-display font-bold tracking-tight">{{ brand }}</span>
-          </div>
+        <div v-for="i in 2" :key="i" class="flex items-center space-x-16 px-8 select-none">
+          <NuxtLink 
+            v-for="brand in brandsList" 
+            :key="brand.id + '-' + i" 
+            :to="'/products?brand=' + encodeURIComponent(brand.name)"
+            class="flex items-center gap-3.5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500 cursor-pointer py-1.5 group/brand"
+          >
+            <!-- Logo container -->
+            <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center p-1.5 overflow-hidden group-hover/brand:scale-105 group-hover/brand:border-primary/20 transition-all duration-300 shadow-sm">
+              <img 
+                :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
+                :alt="brand.name" 
+                class="w-full h-full object-contain"
+              />
+            </div>
+            <!-- Brand name -->
+            <span class="text-xl font-display font-medium tracking-tight text-foreground group-hover/brand:text-primary transition-colors">{{ brand.name }}</span>
+          </NuxtLink>
         </div>
       </div>
     </section>
