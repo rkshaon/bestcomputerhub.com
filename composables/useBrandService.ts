@@ -255,7 +255,7 @@ export const useBrandService = () => {
     }
 
     try {
-      await apiClient.request(`/api/v1/brands/${id}`, {
+      await apiClient.request(`/api/v1/brands/${id}/`, {
         method: 'DELETE'
       });
       isLoading.value = false;
