@@ -56,6 +56,7 @@ const navigation = [
 ];
 
 const secondaryNavigation = [
+  { name: 'Profile', iconKey: 'UserIcon', href: '/admin/profile' },
   { name: 'Security', iconKey: 'ShieldAlert', href: '/admin/security' },
   { name: 'Notifications', iconKey: 'Bell', href: '/admin/notifications' },
   { name: 'Settings', iconKey: 'Settings', href: '/admin/settings' },
@@ -73,7 +74,8 @@ const iconMap = {
   ShieldAlert,
   BarChart3,
   Bell,
-  Settings
+  Settings,
+  UserIcon
 };
 
 const toggleSidebar = () => {
@@ -240,16 +242,16 @@ const breadcrumbs = computed(() => {
           </div>
 
           <!-- User Profile -->
-          <div class="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
+          <NuxtLink to="/admin/profile" class="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800 hover:opacity-80 transition-opacity">
             <div class="text-right hidden lg:block">
               <p class="text-xs font-bold leading-none">{{ authStore.user?.name || 'Admin User' }}</p>
               <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">Super Admin</p>
             </div>
-            <button class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden">
+            <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden">
               <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" class="w-full h-full object-cover" />
               <UserIcon v-else class="w-5 h-5 text-slate-400" />
-            </button>
-          </div>
+            </div>
+          </NuxtLink>
         </div>
       </header>
 
