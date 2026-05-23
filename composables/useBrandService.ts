@@ -226,9 +226,10 @@ export const useBrandService = () => {
     }
 
     try {
+      const { slug, ...bodyWithoutSlug } = payload;
       const data = await apiClient.request<Brand>(`/api/v1/brands/${id}/`, {
         method: 'PUT',
-        body: payload
+        body: bodyWithoutSlug
       });
       isLoading.value = false;
       return data;

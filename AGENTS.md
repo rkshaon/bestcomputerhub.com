@@ -43,6 +43,7 @@ Upon implementing any feature or resolving any issue, the agent MUST run the fol
 
 ### API Endpoints & Trailing Slashes
 - **Trailing Slashes Requirement**: ALWAYS append a trailing slash (`/`) to all API endpoints/routes when making requests via `apiClient.request`. This applies to all HTTP verbs, including GET, POST, PUT, PATCH, and DELETE (e.g. `/api/v1/brands/`, `/api/v1/brands/${id}/`, `/api/v1/auth/login/`, and `/api/v1/auth/register/`). Never omit the trailing slash.
+- **PUT/PATCH Request Body Exclusions**: For update operations using PUT or PATCH, any un-editable fields like `slug` must NOT be sent in the request body payload. Always strip out un-editable fields such as `slug` from the `body` option on the request before dispatching it to the server.
 
 ### File Structure
 - **Pages:** 
