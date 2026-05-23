@@ -101,20 +101,20 @@ onMounted(async () => {
     <!-- Value Propositions -->
     <section class="container mx-auto px-4">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        <div v-for="(item, idx) in [
-          { icon: Truck, title: 'Global Delivery', desc: 'Secure shipping to 120+ countries' },
-          { icon: ShieldCheck, title: 'Safe Payments', desc: 'Enterprise-grade encryption' },
-          { icon: RefreshCw, title: 'Easy Returns', desc: '30-day hassle-free policy' },
-          { icon: Trophy, title: 'Quality Guard', desc: '2-year minimum warranty' }
-        ]" :key="idx" class="flex gap-4 p-6 rounded-2xl bg-muted/30 border border-transparent hover:border-primary/10 transition-all group">
+        <NuxtLink v-for="(item, idx) in [
+          { icon: Truck, title: 'Global Delivery', desc: 'Secure shipping to 120+ countries', url: '/support/shipping' },
+          { icon: ShieldCheck, title: 'Safe Payments', desc: 'Enterprise-grade encryption', url: '/support/payments' },
+          { icon: RefreshCw, title: 'Easy Returns', desc: '30-day hassle-free policy', url: '/support/returns' },
+          { icon: Trophy, title: 'Quality Guard', desc: '2-year minimum warranty', url: '/support/warranty' }
+        ]" :key="idx" :to="item.url" class="flex gap-4 p-6 rounded-2xl bg-muted/30 border border-transparent hover:border-primary/20 hover:bg-muted/50 transition-all group cursor-pointer">
           <div class="w-12 h-12 rounded-xl bg-background flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-sm">
             <component :is="item.icon" class="w-6 h-6 text-primary" />
           </div>
           <div class="space-y-1">
-            <h4 class="font-bold text-base">{{ item.title }}</h4>
-            <p class="text-sm text-muted-foreground">{{ item.desc }}</p>
+            <h4 class="font-bold text-base group-hover:text-primary transition-colors text-foreground">{{ item.title }}</h4>
+            <p class="text-sm text-muted-foreground leading-relaxed">{{ item.desc }}</p>
           </div>
-        </div>
+        </NuxtLink>
       </div>
     </section>
 
