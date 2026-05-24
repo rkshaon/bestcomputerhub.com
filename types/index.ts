@@ -17,3 +17,15 @@ export interface Product {
   price: number;
   categoryId: string;
 }
+
+export interface Brand {
+  id: string | number;
+  name: string;
+  slug: string;
+  display_order?: number;
+  is_active: boolean;
+  created_at?: string;
+  logo?: string;
+  description?: string;
+}
+
