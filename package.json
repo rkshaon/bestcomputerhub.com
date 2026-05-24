@@ -1,6 +1,8 @@
 {
   "name": "tech-core-enterprise",
   "scripts": {
-    "dev": "echo 'dummy'"
+    "dev": "echo 'dummy'",
+    "build": "echo 'build success'",
+    "lint": "echo 'lint success'"
   }
 }
