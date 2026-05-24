@@ -7,8 +7,21 @@
           <div class="h-6 w-6 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-500 shadow-md shadow-cyan-500/20"></div>
           <span class="font-display text-sm uppercase tracking-widest font-black text-white bg-clip-text">TechCore Admin</span>
         </div>
-        <div class="text-xs uppercase tracking-widest text-slate-400 font-mono">
-          System Node Active
+        <div class="flex items-center gap-4">
+          <!-- Auth Status Indicator / Configuration Switch -->
+          <button
+            type="button"
+            @click="openAuthModal"
+            class="group flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/60 px-4 py-2 text-xs font-mono transition-all hover:border-cyan-500 hover:bg-slate-950 cursor-pointer"
+          >
+            <div :class="tokenRegistered ? 'bg-emerald-500 shadow-emerald-500/30' : 'bg-rose-500 shadow-rose-500/30'" class="h-2 w-2 rounded-full animate-pulse shadow-sm animate-duration-1000"></div>
+            <span class="text-slate-300 group-hover:text-white">{{ tokenRegistered ? 'Authorized Node' : 'Restricted Sandbox' }}</span>
+            <Key class="h-3 w-3 text-slate-500 group-hover:text-cyan-400 transition" />
+          </button>
+          
+          <div class="hidden sm:block text-xs uppercase tracking-widest text-slate-400 font-mono">
+            System Node Active
+          </div>
         </div>
       </div>
     </header>
@@ -249,6 +262,79 @@
         </form>
       </div>
     </div>
+    <!-- Administrative Node Security (Credentials/Token Configuration) Modal -->
+    <div
+      v-if="isAuthModalOpen"
+      id="auth-provision-modal"
+      @click.self="closeAuthModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm transition-all duration-300 cursor-pointer"
+    >
+      <div class="w-full max-w-md rounded-[2.5rem] border border-slate-800 bg-slate-900 p-8 shadow-2xl transition-all duration-500 cursor-default">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-5">
+          <div class="flex items-center gap-2.5">
+            <Key class="h-5 w-5 text-cyan-400" />
+            <div>
+              <h2 class="font-display text-xl font-bold text-white mb-0.5">
+                Authorize Admin Node
+              </h2>
+              <p class="text-xs text-slate-400 mt-0">
+                Register a secret session token for write authorization.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            @click="closeAuthModal"
+            class="rounded-full p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer"
+          >
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+
+        <form @submit.prevent="saveAuthToken" class="mt-6 flex flex-col gap-5">
+          <div class="flex flex-col gap-1.5">
+            <label for="auth-token-field" class="text-xs uppercase tracking-wider text-slate-400 font-mono font-medium">Bearer Session Token / JWT *</label>
+            <input
+              id="auth-token-field"
+              ref="authTokenInputRef"
+              type="password"
+              v-model="authTokenInput"
+              placeholder="Paste your Authorization Header Bearer token..."
+              class="w-full rounded-full border border-slate-800 bg-slate-950 px-5 py-3.5 text-xs font-mono text-cyan-400 placeholder:text-slate-700 transition focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            />
+            <p class="text-[10px] text-slate-500 leading-relaxed mt-1 pl-1">
+              For example: <code class="text-cyan-600 font-mono">Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code>. Once registered locally, all REST communication requests automatically append this block inside the authentication header frame.
+            </p>
+          </div>
+
+          <!-- Actions -->
+          <div class="mt-4 flex items-center justify-end gap-3 border-t border-slate-800 pt-5">
+            <button
+              v-if="tokenRegistered"
+              type="button"
+              @click="clearAuthToken"
+              class="rounded-full border border-rose-950/30 px-5 py-2.5 text-xs font-semibold text-rose-400 transition hover:bg-rose-950/20 cursor-pointer mr-auto font-mono"
+            >
+              Clear Token
+            </button>
+            <button
+              type="button"
+              @click="closeAuthModal"
+              class="rounded-full border border-slate-800 px-6 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="rounded-full bg-cyan-500 px-6 py-2.5 text-xs font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-400 hover:shadow-cyan-400/35 cursor-pointer"
+            >
+              Save Credentials
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -264,7 +350,8 @@ import {
   XCircle,
   Trash2,
   Inbox,
-  CornerDownRight
+  CornerDownRight,
+  Key
 } from 'lucide-vue-next';
 
 // Composable Registry instance
@@ -277,6 +364,68 @@ const isLoading = ref(false);
 const saving = ref(false);
 const searchTerm = ref('');
 const sortOrder = ref('name');
+
+// Authentication session token admin variables
+const isAuthModalOpen = ref(false);
+const tokenRegistered = ref(false);
+const authTokenInput = ref('');
+const authTokenInputRef = ref<HTMLInputElement | null>(null);
+
+const checkTokenStatus = () => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('techcore_admin_token');
+    tokenRegistered.value = !!token;
+    if (token) {
+      authTokenInput.value = token;
+    } else {
+      authTokenInput.value = '';
+    }
+  }
+};
+
+const openAuthModal = () => {
+  checkTokenStatus();
+  isAuthModalOpen.value = true;
+};
+
+const closeAuthModal = () => {
+  isAuthModalOpen.value = false;
+};
+
+watch(isAuthModalOpen, async (newVal) => {
+  if (newVal) {
+    await nextTick();
+    if (authTokenInputRef.value) {
+      authTokenInputRef.value.focus();
+    }
+  }
+});
+
+const saveAuthToken = () => {
+  if (typeof window !== 'undefined') {
+    const freshToken = authTokenInput.value.trim();
+    if (freshToken) {
+      localStorage.setItem('techcore_admin_token', freshToken);
+      triggerToast('success', 'Administrative Bearer session token configured live!');
+    } else {
+      localStorage.removeItem('techcore_admin_token');
+      triggerToast('success', 'Credentials cleared successfully.');
+    }
+    checkTokenStatus();
+    closeAuthModal();
+    fetchCategories();
+  }
+};
+
+const clearAuthToken = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('techcore_admin_token');
+    triggerToast('success', 'Administrative node credentials deleted.');
+    checkTokenStatus();
+    closeAuthModal();
+    fetchCategories();
+  }
+};
 
 // Searching / Auto Refresh logic
 let searchTimeout: any = null;
@@ -393,7 +542,11 @@ const fetchCategories = async () => {
     // Populate parent selection list recursively
     parentDropdownOptions.value = res.results.filter(c => !c.parentCategoryId);
   } catch (err: any) {
-    triggerToast('error', 'Taxonomy synchronization protocol failure.');
+    if (err.status === 401) {
+      triggerToast('error', 'Taxonomy authentication validation failure (401).');
+    } else {
+      triggerToast('error', 'Taxonomy synchronization protocol failure.');
+    }
   } finally {
     isLoading.value = false;
   }
@@ -458,16 +611,23 @@ const submitClassificationForm = async () => {
       if (err.data.parent) apiErrorMessage.value = Array.isArray(err.data.parent) ? err.data.parent[0] : err.data.parent;
     }
     
-    if (!fieldErrors.name && !fieldErrors.slug && !apiErrorMessage.value) {
-      apiErrorMessage.value = err.message || 'Deployment rejected by authentication node or schema bounds.';
+    // Check for standard authentication failures
+    if (err.status === 401 || (err.data && err.data.detail && err.data.detail.toLowerCase().includes('credential'))) {
+      apiErrorMessage.value = 'Security node validation failure: Bearer token is missing, expired, or invalid. Please configure your active Security Node credentials.';
+      openAuthModal();
+    } else {
+      if (!fieldErrors.name && !fieldErrors.slug && !apiErrorMessage.value) {
+        apiErrorMessage.value = err.message || 'Deployment rejected by authentication node or schema bounds.';
+      }
     }
-    triggerToast('error', 'Registry reject trigger active.');
+    triggerToast('error', 'Taxonomy registry update validation failure.');
   } finally {
     saving.value = false;
   }
 };
 
 onMounted(() => {
+  checkTokenStatus();
   fetchCategories();
 });
 </script>
