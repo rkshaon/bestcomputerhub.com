@@ -128,7 +128,11 @@ export const useCategoryService = () => {
       params.append('page_size', pageSize.toString());
       if (search) params.append('search', search);
       if (ordering) params.append('ordering', ordering);
-      if (parent) params.append('parent', parent);
+      
+      // Send parent only if it is a valid numeric category id
+      if (parent && /^\d+$/.test(parent)) {
+        params.append('parent', parent);
+      }
 
       const queryString = params.toString();
       const endpoint = `/api/v1/categories/?${queryString}`;
@@ -301,12 +305,6 @@ export const useCategoryService = () => {
       const idx = categoriesList.findIndex(c => c.id === id);
       if (idx === -1) {
         throw new Error('Category node not found.');
-      }
-
-      if (categoriesList.some((c, i) => i !== idx && c.slug.toLowerCase() === payload.slug.toLowerCase())) {
-        const err = new Error(`Protocol Violation: Category slug "${payload.slug}" is already registered.`);
-        errorMsg.value = err.message;
-        throw err;
       }
 
       const existingCategory = categoriesList[idx];
