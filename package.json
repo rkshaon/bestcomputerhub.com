@@ -11,7 +11,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "nuxt typecheck",
-    "type-check": "nuxt typecheck"
+    "type-check": "nuxt typecheck",
+    "build:dev": "nuxt generate && rm -rf dist && mv .output/public dist"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

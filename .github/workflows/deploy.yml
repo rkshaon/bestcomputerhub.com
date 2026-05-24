@@ -1,0 +1,51 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 1️⃣ Install pnpm FIRST (no version specified, letting it resolve from package.json)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      # 2️⃣ Setup Node.js (without pnpm cache since there is no pnpm-lock.yaml)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 3️⃣ Install dependencies (without --frozen-lockfile since there is no pnpm-lock.yaml)
+      - name: Install dependencies
+        run: pnpm install
+
+      # 4️⃣ Create .env.development
+      - name: Create environment file
+        run: |
+          cat <<EOF > .env.development
+          VITE_ENV=development
+          VITE_API_BASE_URL=${{ secrets.DEV_VITE_API_BASE_URL }}
+          EOF
+
+      # 5️⃣ Build
+      - name: Build project
+        run: pnpm build:dev
+
+      # 6️⃣ Deploy
+      - name: Deploy dist to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEV_SERVER_HOST }}
+          username: ${{ secrets.DEV_SERVER_USER }}
+          key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+          source: "dist/*"
+          target: "/var/www/best-computers.rkshaon.info"
