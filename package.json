@@ -10,7 +10,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lint": "nuxt typecheck"
+    "lint": "nuxt typecheck",
+    "type-check": "nuxt typecheck"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
