@@ -45,6 +45,12 @@ Upon implementing any feature or resolving any issue, the agent MUST run the fol
 - **Trailing Slashes Requirement**: ALWAYS append a trailing slash (`/`) to all API endpoints/routes when making requests via `apiClient.request`. This applies to all HTTP verbs, including GET, POST, PUT, PATCH, and DELETE (e.g. `/api/v1/brands/`, `/api/v1/brands/${id}/`, `/api/v1/auth/login/`, and `/api/v1/auth/register/`). Never omit the trailing slash.
 - **PUT/PATCH Request Body Exclusions**: For update operations using PUT or PATCH, any un-editable fields like `slug` must NOT be sent in the request body payload. Always strip out un-editable fields such as `slug` from the `body` option on the request before dispatching it to the server.
 
+### 🔑 Automatic Token Refresh & Security Node Authorization
+- **Automatic Token Refresh**: All API integrations MUST run through the centralized `useApiClient` composable. It handles automatic JWT access token refresh using a queued interceptor pattern to resolve concurrent response race conditions.
+- **Refresh Fallbacks**: The token-refresh interceptor automatically queries standard secure endpoints sequentially (`/api/v1/token/refresh/`, `/api/v1/auth/token/refresh/`, and `/api/v1/auth/refresh/`) with the body parameter `{ refresh: string }`.
+- **Session Expiry Events**: If token-refresh fails, is unprovisioned, or credentials are completely logged out, the API client broadcasts a global `'techcore-auth-required'` event. All authenticated admin UI view components must listen to this event, trigger a user-friendly error notification, and open the Authorization Modal dashboard interface to configure active credentials.
+- **Storage Strategy**: Access and refresh tokens are stored reactively across both Nuxt `useCookie` state containers and persistent `localStorage` browser instances (`techcore_admin_token` / `techcore_admin_refresh_token`) to guarantee secure synchronization between SSR server renderings and client executions.
+
 ### File Structure
 - **Pages:** 
   - User-facing support pages: `/pages/support/*.vue`.

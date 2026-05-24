@@ -279,7 +279,7 @@
                 Authorize Admin Node
               </h2>
               <p class="text-xs text-slate-400 mt-0">
-                Register a secret session token for write authorization.
+                Register session tokens for administrative authorization.
               </p>
             </div>
           </div>
@@ -294,7 +294,7 @@
 
         <form @submit.prevent="saveAuthToken" class="mt-6 flex flex-col gap-5">
           <div class="flex flex-col gap-1.5">
-            <label for="auth-token-field" class="text-xs uppercase tracking-wider text-slate-400 font-mono font-medium">Bearer Session Token / JWT *</label>
+            <label for="auth-token-field" class="text-xs uppercase tracking-wider text-slate-400 font-mono font-medium">Access Token / JWT *</label>
             <input
               id="auth-token-field"
               ref="authTokenInputRef"
@@ -303,8 +303,19 @@
               placeholder="Paste your Authorization Header Bearer token..."
               class="w-full rounded-full border border-slate-800 bg-slate-950 px-5 py-3.5 text-xs font-mono text-cyan-400 placeholder:text-slate-700 transition focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
             />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="refresh-token-field" class="text-xs uppercase tracking-wider text-slate-400 font-mono font-medium">Refresh Token (Optional)</label>
+            <input
+              id="refresh-token-field"
+              type="password"
+              v-model="refreshTokenInput"
+              placeholder="Paste your JWT Refresh token..."
+              class="w-full rounded-full border border-slate-800 bg-slate-950 px-5 py-3.5 text-xs font-mono text-cyan-400 placeholder:text-slate-700 transition focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            />
             <p class="text-[10px] text-slate-500 leading-relaxed mt-1 pl-1">
-              For example: <code class="text-cyan-600 font-mono">Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code>. Once registered locally, all REST communication requests automatically append this block inside the authentication header frame.
+              Adding a refresh token allows the automatic refresh interceptor to keep your write sessions alive seamlessly without timing out.
             </p>
           </div>
 
@@ -316,7 +327,7 @@
               @click="clearAuthToken"
               class="rounded-full border border-rose-950/30 px-5 py-2.5 text-xs font-semibold text-rose-400 transition hover:bg-rose-950/20 cursor-pointer mr-auto font-mono"
             >
-              Clear Token
+              Clear Tokens
             </button>
             <button
               type="button"
@@ -339,7 +350,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick, watch } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useCategoryService } from '@/composables/useCategoryService';
 import type { Category } from '@/types';
 import {
@@ -369,17 +380,16 @@ const sortOrder = ref('name');
 const isAuthModalOpen = ref(false);
 const tokenRegistered = ref(false);
 const authTokenInput = ref('');
+const refreshTokenInput = ref('');
 const authTokenInputRef = ref<HTMLInputElement | null>(null);
 
 const checkTokenStatus = () => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('techcore_admin_token');
+    const refresh = localStorage.getItem('techcore_admin_refresh_token');
     tokenRegistered.value = !!token;
-    if (token) {
-      authTokenInput.value = token;
-    } else {
-      authTokenInput.value = '';
-    }
+    authTokenInput.value = token || '';
+    refreshTokenInput.value = refresh || '';
   }
 };
 
@@ -404,11 +414,18 @@ watch(isAuthModalOpen, async (newVal) => {
 const saveAuthToken = () => {
   if (typeof window !== 'undefined') {
     const freshToken = authTokenInput.value.trim();
+    const freshRefresh = refreshTokenInput.value.trim();
     if (freshToken) {
       localStorage.setItem('techcore_admin_token', freshToken);
-      triggerToast('success', 'Administrative Bearer session token configured live!');
+      if (freshRefresh) {
+        localStorage.setItem('techcore_admin_refresh_token', freshRefresh);
+      } else {
+        localStorage.removeItem('techcore_admin_refresh_token');
+      }
+      triggerToast('success', 'Administrative session credentials configured live!');
     } else {
       localStorage.removeItem('techcore_admin_token');
+      localStorage.removeItem('techcore_admin_refresh_token');
       triggerToast('success', 'Credentials cleared successfully.');
     }
     checkTokenStatus();
@@ -420,6 +437,7 @@ const saveAuthToken = () => {
 const clearAuthToken = () => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('techcore_admin_token');
+    localStorage.removeItem('techcore_admin_refresh_token');
     triggerToast('success', 'Administrative node credentials deleted.');
     checkTokenStatus();
     closeAuthModal();
@@ -626,8 +644,24 @@ const submitClassificationForm = async () => {
   }
 };
 
+let authRequiredListener: any = null;
+
 onMounted(() => {
   checkTokenStatus();
   fetchCategories();
+
+  if (typeof window !== 'undefined') {
+    authRequiredListener = () => {
+      openAuthModal();
+      triggerToast('error', 'Session expired. Please configure active Security Node credentials.');
+    };
+    window.addEventListener('techcore-auth-required', authRequiredListener);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined' && authRequiredListener) {
+    window.removeEventListener('techcore-auth-required', authRequiredListener);
+  }
 });
 </script>
