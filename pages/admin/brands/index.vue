@@ -329,7 +329,7 @@ const statsRegistry = computed(() => {
       <div class="flex items-center gap-3">
         <button 
           @click="openCreateModal"
-          class="bg-primary text-white hover:bg-primary/95 px-6 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
+          class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
         >
           <Plus class="w-4 h-4" /> Register New Partner
         </button>
@@ -541,7 +541,7 @@ const statsRegistry = computed(() => {
               :class="cn(
                 'w-10 h-10 rounded-xl font-bold transition-all cursor-pointer text-xs',
                 currentPage === p 
-                  ? 'bg-primary text-white shadow-lg shadow-primary/25' 
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
                   : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500'
               )"
             >
@@ -667,9 +667,9 @@ const statsRegistry = computed(() => {
           <button 
             type="submit" 
             :disabled="isSubmitPending"
-            class="bg-primary text-white hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
+            class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
           >
-            <span v-if="isSubmitPending" class="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4 mr-1"></span>
+            <span v-if="isSubmitPending" class="animate-spin border-2 border-white/35 border-t-white rounded-full w-4 h-4 mr-1"></span>
             {{ isSubmitPending ? 'Saving Record...' : 'Publish Partner Profile' }}
           </button>
         </div>
@@ -779,9 +779,9 @@ const statsRegistry = computed(() => {
           <button 
             type="submit" 
             :disabled="isSubmitPending"
-            class="bg-primary text-white hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
+            class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
           >
-            <span v-if="isSubmitPending" class="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4 mr-1"></span>
+            <span v-if="isSubmitPending" class="animate-spin border-2 border-white/35 border-t-white rounded-full w-4 h-4 mr-1"></span>
             {{ isSubmitPending ? 'Applying Overrides...' : 'Patch Partner Profile' }}
           </button>
         </div>
