@@ -1,217 +1,207 @@
-<template>
-  <div class="min-h-screen bg-slate-950 text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
-    <!-- Navigation Header -->
-    <header class="sticky top-0 z-40 w-full border-b border-slate-900 bg-slate-950/85 backdrop-blur-md transition-all duration-300">
-      <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="h-8 w-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-500 shadow-lg shadow-cyan-500/20 flex items-center justify-center font-display font-black text-slate-950 text-base">TC</div>
-          <span class="font-display text-lg uppercase tracking-widest font-black text-white">TechCore</span>
-        </div>
-        
-        <nav class="hidden md:flex items-center gap-8">
-          <a href="#" class="text-sm font-medium text-slate-400 hover:text-cyan-400 transition">Products</a>
-          <nuxt-link to="/admin/categories" class="text-sm font-medium text-slate-400 hover:text-cyan-400 transition">Admin Panel</nuxt-link>
-          <a href="#" class="text-sm font-medium text-slate-400 hover:text-cyan-400 transition">Solutions</a>
-          <a href="#" class="text-sm font-medium text-slate-400 hover:text-cyan-400 transition">Partners</a>
-        </nav>
-
-        <div class="flex items-center gap-4">
-          <nuxt-link
-            to="/admin/categories"
-            class="rounded-full border border-cyan-500/30 bg-cyan-950/20 px-5 py-2 text-xs font-mono font-semibold tracking-wider text-cyan-400 transition hover:bg-cyan-500 hover:text-slate-950 hover:shadow-lg hover:shadow-cyan-500/20"
-          >
-            ADMIN GATEWAY
-          </nuxt-link>
-        </div>
-      </div>
-    </header>
-
-    <!-- Hero Section -->
-    <section class="relative overflow-hidden py-24 sm:py-32 border-b border-slate-900">
-      <div class="absolute inset-0 bg-radial-gradient from-cyan-950/15 via-transparent to-transparent pointer-events-none"></div>
-      
-      <div class="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        <div class="flex flex-col gap-6">
-          <div class="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-950/30 px-4 py-1.5 text-xs font-mono text-cyan-400 tracking-wider">
-            <span class="flex h-2 w-2 rounded-full bg-cyan-500 animate-pulse"></span>
-            ENTERPRISE PLATFORM V2.4
-          </div>
-          
-          <h1 class="font-display text-4xl sm:text-6xl font-black uppercase tracking-tight text-white leading-none">
-            Premium Hardware <br />
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-400 to-indigo-400">
-              Supply Chains
-            </span>
-          </h1>
-          
-          <p class="text-slate-400 text-sm sm:text-base leading-relaxed max-w-lg">
-            Deploy scalable, enterprise-grade computing infrastructures with the world's leading semiconductor arrays, computing nodes, and dense network switches. 
-          </p>
-
-          <div class="mt-4 flex flex-wrap gap-4">
-            <nuxt-link
-              to="/admin/categories"
-              class="rounded-full bg-cyan-500 px-8 py-4 text-xs uppercase tracking-widest font-bold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-400 hover:shadow-cyan-400/35"
-            >
-              Explore Taxonomy
-            </nuxt-link>
-            <a
-              href="#"
-              class="rounded-full border border-slate-800 bg-slate-900/40 px-8 py-4 text-xs uppercase tracking-widest font-bold text-slate-300 transition hover:border-slate-700 hover:bg-slate-900"
-            >
-              Get Quotation
-            </a>
-          </div>
-        </div>
-
-        <div class="relative">
-          <div class="absolute -inset-1 rounded-[2.5rem] bg-gradient-to-tr from-cyan-500 to-indigo-500 opacity-20 blur-xl pointer-events-none"></div>
-          <div class="relative rounded-[2.5rem] border border-slate-800 bg-slate-900/50 p-8 backdrop-blur-md">
-            <!-- Mock Hardware Stats -->
-            <div class="flex flex-col gap-6">
-              <div class="flex items-center justify-between border-b border-slate-850 pb-4">
-                <span class="font-mono text-xs text-slate-500">SYSTEM ARCHITECTURE</span>
-                <span class="font-mono text-xs text-emerald-400 flex items-center gap-1.5">
-                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  OPERATIONAL
-                </span>
-              </div>
-              
-              <div class="grid grid-cols-2 gap-4">
-                <div class="rounded-2xl border border-slate-850 bg-slate-950/50 p-4">
-                  <p class="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Node Bandwidth</p>
-                  <p class="font-display text-xl font-bold text-white mt-1">1.2 Tb/s</p>
-                </div>
-                <div class="rounded-2xl border border-slate-850 bg-slate-950/50 p-4">
-                  <p class="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Cluster Efficiency</p>
-                  <p class="font-display text-xl font-bold text-cyan-400 mt-1">99.982%</p>
-                </div>
-              </div>
-
-              <div class="rounded-2xl border border-slate-850 bg-slate-950/50 p-4 flex flex-col gap-2">
-                <div class="flex justify-between text-[10px] font-mono text-slate-500">
-                  <span>HBM3 DISPATCH BUFFER</span>
-                  <span>78% LOAD</span>
-                </div>
-                <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-gradient-to-r from-cyan-500 to-indigo-500 h-full w-[78%]"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Partner / Brands Section (User's Target Component) -->
-    <section class="py-16 bg-slate-950 border-b border-slate-900">
-      <div class="max-w-7xl mx-auto px-6">
-        <h2 class="font-display text-xs uppercase tracking-widest text-slate-500 text-center mb-8">
-          Authorized Semiconductor Foundry Partners & Tech Brands
-        </h2>
-
-        <div v-if="isLoading" class="flex justify-center py-6">
-          <div class="h-5 w-5 animate-spin rounded-full border-2 border-slate-850 border-t-cyan-500"></div>
-        </div>
-
-        <div v-else-if="brandsList.length === 0" class="text-center py-6 text-slate-500 text-xs font-mono">
-          No foundries registered inside the cluster database.
-        </div>
-
-        <div v-else class="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div
-            v-for="brand in brandsList"
-            :key="brand.id"
-            class="flex flex-col items-center justify-center p-6 rounded-2xl border border-slate-900 bg-slate-900/20 hover:border-cyan-500/40 hover:bg-slate-900/40 transition-all duration-300"
-          >
-            <Cpu class="h-6 w-6 text-slate-600 mb-2 hover:text-cyan-400 transition" />
-            <span class="text-xs font-semibold text-slate-300 hover:text-white transition tracking-wide text-center">
-              {{ brand.name }}
-            </span>
-            <span class="text-[9px] font-mono text-slate-600 mt-1 uppercase">{{ brand.slug }}</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Categories Taxonomy Overview Section -->
-    <section class="py-24 max-w-7xl mx-auto px-6">
-      <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-        <div>
-          <span class="text-xs font-mono text-cyan-400 uppercase tracking-widest pl-1">CATALOG EXPLORER</span>
-          <h2 class="font-display text-3xl font-black uppercase text-white mt-1">Enterprise Categories</h2>
-        </div>
-        <nuxt-link
-          to="/admin/categories"
-          class="text-xs font-mono text-slate-400 hover:text-cyan-400 flex items-center gap-1 transition"
-        >
-          Manage Catalog Schema <ChevronRight class="h-3 w-3" />
-        </nuxt-link>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="rounded-3xl border border-slate-900 bg-slate-900/20 p-8 hover:border-indigo-5050/30 transition-all">
-          <Layers class="h-8 w-8 text-cyan-400 mb-4" />
-          <h3 class="font-display text-lg font-bold text-white mb-2">Central Node Array</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            High performance microprocessors, chiplets, customized integrated circuits for hyperscale workloads.
-          </p>
-        </div>
-
-        <div class="rounded-3xl border border-slate-900 bg-slate-900/20 p-8 hover:border-cyan-5050/30 transition-all">
-          <Server class="h-8 w-8 text-indigo-400 mb-4" />
-          <h3 class="font-display text-lg font-bold text-white mb-2">Network Switches</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            Spine-and-leaf switches, routing modules, and dense optics supporting high throughout connectivity.
-          </p>
-        </div>
-
-        <div class="rounded-3xl border border-slate-900 bg-slate-900/20 p-8 hover:border-teal-5050/30 transition-all">
-          <Database class="h-8 w-8 text-teal-400 mb-4" />
-          <h3 class="font-display text-lg font-bold text-white mb-2">Accelerator Storage</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            Persistent solid state storage clusters, PCIe Gen 5 expanders, with massive input output limits.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="border-t border-slate-900 py-12 bg-slate-950">
-      <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-        <span class="text-xs font-mono text-slate-600">
-          © 2026 TechCore Platforms Inc. All secure channels verified.
-        </span>
-        <div class="flex items-center gap-6">
-          <a href="#" class="text-xs text-slate-600 hover:text-slate-400 transition font-mono">STATUS ONLINE</a>
-          <a href="#" class="text-xs text-slate-600 hover:text-slate-400 transition font-mono font-medium">SECURITY COMPLIANT</a>
-        </div>
-      </div>
-    </footer>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
+import { ChevronRight, ShieldCheck, Truck, RefreshCw, Trophy } from 'lucide-vue-next';
+import { useProductService } from '@/composables/useProductService';
 import { useBrandService } from '@/composables/useBrandService';
-import { Cpu, ChevronRight, Layers, Server, Database } from 'lucide-vue-next';
-import type { Brand } from '@/types';
 
+// Explicitly use the composables (Nuxt usually auto-imports this)
+const productService = useProductService();
 const brandService = useBrandService();
-const brandsList = ref<Brand[]>([]);
-const isLoading = ref(true);
 
+const featuredProducts = productService.getFeaturedProducts();
+const newArrivals = productService.getNewArrivals();
+const homeCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
+
+// Initialize brands with standard defaults from product service mapping for high SSR alignment and zero layout pop
+const brandsList = ref<any[]>(
+  productService.getBrands().map(b => ({
+    ...b,
+    is_active: b.is_active !== false
+  }))
+);
+
+// On mount, poll the dynamic client / mock states to capture newly registered / edited administrative partner nodes
 onMounted(async () => {
   try {
-    isLoading.value = true;
     const registry = await brandService.getBrandsList();
     if (registry && registry.length > 0) {
       brandsList.value = registry.filter(b => b.is_active !== false);
     }
   } catch (error) {
     console.error('Core Protocol Exception: Failed to poll partner registry on home page slide render.', error);
-  } finally {
-    isLoading.value = false;
   }
 });
 </script>
+
+<template>
+  <div class="space-y-20 pb-20">
+    <!-- Hero Section -->
+    <section class="relative h-[640px] flex items-center overflow-hidden bg-black text-white">
+      <div class="absolute inset-0 z-0">
+        <img 
+          src="https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?auto=format&fit=crop&q=80&w=2000" 
+          class="w-full h-full object-cover opacity-40 mix-blend-overlay"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+      </div>
+      
+      <div class="container mx-auto px-4 relative z-10">
+        <div class="max-w-2xl space-y-8">
+          <div class="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-bold animate-fade-in">
+            <Trophy class="w-4 h-4" />
+            <span>#1 Tech Retailer 2026</span>
+          </div>
+          
+          <h1 class="text-6xl md:text-8xl font-display font-extrabold tracking-tight leading-[0.9] text-white">
+            The Future of <span class="text-primary italic">Hardware</span>
+          </h1>
+          
+          <p class="text-xl text-white/70 max-w-lg leading-relaxed">
+            Elevate your digital workflow with exclusive access to top-tier components and enterprise gadgets.
+          </p>
+          
+          <div class="flex flex-wrap gap-4">
+            <UiButton size="lg" class="rounded-full gap-2 px-8" to="/products">
+              Explore Catalog <ChevronRight class="w-5 h-5" />
+            </UiButton>
+            <UiButton variant="outline" size="lg" class="rounded-full text-white border-white/20 hover:bg-white/10" to="/offers">
+              View Special Offers
+            </UiButton>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Brand Marquee (Dribbble Inspired) -->
+    <section class="w-full bg-muted/20 border-y py-10 overflow-hidden group">
+      <div class="flex whitespace-nowrap animate-marquee">
+        <!-- Double the content for seamless looping -->
+        <div v-for="i in 2" :key="i" class="flex items-center space-x-16 px-8 select-none">
+          <NuxtLink 
+            v-for="brand in brandsList" 
+            :key="brand.id + '-' + i" 
+            :to="'/products?brand=' + encodeURIComponent(brand.name)"
+            class="flex items-center gap-3.5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500 cursor-pointer py-1.5 group/brand"
+          >
+            <!-- Logo container -->
+            <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center p-1.5 overflow-hidden group-hover/brand:scale-105 group-hover/brand:border-primary/20 transition-all duration-300 shadow-sm">
+              <img 
+                :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
+                :alt="brand.name" 
+                class="w-full h-full object-contain"
+              />
+            </div>
+            <!-- Brand name -->
+            <span class="text-xl font-display font-medium tracking-tight text-foreground group-hover/brand:text-primary transition-colors">{{ brand.name }}</span>
+          </NuxtLink>
+        </div>
+      </div>
+    </section>
+
+    <!-- Value Propositions -->
+    <section class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <NuxtLink v-for="(item, idx) in [
+          { icon: Truck, title: 'Global Delivery', desc: 'Secure shipping to 120+ countries', url: '/support/shipping' },
+          { icon: ShieldCheck, title: 'Safe Payments', desc: 'Enterprise-grade encryption', url: '/support/payments' },
+          { icon: RefreshCw, title: 'Easy Returns', desc: '30-day hassle-free policy', url: '/support/returns' },
+          { icon: Trophy, title: 'Quality Guard', desc: '2-year minimum warranty', url: '/support/warranty' }
+        ]" :key="idx" :to="item.url" class="flex gap-4 p-6 rounded-2xl bg-muted/30 border border-transparent hover:border-primary/20 hover:bg-muted/50 transition-all group cursor-pointer">
+          <div class="w-12 h-12 rounded-xl bg-background flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-sm">
+            <component :is="item.icon" class="w-6 h-6 text-primary" />
+          </div>
+          <div class="space-y-1">
+            <h4 class="font-bold text-base group-hover:text-primary transition-colors text-foreground">{{ item.title }}</h4>
+            <p class="text-sm text-muted-foreground leading-relaxed">{{ item.desc }}</p>
+          </div>
+        </NuxtLink>
+      </div>
+    </section>
+
+    <!-- Categories Grid -->
+    <section class="container mx-auto px-4">
+      <div class="flex items-center justify-between mb-10">
+        <h2 class="text-3xl font-display font-bold tracking-tight">Shop by <span class="text-primary">Department</span></h2>
+        <NuxtLink to="/products" class="text-sm font-medium hover:underline flex items-center gap-1">
+          Explore All <ChevronRight class="w-4 h-4" />
+        </NuxtLink>
+      </div>
+      
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <NuxtLink 
+          v-for="cat in homeCategories" 
+          :key="cat.id" 
+          :to="`/category/${cat.slug}`"
+          class="aspect-[4/3] rounded-3xl bg-muted overflow-hidden relative group"
+        >
+          <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors z-10"></div>
+          <div class="absolute inset-0 flex flex-col justify-end p-6 z-20">
+            <h3 class="text-white text-xl font-bold tracking-tight">{{ cat.name }}</h3>
+            <p class="text-white/70 text-xs translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+              Browse products &rarr;
+            </p>
+          </div>
+        </NuxtLink>
+      </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="container mx-auto px-4">
+      <div class="flex items-center justify-between mb-10">
+        <div>
+          <h2 class="text-3xl font-display font-bold tracking-tight">Weekly <span class="text-primary">Headliners</span></h2>
+          <p class="text-muted-foreground mt-1">Hand-picked premium selections for enthusiasts.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <CommerceProductCard v-for="product in featuredProducts" :key="product.id" :product="product" />
+      </div>
+    </section>
+
+    <!-- Special Promo Banner -->
+    <section class="container mx-auto px-4">
+      <div class="rounded-[2.5rem] bg-primary p-12 text-primary-foreground flex flex-col items-center text-center gap-8 overflow-hidden relative">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full -ml-48 -mb-48"></div>
+        
+        <span class="bg-white/10 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Enterprise Offer</span>
+        <h2 class="text-4xl md:text-6xl font-display font-bold max-w-3xl">Professional Workstations for Remote Innovation.</h2>
+        <p class="text-primary-foreground/70 max-w-xl text-lg">Save up to 40% on bulk enterprise hardware orders. Specialized configuration support included.</p>
+        <UiButton variant="secondary" size="lg" class="rounded-full shadow-2xl">Contact Solutions Expert</UiButton>
+      </div>
+    </section>
+
+    <!-- New Arrivals -->
+    <section class="container mx-auto px-4">
+      <div class="flex items-center justify-between mb-10">
+        <h2 class="text-3xl font-display font-bold tracking-tight">Fresh in <span class="text-primary">Stock</span></h2>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <CommerceProductCard v-for="product in newArrivals" :key="product.id" :product="product" />
+      </div>
+    </section>
+  </div>
+</template>
+
+<style scoped>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.8s ease forwards;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+</style>

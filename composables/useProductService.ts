@@ -1,41 +1,85 @@
-import type { Category } from '@/types';
+import { products, categories, brands } from '@/mock/data';
+import type { Product, Category, Brand } from '@/types';
 
 export const useProductService = () => {
+  const getProducts = (params?: { 
+    category?: string; 
+    query?: string;
+    brand?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: string;
+  }) => {
+    let filtered = [...products];
+
+    if (params?.category) {
+      filtered = filtered.filter(p => p.category === params.category || p.subCategory === params.category);
+    }
+
+    if (params?.query) {
+      const q = params.query.toLowerCase();
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        p.brand.toLowerCase().includes(q)
+      );
+    }
+
+    if (params?.minPrice !== undefined) {
+      filtered = filtered.filter(p => p.price >= params.minPrice!);
+    }
+
+    if (params?.maxPrice !== undefined) {
+      filtered = filtered.filter(p => p.price <= params.maxPrice!);
+    }
+
+    // Sort logic
+    if (params?.sort === 'price-low-high') {
+      filtered.sort((a, b) => a.price - b.price);
+    } else if (params?.sort === 'price-high-low') {
+      filtered.sort((a, b) => b.price - a.price);
+    } else if (params?.sort === 'rating') {
+      filtered.sort((a, b) => b.rating - a.rating);
+    }
+
+    return filtered;
+  };
+
+  const getProductBySlug = (slug: string): Product | undefined => {
+    return products.find(p => p.slug === slug);
+  };
+
+  const getProductById = (id: string): Product | undefined => {
+    return products.find(p => p.id === id);
+  };
+
   const getCategories = (): Category[] => {
-    return [
-      {
-        id: '1',
-        name: 'Processors',
-        slug: 'processors',
-        description: 'High-performance CPU units for workstations and servers.',
-        subCategories: ['4']
-      },
-      {
-        id: '2',
-        name: 'Graphics Cards',
-        slug: 'graphics-cards',
-        description: 'Elite GPUs for modern visual rendering and training acceleration.',
-        subCategories: []
-      },
-      {
-        id: '3',
-        name: 'Workstations',
-        slug: 'workstations',
-        description: 'Enterprise grade custom computed platforms.',
-        subCategories: []
-      },
-      {
-        id: '4',
-        name: 'Workstation Processors',
-        slug: 'workstation-processors',
-        description: 'Specialized enterprise processors.',
-        parentCategoryId: '1',
-        subCategories: []
-      }
-    ];
+    return categories;
+  };
+
+  const getFeaturedProducts = (): Product[] => {
+    return products.filter(p => p.isFeatured);
+  };
+
+  const getNewArrivals = (): Product[] => {
+    return products.filter(p => p.isNew);
+  };
+
+  const getOnSaleProducts = (): Product[] => {
+    return products.filter(p => p.onSale);
+  };
+
+  const getBrands = (): Brand[] => {
+    return brands;
   };
 
   return {
-    getCategories
+    getProducts,
+    getProductBySlug,
+    getProductById,
+    getCategories,
+    getFeaturedProducts,
+    getNewArrivals,
+    getOnSaleProducts,
+    getBrands
   };
 };

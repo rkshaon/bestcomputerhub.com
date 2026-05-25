@@ -1,16 +1,18 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
+import { useProductService } from './useProductService';
 import type { Brand } from '@/types';
 
 const BRANDS_STORAGE_KEY = 'techcore_mock_brands_registry';
 
 export const useBrandService = () => {
   const apiClient = useApiClient();
+  const productService = useProductService();
 
   const isLoading = ref(false);
   const errorMsg = ref<string | null>(null);
 
-  // Default mock brands for TechCore premium enterprise feel
+  // Initialize mock state
   const getMockBrands = (): Brand[] => {
     if (typeof window === 'undefined') return [];
     try {
@@ -19,13 +21,13 @@ export const useBrandService = () => {
         return JSON.parse(stored);
       }
       
-      const defaults: Brand[] = [
-        { id: '1', name: 'Intel Corporation', slug: 'intel', display_order: 1, is_active: true },
-        { id: '2', name: 'Advanced Micro Devices', slug: 'amd', display_order: 2, is_active: true },
-        { id: '3', name: 'NVIDIA Enterprise', slug: 'nvidia', display_order: 3, is_active: true },
-        { id: '4', name: 'Samsung Semiconductor', slug: 'samsung-semiconductor', display_order: 4, is_active: true },
-        { id: '5', name: 'TSMC', slug: 'tsmc', display_order: 5, is_active: true }
-      ];
+      // Default brands with is_active defaulted to true and mock display_order
+      const defaults: Brand[] = productService.getBrands().map((b, idx) => ({
+        ...b,
+        is_active: b.is_active !== undefined ? b.is_active : true,
+        display_order: idx + 1
+      }));
+      
       localStorage.setItem(BRANDS_STORAGE_KEY, JSON.stringify(defaults));
       return defaults;
     } catch {
@@ -33,21 +35,38 @@ export const useBrandService = () => {
     }
   };
 
+  const saveMockBrands = (brandsList: Brand[]) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(BRANDS_STORAGE_KEY, JSON.stringify(brandsList));
+    } catch {}
+  };
+
   const checkMockMode = (): boolean => {
+    // Determine mock mode based on useApiClient rules
     const config = useRuntimeConfig();
     const apiBase = config.public.apiBase || '';
     return !apiBase || apiBase.trim() === '';
   };
 
-  // Trailing Slashes Requirement: ALWAYS append trailing slash (/)
+  // 1. Get All Brands (Paginated / Filtered or simple list)
   const getBrandsList = async (): Promise<Brand[]> => {
     isLoading.value = true;
     errorMsg.value = null;
 
+    const sortByDisplayOrder = (list: Brand[]) => {
+      return list.sort((a, b) => {
+        const orderA = a.display_order !== undefined ? a.display_order : 999999;
+        const orderB = b.display_order !== undefined ? b.display_order : 999999;
+        return orderA - orderB;
+      });
+    };
+
     if (checkMockMode()) {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Simulate artificial latency
+      await new Promise(resolve => setTimeout(resolve, 600));
       isLoading.value = false;
-      return getMockBrands();
+      return sortByDisplayOrder(getMockBrands());
     }
 
     try {
@@ -55,25 +74,216 @@ export const useBrandService = () => {
         method: 'GET'
       });
       isLoading.value = false;
-
-      let results: Brand[] = [];
-      if (data && typeof data === 'object') {
-        if ('results' in data && Array.isArray(data.results)) {
-          results = data.results;
-        } else if (Array.isArray(data)) {
-          results = data;
+      let list: Brand[] = [];
+      if (Array.isArray(data)) {
+        list = data;
+      } else if (data && typeof data === 'object') {
+        if ('data' in data && Array.isArray(data.data)) {
+          list = data.data;
+        } else if ('results' in data && Array.isArray(data.results)) {
+          list = data.results;
+        } else if ('brands' in data && Array.isArray(data.brands)) {
+          list = data.brands;
         }
       }
-      return results;
+      return sortByDisplayOrder(list);
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to retrieve partner brands.';
+      errorMsg.value = err.data?.message || err.message || 'Failed to retrieve brands registry.';
       isLoading.value = false;
-      return getMockBrands();
+      // Fallback to mock brands if API fails so the system doesn't visually crash
+      return sortByDisplayOrder(getMockBrands());
+    }
+  };
+
+  // 2. Fetch Brand Details
+  const getBrandDetails = async (id: string): Promise<Brand | null> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      isLoading.value = false;
+      const brandsList = getMockBrands();
+      return brandsList.find(b => b.id === id) || null;
+    }
+
+    try {
+      const data = await apiClient.request<Brand>(`/api/v1/brands/${id}/`, {
+        method: 'GET'
+      });
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Failed to retrieve brand audit.';
+      isLoading.value = false;
+      // Fallback
+      return getMockBrands().find(b => b.id === id) || null;
+    }
+  };
+
+  // 3. Create Brand
+  const createBrand = async (payload: { name: string; slug: string; description: string; is_active: boolean; display_order?: number }): Promise<Brand> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    // Standard business validations
+    if (!payload.name?.trim()) {
+      const err = new Error('Brand name is required');
+      errorMsg.value = err.message;
+      isLoading.value = false;
+      throw err;
+    }
+    if (!payload.slug?.trim()) {
+      const err = new Error('Brand slug identifier is required');
+      errorMsg.value = err.message;
+      isLoading.value = false;
+      throw err;
+    }
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      isLoading.value = false;
+
+      const brandsList = getMockBrands();
+      
+      // Slug uniqueness checker
+      if (brandsList.some(b => b.slug.toLowerCase() === payload.slug.toLowerCase())) {
+        const err = new Error(`Protocol Violation: Brand slug "${payload.slug}" is already registered.`);
+        errorMsg.value = err.message;
+        throw err;
+      }
+
+      const newBrand: Brand = {
+        id: 'brand_' + Math.floor(Math.random() * 1000000),
+        name: payload.name.trim(),
+        slug: payload.slug.trim().toLowerCase(),
+        description: payload.description?.trim() || '',
+        logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80', // Default modern container placeholder logo
+        productCount: 0,
+        is_active: payload.is_active,
+        display_order: payload.display_order
+      };
+
+      brandsList.push(newBrand);
+      saveMockBrands(brandsList);
+      return newBrand;
+    }
+
+    try {
+      const data = await apiClient.request<Brand>('/api/v1/brands/', {
+        method: 'POST',
+        body: payload
+      });
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Failed to register brand partner.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  // 4. Edit Brand
+  const updateBrand = async (id: string, payload: { name: string; slug: string; description: string; is_active: boolean; display_order?: number }): Promise<Brand> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (!payload.name?.trim()) {
+      const err = new Error('Brand name is required');
+      errorMsg.value = err.message;
+      isLoading.value = false;
+      throw err;
+    }
+    if (!payload.slug?.trim()) {
+      const err = new Error('Brand slug identifier is required');
+      errorMsg.value = err.message;
+      isLoading.value = false;
+      throw err;
+    }
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      isLoading.value = false;
+
+      const brandsList = getMockBrands();
+      const idx = brandsList.findIndex(b => b.id === id);
+      const existingBrand = brandsList[idx];
+      if (idx === -1 || !existingBrand) {
+        throw new Error('Brand not found in administrative mock node.');
+      }
+
+      // Check unique slug on other brands
+      if (brandsList.some((b, i) => i !== idx && b.slug.toLowerCase() === payload.slug.toLowerCase())) {
+        const err = new Error(`Protocol Violation: Brand slug "${payload.slug}" is already registered.`);
+        errorMsg.value = err.message;
+        throw err;
+      }
+
+      const updatedBrand: Brand = {
+        id: existingBrand.id,
+        name: payload.name.trim(),
+        slug: payload.slug.trim().toLowerCase(),
+        description: payload.description?.trim() || '',
+        logo: existingBrand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80',
+        productCount: existingBrand.productCount || 0,
+        is_active: payload.is_active,
+        display_order: payload.display_order
+      };
+
+      brandsList[idx] = updatedBrand;
+      saveMockBrands(brandsList);
+      return updatedBrand;
+    }
+
+    try {
+      const { slug, ...bodyWithoutSlug } = payload;
+      const data = await apiClient.request<Brand>(`/api/v1/brands/${id}/`, {
+        method: 'PUT',
+        body: bodyWithoutSlug
+      });
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Failed to patch brand profile.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  // 5. Delete Brand
+  const deleteBrand = async (id: string): Promise<boolean> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 600));
+      isLoading.value = false;
+
+      const brandsList = getMockBrands();
+      const filtered = brandsList.filter(b => b.id !== id);
+      saveMockBrands(filtered);
+      return true;
+    }
+
+    try {
+      await apiClient.request(`/api/v1/brands/${id}/`, {
+        method: 'DELETE'
+      });
+      isLoading.value = false;
+      return true;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Failed to delete partner registry.';
+      isLoading.value = false;
+      throw err;
     }
   };
 
   return {
     getBrandsList,
+    getBrandDetails,
+    createBrand,
+    updateBrand,
+    deleteBrand,
     isLoading,
     errorMsg
   };

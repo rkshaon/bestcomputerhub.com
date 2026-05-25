@@ -128,11 +128,7 @@ export const useCategoryService = () => {
       params.append('page_size', pageSize.toString());
       if (search) params.append('search', search);
       if (ordering) params.append('ordering', ordering);
-      
-      // Send parent only if it is a valid numeric category id
-      if (parent && /^\d+$/.test(parent)) {
-        params.append('parent', parent);
-      }
+      if (parent) params.append('parent', parent);
 
       const queryString = params.toString();
       const endpoint = `/api/v1/categories/?${queryString}`;
@@ -213,7 +209,7 @@ export const useCategoryService = () => {
     }
   };
 
-  const createCategory = async (payload: { name: string; slug: string; description: string | null; parent: number | string | null }): Promise<Category> => {
+  const createCategory = async (payload: { name: string; slug: string; description: string; parentCategoryId?: string; icon?: string; image?: string }): Promise<Category> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -230,45 +226,31 @@ export const useCategoryService = () => {
       throw err;
     }
 
-    // Standardize parent to numeric format or null
-    let parentId: number | null = null;
-    if (payload.parent !== undefined && payload.parent !== null && payload.parent !== '') {
-      const parsed = parseInt(String(payload.parent), 10);
-      if (!isNaN(parsed)) {
-        parentId = parsed;
-      }
-    }
-
-    const requestBody = {
-      name: payload.name.trim(),
-      slug: payload.slug.trim().toLowerCase(),
-      description: payload.description?.trim() || null,
-      parent: parentId
-    };
-
     if (checkMockMode()) {
       await new Promise(resolve => setTimeout(resolve, 800));
       isLoading.value = false;
 
       const categoriesList = getMockCategories();
-      if (categoriesList.some(c => c.slug.toLowerCase() === requestBody.slug.toLowerCase())) {
-        const err = new Error(`Protocol Violation: Category slug "${requestBody.slug}" is already registered.`);
+      if (categoriesList.some(c => c.slug.toLowerCase() === payload.slug.toLowerCase())) {
+        const err = new Error(`Protocol Violation: Category slug "${payload.slug}" is already registered.`);
         errorMsg.value = err.message;
         throw err;
       }
 
       const newCategory: Category = {
-        id: String(Math.floor(Math.random() * 1000000)),
-        name: requestBody.name,
-        slug: requestBody.slug,
-        description: requestBody.description || undefined,
-        parentCategoryId: parentId ? String(parentId) : undefined,
+        id: 'cat_' + Math.floor(Math.random() * 1000000),
+        name: payload.name.trim(),
+        slug: payload.slug.trim().toLowerCase(),
+        description: payload.description?.trim() || '',
+        parentCategoryId: payload.parentCategoryId || undefined,
+        icon: payload.icon || undefined,
+        image: payload.image || undefined,
         subCategories: []
       };
 
       // Also update the parent category's subCategories list if applicable
-      if (parentId) {
-        const parentCat = categoriesList.find(c => c.id === String(parentId));
+      if (payload.parentCategoryId) {
+        const parentCat = categoriesList.find(c => c.id === payload.parentCategoryId);
         if (parentCat) {
           if (!parentCat.subCategories) parentCat.subCategories = [];
           parentCat.subCategories.push(newCategory.id);
@@ -283,7 +265,7 @@ export const useCategoryService = () => {
     try {
       const data = await apiClient.request<Category>('/api/v1/categories/', {
         method: 'POST',
-        body: requestBody
+        body: payload
       });
       isLoading.value = false;
       return data;
@@ -319,6 +301,12 @@ export const useCategoryService = () => {
       const idx = categoriesList.findIndex(c => c.id === id);
       if (idx === -1) {
         throw new Error('Category node not found.');
+      }
+
+      if (categoriesList.some((c, i) => i !== idx && c.slug.toLowerCase() === payload.slug.toLowerCase())) {
+        const err = new Error(`Protocol Violation: Category slug "${payload.slug}" is already registered.`);
+        errorMsg.value = err.message;
+        throw err;
       }
 
       const existingCategory = categoriesList[idx];
