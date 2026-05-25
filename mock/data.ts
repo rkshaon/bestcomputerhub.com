@@ -6,84 +6,96 @@ export const categories: Category[] = [
     name: 'Graphics Processors',
     slug: 'gpus',
     description: 'High-performance graphic processing units for enterprise deep learning, AI modeling, and rendering tasks.',
-    subCategories: ['nvidia-rtx', 'amd-radeon', 'datacenter-accelerators']
+    subCategories: ['nvidia-rtx', 'amd-radeon', 'datacenter-accelerators'],
+    order: 10
   },
   {
     id: 'nvidia-rtx',
     name: 'NVIDIA RTX',
     slug: 'nvidia-rtx',
     parentCategoryId: 'cat_gpu',
-    description: 'Workstation graphic processing units powered by NVIDIA architecture.'
+    description: 'Workstation graphic processing units powered by NVIDIA architecture.',
+    order: 11
   },
   {
     id: 'amd-radeon',
     name: 'AMD Radeon',
     slug: 'amd-radeon',
     parentCategoryId: 'cat_gpu',
-    description: 'High-performance graphic hardware from AMD.'
+    description: 'High-performance graphic hardware from AMD.',
+    order: 12
   },
   {
     id: 'datacenter-accelerators',
     name: 'Data Center Accelerators',
     slug: 'datacenter-accelerators',
     parentCategoryId: 'cat_gpu',
-    description: 'AI and compute accelerators for data centers.'
+    description: 'AI and compute accelerators for data centers.',
+    order: 13
   },
   {
     id: 'cat_cpu',
     name: 'Processors',
     slug: 'processors',
     description: 'Server and workstation grade central processing units optimized for heavy parallel workloads.',
-    subCategories: ['intel-xeon', 'amd-epyc', 'workstation-threadripper']
+    subCategories: ['intel-xeon', 'amd-epyc', 'workstation-threadripper'],
+    order: 20
   },
   {
     id: 'intel-xeon',
     name: 'Intel Xeon',
     slug: 'intel-xeon',
     parentCategoryId: 'cat_cpu',
-    description: 'Computing nodes powered by Intel Xeon series processors.'
+    description: 'Computing nodes powered by Intel Xeon series processors.',
+    order: 21
   },
   {
     id: 'amd-epyc',
     name: 'AMD EPYC',
     slug: 'amd-epyc',
     parentCategoryId: 'cat_cpu',
-    description: 'Computing power powered by AMD Epyc processors.'
+    description: 'Computing power powered by AMD Epyc processors.',
+    order: 22
   },
   {
     id: 'workstation-threadripper',
     name: 'Threadripper PRO',
     slug: 'workstation-threadripper',
     parentCategoryId: 'cat_cpu',
-    description: 'Extreme processors for workstation compute.'
+    description: 'Extreme processors for workstation compute.',
+    order: 23
   },
   {
     id: 'cat_server',
     name: 'Enterprise Servers',
     slug: 'servers',
     description: 'High-density rack servers and workstation nodes designed for 24/7 reliability and computing power.',
-    subCategories: ['rackmount-servers', 'blade-enclosures', 'gpu-compute-servers']
+    subCategories: ['rackmount-servers', 'blade-enclosures', 'gpu-compute-servers'],
+    order: 30
   },
   {
     id: 'rackmount-servers',
     name: 'Rackmount Servers',
     slug: 'rackmount-servers',
     parentCategoryId: 'cat_server',
-    description: 'High performance rackmount servers.'
+    description: 'High performance rackmount servers.',
+    order: 31
   },
   {
     id: 'blade-enclosures',
     name: 'Blade Enclosures',
     slug: 'blade-enclosures',
     parentCategoryId: 'cat_server',
-    description: 'High density blade cabinets.'
+    description: 'High density blade cabinets.',
+    order: 32
   },
   {
     id: 'gpu-compute-servers',
     name: 'GPU Compute Servers',
     slug: 'gpu-compute-servers',
     parentCategoryId: 'cat_server',
-    description: 'Servers designed for dense AI acceleration.'
+    description: 'Servers designed for dense AI acceleration.',
+    order: 33
   }
 ];
 

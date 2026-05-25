@@ -125,12 +125,25 @@ export const useCategoryService = () => {
         const isDesc = ordering.startsWith('-');
         const field = isDesc ? ordering.substring(1) : ordering;
         list.sort((a: any, b: any) => {
-          const valA = a[field] || '';
-          const valB = b[field] || '';
-          if (valA < valB) return isDesc ? 1 : -1;
-          if (valA > valB) return isDesc ? -1 : 1;
+          let valA = a[field];
+          let valB = b[field];
+          
+          if (valA === undefined || valA === null) valA = '';
+          if (valB === undefined || valB === null) valB = '';
+          
+          if (typeof valA === 'number' && typeof valB === 'number') {
+            return isDesc ? valB - valA : valA - valB;
+          }
+          
+          const strA = String(valA).toLowerCase();
+          const strB = String(valB).toLowerCase();
+          if (strA < strB) return isDesc ? 1 : -1;
+          if (strA > strB) return isDesc ? -1 : 1;
           return 0;
         });
+      } else {
+        // Default sort by order ascending
+        list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       }
 
       const totalCount = list.length;
@@ -235,7 +248,7 @@ export const useCategoryService = () => {
     }
   };
 
-  const createCategory = async (payload: { name: string; slug: string; description: string; parentCategoryId?: string; icon?: string; image?: string }): Promise<Category> => {
+  const createCategory = async (payload: { name: string; slug: string; description: string; parentCategoryId?: string; icon?: string; image?: string; order?: number }): Promise<Category> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -271,7 +284,8 @@ export const useCategoryService = () => {
         parentCategoryId: payload.parentCategoryId || undefined,
         icon: payload.icon || undefined,
         image: payload.image || undefined,
-        subCategories: []
+        subCategories: [],
+        order: payload.order !== undefined ? Number(payload.order) : 0
       };
 
       // Also update the parent category's subCategories list if applicable
@@ -307,7 +321,7 @@ export const useCategoryService = () => {
     }
   };
 
-  const updateCategory = async (id: string, payload: { name: string; slug: string; description: string; parentCategoryId?: string; icon?: string; image?: string }): Promise<Category> => {
+  const updateCategory = async (id: string, payload: { name: string; slug: string; description: string; parentCategoryId?: string; icon?: string; image?: string; order?: number }): Promise<Category> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -354,7 +368,8 @@ export const useCategoryService = () => {
         parentCategoryId: payload.parentCategoryId || undefined,
         icon: payload.icon || undefined,
         image: payload.image || undefined,
-        subCategories: existingCategory.subCategories || []
+        subCategories: existingCategory.subCategories || [],
+        order: payload.order !== undefined ? Number(payload.order) : 0
       };
 
       // Handle custom parent transitions in mock storage
@@ -691,7 +706,7 @@ export const useCategoryService = () => {
     if (checkMockMode()) {
       await new Promise(resolve => setTimeout(resolve, 300));
       isLoading.value = false;
-      const res = getMockCategories().filter(c => !c.parentCategoryId);
+      const res = getMockCategories().filter(c => !c.parentCategoryId).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       rootCategoriesCache.value = res;
       return res;
     }
@@ -712,12 +727,14 @@ export const useCategoryService = () => {
           results = data.map(mapCategoryResponse);
         }
       }
+      // Sort real backend results as well if order is supplied to ensure consistency
+      results.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       rootCategoriesCache.value = results;
       return results;
     } catch (err: any) {
       errorMsg.value = err.data?.message || err.message || 'Failed to retrieve root categories.';
       isLoading.value = false;
-      const res = getMockCategories().filter(c => !c.parentCategoryId);
+      const res = getMockCategories().filter(c => !c.parentCategoryId).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       // Cache this list even on error so that future visual navigation parses correctly and quickly
       rootCategoriesCache.value = res;
       return res;

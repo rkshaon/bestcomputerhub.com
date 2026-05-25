@@ -252,7 +252,8 @@ const formPayload = ref({
   description: '',
   parentCategoryId: '',
   icon: '',
-  image: ''
+  image: '',
+  order: 0
 });
 
 // Retrieve parent category name by ID (Local state resolution)
@@ -349,7 +350,8 @@ const triggerCreateModal = () => {
     description: '',
     parentCategoryId: '',
     icon: '📁',
-    image: ''
+    image: '',
+    order: 0
   };
   formError.value = null;
   isCreateModalOpen.value = true;
@@ -363,7 +365,8 @@ const triggerEditModal = (cat: Category) => {
     description: cat.description || '',
     parentCategoryId: cat.parentCategoryId || '',
     icon: cat.icon || '📁',
-    image: cat.image || ''
+    image: cat.image || '',
+    order: cat.order ?? 0
   };
   formError.value = null;
   isEditModalOpen.value = true;
@@ -394,7 +397,8 @@ const submitCreateCategory = async () => {
       description: formPayload.value.description,
       parentCategoryId: formPayload.value.parentCategoryId || undefined,
       icon: formPayload.value.icon || undefined,
-      image: formPayload.value.image || undefined
+      image: formPayload.value.image || undefined,
+      order: Number(formPayload.value.order) || 0
     });
 
     isCreateModalOpen.value = false;
@@ -428,7 +432,8 @@ const submitUpdateCategory = async () => {
       description: formPayload.value.description,
       parentCategoryId: formPayload.value.parentCategoryId || undefined,
       icon: formPayload.value.icon || undefined,
-      image: formPayload.value.image || undefined
+      image: formPayload.value.image || undefined,
+      order: Number(formPayload.value.order) || 0
     });
 
     isEditModalOpen.value = false;
@@ -600,6 +605,7 @@ const nestedCategoriesCount = computed(() => {
             <tr class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 dark:border-slate-900">
               <th class="px-8 py-5">Classification</th>
               <th class="px-6 py-5">System ID (Slug)</th>
+              <th class="px-6 py-5">Priority (Order)</th>
               <th class="px-6 py-5">Structural Parent</th>
               <th class="px-6 py-5">Memo Overview</th>
               <th class="px-8 py-5 text-right">Actions</th>
@@ -626,6 +632,11 @@ const nestedCategoriesCount = computed(() => {
                 <span class="font-mono text-xs text-slate-400 bg-slate-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 uppercase tracking-wider font-semibold">
                   {{ cat.slug }}
                 </span>
+              </td>
+
+              <!-- Priority (Order) -->
+              <td class="px-6 py-5 font-mono text-xs font-bold text-slate-500 dark:text-slate-400">
+                {{ cat.order !== undefined ? cat.order : 0 }}
               </td>
 
               <!-- Parent classification mapping -->
@@ -797,6 +808,17 @@ const nestedCategoriesCount = computed(() => {
               </select>
             </div>
 
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Display Order Priority (Order)</label>
+              <input 
+                v-model="formPayload.order" 
+                type="number" 
+                placeholder="e.g. 10" 
+                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
+              />
+              <p class="text-[10px] text-slate-400 ml-1">Sort order priority index (lower values sort higher/first).</p>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
                 <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Visual Symbol (Icon Emoji)</label>
@@ -905,6 +927,17 @@ const nestedCategoriesCount = computed(() => {
               </select>
             </div>
 
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Display Order Priority (Order)</label>
+              <input 
+                v-model="formPayload.order" 
+                type="number" 
+                placeholder="e.g. 10" 
+                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
+              />
+              <p class="text-[10px] text-slate-400 ml-1">Sort order priority index (lower values sort higher/first).</p>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
                 <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Visual Symbol (Icon Emoji)</label>
@@ -993,6 +1026,10 @@ const nestedCategoriesCount = computed(() => {
               <div class="flex items-center justify-between">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Class Identifier UUID</span>
                 <span class="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">{{ selectedCategory.id }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Display Order Priority</span>
+                <span class="text-xs font-mono font-extrabold text-slate-900 dark:text-white">{{ selectedCategory.order !== undefined ? selectedCategory.order : 0 }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sub-Categories Count</span>

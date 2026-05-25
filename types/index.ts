@@ -47,6 +47,7 @@ export interface Category {
   description?: string;
   parentCategoryId?: string;
   subCategories?: string[];
+  order?: number;
 }
 
 export interface CartItem {
