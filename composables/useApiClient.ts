@@ -156,10 +156,18 @@ let refreshPromise: Promise<string> | null = null;
 export const useApiClient = () => {
   const config = useRuntimeConfig();
   const apiBase = config.public.apiBase || '';
+  const route = useRoute();
   
   const accessTokenCookie = useCookie<string | null>('access_token', { maxAge: 60 * 60 * 24 * 7, path: '/' });
   const refreshTokenCookie = useCookie<string | null>('refresh_token', { maxAge: 60 * 60 * 24 * 30, path: '/' });
   const authUserCookie = useCookie<any>('auth_user', { path: '/' });
+
+  const getLoginRedirectUrl = () => {
+    if (route && route.path && route.path !== '/login' && route.path !== '/signup') {
+      return `/login?redirect=${encodeURIComponent(route.fullPath)}`;
+    }
+    return '/login';
+  };
 
   // Centralized Loading and Success/Error States
   const isLoading = ref(false);
@@ -219,7 +227,7 @@ export const useApiClient = () => {
           refreshTokenCookie.value = null;
           authUserCookie.value = null;
           toastError('Security credential negotiation failed. Please sign in again.');
-          navigateTo('/login');
+          navigateTo(getLoginRedirectUrl());
           isLoading.value = false;
           throw err;
         }
@@ -229,7 +237,7 @@ export const useApiClient = () => {
           refreshTokenCookie.value = null;
           authUserCookie.value = null;
           toastError('Your secure session was invalidated. Please re-authenticate.');
-          navigateTo('/login');
+          navigateTo(getLoginRedirectUrl());
           isLoading.value = false;
           throw err;
         }
@@ -273,7 +281,7 @@ export const useApiClient = () => {
                 }
 
                 toastError('Your session has expired. Please sign in again to restore access.');
-                navigateTo('/login');
+                navigateTo(getLoginRedirectUrl());
                 throw refreshErr;
               } finally {
                 refreshPromise = null;
@@ -317,7 +325,7 @@ export const useApiClient = () => {
           }
 
           toastError('Access denied. Please log in to view this directory.');
-          navigateTo('/login');
+          navigateTo(getLoginRedirectUrl());
         }
       }
 

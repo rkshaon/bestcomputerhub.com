@@ -150,7 +150,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // 3. Core Logout Integration
-    async logout() {
+    async logout(redirectPath?: string) {
       const client = useApiClient();
       this.isLoading = true;
       
@@ -170,6 +170,7 @@ export const useAuthStore = defineStore('auth', {
         if (rToken) {
           body['refresh'] = rToken;
           body['refresh_token'] = rToken;
+          body['refresh'] = rToken;
         }
 
         // Use POST /api/v1/auth/logout/ to notify backend with auth token and refresh token body
@@ -197,7 +198,12 @@ export const useAuthStore = defineStore('auth', {
         refreshTokenCookie.value = null;
 
         // Redirect safely
-        navigateTo('/login');
+        const target = redirectPath || (useRoute().path !== '/login' && useRoute().path !== '/signup' ? useRoute().fullPath : '');
+        if (target) {
+          navigateTo(`/login?redirect=${encodeURIComponent(target)}`);
+        } else {
+          navigateTo('/login');
+        }
       }
     },
 

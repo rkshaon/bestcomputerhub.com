@@ -62,7 +62,8 @@ const mockOrders = [
 ];
 
 const handleLogout = async () => {
-  await authStore.logout();
+  const route = useRoute();
+  await authStore.logout(route.fullPath);
   toastSuccess('Secure session terminated successfully.');
 };
 </script>

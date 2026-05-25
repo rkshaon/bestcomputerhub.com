@@ -84,8 +84,8 @@ const toggleSidebar = () => {
 };
 
 const handleLogout = () => {
-  authStore.logout();
-  navigateTo('/login');
+  const route = useRoute();
+  authStore.logout(route.fullPath);
 };
 
 const breadcrumbs = computed(() => {
