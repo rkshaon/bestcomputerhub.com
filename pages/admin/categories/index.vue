@@ -39,7 +39,7 @@ const router = useRouter();
 // State managers initialized from URL query parameters
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const parentFilter = ref(route.query.parent ? String(route.query.parent) : 'all'); // 'all', 'none' (main level only), or specific category ID
-const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'name'); // 'name', '-name', 'slug', '-slug'
+const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'order'); // 'order', '-order', 'name', '-name', 'slug', '-slug'
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 6 : 6);
 
@@ -74,10 +74,20 @@ const filteredCategoriesList = computed(() => {
     const isDesc = ordering.value.startsWith('-');
     const field = isDesc ? ordering.value.substring(1) : ordering.value;
     list.sort((a: any, b: any) => {
-      const valA = String(a[field] || '').toLowerCase();
-      const valB = String(b[field] || '').toLowerCase();
-      if (valA < valB) return isDesc ? 1 : -1;
-      if (valA > valB) return isDesc ? -1 : 1;
+      let valA = a[field];
+      let valB = b[field];
+
+      if (valA === undefined || valA === null) valA = '';
+      if (valB === undefined || valB === null) valB = '';
+
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return isDesc ? valB - valA : valA - valB;
+      }
+
+      const strA = String(valA).toLowerCase();
+      const strB = String(valB).toLowerCase();
+      if (strA < strB) return isDesc ? 1 : -1;
+      if (strA > strB) return isDesc ? -1 : 1;
       return 0;
     });
   }
@@ -300,7 +310,7 @@ watch([searchQuery, parentFilter, ordering, currentPage, itemsPerPage], () => {
   if (parentFilter.value !== 'all') query.parent = parentFilter.value;
   else delete query.parent;
 
-  if (ordering.value !== 'name') query.ordering = ordering.value;
+  if (ordering.value !== 'order') query.ordering = ordering.value;
   else delete query.ordering;
 
   if (currentPage.value !== 1) query.page = String(currentPage.value);
@@ -320,7 +330,7 @@ watch(() => route.query, (newQuery) => {
   const newParent = newQuery.parent ? String(newQuery.parent) : 'all';
   if (parentFilter.value !== newParent) parentFilter.value = newParent;
 
-  const newOrdering = newQuery.ordering ? String(newQuery.ordering) : 'name';
+  const newOrdering = newQuery.ordering ? String(newQuery.ordering) : 'order';
   if (ordering.value !== newOrdering) ordering.value = newOrdering;
 
   const newPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
@@ -556,12 +566,14 @@ const nestedCategoriesCount = computed(() => {
           </select>
         </div>
 
-        <div class="flex items-center gap-2 pr-2 border-l border-slate-100 dark:border-slate-900 pl-4">
+         <div class="flex items-center gap-2 pr-2 border-l border-slate-100 dark:border-slate-900 pl-4">
           <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Order By:</span>
           <select 
             v-model="ordering"
             class="h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer"
           >
+            <option value="order">Display Priority (Asc)</option>
+            <option value="-order">Display Priority (Desc)</option>
             <option value="name">Name (A-Z)</option>
             <option value="-name">Name (Z-A)</option>
             <option value="slug">Slug (A-Z)</option>
