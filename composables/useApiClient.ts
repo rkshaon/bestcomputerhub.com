@@ -150,18 +150,8 @@ export interface TokenRefreshResponse {
   refreshToken?: string;
 }
 
-// Token refresh queue mechanisms
-let isRefreshing = false;
-let refreshQueue: Array<(token: string) => void> = [];
-
-const processQueue = (err: Error | null, token: string = '') => {
-  refreshQueue.forEach((callback) => {
-    if (!err) {
-      callback(token);
-    }
-  });
-  refreshQueue = [];
-};
+// Shared token refresh promise to prevent duplicate concurrent refresh requests
+let refreshPromise: Promise<string> | null = null;
 
 export const useApiClient = () => {
   const config = useRuntimeConfig();
@@ -169,6 +159,7 @@ export const useApiClient = () => {
   
   const accessTokenCookie = useCookie<string | null>('access_token', { maxAge: 60 * 60 * 24 * 7, path: '/' });
   const refreshTokenCookie = useCookie<string | null>('refresh_token', { maxAge: 60 * 60 * 24 * 30, path: '/' });
+  const authUserCookie = useCookie<any>('auth_user', { path: '/' });
 
   // Centralized Loading and Success/Error States
   const isLoading = ref(false);
@@ -226,7 +217,6 @@ export const useApiClient = () => {
         if (url.includes('/api/v1/auth/refresh')) {
           accessTokenCookie.value = null;
           refreshTokenCookie.value = null;
-          const authUserCookie = useCookie('auth_user', { path: '/' });
           authUserCookie.value = null;
           toastError('Security credential negotiation failed. Please sign in again.');
           navigateTo('/login');
@@ -237,7 +227,6 @@ export const useApiClient = () => {
         if (options._retry) {
           accessTokenCookie.value = null;
           refreshTokenCookie.value = null;
-          const authUserCookie = useCookie('auth_user', { path: '/' });
           authUserCookie.value = null;
           toastError('Your secure session was invalidated. Please re-authenticate.');
           navigateTo('/login');
@@ -246,85 +235,75 @@ export const useApiClient = () => {
         }
 
         if (refreshTokenCookie.value) {
-          if (!isRefreshing) {
-            isRefreshing = true;
-            try {
-              const refreshUrl = `${apiBase}/api/v1/auth/refresh/`;
-              const refreshRes = await $fetch<TokenRefreshResponse>(refreshUrl, {
-                method: 'POST',
-                body: {
-                  refreshToken: refreshTokenCookie.value,
-                  refresh_token: refreshTokenCookie.value,
-                  refresh: refreshTokenCookie.value
-                }
-              });
-
-              const newToken = refreshRes.accessToken || (refreshRes as any).access_token || (refreshRes as any).access;
-              accessTokenCookie.value = newToken;
-              const newRefreshToken = refreshRes.refreshToken || (refreshRes as any).refresh_token || (refreshRes as any).refresh;
-              if (newRefreshToken) {
-                refreshTokenCookie.value = newRefreshToken;
-              }
-
-              processQueue(null, newToken);
-              isRefreshing = false;
-            } catch (refreshErr) {
-              processQueue(refreshErr as Error, '');
-              isRefreshing = false;
-              
-              // Clear all credentials and persistent cookies
-              accessTokenCookie.value = null;
-              refreshTokenCookie.value = null;
-              const authUserCookie = useCookie('auth_user', { path: '/' });
-              authUserCookie.value = null;
-
+          if (!refreshPromise) {
+            refreshPromise = (async () => {
               try {
-                const authStore = useAuthStore();
-                authStore.$patch({
-                  user: null,
-                  isLoggedIn: false,
-                  error: 'Session expired. Please log in again.'
+                const refreshUrl = `${apiBase}/api/v1/auth/refresh/`;
+                const refreshRes = await $fetch<TokenRefreshResponse>(refreshUrl, {
+                  method: 'POST',
+                  body: {
+                    refreshToken: refreshTokenCookie.value,
+                    refresh_token: refreshTokenCookie.value,
+                    refresh: refreshTokenCookie.value
+                  }
                 });
-              } catch (e) {
-                console.error('Could not patch auth store', e);
-              }
 
-              toastError('Your session has expired. Please sign in again to restore access.');
-              navigateTo('/login');
-              isLoading.value = false;
-              throw refreshErr;
-            }
+                const newToken = refreshRes.accessToken || (refreshRes as any).access_token || (refreshRes as any).access;
+                accessTokenCookie.value = newToken;
+                const newRefreshToken = refreshRes.refreshToken || (refreshRes as any).refresh_token || (refreshRes as any).refresh;
+                if (newRefreshToken) {
+                  refreshTokenCookie.value = newRefreshToken;
+                }
+                return newToken;
+              } catch (refreshErr) {
+                // Clear all credentials and persistent cookies
+                accessTokenCookie.value = null;
+                refreshTokenCookie.value = null;
+                authUserCookie.value = null;
+
+                try {
+                  const authStore = useAuthStore();
+                  authStore.$patch({
+                    user: null,
+                    isLoggedIn: false,
+                    error: 'Session expired. Please log in again.'
+                  });
+                } catch (e) {
+                  console.error('Could not patch auth store', e);
+                }
+
+                toastError('Your session has expired. Please sign in again to restore access.');
+                navigateTo('/login');
+                throw refreshErr;
+              } finally {
+                refreshPromise = null;
+              }
+            })();
           }
 
-          // Queue retry requests for when refresh finishes
-          return new Promise<T>((resolve, reject) => {
-            refreshQueue.push(async (token) => {
-              if (!token) {
-                reject(new Error('Session expired - refresh token failed'));
-                return;
-              }
-              try {
-                const rHeaders = { ...headers };
-                rHeaders['Authorization'] = `Bearer ${token}`;
-                
-                const retryOpts = {
-                  ...options,
-                  headers: rHeaders,
-                  _retry: true
-                };
+          try {
+            const token = await refreshPromise;
+            const rHeaders = { ...headers };
+            rHeaders['Authorization'] = `Bearer ${token}`;
+            
+            const retryOpts = {
+              ...options,
+              headers: rHeaders,
+              _retry: true
+            };
 
-                const retryResponse = await $fetch<T>(fullUrl, retryOpts);
-                resolve(retryResponse);
-              } catch (retryErr) {
-                reject(retryErr);
-              }
-            });
-          });
+            const retryResponse = await $fetch<T>(fullUrl, retryOpts);
+            isSuccess.value = true;
+            isLoading.value = false;
+            return retryResponse;
+          } catch (retryErr) {
+            isLoading.value = false;
+            throw retryErr;
+          }
         } else {
           // No refresh token available - clear session and redirect to login
           accessTokenCookie.value = null;
           refreshTokenCookie.value = null;
-          const authUserCookie = useCookie('auth_user', { path: '/' });
           authUserCookie.value = null;
 
           try {
