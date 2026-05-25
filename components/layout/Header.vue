@@ -50,16 +50,12 @@ const loadMenuCategories = async () => {
       categories.value = rootRes;
     }
     
-    const allRes = await categoryService.getCategoriesList({ page_size: 100 });
-    if (allRes?.results && allRes.results.length) {
-      allCategories.value = allRes.results;
-    }
-
-    // Recursively collect all categories from root categories' children arrays to guarantee robust localized slug mapping
+    // Recursively collect all categories from root categories' children arrays to guarantee robust localized slug mapping and eliminate the redundant getCategoriesList call
+    const collected: Category[] = [];
     const collectAllCategories = (list: Category[]) => {
       list.forEach(c => {
-        if (!allCategories.value.some(existing => existing.id === c.id)) {
-          allCategories.value.push(c);
+        if (!collected.some(existing => existing.id === c.id)) {
+          collected.push(c);
         }
         if (c.children && c.children.length) {
           collectAllCategories(c.children);
@@ -69,6 +65,7 @@ const loadMenuCategories = async () => {
     
     if (categories.value && categories.value.length) {
       collectAllCategories(categories.value);
+      allCategories.value = collected;
     }
   } catch (err: any) {
     menuError.value = err.message || 'Failed to sync categories.';
