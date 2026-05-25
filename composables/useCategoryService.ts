@@ -27,6 +27,20 @@ export const useCategoryService = () => {
   const isLoading = ref(false);
   const errorMsg = ref<string | null>(null);
 
+  const mapCategoryResponse = (cat: any): Category => {
+    if (!cat) return cat;
+    let parentId: string | undefined = undefined;
+    if (cat.parentCategoryId !== undefined) {
+      parentId = cat.parentCategoryId;
+    } else if (cat.parent) {
+      parentId = typeof cat.parent === 'object' ? cat.parent.id : cat.parent;
+    }
+    return {
+      ...cat,
+      parentCategoryId: parentId
+    };
+  };
+
   // Initialize mock state
   const getMockCategories = (): Category[] => {
     if (typeof window === 'undefined') return [];
@@ -146,15 +160,15 @@ export const useCategoryService = () => {
 
       if (data && typeof data === 'object') {
         if ('results' in data && Array.isArray(data.results)) {
-          results = data.results;
+          results = data.results.map(mapCategoryResponse);
           totalCount = data.count !== undefined ? data.count : results.length;
           totalPages = data.pages !== undefined ? data.pages : Math.ceil(totalCount / pageSize);
         } else if ('data' in data && Array.isArray(data.data)) {
-          results = data.data;
+          results = data.data.map(mapCategoryResponse);
           totalCount = data.total !== undefined ? data.total : results.length;
           totalPages = Math.ceil(totalCount / pageSize);
         } else if (Array.isArray(data)) {
-          results = data;
+          results = data.map(mapCategoryResponse);
           totalCount = data.length;
           totalPages = Math.ceil(totalCount / pageSize);
         }
@@ -197,11 +211,11 @@ export const useCategoryService = () => {
     }
 
     try {
-      const data = await apiClient.request<Category>(`/api/v1/categories/${id}/`, {
+      const data = await apiClient.request<any>(`/api/v1/categories/${id}/`, {
         method: 'GET'
       });
       isLoading.value = false;
-      return data;
+      return mapCategoryResponse(data);
     } catch (err: any) {
       errorMsg.value = err.data?.message || err.message || 'Failed to retrieve category details.';
       isLoading.value = false;
@@ -263,12 +277,17 @@ export const useCategoryService = () => {
     }
 
     try {
-      const data = await apiClient.request<Category>('/api/v1/categories/', {
+      const { parentCategoryId, ...rest } = payload;
+      const apiPayload = {
+        ...rest,
+        parent: parentCategoryId || null
+      };
+      const data = await apiClient.request<any>('/api/v1/categories/', {
         method: 'POST',
-        body: payload
+        body: apiPayload
       });
       isLoading.value = false;
-      return data;
+      return mapCategoryResponse(data);
     } catch (err: any) {
       errorMsg.value = err.data?.message || err.message || 'Failed to create category node.';
       isLoading.value = false;
@@ -353,13 +372,17 @@ export const useCategoryService = () => {
     }
 
     try {
-      const { slug, ...bodyWithoutSlug } = payload;
-      const data = await apiClient.request<Category>(`/api/v1/categories/${id}/`, {
+      const { slug, parentCategoryId, ...rest } = payload;
+      const apiPayload = {
+        ...rest,
+        parent: parentCategoryId || null
+      };
+      const data = await apiClient.request<any>(`/api/v1/categories/${id}/`, {
         method: 'PUT',
-        body: bodyWithoutSlug
+        body: apiPayload
       });
       isLoading.value = false;
-      return data;
+      return mapCategoryResponse(data);
     } catch (err: any) {
       errorMsg.value = err.data?.message || err.message || 'Failed to update category node.';
       isLoading.value = false;
