@@ -1,3 +1,4 @@
+// File: /types/index.ts
 export interface Product {
   id: string;
   name: string;
@@ -48,6 +49,13 @@ export interface Category {
   parentCategoryId?: string;
   subCategories?: string[];
   order?: number;
+}
+
+export interface PaginatedResponse<T> {
+  results: T[];
+  count: number;
+  page: number;
+  pages: number;
 }
 
 export interface CartItem {

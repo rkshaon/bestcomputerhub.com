@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
-import type { Category } from '@/types';
+import type { Category, PaginatedResponse } from '@/types';
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 const rootCategoriesCache = ref<Category[] | null>(null);
@@ -16,12 +16,7 @@ export interface CategoryFilters {
   is_parent?: boolean; // Return only root-level categories
 }
 
-export interface PaginatedCategoriesResponse {
-  results: Category[];
-  count: number;
-  page: number;
-  pages: number;
-}
+export type PaginatedCategoriesResponse = PaginatedResponse<Category>;
 
 export interface CategoryImportResponse {
   success: boolean;

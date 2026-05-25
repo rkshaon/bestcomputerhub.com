@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
-import type { Brand } from '@/types';
+import type { Brand, PaginatedResponse } from '@/types';
 
 const BRANDS_STORAGE_KEY = 'techcore_mock_brands_registry';
 
@@ -93,6 +93,134 @@ export const useBrandService = () => {
       isLoading.value = false;
       // Fallback to mock brands if API fails so the system doesn't visually crash
       return sortByDisplayOrder(getMockBrands());
+    }
+  };
+
+  // 1.2 Get Paginated Brands List via Generic paginated response
+  const getBrandsPaginatedList = async (filters: { page?: number; page_size?: number; search?: string; ordering?: string } = {}): Promise<PaginatedResponse<Brand>> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    const page = filters.page || 1;
+    const pageSize = filters.page_size || 5;
+    const search = filters.search || '';
+    const ordering = filters.ordering || '';
+
+    const sortByDisplayOrder = (list: Brand[]) => {
+      return list.sort((a, b) => {
+        const orderA = a.display_order !== undefined ? a.display_order : 999999;
+        const orderB = b.display_order !== undefined ? b.display_order : 999999;
+        return orderA - orderB;
+      });
+    };
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      isLoading.value = false;
+
+      let list = getMockBrands();
+      if (search) {
+        list = list.filter(b => 
+          b.name.toLowerCase().includes(search.toLowerCase()) || 
+          b.slug.toLowerCase().includes(search.toLowerCase()) || 
+          (b.description || '').toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      // Sort by ordering field if specified, otherwise display_order
+      if (ordering) {
+        const isDesc = ordering.startsWith('-');
+        const field = isDesc ? ordering.substring(1) : ordering;
+        list.sort((a: any, b: any) => {
+          let valA = a[field];
+          let valB = b[field];
+          if (valA === undefined || valA === null) valA = '';
+          if (valB === undefined || valB === null) valB = '';
+          if (typeof valA === 'number' && typeof valB === 'number') {
+            return isDesc ? valB - valA : valA - valB;
+          }
+          const strA = String(valA).toLowerCase();
+          const strB = String(valB).toLowerCase();
+          if (strA < strB) return isDesc ? 1 : -1;
+          if (strA > strB) return isDesc ? -1 : 1;
+          return 0;
+        });
+      } else {
+        sortByDisplayOrder(list);
+      }
+
+      const totalCount = list.length;
+      const totalPages = Math.ceil(totalCount / pageSize) || 1;
+      const startIndex = (page - 1) * pageSize;
+      const results = list.slice(startIndex, startIndex + pageSize);
+
+      return {
+        results,
+        count: totalCount,
+        page,
+        pages: totalPages
+      };
+    }
+
+    try {
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('page_size', pageSize.toString());
+      if (search) params.append('search', search);
+      if (ordering) params.append('ordering', ordering);
+
+      const endpoint = `/api/v1/brands/?${params.toString()}`;
+      const data = await apiClient.request<any>(endpoint, {
+        method: 'GET'
+      });
+
+      isLoading.value = false;
+
+      let results: Brand[] = [];
+      let totalCount = 0;
+      let totalPages = 1;
+
+      if (data && typeof data === 'object') {
+        if ('results' in data && Array.isArray(data.results)) {
+          results = data.results;
+          totalCount = data.count !== undefined ? data.count : results.length;
+          totalPages = data.pages !== undefined ? data.pages : Math.ceil(totalCount / pageSize);
+        } else if ('data' in data && Array.isArray(data.data)) {
+          results = data.data;
+          totalCount = data.total !== undefined ? data.total : results.length;
+          totalPages = Math.ceil(totalCount / pageSize);
+        } else if (Array.isArray(data)) {
+          results = data;
+          totalCount = data.length;
+          totalPages = Math.ceil(totalCount / pageSize);
+        }
+      }
+
+      sortByDisplayOrder(results);
+
+      return {
+        results,
+        count: totalCount,
+        page,
+        pages: totalPages
+      };
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Failed to retrieve brands paginated taxonomy.';
+      isLoading.value = false;
+
+      // Fallback
+      const list = getMockBrands();
+      const totalCount = list.length;
+      const totalPages = Math.ceil(totalCount / pageSize) || 1;
+      const startIndex = (page - 1) * pageSize;
+      const results = list.slice(startIndex, startIndex + pageSize);
+
+      return {
+        results,
+        count: totalCount,
+        page,
+        pages: totalPages
+      };
     }
   };
 
@@ -281,6 +409,7 @@ export const useBrandService = () => {
 
   return {
     getBrandsList,
+    getBrandsPaginatedList,
     getBrandDetails,
     createBrand,
     updateBrand,

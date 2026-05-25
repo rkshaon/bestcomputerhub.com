@@ -51,6 +51,10 @@ Upon implementing any feature or resolving any issue, the agent MUST run the fol
 - **Fields to Synchronize**: This includes current page number (`page`), page size (`pageSize`), search keyword (`search`), sorting/ordering key (`ordering`), and any active filters.
 - **Bidirectional Bindings**: On mount or on route update, the component must parse these parameters from the URL and initialize its internal reactive trackers accordingly. Any subsequent user action that mutates page status, filters, or search bars must immediately commit those corrections to the route router using active push/replace operations to preserve link shareability and reliable history tracking.
 
+### 📋 Generic Pagination Interfaces for List Responses
+- **Paginated Response Interface**: ALL listing/categories/brands/products responses from pagination list APIs MUST use the globally defined generic `PaginatedResponse<T>` interface rather than bespoke domain-oriented pagination interfaces.
+- **Generic Interface Mandate**: Ensure that any new list API called in the admin panel or main website integrates this generic template style instead of defining discrete interface shapes.
+
 ### 🔑 Automatic Token Refresh & Security Node Authorization
 - **Automatic Token Refresh**: All API integrations MUST run through the centralized `useApiClient` composable. It handles automatic JWT access token refresh using a queued interceptor pattern to resolve concurrent response race conditions.
 - **Refresh Fallbacks**: The token-refresh interceptor automatically queries standard secure endpoints sequentially (`/api/v1/token/refresh/`, `/api/v1/auth/token/refresh/`, and `/api/v1/auth/refresh/`) with the body parameter `{ refresh: string }`.
