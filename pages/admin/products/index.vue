@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/products/index.vue -->
 <script setup lang="ts">
 import { 
   Plus, 

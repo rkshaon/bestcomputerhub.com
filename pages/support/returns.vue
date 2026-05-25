@@ -1,3 +1,4 @@
+<!-- File: /pages/support/returns.vue -->
 <script setup lang="ts">
 import { RefreshCcw, Package, Clock, ShieldAlert, CheckCircle2 } from 'lucide-vue-next';
 

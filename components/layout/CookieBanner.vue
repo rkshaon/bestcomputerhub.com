@@ -1,3 +1,4 @@
+<!-- File: /components/layout/CookieBanner.vue -->
 <script setup lang="ts">
 import { Cookie, X, ChevronRight } from 'lucide-vue-next';
 import { useCookieStore } from '@/stores/cookies';

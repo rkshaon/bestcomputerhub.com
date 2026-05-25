@@ -1,3 +1,4 @@
+<!-- File: /pages/support/payments.vue -->
 <script setup lang="ts">
 import { 
   CreditCard, 

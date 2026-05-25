@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/settings/index.vue -->
 <script setup lang="ts">
 import { 
   Settings, 

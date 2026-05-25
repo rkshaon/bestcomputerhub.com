@@ -1,3 +1,4 @@
+<!-- File: /pages/signup.vue -->
 <script setup lang="ts">
 import { ref } from 'vue';
 import { User, Mail, Lock, Phone, ArrowRight, ShieldCheck, Loader2, CheckCircle2 } from 'lucide-vue-next';

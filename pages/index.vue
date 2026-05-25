@@ -1,3 +1,4 @@
+<!-- File: /pages/index.vue -->
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
 import { ChevronRight, ShieldCheck, Truck, RefreshCw, Trophy } from 'lucide-vue-next';

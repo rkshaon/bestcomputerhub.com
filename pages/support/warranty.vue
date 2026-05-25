@@ -1,3 +1,4 @@
+<!-- File: /pages/support/warranty.vue -->
 <script setup lang="ts">
 import { ShieldCheck, Award, Zap, LifeBuoy, FileText } from 'lucide-vue-next';
 import { cn } from '@/utils';

@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/security/logs.vue -->
 <script setup lang="ts">
 import { 
   ShieldAlert, 

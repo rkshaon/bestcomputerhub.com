@@ -1,3 +1,4 @@
+// File: /stores/wishlist.ts
 import { defineStore } from 'pinia';
 import type { Product } from '@/types';
 

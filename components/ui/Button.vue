@@ -1,3 +1,4 @@
+<!-- File: /components/ui/Button.vue -->
 <script setup lang="ts">
 import { computed, resolveComponent } from 'vue';
 import { cn } from '@/utils';

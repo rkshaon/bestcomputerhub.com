@@ -1,3 +1,4 @@
+<!-- File: /layouts/default.vue -->
 <template>
   <div class="flex flex-col min-h-screen">
     <LayoutHeader />

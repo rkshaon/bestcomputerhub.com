@@ -1,3 +1,4 @@
+// File: /composables/useBlogService.ts
 import { blogPosts } from '@/mock/data';
 import type { BlogPost } from '@/types';
 

@@ -1,3 +1,4 @@
+<!-- File: /components/layout/Footer.vue -->
 <script setup lang="ts">
 import { Facebook, Twitter, Instagram, Youtube, Mail, PackageSearch, ArrowRight } from 'lucide-vue-next';
 

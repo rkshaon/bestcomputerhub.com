@@ -1,3 +1,4 @@
+<!-- File: /components/layout/BackToTop.vue -->
 <script setup lang="ts">
 import { ArrowUp } from 'lucide-vue-next';
 import { cn } from '@/utils';

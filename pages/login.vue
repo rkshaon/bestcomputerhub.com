@@ -1,3 +1,4 @@
+<!-- File: /pages/login.vue -->
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Mail, Lock, ArrowRight, Github, Chrome, ShieldCheck, Eye, EyeOff, Loader2 } from 'lucide-vue-next';

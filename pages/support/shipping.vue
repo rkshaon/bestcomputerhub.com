@@ -1,3 +1,4 @@
+<!-- File: /pages/support/shipping.vue -->
 <script setup lang="ts">
 import { Truck, Globe, Zap, ShieldCheck, Clock } from 'lucide-vue-next';
 

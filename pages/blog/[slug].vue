@@ -1,3 +1,4 @@
+<!-- File: /pages/blog/[slug].vue -->
 <script setup lang="ts">
 import { ArrowLeft, Calendar, Clock, Share2, Tag, ChevronRight, User } from 'lucide-vue-next';
 

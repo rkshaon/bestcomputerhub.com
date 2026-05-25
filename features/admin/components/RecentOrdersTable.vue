@@ -1,3 +1,4 @@
+<!-- File: /features/admin/components/RecentOrdersTable.vue -->
 <script setup lang="ts">
 import { Eye, ExternalLink, MoreVertical } from 'lucide-vue-next';
 import { formatCurrency, cn } from '@/utils';

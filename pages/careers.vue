@@ -1,3 +1,4 @@
+<!-- File: /pages/careers.vue -->
 <script setup lang="ts">
 import { Briefcase, MapPin, Clock, ArrowRight, Zap, Target, Rocket } from 'lucide-vue-next';
 

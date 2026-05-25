@@ -1,3 +1,4 @@
+<!-- File: /pages/account.vue -->
 <script setup lang="ts">
 import { 
   User, 

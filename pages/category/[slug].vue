@@ -1,3 +1,4 @@
+<!-- File: /pages/category/[slug].vue -->
 <script setup lang="ts">
 import { SlidersHorizontal, Grid, List, Search } from 'lucide-vue-next';
 

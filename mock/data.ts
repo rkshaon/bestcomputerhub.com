@@ -1,3 +1,4 @@
+// File: /mock/data.ts
 import type { Product, Category, Brand, BlogPost } from '@/types';
 
 export const categories: Category[] = [

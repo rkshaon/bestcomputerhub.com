@@ -1,3 +1,4 @@
+<!-- File: /pages/privacy.vue -->
 <script setup lang="ts">
 import { Shield, Lock, Eye, FileText, Globe, Server, Bell, ChevronRight } from 'lucide-vue-next';
 

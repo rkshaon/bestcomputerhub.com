@@ -1,3 +1,4 @@
+<!-- File: /features/admin/components/DashboardStatCard.vue -->
 <script setup lang="ts">
 import type { LucideIcon } from 'lucide-vue-next';
 import { cn } from '@/utils';

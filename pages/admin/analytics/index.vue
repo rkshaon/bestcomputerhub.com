@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/analytics/index.vue -->
 <script setup lang="ts">
 import { 
   BarChart3, 

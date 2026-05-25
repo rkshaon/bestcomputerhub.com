@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/products/[id].vue -->
 <script setup lang="ts">
 import { 
   ChevronLeft, 

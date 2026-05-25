@@ -1,3 +1,4 @@
+// File: /stores/auth.ts
 import { defineStore } from 'pinia';
 import { useCookie, navigateTo } from '#app';
 import { useApiClient, type User, type Customer, type RegisterPayload, type LoginPayload, type LoginResponse } from '@/composables/useApiClient';

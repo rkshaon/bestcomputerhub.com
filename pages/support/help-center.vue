@@ -1,3 +1,4 @@
+<!-- File: /pages/support/help-center.vue -->
 <script setup lang="ts">
 import { HelpCircle, Search, MessageSquare, Phone, Mail, ChevronRight } from 'lucide-vue-next';
 

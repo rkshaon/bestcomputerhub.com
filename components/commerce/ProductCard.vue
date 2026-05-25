@@ -1,3 +1,4 @@
+<!-- File: /components/commerce/ProductCard.vue -->
 <script setup lang="ts">
 import { Star, ShoppingCart, Heart } from 'lucide-vue-next';
 import type { Product } from '@/types';

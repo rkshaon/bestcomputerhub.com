@@ -1,3 +1,4 @@
+// File: /stores/admin.ts
 import { defineStore } from 'pinia';
 import type { Order, Customer, AdminStats, InventoryAlert } from '@/types';
 import { useProductService } from '@/composables/useProductService';

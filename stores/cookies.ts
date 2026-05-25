@@ -1,3 +1,4 @@
+// File: /stores/cookies.ts
 import { defineStore } from 'pinia';
 
 export interface CookiePreferences {

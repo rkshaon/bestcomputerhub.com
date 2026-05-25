@@ -1,3 +1,4 @@
+<!-- File: /pages/terms.vue -->
 <script setup lang="ts">
 import { Scale, Gavel, TriangleAlert, CreditCard, RefreshCw, Truck, ChevronRight, FileCheck } from 'lucide-vue-next';
 

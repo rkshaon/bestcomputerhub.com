@@ -1,3 +1,4 @@
+<!-- File: /pages/cookies.vue -->
 <script setup lang="ts">
 import { Cookie, ShieldCheck, PieChart, Target, Zap, ChevronRight, Info, Save } from 'lucide-vue-next';
 import { useCookieStore } from '@/stores/cookies';

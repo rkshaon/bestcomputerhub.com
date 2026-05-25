@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/orders/[id].vue -->
 <script setup lang="ts">
 import { markRaw } from 'vue';
 import { 

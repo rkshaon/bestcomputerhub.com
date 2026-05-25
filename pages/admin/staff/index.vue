@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/staff/index.vue -->
 <script setup lang="ts">
 import { 
   ShieldCheck, 

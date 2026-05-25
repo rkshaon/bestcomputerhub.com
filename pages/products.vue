@@ -1,3 +1,4 @@
+<!-- File: /pages/products.vue -->
 <script setup lang="ts">
 import { 
   Filter, 

@@ -1,3 +1,4 @@
+<!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, Monitor, ChevronDown, PackageSearch, Grid2X2, ShieldCheck } from 'lucide-vue-next';

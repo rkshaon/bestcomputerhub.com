@@ -1,3 +1,4 @@
+<!-- File: /pages/wishlist.vue -->
 <script setup lang="ts">
 import { Heart, ShoppingCart, Trash2, ArrowRight, PackageSearch } from 'lucide-vue-next';
 import { formatCurrency } from '@/utils';

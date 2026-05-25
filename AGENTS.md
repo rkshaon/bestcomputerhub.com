@@ -16,6 +16,7 @@ Upon implementing any feature or resolving any issue, the agent MUST run the fol
 2. **Deterministic Naming**: Always rename source files to match their primary internal class, helper, or component name.
 3. **Workspace Sanitization**: Always clean up empty folders, redundant mock files, and temporary artifacts.
 4. **Import Synchronization**: Always update barrel files (`index.ts`) and refresh import paths across the code structure immediately following any file moves.
+5. **File Header Comments**: ALWAYS place or update a file header comment at the top of every source file showing the project's relative file path (e.g. `// File: /composables/useApiClient.ts` or `<!-- File: /pages/index.vue -->`). Keep this updated whenever a file is created, moved, or modified.
 
 ## 🎨 Design & UI Patterns
 

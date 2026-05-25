@@ -1,3 +1,4 @@
+<!-- File: /error.vue -->
 <script setup lang="ts">
 import { TriangleAlert, Home, RefreshCcw } from 'lucide-vue-next';
 

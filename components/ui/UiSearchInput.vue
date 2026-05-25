@@ -1,3 +1,4 @@
+<!-- File: /components/ui/UiSearchInput.vue -->
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next';
 import { cn } from '@/utils';

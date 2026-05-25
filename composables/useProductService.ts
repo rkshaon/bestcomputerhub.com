@@ -1,3 +1,4 @@
+// File: /composables/useProductService.ts
 import { products, categories, brands } from '@/mock/data';
 import type { Product, Category, Brand } from '@/types';
 

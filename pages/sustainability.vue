@@ -1,3 +1,4 @@
+<!-- File: /pages/sustainability.vue -->
 <script setup lang="ts">
 import { Leaf, Recycle, Wind, Droplets, Sun, ChevronRight, BarChart3 } from 'lucide-vue-next';
 

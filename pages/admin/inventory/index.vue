@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/inventory/index.vue -->
 <script setup lang="ts">
 import { 
   Package, 

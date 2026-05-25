@@ -1,3 +1,4 @@
+<!-- File: /components/ui/UiBadge.vue -->
 <script setup lang="ts">
 import { cn } from '@/utils';
 

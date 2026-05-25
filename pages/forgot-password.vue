@@ -1,3 +1,4 @@
+<!-- File: /pages/forgot-password.vue -->
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Mail, ArrowLeft, ArrowRight, ShieldCheck, Loader2, CheckCircle2 } from 'lucide-vue-next';

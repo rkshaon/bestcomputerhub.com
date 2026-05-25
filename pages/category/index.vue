@@ -1,3 +1,4 @@
+<!-- File: /pages/category/index.vue -->
 <script setup lang="ts">
 import { ChevronRight, LayoutGrid, PackageSearch } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';

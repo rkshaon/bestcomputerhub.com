@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/security/index.vue -->
 <script setup lang="ts">
 import { 
   Shield, 

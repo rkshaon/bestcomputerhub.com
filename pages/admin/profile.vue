@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/profile.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { 

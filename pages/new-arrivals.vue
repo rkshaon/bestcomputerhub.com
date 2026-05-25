@@ -1,3 +1,4 @@
+<!-- File: /pages/new-arrivals.vue -->
 <script setup lang="ts">
 import { Sparkles, ArrowRight, Zap, ShoppingCart, Filter } from 'lucide-vue-next';
 import { formatCurrency } from '@/utils';

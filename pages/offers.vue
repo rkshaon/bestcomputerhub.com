@@ -1,3 +1,4 @@
+<!-- File: /pages/offers.vue -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Tag, Clock, ArrowRight, Zap, Percent, ShoppingCart } from 'lucide-vue-next';

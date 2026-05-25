@@ -1,3 +1,4 @@
+<!-- File: /components/commerce/CartDrawer.vue -->
 <script setup lang="ts">
 import { ref } from 'vue';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-vue-next';

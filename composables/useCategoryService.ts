@@ -1,3 +1,4 @@
+// File: /composables/useCategoryService.ts
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';

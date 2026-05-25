@@ -1,3 +1,4 @@
+<!-- File: /pages/about.vue -->
 <script setup lang="ts">
 import { Building2, Users2, Cpu, Globe2, Trophy } from 'lucide-vue-next';
 

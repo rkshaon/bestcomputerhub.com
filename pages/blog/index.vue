@@ -1,3 +1,4 @@
+<!-- File: /pages/blog/index.vue -->
 <script setup lang="ts">
 import { Calendar, Clock, User, ArrowRight, Search, Tag } from 'lucide-vue-next';
 

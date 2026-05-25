@@ -1,3 +1,4 @@
+<!-- File: /pages/checkout.vue -->
 <script setup lang="ts">
 import { ChevronRight, CreditCard, ShieldCheck, Truck, PackageCheck, AlertCircle, Smartphone, Banknote } from 'lucide-vue-next';
 import { formatCurrency, cn } from '@/utils';

@@ -1,3 +1,4 @@
+<!-- File: /pages/admin/notifications/index.vue -->
 <script setup lang="ts">
 import { 
   Bell, 

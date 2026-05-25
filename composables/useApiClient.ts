@@ -1,3 +1,4 @@
+// File: /composables/useApiClient.ts
 import { ref } from 'vue';
 import { useCookie, useRuntimeConfig, navigateTo } from '#app';
 import { useAuthStore } from '@/stores/auth';
