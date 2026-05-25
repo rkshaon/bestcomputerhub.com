@@ -4,6 +4,7 @@ import { useProductService } from './useProductService';
 import type { Category } from '@/types';
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
+const rootCategoriesCache = ref<Category[] | null>(null);
 
 export interface CategoryFilters {
   page?: number;
@@ -11,6 +12,7 @@ export interface CategoryFilters {
   search?: string;
   ordering?: string;
   parent?: string; // parentCategoryId filter
+  is_parent?: boolean; // Return only root-level categories
 }
 
 export interface PaginatedCategoriesResponse {
@@ -87,6 +89,7 @@ export const useCategoryService = () => {
     const search = filters.search || '';
     const ordering = filters.ordering || '';
     const parent = filters.parent || '';
+    const is_parent = filters.is_parent;
 
     if (checkMockMode()) {
       // Simulate artificial latency
@@ -95,8 +98,10 @@ export const useCategoryService = () => {
 
       let list = getMockCategories();
 
-      // Apply parent filter
-      if (parent) {
+      // Apply parent filter or is_parent filter
+      if (is_parent) {
+        list = list.filter(c => !c.parentCategoryId);
+      } else if (parent) {
         if (parent === 'none') {
           // Main level categories
           list = list.filter(c => !c.parentCategoryId);
@@ -149,6 +154,7 @@ export const useCategoryService = () => {
       if (search) params.append('search', search);
       if (ordering) params.append('ordering', ordering);
       if (parent) params.append('parent', parent);
+      if (is_parent !== undefined) params.append('is_parent', is_parent.toString());
 
       const queryString = params.toString();
       const endpoint = `/api/v1/categories/?${queryString}`;
@@ -674,8 +680,53 @@ export const useCategoryService = () => {
     }
   };
 
+  const getRootCategories = async (forceRefetch = false): Promise<Category[]> => {
+    if (rootCategoriesCache.value && !forceRefetch) {
+      return rootCategoriesCache.value;
+    }
+
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+      const res = getMockCategories().filter(c => !c.parentCategoryId);
+      rootCategoriesCache.value = res;
+      return res;
+    }
+
+    try {
+      const data = await apiClient.request<any>('/api/v1/categories/?is_parent=true', {
+        method: 'GET'
+      });
+      isLoading.value = false;
+
+      let results: Category[] = [];
+      if (data && typeof data === 'object') {
+        if ('results' in data && Array.isArray(data.results)) {
+          results = data.results.map(mapCategoryResponse);
+        } else if ('data' in data && Array.isArray(data.data)) {
+          results = data.data.map(mapCategoryResponse);
+        } else if (Array.isArray(data)) {
+          results = data.map(mapCategoryResponse);
+        }
+      }
+      rootCategoriesCache.value = results;
+      return results;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Failed to retrieve root categories.';
+      isLoading.value = false;
+      const res = getMockCategories().filter(c => !c.parentCategoryId);
+      // Cache this list even on error so that future visual navigation parses correctly and quickly
+      rootCategoriesCache.value = res;
+      return res;
+    }
+  };
+
   return {
     getCategoriesList,
+    getRootCategories,
     getCategoryDetails,
     createCategory,
     updateCategory,

@@ -12,6 +12,10 @@ export default defineNuxtConfig({
   typescript: {
     strict: true
   },
+  sourcemap: {
+    client: false,
+    server: false
+  },
   vite: {
     optimizeDeps: {
       include: [

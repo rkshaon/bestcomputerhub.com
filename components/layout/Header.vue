@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, Monitor, ChevronDown, PackageSearch, Grid2X2, ShieldCheck } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
@@ -7,10 +7,15 @@ import { useCartStore } from '@/stores/cart';
 import { useWishlistStore } from '@/stores/wishlist';
 import { useAuthStore } from '@/stores/auth';
 import { useProductService } from '@/composables/useProductService';
+import { useCategoryService } from '@/composables/useCategoryService';
+import type { Category } from '@/types';
+
 const uiStore = useUIStore();
 const cartStore = useCartStore();
 const wishlistStore = useWishlistStore();
 const authStore = useAuthStore();
+const productService = useProductService();
+const categoryService = useCategoryService();
 
 const isSuperAdmin = computed(() => {
   if (!authStore.isLoggedIn || !authStore.user) return false;
@@ -25,14 +30,41 @@ const isSuperAdmin = computed(() => {
          email.includes('admin') ||
          email.includes('staff');
 });
-const productService = useProductService();
-const allCategories = productService.getCategories();
 
-// Filter for top-level categories
-const categories = computed(() => allCategories.filter(c => !c.parentCategoryId));
+// Load static fallback initially to prevent hydration mismatch
+const initialAllCategories = productService.getCategories();
+const allCategories = ref<Category[]>(initialAllCategories);
+const categories = ref<Category[]>(initialAllCategories.filter(c => !c.parentCategoryId));
 
-// Helper to get category by slug
-const getCategoryBySlug = (slug: string) => allCategories.find(c => c.slug === slug);
+const isMenuLoading = ref(false);
+const menuError = ref<string | null>(null);
+
+const loadMenuCategories = async () => {
+  isMenuLoading.value = true;
+  menuError.value = null;
+  try {
+    const rootRes = await categoryService.getRootCategories();
+    if (rootRes && rootRes.length) {
+      categories.value = rootRes;
+    }
+    
+    const allRes = await categoryService.getCategoriesList({ page_size: 100 });
+    if (allRes?.results && allRes.results.length) {
+      allCategories.value = allRes.results;
+    }
+  } catch (err: any) {
+    menuError.value = err.message || 'Failed to sync categories.';
+  } finally {
+    isMenuLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  loadMenuCategories();
+});
+
+// Helper to get category by slug safely
+const getCategoryBySlug = (slug: string) => allCategories.value.find(c => c.slug === slug);
 
 const isScrolled = ref(false);
 const isThemeMenuOpen = ref(false);
@@ -258,14 +290,14 @@ if (process.client) {
           <!-- Mega Menu Dropdown -->
           <div class="absolute top-full left-1/2 -translate-x-1/2 hidden group-hover:block pt-3 z-50">
             <div class="bg-background/95 backdrop-blur-xl border border-border/50 rounded-[2.5rem] shadow-2xl p-8 w-[680px] grid grid-cols-3 gap-8 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top">
-              <div v-for="subSlug in cat.subCategories" :key="subSlug" class="space-y-4">
+              <div v-for="subSlug in (cat.subCategories || [])" :key="subSlug" class="space-y-4">
                 <template v-if="getCategoryBySlug(subSlug)">
                   <NuxtLink :to="`/category/${subSlug}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
                     {{ getCategoryBySlug(subSlug)?.name }}
                   </NuxtLink>
                   <ul class="space-y-2 border-l border-muted pl-4">
                     <template v-if="getCategoryBySlug(subSlug)?.subCategories?.length">
-                      <li v-for="subSubSlug in getCategoryBySlug(subSlug)?.subCategories" :key="subSubSlug">
+                      <li v-for="subSubSlug in (getCategoryBySlug(subSlug)?.subCategories || [])" :key="subSubSlug">
                         <NuxtLink :to="`/category/${subSubSlug}`" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
                           {{ getCategoryBySlug(subSubSlug)?.name || subSubSlug.replace(/-/g, ' ') }}
                         </NuxtLink>
@@ -288,5 +320,98 @@ if (process.client) {
         </div>
       </nav>
     </div>
+
+    <!-- Mobile Navigation Drawer representing the full Taxonomy hierarchy dynamically fetched -->
+    <transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0 -translate-y-4"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-4"
+    >
+      <div 
+        v-if="uiStore.isMobileMenuOpen" 
+        class="md:hidden absolute top-full left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border flex flex-col p-6 space-y-6 max-h-[80vh] overflow-y-auto shadow-2xl"
+      >
+        <!-- Mobile Search -->
+        <div class="relative group">
+          <input 
+            type="text" 
+            placeholder="Search classes..." 
+            class="w-full bg-muted/50 border border-input rounded-full h-10 text-xs px-10 outline-none focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all duration-300"
+            @keyup.enter="navigateTo(`/products?q=${($event.target as HTMLInputElement).value}`); uiStore.closeMobileMenu()"
+          />
+          <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        </div>
+
+        <!-- Navigation Menu Hierarchy -->
+        <div class="flex flex-col space-y-4">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/50 pb-2">
+            Technical Categories
+          </div>
+          
+          <NuxtLink 
+            to="/products" 
+            class="font-bold text-xs uppercase tracking-widest text-primary flex items-center gap-2"
+            @click="uiStore.closeMobileMenu()"
+          >
+            <Grid2X2 class="w-4 h-4 text-primary" />
+            Full Catalog
+          </NuxtLink>
+
+          <!-- Dynamic Loader -->
+          <div v-if="isMenuLoading" class="py-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <span class="animate-spin border-2 border-primary/30 border-t-primary rounded-full w-4 h-4"></span>
+            Synchronizing Nodes...
+          </div>
+          
+          <div v-else class="space-y-4">
+            <div v-for="cat in categories" :key="cat.id" class="space-y-2">
+              <NuxtLink 
+                :to="`/category/${cat.slug}`" 
+                class="font-bold text-xs uppercase tracking-wider block hover:text-primary transition-colors"
+                @click="uiStore.closeMobileMenu()"
+              >
+                {{ cat.name }}
+              </NuxtLink>
+              
+              <!-- Subcategories simple mapping -->
+              <ul v-if="cat.subCategories && cat.subCategories.length" class="pl-4 border-l border-border/60 space-y-1.5 py-1">
+                <li v-for="subSlug in (cat.subCategories || [])" :key="subSlug">
+                  <template v-if="getCategoryBySlug(subSlug)">
+                    <NuxtLink 
+                      :to="`/category/${subSlug}`" 
+                      class="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary block"
+                      @click="uiStore.closeMobileMenu()"
+                    >
+                      {{ getCategoryBySlug(subSlug)?.name }}
+                    </NuxtLink>
+                  </template>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary Support / Corporate Links -->
+        <div class="space-y-3 pt-4 border-t border-border/50">
+          <NuxtLink 
+            to="/offers" 
+            class="font-bold text-xs uppercase tracking-widest text-destructive block hover:translate-x-1 transition-transform"
+            @click="uiStore.closeMobileMenu()"
+          >
+            Special Offers
+          </NuxtLink>
+          <NuxtLink 
+            to="/blog" 
+            class="font-bold text-xs uppercase tracking-widest block hover:text-primary hover:translate-x-1 transition-all duration-300"
+            @click="uiStore.closeMobileMenu()"
+          >
+            Tech Insights
+          </NuxtLink>
+        </div>
+      </div>
+    </transition>
   </header>
 </template>
