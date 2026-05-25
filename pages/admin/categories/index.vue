@@ -32,10 +32,6 @@ const categoryService = useCategoryService();
 const productService = useProductService();
 
 // State managers
-const categoriesList = ref<Category[]>([]);
-const totalCount = ref(0);
-const totalPages = ref(1);
-
 const searchQuery = ref('');
 const parentFilter = ref('all'); // 'all', 'none' (main level only), or specific category ID
 const ordering = ref('name'); // 'name', '-name', 'slug', '-slug'
@@ -44,6 +40,53 @@ const itemsPerPage = ref(6);
 
 // Multi-select or dropdown values
 const allCategoriesList = ref<Category[]>([]); // Broad list copy for parent lookup / select dropdowns
+
+// Filter and sorting on the clientside list to prevent layout pops and duplicate calls
+const filteredCategoriesList = computed(() => {
+  let list = [...allCategoriesList.value];
+
+  // 1. Filter by parent
+  if (parentFilter.value && parentFilter.value !== 'all') {
+    if (parentFilter.value === 'none') {
+      list = list.filter(c => !c.parentCategoryId);
+    } else {
+      list = list.filter(c => c.parentCategoryId === parentFilter.value);
+    }
+  }
+
+  // 2. Filter by search
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase().trim();
+    list = list.filter(c => 
+      c.name.toLowerCase().includes(q) ||
+      c.slug.toLowerCase().includes(q) ||
+      (c.description || '').toLowerCase().includes(q)
+    );
+  }
+
+  // 3. Sort by ordering
+  if (ordering.value) {
+    const isDesc = ordering.value.startsWith('-');
+    const field = isDesc ? ordering.value.substring(1) : ordering.value;
+    list.sort((a: any, b: any) => {
+      const valA = String(a[field] || '').toLowerCase();
+      const valB = String(b[field] || '').toLowerCase();
+      if (valA < valB) return isDesc ? 1 : -1;
+      if (valA > valB) return isDesc ? -1 : 1;
+      return 0;
+    });
+  }
+
+  return list;
+});
+
+const totalCount = computed(() => filteredCategoriesList.value.length);
+const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
+
+const categoriesList = computed(() => {
+  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
+  return filteredCategoriesList.value.slice(startIndex, startIndex + itemsPerPage.value);
+});
 
 // Overlay control triggers
 const isCreateModalOpen = ref(false);
@@ -102,40 +145,19 @@ const fetchAllCategoriesRawList = async () => {
   }
 };
 
-// Load filtered and paginated categories listing
+// Redundant reload trigger optimized to just handle re-syncing raw data set
 const loadCategoriesGrid = async () => {
-  try {
-    const filters = {
-      page: currentPage.value,
-      page_size: itemsPerPage.value,
-      search: searchQuery.value,
-      ordering: ordering.value,
-      parent: parentFilter.value
-    };
-    const data = await categoryService.getCategoriesList(filters);
-    categoriesList.value = data.results;
-    totalCount.value = data.count;
-    totalPages.value = data.pages;
-  } catch (err: any) {
-    toastError(err.message || 'Entity taxonomy indexing failed.');
-  }
+  await fetchAllCategoriesRawList();
 };
 
 // Lifecycles
 onMounted(async () => {
   await fetchAllCategoriesRawList();
-  await loadCategoriesGrid();
-});
-
-// Reload triggered when page changes or search query triggers
-watch([currentPage, parentFilter, ordering], async () => {
-  await loadCategoriesGrid();
 });
 
 // If searching, reset page index to 1
 watch(searchQuery, () => {
   currentPage.value = 1;
-  loadCategoriesGrid();
 });
 
 // Slug generator
@@ -210,7 +232,6 @@ const submitCreateCategory = async () => {
     isCreateModalOpen.value = false;
     toastSuccess(`Category [${formPayload.value.name}] generated successfully.`);
     await fetchAllCategoriesRawList();
-    await loadCategoriesGrid();
   } catch (err: any) {
     formError.value = err.data?.message || err.message || 'Operation failed on category create.';
     toastError(formError.value!);
@@ -245,7 +266,6 @@ const submitUpdateCategory = async () => {
     isEditModalOpen.value = false;
     toastSuccess(`Category [${formPayload.value.name}] updated successfully.`);
     await fetchAllCategoriesRawList();
-    await loadCategoriesGrid();
   } catch (err: any) {
     formError.value = err.data?.message || err.message || 'Operation failed on category edit.';
     toastError(formError.value!);
@@ -262,7 +282,6 @@ const deleteCategoryNode = async (cat: Category) => {
       await categoryService.deleteCategory(cat.id);
       toastInfo(`Category [${cat.name}] deleted successfully.`);
       await fetchAllCategoriesRawList();
-      await loadCategoriesGrid();
       if (currentPage.value > totalPages.value) {
         currentPage.value = Math.max(1, totalPages.value);
       }
