@@ -39,10 +39,14 @@ export const useCategoryService = () => {
     } else if (cat.parent) {
       parentId = typeof cat.parent === 'object' ? cat.parent.id : cat.parent;
     }
-    return {
+    const mapped: Category = {
       ...cat,
       parentCategoryId: parentId
     };
+    if (cat.children && Array.isArray(cat.children)) {
+      mapped.children = cat.children.map(mapCategoryResponse);
+    }
+    return mapped;
   };
 
   // Initialize mock state

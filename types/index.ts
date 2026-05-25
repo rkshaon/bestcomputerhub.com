@@ -49,6 +49,7 @@ export interface Category {
   parentCategoryId?: string;
   subCategories?: string[];
   order?: number;
+  children?: Category[];
 }
 
 export interface PaginatedResponse<T> {

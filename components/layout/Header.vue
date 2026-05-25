@@ -53,6 +53,22 @@ const loadMenuCategories = async () => {
     if (allRes?.results && allRes.results.length) {
       allCategories.value = allRes.results;
     }
+
+    // Recursively collect all categories from root categories' children arrays to guarantee robust localized slug mapping
+    const collectAllCategories = (list: Category[]) => {
+      list.forEach(c => {
+        if (!allCategories.value.some(existing => existing.id === c.id)) {
+          allCategories.value.push(c);
+        }
+        if (c.children && c.children.length) {
+          collectAllCategories(c.children);
+        }
+      });
+    };
+    
+    if (categories.value && categories.value.length) {
+      collectAllCategories(categories.value);
+    }
   } catch (err: any) {
     menuError.value = err.message || 'Failed to sync categories.';
   } finally {
@@ -66,6 +82,21 @@ onMounted(() => {
 
 // Helper to get category by slug safely
 const getCategoryBySlug = (slug: string) => allCategories.value.find(c => c.slug === slug);
+
+// Helper to get sub-categories dynamically from either 'children' object list (real backend) or 'subCategories' key (mock)
+const getSubCategories = (cat: Category): Category[] => {
+  if (cat.children && Array.isArray(cat.children) && cat.children.length) {
+    return cat.children;
+  }
+  
+  if (cat.subCategories && Array.isArray(cat.subCategories)) {
+    return cat.subCategories
+      .map(slug => getCategoryBySlug(slug))
+      .filter((c): c is Category => !!c);
+  }
+  
+  return [];
+};
 
 const isScrolled = ref(false);
 const isThemeMenuOpen = ref(false);
@@ -149,24 +180,22 @@ if (process.client) {
             <!-- Mega Menu Dropdown -->
             <div class="absolute top-full left-1/2 -translate-x-1/2 hidden group-hover:block pt-3 z-50">
               <div class="bg-background/95 backdrop-blur-xl border border-border/50 rounded-[2.5rem] shadow-2xl p-8 w-[680px] grid grid-cols-3 gap-8 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top">
-                <div v-for="subSlug in cat.subCategories" :key="subSlug" class="space-y-4">
-                  <template v-if="getCategoryBySlug(subSlug)">
-                    <NuxtLink :to="`/category/${subSlug}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
-                      {{ getCategoryBySlug(subSlug)?.name }}
-                    </NuxtLink>
-                    <ul class="space-y-2 border-l border-muted pl-4">
-                      <template v-if="getCategoryBySlug(subSlug)?.subCategories?.length">
-                        <li v-for="subSubSlug in getCategoryBySlug(subSlug)?.subCategories" :key="subSubSlug">
-                          <NuxtLink :to="`/category/${subSubSlug}`" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
-                            {{ getCategoryBySlug(subSubSlug)?.name || subSubSlug.replace(/-/g, ' ') }}
-                          </NuxtLink>
-                        </li>
-                      </template>
-                      <li v-else>
-                        <span class="text-[10px] text-muted-foreground italic uppercase tracking-tighter opacity-50">Latest Models</span>
+                <div v-for="subCat in getSubCategories(cat)" :key="subCat.id" class="space-y-4">
+                  <NuxtLink :to="`/category/${subCat.slug}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
+                    {{ subCat.name }}
+                  </NuxtLink>
+                  <ul class="space-y-2 border-l border-muted pl-4">
+                    <template v-if="getSubCategories(subCat).length">
+                      <li v-for="subSubCat in getSubCategories(subCat)" :key="subSubCat.id">
+                        <NuxtLink :to="`/category/${subSubCat.slug}`" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
+                          {{ subSubCat.name }}
+                        </NuxtLink>
                       </li>
-                    </ul>
-                  </template>
+                    </template>
+                    <li v-else>
+                      <span class="text-[10px] text-muted-foreground italic uppercase tracking-tighter opacity-50">Latest Models</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -291,24 +320,22 @@ if (process.client) {
           <!-- Mega Menu Dropdown -->
           <div class="absolute top-full left-1/2 -translate-x-1/2 hidden group-hover:block pt-3 z-50">
             <div class="bg-background/95 backdrop-blur-xl border border-border/50 rounded-[2.5rem] shadow-2xl p-8 w-[680px] grid grid-cols-3 gap-8 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top">
-              <div v-for="subSlug in (cat.subCategories || [])" :key="subSlug" class="space-y-4">
-                <template v-if="getCategoryBySlug(subSlug)">
-                  <NuxtLink :to="`/category/${subSlug}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
-                    {{ getCategoryBySlug(subSlug)?.name }}
-                  </NuxtLink>
-                  <ul class="space-y-2 border-l border-muted pl-4">
-                    <template v-if="getCategoryBySlug(subSlug)?.subCategories?.length">
-                      <li v-for="subSubSlug in (getCategoryBySlug(subSlug)?.subCategories || [])" :key="subSubSlug">
-                        <NuxtLink :to="`/category/${subSubSlug}`" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
-                          {{ getCategoryBySlug(subSubSlug)?.name || subSubSlug.replace(/-/g, ' ') }}
-                        </NuxtLink>
-                      </li>
-                    </template>
-                    <li v-else>
-                      <span class="text-[10px] text-muted-foreground italic uppercase tracking-tighter opacity-50">Latest Models</span>
+              <div v-for="subCat in getSubCategories(cat)" :key="subCat.id" class="space-y-4">
+                <NuxtLink :to="`/category/${subCat.slug}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
+                  {{ subCat.name }}
+                </NuxtLink>
+                <ul class="space-y-2 border-l border-muted pl-4">
+                  <template v-if="getSubCategories(subCat).length">
+                    <li v-for="subSubCat in getSubCategories(subCat)" :key="subSubCat.id">
+                      <NuxtLink :to="`/category/${subSubCat.slug}`" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
+                        {{ subSubCat.name }}
+                      </NuxtLink>
                     </li>
-                  </ul>
-                </template>
+                  </template>
+                  <li v-else>
+                    <span class="text-[10px] text-muted-foreground italic uppercase tracking-tighter opacity-50">Latest Models</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
@@ -378,17 +405,15 @@ if (process.client) {
               </NuxtLink>
               
               <!-- Subcategories simple mapping -->
-              <ul v-if="cat.subCategories && cat.subCategories.length" class="pl-4 border-l border-border/60 space-y-1.5 py-1">
-                <li v-for="subSlug in (cat.subCategories || [])" :key="subSlug">
-                  <template v-if="getCategoryBySlug(subSlug)">
-                    <NuxtLink 
-                      :to="`/category/${subSlug}`" 
-                      class="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary block"
-                      @click="uiStore.closeMobileMenu()"
-                    >
-                      {{ getCategoryBySlug(subSlug)?.name }}
-                    </NuxtLink>
-                  </template>
+              <ul v-if="getSubCategories(cat).length" class="pl-4 border-l border-border/60 space-y-1.5 py-1">
+                <li v-for="subCat in getSubCategories(cat)" :key="subCat.id">
+                  <NuxtLink 
+                    :to="`/category/${subCat.slug}`" 
+                    class="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary block"
+                    @click="uiStore.closeMobileMenu()"
+                  >
+                    {{ subCat.name }}
+                  </NuxtLink>
                 </li>
               </ul>
             </div>
