@@ -159,10 +159,10 @@ if (process.client) {
         <!-- Compact Navigation Menu (Visible only when scrolled) -->
         <nav 
           :class="cn(
-            'hidden md:flex items-center gap-3 lg:gap-6 transition-all duration-500 ease-in-out overflow-hidden h-9 flex-1 justify-center',
+            'hidden md:flex items-center gap-3 lg:gap-6 transition-all duration-500 ease-in-out h-9 flex-1 justify-center',
             isScrolled 
-              ? 'opacity-100 max-w-lg lg:max-w-xl translate-x-0 pointer-events-auto' 
-              : 'opacity-0 max-w-0 -translate-x-4 pointer-events-none'
+              ? 'opacity-100 overflow-visible max-w-lg lg:max-w-xl translate-x-0 pointer-events-auto' 
+              : 'opacity-0 overflow-hidden max-w-0 -translate-x-4 pointer-events-none'
           )"
         >
           <NuxtLink to="/products" class="font-bold text-[10px] uppercase tracking-widest text-primary flex items-center gap-2 group whitespace-nowrap">
@@ -279,10 +279,10 @@ if (process.client) {
       <!-- Collapsible Secondary Row (Visible only when not scrolled) -->
       <nav 
         :class="cn(
-          'hidden md:flex items-center gap-6 overflow-hidden transition-all duration-500 ease-in-out',
+          'hidden md:flex items-center gap-6 transition-all duration-500 ease-in-out',
           isScrolled 
-            ? 'h-0 opacity-0 mt-0 pt-0 border-t-0 pointer-events-none' 
-            : 'h-12 opacity-100 mt-4 pt-4 border-t border-border/50'
+            ? 'h-0 overflow-hidden opacity-0 mt-0 pt-0 border-t-0 pointer-events-none' 
+            : 'h-12 overflow-visible opacity-100 mt-4 pt-4 border-t border-border/50'
         )"
       >
         <NuxtLink to="/products" class="font-bold text-[10px] uppercase tracking-widest text-primary flex items-center gap-2 group whitespace-nowrap">
