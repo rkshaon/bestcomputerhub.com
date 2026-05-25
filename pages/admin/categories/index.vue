@@ -32,12 +32,15 @@ definePageMeta({
 const categoryService = useCategoryService();
 const productService = useProductService();
 
-// State managers
-const searchQuery = ref('');
-const parentFilter = ref('all'); // 'all', 'none' (main level only), or specific category ID
-const ordering = ref('name'); // 'name', '-name', 'slug', '-slug'
-const currentPage = ref(1);
-const itemsPerPage = ref(6);
+const route = useRoute();
+const router = useRouter();
+
+// State managers initialized from URL query parameters
+const searchQuery = ref(route.query.search ? String(route.query.search) : '');
+const parentFilter = ref(route.query.parent ? String(route.query.parent) : 'all'); // 'all', 'none' (main level only), or specific category ID
+const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'name'); // 'name', '-name', 'slug', '-slug'
+const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
+const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 6 : 6);
 
 // Multi-select or dropdown values
 const allCategoriesList = ref<Category[]>([]); // Broad list copy for parent lookup / select dropdowns
@@ -280,9 +283,49 @@ onMounted(async () => {
   await fetchAllCategoriesRawList();
 });
 
-// If searching, reset page index to 1
-watch(searchQuery, () => {
+// If searching or filtering, reset page index to 1
+watch([searchQuery, parentFilter, ordering, itemsPerPage], () => {
   currentPage.value = 1;
+});
+
+// Update URL parameters when state changes
+watch([searchQuery, parentFilter, ordering, currentPage, itemsPerPage], () => {
+  const query: Record<string, any> = { ...route.query };
+
+  if (searchQuery.value) query.search = searchQuery.value;
+  else delete query.search;
+
+  if (parentFilter.value !== 'all') query.parent = parentFilter.value;
+  else delete query.parent;
+
+  if (ordering.value !== 'name') query.ordering = ordering.value;
+  else delete query.ordering;
+
+  if (currentPage.value !== 1) query.page = String(currentPage.value);
+  else delete query.page;
+
+  if (itemsPerPage.value !== 6) query.pageSize = String(itemsPerPage.value);
+  else delete query.pageSize;
+
+  router.replace({ query });
+});
+
+// Sync state from URL changes (such as browser Back / Forward navigation)
+watch(() => route.query, (newQuery) => {
+  const newSearch = newQuery.search ? String(newQuery.search) : '';
+  if (searchQuery.value !== newSearch) searchQuery.value = newSearch;
+
+  const newParent = newQuery.parent ? String(newQuery.parent) : 'all';
+  if (parentFilter.value !== newParent) parentFilter.value = newParent;
+
+  const newOrdering = newQuery.ordering ? String(newQuery.ordering) : 'name';
+  if (ordering.value !== newOrdering) ordering.value = newOrdering;
+
+  const newPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
+  if (currentPage.value !== newPage) currentPage.value = newPage;
+
+  const newPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 6 : 6;
+  if (itemsPerPage.value !== newPageSize) itemsPerPage.value = newPageSize;
 });
 
 // Slug generator

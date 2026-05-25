@@ -31,12 +31,15 @@ definePageMeta({
 
 const brandService = useBrandService();
 
-// State vectors
+const route = useRoute();
+const router = useRouter();
+
+// State vectors initialized from URL query parameters
 const brandsList = ref<Brand[]>([]);
-const searchQuery = ref('');
-const statusFilter = ref<'all' | 'active' | 'inactive'>('all');
-const currentPage = ref(1);
-const itemsPerPage = ref(5);
+const searchQuery = ref(route.query.search ? String(route.query.search) : '');
+const statusFilter = ref<'all' | 'active' | 'inactive'>((route.query.status as 'all' | 'active' | 'inactive') || 'all');
+const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
+const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 5 : 5);
 const selectedBrand = ref<Brand | null>(null);
 
 // Overlay controls
@@ -131,9 +134,43 @@ const paginatedBrands = computed(() => {
   return filteredBrands.value.slice(start, end);
 });
 
-// Auto-reset page on search filter trigger
-watch([searchQuery, statusFilter], () => {
+// Auto-reset page on search filter/page size trigger
+watch([searchQuery, statusFilter, itemsPerPage], () => {
   currentPage.value = 1;
+});
+
+// Update URL parameters when state changes
+watch([searchQuery, statusFilter, currentPage, itemsPerPage], () => {
+  const query: Record<string, any> = { ...route.query };
+
+  if (searchQuery.value) query.search = searchQuery.value;
+  else delete query.search;
+
+  if (statusFilter.value !== 'all') query.status = statusFilter.value;
+  else delete query.status;
+
+  if (currentPage.value !== 1) query.page = String(currentPage.value);
+  else delete query.page;
+
+  if (itemsPerPage.value !== 5) query.pageSize = String(itemsPerPage.value);
+  else delete query.pageSize;
+
+  router.replace({ query });
+});
+
+// Sync state from URL changes (such as browser Back / Forward navigation)
+watch(() => route.query, (newQuery) => {
+  const newSearch = newQuery.search ? String(newQuery.search) : '';
+  if (searchQuery.value !== newSearch) searchQuery.value = newSearch;
+
+  const newStatus = (newQuery.status as any) || 'all';
+  if (statusFilter.value !== newStatus) statusFilter.value = newStatus;
+
+  const newPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
+  if (currentPage.value !== newPage) currentPage.value = newPage;
+
+  const newPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 5 : 5;
+  if (itemsPerPage.value !== newPageSize) itemsPerPage.value = newPageSize;
 });
 
 // Form Helpers: Auto slug generator
