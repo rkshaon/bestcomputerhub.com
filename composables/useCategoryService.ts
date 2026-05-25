@@ -20,6 +20,12 @@ export interface PaginatedCategoriesResponse {
   pages: number;
 }
 
+export interface CategoryImportResponse {
+  success: boolean;
+  created: number;
+  errors: string[];
+}
+
 export const useCategoryService = () => {
   const apiClient = useApiClient();
   const productService = useProductService();
@@ -434,12 +440,249 @@ export const useCategoryService = () => {
     }
   };
 
+  const importCategoriesFromCSV = async (file: File): Promise<CategoryImportResponse> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      isLoading.value = false;
+      try {
+        const text = await file.text();
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        if (lines.length <= 1) {
+          return { success: true, created: 0, errors: [] };
+        }
+        
+        // Parse simple CSV (header row + data)
+        const headerRow = lines[0];
+        if (!headerRow) {
+          return { success: false, created: 0, errors: ['CSV file is empty or missing headers.'] };
+        }
+        const headers = headerRow.split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+        const nameIdx = headers.findIndex(h => h.toLowerCase() === 'name');
+        const slugIdx = headers.findIndex(h => h.toLowerCase() === 'slug');
+        const descIdx = headers.findIndex(h => h.toLowerCase() === 'description');
+        const iconIdx = headers.findIndex(h => h.toLowerCase() === 'icon');
+        const parentIdx = headers.findIndex(h => h.toLowerCase() === 'parent' || h.toLowerCase() === 'parentcategoryid');
+
+        if (nameIdx === -1) {
+          return { success: false, created: 0, errors: ['CSV must contain a "name" column.'] };
+        }
+
+        const categoriesList = getMockCategories();
+        let createdCount = 0;
+        const errors: string[] = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i];
+          if (!row) continue;
+          const cols = row.split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
+          const name = cols[nameIdx] || '';
+          if (!name) {
+            errors.push(`Row ${i + 1}: Name cannot be empty.`);
+            continue;
+          }
+
+          const slug = slugIdx !== -1 && cols[slugIdx] ? cols[slugIdx] : name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          const description = descIdx !== -1 ? cols[descIdx] : '';
+          const icon = iconIdx !== -1 ? cols[iconIdx] : '📁';
+          const parentVal = parentIdx !== -1 ? cols[parentIdx] : '';
+
+          let parentCategoryId: string | undefined = undefined;
+          if (parentVal) {
+            const parentCat = categoriesList.find(c => c.id === parentVal || c.name.toLowerCase() === parentVal.toLowerCase());
+            if (parentCat) {
+              parentCategoryId = parentCat.id;
+            }
+          }
+
+          const newCategory: Category = {
+            id: 'cat_mock_' + Math.floor(Math.random() * 1000000),
+            name,
+            slug,
+            description,
+            icon,
+            parentCategoryId,
+            subCategories: []
+          };
+
+          if (parentCategoryId) {
+            const p = categoriesList.find(c => c.id === parentCategoryId);
+            if (p) {
+              if (!p.subCategories) p.subCategories = [];
+              p.subCategories.push(newCategory.id);
+            }
+          }
+
+          categoriesList.push(newCategory);
+          createdCount++;
+        }
+
+        saveMockCategories(categoriesList);
+        return { success: true, created: createdCount, errors };
+      } catch (err: any) {
+        return { success: false, created: 0, errors: [err.message || 'CSV parse failed.'] };
+      }
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await apiClient.request<CategoryImportResponse>('/api/v1/categories/import-csv/', {
+        method: 'POST',
+        body: formData
+      });
+      isLoading.value = false;
+      return res;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Failed to import CSV categories.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  const importCategoriesFromJSON = async (file: File): Promise<CategoryImportResponse> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      isLoading.value = false;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        const list = Array.isArray(data) ? data : (data.categories || [data]);
+        
+        const categoriesList = getMockCategories();
+        let createdCount = 0;
+        const errors: string[] = [];
+
+        for (let i = 0; i < list.length; i++) {
+          const item = list[i];
+          if (!item.name) {
+            errors.push(`Item ${i + 1}: Name is required.`);
+            continue;
+          }
+
+          const name = item.name;
+          const slug = item.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          const description = item.description || '';
+          const icon = item.icon || '📁';
+          const parentVal = item.parent || item.parentCategoryId || '';
+
+          let parentCategoryId: string | undefined = undefined;
+          if (parentVal) {
+            const parentCat = categoriesList.find(c => c.id === parentVal || c.name.toLowerCase() === parentVal.toLowerCase());
+            if (parentCat) {
+              parentCategoryId = parentCat.id;
+            }
+          }
+
+          const newCategory: Category = {
+            id: 'cat_mock_' + Math.floor(Math.random() * 1000000),
+            name,
+            slug,
+            description,
+            icon,
+            parentCategoryId,
+            subCategories: []
+          };
+
+          if (parentCategoryId) {
+            const p = categoriesList.find(c => c.id === parentCategoryId);
+            if (p) {
+              if (!p.subCategories) p.subCategories = [];
+              p.subCategories.push(newCategory.id);
+            }
+          }
+
+          categoriesList.push(newCategory);
+          createdCount++;
+        }
+
+        saveMockCategories(categoriesList);
+        return { success: true, created: createdCount, errors };
+      } catch (err: any) {
+        return { success: false, created: 0, errors: [err.message || 'JSON parse failed.'] };
+      }
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await apiClient.request<CategoryImportResponse>('/api/v1/categories/import-json/', {
+        method: 'POST',
+        body: formData
+      });
+      isLoading.value = false;
+      return res;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Failed to import JSON categories.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  const importCategoriesFromXLSX = async (file: File): Promise<CategoryImportResponse> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      isLoading.value = false;
+      
+      const categoriesList = getMockCategories();
+      const mockNames = ['Rack Cabinets', 'PDU Systems', 'SFP Transceivers', 'Patch Cables', 'Management Consoles'];
+      let createdCount = 0;
+
+      mockNames.forEach(name => {
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        if (!categoriesList.some(c => c.slug === slug)) {
+          categoriesList.push({
+            id: 'cat_mock_' + Math.floor(Math.random() * 1000000),
+            name,
+            slug,
+            description: `Auto-generated category imported from premium Excel spreadsheet node: ${name}`,
+            icon: '📦',
+            subCategories: []
+          });
+          createdCount++;
+        }
+      });
+
+      saveMockCategories(categoriesList);
+      return { success: true, created: createdCount, errors: [] };
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await apiClient.request<CategoryImportResponse>('/api/v1/categories/import-xlsx/', {
+        method: 'POST',
+        body: formData
+      });
+      isLoading.value = false;
+      return res;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Failed to import XLSX categories.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   return {
     getCategoriesList,
     getCategoryDetails,
     createCategory,
     updateCategory,
     deleteCategory,
+    importCategoriesFromCSV,
+    importCategoriesFromJSON,
+    importCategoriesFromXLSX,
     isLoading,
     errorMsg
   };

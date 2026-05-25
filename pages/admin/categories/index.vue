@@ -16,7 +16,8 @@ import {
   AlertCircle,
   X,
   FolderOpen,
-  Info
+  Info,
+  Upload
 } from 'lucide-vue-next';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
@@ -92,12 +93,14 @@ const categoriesList = computed(() => {
 const isCreateModalOpen = ref(false);
 const isEditModalOpen = ref(false);
 const isViewModalOpen = ref(false);
+const isImportModalOpen = ref(false);
 const isSubmitPending = ref(false);
 const selectedCategory = ref<Category | null>(null);
 
 // Form element focus refs for keyboard accessibility
 const categoryNameInput = ref<HTMLInputElement | null>(null);
 const editCategoryNameInput = ref<HTMLInputElement | null>(null);
+const formatSelectElement = ref<HTMLSelectElement | null>(null);
 
 watch(isCreateModalOpen, (newValue) => {
   if (newValue) {
@@ -114,6 +117,128 @@ watch(isEditModalOpen, (newValue) => {
     });
   }
 });
+
+watch(isImportModalOpen, (newValue) => {
+  if (newValue) {
+    nextTick(() => {
+      formatSelectElement.value?.focus();
+    });
+  }
+});
+
+// Category Bulk Import states
+const importFormat = ref<'csv' | 'json' | 'xlsx'>('csv');
+const selectedFile = ref<File | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
+const importIsLoading = ref(false);
+const importSuccessCount = ref<number | null>(null);
+const importErrors = ref<string[]>([]);
+const isDragActive = ref(false);
+
+const triggerImportModal = () => {
+  isImportModalOpen.value = true;
+  selectedFile.value = null;
+  importSuccessCount.value = null;
+  importErrors.value = [];
+  importFormat.value = 'csv';
+};
+
+const handleFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0];
+    if (file) {
+      validateAndSetFile(file);
+    }
+  }
+};
+
+const validateAndSetFile = (file: File) => {
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  
+  if (importFormat.value === 'csv' && extension !== 'csv') {
+    toastError('Selected file format must be .csv');
+    return;
+  }
+  if (importFormat.value === 'json' && extension !== 'json') {
+    toastError('Selected file format must be .json');
+    return;
+  }
+  if (importFormat.value === 'xlsx' && (extension !== 'xlsx' && extension !== 'xls')) {
+    toastError('Selected file format must be .xlsx or .xls');
+    return;
+  }
+
+  selectedFile.value = file;
+  importSuccessCount.value = null;
+  importErrors.value = [];
+};
+
+const onDragOver = (e: DragEvent) => {
+  e.preventDefault();
+  isDragActive.value = true;
+};
+
+const onDragLeave = () => {
+  isDragActive.value = false;
+};
+
+const onDrop = (e: DragEvent) => {
+  e.preventDefault();
+  isDragActive.value = false;
+  if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      validateAndSetFile(file);
+    }
+  }
+};
+
+const submitImport = async () => {
+  if (!selectedFile.value) {
+    toastError('Please select a file to import first.');
+    return;
+  }
+
+  importIsLoading.value = true;
+  importErrors.value = [];
+  importSuccessCount.value = null;
+
+  try {
+    let response;
+    if (importFormat.value === 'csv') {
+      response = await categoryService.importCategoriesFromCSV(selectedFile.value);
+    } else if (importFormat.value === 'json') {
+      response = await categoryService.importCategoriesFromJSON(selectedFile.value);
+    } else {
+      response = await categoryService.importCategoriesFromXLSX(selectedFile.value);
+    }
+
+    if (response.success) {
+      importSuccessCount.value = response.created;
+      toastSuccess(`Import completed. ${response.created} categories successfully registered.`);
+      await fetchAllCategoriesRawList();
+      
+      if (response.errors && response.errors.length > 0) {
+        importErrors.value = response.errors;
+        toastInfo(`Import executed with ${response.errors.length} operational warnings.`);
+      } else {
+        setTimeout(() => {
+          isImportModalOpen.value = false;
+        }, 1500);
+      }
+    } else {
+      importErrors.value = response.errors && response.errors.length > 0 ? response.errors : ['API execution successfully completed but returned failure.'];
+      toastError('Import could not be fully executed.');
+    }
+  } catch (err: any) {
+    const errorMsgText = err.data?.message || err.message || 'Validation failed on category bulk import.';
+    importErrors.value = [errorMsgText];
+    toastError('Category taxonomy import failed.');
+  } finally {
+    importIsLoading.value = false;
+  }
+};
 
 // Form state payloads
 const formError = ref<string | null>(null);
@@ -310,6 +435,12 @@ const nestedCategoriesCount = computed(() => {
         <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium">Organize hardware components, computing nodes and server equipment classes.</p>
       </div>
       <div class="flex items-center gap-3">
+        <button 
+          @click="triggerImportModal"
+          class="bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 px-5 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
+        >
+          <Upload class="w-4 h-4" /> Import Taxonomies
+        </button>
         <button 
           @click="triggerCreateModal"
           class="bg-primary text-white hover:bg-primary/95 px-6 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
@@ -840,6 +971,147 @@ const nestedCategoriesCount = computed(() => {
             Acknowledge & Close
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- MODAL 4: Bulk Category File Import Modal -->
+    <div v-if="isImportModalOpen" @click.self="isImportModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
+      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
+        
+        <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Bulk Load & Sync Engine</span>
+            <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Category Bulk Import</h3>
+          </div>
+          <button type="button" @click="isImportModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <form @submit.prevent="submitImport">
+          <div class="p-8 space-y-6 overflow-y-auto max-h-[60vh]">
+            
+            <!-- Format Selector -->
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Structured File Type Protocol</label>
+              <select 
+                ref="formatSelectElement"
+                v-model="importFormat"
+                @change="selectedFile = null; importErrors = []; importSuccessCount = null"
+                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-semibold text-slate-950 dark:text-slate-50 cursor-pointer"
+              >
+                <option value="csv">Comma-Separated Values (.csv)</option>
+                <option value="json">JavaScript Object Notation (.json)</option>
+                <option value="xlsx">Microsoft Excel Spreadsheet (.xlsx)</option>
+              </select>
+            </div>
+
+            <!-- Drag & Drop Area / Click File Select -->
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">File Payload Selection</label>
+              <div 
+                @dragover="onDragOver"
+                @dragleave="onDragLeave"
+                @drop="onDrop"
+                :class="cn(
+                  'border-2 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center transition-all cursor-pointer text-center space-y-3 min-h-[160px]',
+                  isDragActive ? 'border-primary bg-primary/5' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
+                )"
+                @click="fileInput?.click()"
+              >
+                <!-- Hidden original file input -->
+                <input 
+                  ref="fileInput"
+                  type="file" 
+                  class="hidden" 
+                  :accept="importFormat === 'csv' ? '.csv' : importFormat === 'json' ? '.json' : '.xlsx, .xls'"
+                  @change="handleFileChange" 
+                />
+
+                <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                  <Upload class="w-6 h-6" />
+                </div>
+
+                <div v-if="!selectedFile" class="space-y-1">
+                  <p class="text-sm font-bold text-slate-800 dark:text-slate-250">
+                    Drag & drop your file here, or <span class="text-primary hover:underline">browse files</span>
+                  </p>
+                  <p class="text-[10px] text-slate-400 font-mono">
+                    Expected format: <span class="uppercase font-bold text-slate-500">{{ importFormat }}</span>
+                  </p>
+                </div>
+                <div v-else class="space-y-1">
+                  <p class="text-sm font-black text-primary font-mono max-w-[320px] truncate mx-auto">
+                    {{ selectedFile.name }}
+                  </p>
+                  <p class="text-[10px] text-slate-400 font-bold">
+                    Size: {{ (selectedFile.size / 1024).toFixed(2) }} KB — Click to dispatch another file.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Loading overlay state in modal -->
+            <div v-if="importIsLoading" class="p-6 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-center gap-3">
+              <span class="animate-spin border-3 border-primary/20 border-t-primary rounded-full w-5 h-5"></span>
+              <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest animate-pulse">Running parsing algorithms & database updates...</p>
+            </div>
+
+            <!-- Success Count Output -->
+            <div v-if="importSuccessCount !== null" class="p-6 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/55 rounded-3xl flex items-start gap-4 animate-in fade-in duration-300">
+              <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <Box class="w-5 h-5" />
+              </div>
+              <div class="space-y-1">
+                <h4 class="text-sm font-bold text-emerald-900 dark:text-emerald-400 leading-none">Database Injection Succeeded</h4>
+                <p class="text-xs text-emerald-700 dark:text-emerald-500 font-medium">
+                  We successfully parsed the uploaded node file, registering <strong class="font-extrabold text-slate-950 dark:text-slate-50">{{ importSuccessCount }}</strong> new taxonomy category records.
+                </p>
+              </div>
+            </div>
+
+            <!-- Errors/Warnings breakdown -->
+            <div v-if="importErrors.length > 0" class="p-6 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/55 rounded-3xl flex flex-col gap-3 animate-in fade-in duration-300">
+              <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <AlertCircle class="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 class="text-sm font-bold text-rose-950 dark:text-rose-400 leading-none">Operational Import Failures</h4>
+                  <p class="text-xs text-rose-600 dark:text-rose-500 font-medium mt-1">
+                    The taxonomy engine raised warnings while loading the records. See logs below:
+                  </p>
+                </div>
+              </div>
+              
+              <ul class="max-h-36 overflow-y-auto divide-y divide-rose-100/40 dark:divide-rose-900/40 bg-white dark:bg-slate-950/40 border border-rose-100 dark:border-rose-900 rounded-xl p-3 space-y-1.5 font-mono text-[10px] text-rose-700 dark:text-rose-400 leading-relaxed font-bold">
+                <li v-for="(err, idx) in importErrors" :key="idx" class="pt-1.5 first:pt-0 flex gap-2">
+                  <span class="text-rose-400 select-none">[{{ idx + 1 }}]</span>
+                  <span>{{ err }}</span>
+                </li>
+              </ul>
+            </div>
+
+          </div>
+
+          <div class="p-8 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50">
+            <button 
+              type="button"
+              @click="isImportModalOpen = false" 
+              class="px-5 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              Close
+            </button>
+            <button 
+              type="submit" 
+              :disabled="importIsLoading || !selectedFile"
+              class="bg-primary text-white hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
+            >
+              <span v-if="importIsLoading" class="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4 mr-1"></span>
+              {{ importIsLoading ? 'Parsing Bulk Payload...' : 'Submit Bulk Import' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
