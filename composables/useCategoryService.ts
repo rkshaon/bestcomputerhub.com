@@ -162,11 +162,7 @@ export const useCategoryService = () => {
       params.append('page_size', pageSize.toString());
       if (search) params.append('search', search);
       if (ordering) params.append('ordering', ordering);
-      if (parent) {
-        params.append('parent', parent);
-      } else if (is_parent) {
-        params.append('parent', 'true');
-      }
+      if (parent) params.append('parent', parent);
       if (is_parent !== undefined) {
         params.append('is_parent', is_parent.toString());
       }
@@ -714,7 +710,7 @@ export const useCategoryService = () => {
     }
 
     try {
-      const data = await apiClient.request<any>('/api/v1/categories/?parent=true', {
+      const data = await apiClient.request<any>('/api/v1/categories/?is_parent=true', {
         method: 'GET'
       });
       isLoading.value = false;
