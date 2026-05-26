@@ -124,7 +124,7 @@ if (process.client) {
       isScrolled ? 'bg-background/90 backdrop-blur-xl py-2 shadow-sm' : 'bg-background py-4'
     )"
   >
-    <div class="container mx-auto px-4">
+    <div class="container mx-auto px-4 relative">
       <!-- Main Row -->
       <div class="flex items-center justify-between transition-all duration-500 gap-4 lg:gap-6">
         <!-- Logo -->
@@ -162,17 +162,25 @@ if (process.client) {
         <!-- Compact Navigation Menu (Visible only when scrolled) -->
         <nav 
           :class="cn(
-            'hidden md:flex relative items-center gap-3 lg:gap-6 transition-all duration-500 ease-in-out h-9 flex-1 justify-center',
+            'hidden md:flex items-center gap-1.5 lg:gap-4 transition-all duration-500 ease-in-out h-9 flex-1 justify-center',
             isScrolled 
               ? 'opacity-100 overflow-visible max-w-lg lg:max-w-xl translate-x-0 pointer-events-auto' 
               : 'opacity-0 overflow-hidden max-w-0 -translate-x-4 pointer-events-none'
           )"
         >
-          <NuxtLink to="/products" class="font-bold text-[10px] uppercase tracking-widest text-primary flex items-center gap-2 group whitespace-nowrap">
+          <NuxtLink to="/products" class="font-bold text-[10px] uppercase tracking-widest text-primary flex items-center gap-1.5 group whitespace-nowrap">
             <Grid2X2 class="w-3.5 h-3.5 transition-transform group-hover:rotate-90 duration-500" />
             Catalog
           </NuxtLink>
-          <div v-for="cat in visibleCategories" :key="cat.id" class="group h-full flex items-center">
+          <div 
+            v-for="(cat, idx) in visibleCategories" 
+            :key="cat.id" 
+            :class="cn(
+              'group h-full flex items-center',
+              idx >= 2 ? 'hidden lg:flex' : '',
+              idx >= 4 ? 'hidden xl:flex' : ''
+            )"
+          >
             <NuxtLink :to="`/category/${cat.slug}`" class="flex items-center gap-1 font-bold text-[10px] uppercase tracking-[0.1em] hover:text-primary transition-colors whitespace-nowrap">
               {{ cat.name }}
               <ChevronDown class="w-3 h-3 text-muted-foreground group-hover:rotate-180 transition-transform duration-500 hidden lg:block" />
