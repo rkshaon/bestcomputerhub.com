@@ -23,7 +23,7 @@ onMounted(() => {
     </NuxtLayout>
     <LayoutCookieBanner />
     <LayoutBackToTop />
-    <Toaster position="bottom-right" :richColors="true" :closeButton="true" />
+    <Toaster position="top-center" :richColors="true" :closeButton="true" />
   </div>
 </template>
 
