@@ -401,7 +401,7 @@ export const useCategoryService = () => {
     }
 
     try {
-      const { slug, parentCategoryId, ...rest } = payload;
+      const { parentCategoryId, ...rest } = payload;
       const apiPayload = {
         ...rest,
         parent: parentCategoryId || null
