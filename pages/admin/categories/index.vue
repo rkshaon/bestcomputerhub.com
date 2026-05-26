@@ -41,67 +41,16 @@ const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const parentFilter = ref(route.query.parent ? String(route.query.parent) : 'all'); // 'all', 'none' (main level only), or specific category ID
 const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'order'); // 'order', '-order', 'name', '-name', 'slug', '-slug'
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
-const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 6 : 6);
+const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 
-// Multi-select or dropdown values
+// Multi-select or dropdown values for raw root categories
 const allCategoriesList = ref<Category[]>([]); // Broad list copy for parent lookup / select dropdowns
 
-// Filter and sorting on the clientside list to prevent layout pops and duplicate calls
-const filteredCategoriesList = computed(() => {
-  let list = [...allCategoriesList.value];
-
-  // 1. Filter by parent
-  if (parentFilter.value && parentFilter.value !== 'all') {
-    if (parentFilter.value === 'none') {
-      list = list.filter(c => !c.parentCategoryId);
-    } else {
-      list = list.filter(c => c.parentCategoryId === parentFilter.value);
-    }
-  }
-
-  // 2. Filter by search
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase().trim();
-    list = list.filter(c => 
-      c.name.toLowerCase().includes(q) ||
-      c.slug.toLowerCase().includes(q) ||
-      (c.description || '').toLowerCase().includes(q)
-    );
-  }
-
-  // 3. Sort by ordering
-  if (ordering.value) {
-    const isDesc = ordering.value.startsWith('-');
-    const field = isDesc ? ordering.value.substring(1) : ordering.value;
-    list.sort((a: any, b: any) => {
-      let valA = a[field];
-      let valB = b[field];
-
-      if (valA === undefined || valA === null) valA = '';
-      if (valB === undefined || valB === null) valB = '';
-
-      if (typeof valA === 'number' && typeof valB === 'number') {
-        return isDesc ? valB - valA : valA - valB;
-      }
-
-      const strA = String(valA).toLowerCase();
-      const strB = String(valB).toLowerCase();
-      if (strA < strB) return isDesc ? 1 : -1;
-      if (strA > strB) return isDesc ? -1 : 1;
-      return 0;
-    });
-  }
-
-  return list;
-});
-
-const totalCount = computed(() => filteredCategoriesList.value.length);
+// Server-side paginated states
+const categoriesList = ref<Category[]>([]);
+const totalCount = ref(0);
+const systemTotalCount = ref(0);
 const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
-
-const categoriesList = computed(() => {
-  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
-  return filteredCategoriesList.value.slice(startIndex, startIndex + itemsPerPage.value);
-});
 
 // Overlay control triggers
 const isCreateModalOpen = ref(false);
@@ -274,18 +223,50 @@ const getParentName = (parentId?: string): string => {
   return matched ? matched.name : parentId;
 };
 
+// Fetch categories with server-side pagination, filters and queries
+const fetchCategoriesPage = async () => {
+  try {
+    const filters: any = {
+      page: currentPage.value,
+      page_size: itemsPerPage.value
+    };
+    if (searchQuery.value) {
+      filters.search = searchQuery.value;
+    }
+    if (parentFilter.value !== 'all') {
+      filters.parent = parentFilter.value;
+    }
+    if (ordering.value && ordering.value !== 'order') {
+      filters.ordering = ordering.value;
+    }
+
+    const response = await categoryService.getCategoriesList(filters);
+    categoriesList.value = response.results;
+    totalCount.value = response.count;
+  } catch (error: any) {
+    console.warn('Categories retrieval pagination error:', error.message);
+  }
+};
+
 // Fetch broader category hierarchy list for dropdowns
 const fetchAllCategoriesRawList = async () => {
   try {
-    // Queries all categories to populate local selector lists
-    const response = await categoryService.getCategoriesList({ page: 1, page_size: 100 });
-    allCategoriesList.value = response.results;
+    // Queries root categories for dropdown selectors/hierarchical lookup
+    const rootRes = await categoryService.getCategoriesList({ is_parent: true, page_size: 100 });
+    allCategoriesList.value = rootRes.results;
+
+    // Retrieve system total count when no search/parent filter is applied (for stat cards overview)
+    const systemRes = await categoryService.getCategoriesList({ page_size: 1 });
+    systemTotalCount.value = systemRes.count;
+
+    // Load active paginated grid content
+    await fetchCategoriesPage();
   } catch (error: any) {
     console.warn('Parent categories indexing latency:', error.message);
   }
 };
 
-// Redundant reload trigger optimized to just handle re-syncing raw data set
+// Trigger synchronous reload of page database parameters
 const loadCategoriesGrid = async () => {
   await fetchAllCategoriesRawList();
 };
@@ -300,8 +281,8 @@ watch([searchQuery, parentFilter, ordering, itemsPerPage], () => {
   currentPage.value = 1;
 });
 
-// Update URL parameters when state changes
-watch([searchQuery, parentFilter, ordering, currentPage, itemsPerPage], () => {
+// Update URL parameters and fetch active page when parameters change
+watch([searchQuery, parentFilter, ordering, currentPage, itemsPerPage], async () => {
   const query: Record<string, any> = { ...route.query };
 
   if (searchQuery.value) query.search = searchQuery.value;
@@ -316,28 +297,51 @@ watch([searchQuery, parentFilter, ordering, currentPage, itemsPerPage], () => {
   if (currentPage.value !== 1) query.page = String(currentPage.value);
   else delete query.page;
 
-  if (itemsPerPage.value !== 6) query.pageSize = String(itemsPerPage.value);
+  if (itemsPerPage.value !== 10) query.pageSize = String(itemsPerPage.value);
   else delete query.pageSize;
 
   router.replace({ query });
+
+  await fetchCategoriesPage();
 });
 
 // Sync state from URL changes (such as browser Back / Forward navigation)
-watch(() => route.query, (newQuery) => {
+watch(() => route.query, async (newQuery) => {
+  let needsFetch = false;
+
   const newSearch = newQuery.search ? String(newQuery.search) : '';
-  if (searchQuery.value !== newSearch) searchQuery.value = newSearch;
+  if (searchQuery.value !== newSearch) {
+    searchQuery.value = newSearch;
+    needsFetch = true;
+  }
 
   const newParent = newQuery.parent ? String(newQuery.parent) : 'all';
-  if (parentFilter.value !== newParent) parentFilter.value = newParent;
+  if (parentFilter.value !== newParent) {
+    parentFilter.value = newParent;
+    needsFetch = true;
+  }
 
   const newOrdering = newQuery.ordering ? String(newQuery.ordering) : 'order';
-  if (ordering.value !== newOrdering) ordering.value = newOrdering;
+  if (ordering.value !== newOrdering) {
+    ordering.value = newOrdering;
+    needsFetch = true;
+  }
 
   const newPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
-  if (currentPage.value !== newPage) currentPage.value = newPage;
+  if (currentPage.value !== newPage) {
+    currentPage.value = newPage;
+    needsFetch = true;
+  }
 
-  const newPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 6 : 6;
-  if (itemsPerPage.value !== newPageSize) itemsPerPage.value = newPageSize;
+  const newPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 10 : 10;
+  if (itemsPerPage.value !== newPageSize) {
+    itemsPerPage.value = newPageSize;
+    needsFetch = true;
+  }
+
+  if (needsFetch) {
+    await fetchCategoriesPage();
+  }
 });
 
 // Slug generator
@@ -476,12 +480,8 @@ const deleteCategoryNode = async (cat: Category) => {
 };
 
 // Stats computed aggregates
-const mainCategoriesCount = computed(() => {
-  return allCategoriesList.value.filter(c => !c.parentCategoryId).length;
-});
-const nestedCategoriesCount = computed(() => {
-  return allCategoriesList.value.filter(c => !!c.parentCategoryId).length;
-});
+const mainCategoriesCount = computed(() => allCategoriesList.value.length);
+const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value - mainCategoriesCount.value));
 </script>
 
 <template>
@@ -517,7 +517,7 @@ const nestedCategoriesCount = computed(() => {
         </div>
         <div>
           <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Total Classes</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ allCategoriesList.length }}</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ systemTotalCount }}</p>
         </div>
       </UiCard>
       <UiCard class="flex items-center gap-6 p-8">
