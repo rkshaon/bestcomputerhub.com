@@ -27,8 +27,8 @@ const getSubCategories = (cat: Category): Category[] => {
 </script>
 
 <template>
-  <div class="absolute top-full left-1/2 -translate-x-1/2 hidden group-hover:block pt-3 z-50">
-    <div class="bg-background/95 backdrop-blur-xl border border-border/50 rounded-[2.5rem] shadow-2xl p-8 w-[680px] grid grid-cols-3 gap-8 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top">
+  <div class="absolute top-full left-0 right-0 mx-auto hidden group-hover:block pt-3 z-50 w-[680px]">
+    <div class="bg-background/95 backdrop-blur-xl border border-border/50 rounded-[2.5rem] shadow-2xl p-8 w-full grid grid-cols-3 gap-8 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top">
       <div v-for="subCat in getSubCategories(category)" :key="subCat.id" class="space-y-4">
         <NuxtLink :to="`/category/${subCat.slug}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
           {{ subCat.name }}
