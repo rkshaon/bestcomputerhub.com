@@ -252,7 +252,7 @@ const fetchCategoriesPage = async () => {
 const fetchAllCategoriesRawList = async () => {
   try {
     // Queries root categories for dropdown selectors/hierarchical lookup
-    const rootRes = await categoryService.getCategoriesList({ is_parent: true, page_size: 100 });
+    const rootRes = await categoryService.getCategoriesList({ is_parent: true, page_size: 10 });
     allCategoriesList.value = rootRes.results;
 
     // Retrieve system total count when no search/parent filter is applied (for stat cards overview)
