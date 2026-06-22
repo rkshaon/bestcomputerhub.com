@@ -2,13 +2,16 @@
 <script setup lang="ts">
 import { ChevronRight, LayoutGrid, PackageSearch } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
+import { useCategoryService } from '@/composables/useCategoryService';
 
 const productService = useProductService();
-const categories = productService.getCategories().filter(c => !c.parentCategoryId);
+const categoryService = useCategoryService();
+const allCategories = productService.getCategories();
+const categories = allCategories.filter(c => !c.parentCategoryId);
 const allProducts = productService.getProducts();
 
 const getSubCategories = (parentId: string) => {
-  return productService.getCategories().filter(c => c.parentCategoryId === parentId);
+  return allCategories.filter(c => c.parentCategoryId === parentId);
 };
 </script>
 
@@ -55,7 +58,7 @@ const getSubCategories = (parentId: string) => {
               <NuxtLink 
                 v-for="sub in getSubCategories(cat.id)" 
                 :key="sub.id"
-                :to="`/category/${sub.slug}`"
+                :to="categoryService.getCategoryUrl(sub, allCategories)"
                 class="flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors text-sm font-medium"
               >
                 {{ sub.name }}
@@ -64,7 +67,7 @@ const getSubCategories = (parentId: string) => {
             </div>
 
             <div class="mt-8">
-              <NuxtLink :to="`/category/${cat.slug}`">
+              <NuxtLink :to="categoryService.getCategoryUrl(cat, allCategories)">
                 <UiButton class="w-full rounded-full font-bold">
                   View All {{ cat.name }}
                 </UiButton>

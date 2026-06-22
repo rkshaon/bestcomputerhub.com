@@ -1,0 +1,293 @@
+<!-- File: /pages/product-category/[...slug].vue -->
+<script setup lang="ts">
+import { ref, computed, reactive, onMounted, watch } from 'vue';
+import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft } from 'lucide-vue-next';
+import { useRoute } from 'vue-router';
+import { useProductService } from '@/composables/useProductService';
+import { useCategoryService } from '@/composables/useCategoryService';
+import type { Category } from '@/types';
+
+const route = useRoute();
+const productService = useProductService();
+const categoryService = useCategoryService();
+
+const slugs = computed(() => {
+  const s = route.params.slug;
+  if (!s) return [];
+  return Array.isArray(s) ? s : [s].filter(Boolean);
+});
+
+const categorySlug = computed(() => {
+  const arr = slugs.value;
+  return arr.length ? arr[arr.length - 1] : '';
+});
+
+const allCategoriesList = ref<Category[]>([]);
+const isPageLoading = ref(true);
+
+const loadAllCategories = async () => {
+  isPageLoading.value = true;
+  try {
+    const listResponse = await categoryService.getCategoriesList({ page_size: 200 });
+    if (listResponse && listResponse.results && listResponse.results.length) {
+      allCategoriesList.value = listResponse.results;
+    } else {
+      allCategoriesList.value = productService.getCategories();
+    }
+  } catch {
+    allCategoriesList.value = productService.getCategories();
+  } finally {
+    isPageLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  loadAllCategories();
+});
+
+watch(slugs, () => {
+  // Re-fetch or re-evaluate on navigation if needed
+}, { deep: true });
+
+const category = computed(() => {
+  const targetSlug = categorySlug.value ? categorySlug.value.toLowerCase() : '';
+  if (!targetSlug) return null;
+  
+  // Search in dynamically loaded categories first
+  let match = allCategoriesList.value.find(c => c.slug?.toLowerCase() === targetSlug);
+  if (!match) {
+    // Fall back to static mock categories
+    match = productService.getCategories().find(c => c.slug?.toLowerCase() === targetSlug);
+  }
+  return match;
+});
+
+// Breadcrumbs trail
+const breadcrumbs = computed(() => {
+  const trail: { name: string; url: string }[] = [];
+  if (!category.value) return trail;
+  
+  let current: Category | null = category.value;
+  const list = allCategoriesList.value.length ? allCategoriesList.value : productService.getCategories();
+  
+  while (current) {
+    trail.unshift({
+      name: current.name,
+      url: categoryService.getCategoryUrl(current, list)
+    });
+    
+    if (current.parentCategoryId) {
+      const parent = list.find(p => p.id === current.parentCategoryId);
+      current = parent || null;
+    } else {
+      current = null;
+    }
+  }
+  return trail;
+});
+
+const filters = reactive({
+  brand: '',
+  minPrice: 0,
+  maxPrice: 10000,
+  sort: 'newest'
+});
+
+const searchQuery = ref('');
+
+const products = computed(() => {
+  if (!category.value) return [];
+  return productService.getProducts({
+    category: category.value.id || category.value.slug,
+    query: searchQuery.value,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    sort: filters.sort
+  });
+});
+
+// Reset filters helper
+const resetFilters = () => {
+  filters.brand = '';
+  filters.minPrice = 0;
+  filters.maxPrice = 10000;
+  filters.sort = 'newest';
+  searchQuery.value = '';
+};
+</script>
+
+<template>
+  <div class="min-h-screen pb-24 bg-background">
+    <!-- Breadcrumbs & Category Header -->
+    <div class="bg-card border-b py-12 transition-all duration-300">
+      <div class="container mx-auto px-4">
+        <!-- Breadcrumbs Navigation -->
+        <nav class="flex items-center gap-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-6 overflow-x-auto whitespace-nowrap py-1">
+          <NuxtLink to="/" class="flex items-center gap-1.5 hover:text-primary transition-colors">
+            <Home class="w-3.5 h-3.5" />
+            Home
+          </NuxtLink>
+          <template v-for="(bc, index) in breadcrumbs" :key="bc.url">
+            <ChevronRight class="w-3.5 h-3.5 shrink-0" />
+            <NuxtLink 
+              v-if="index < breadcrumbs.length - 1" 
+              :to="bc.url" 
+              class="hover:text-primary transition-colors"
+            >
+              {{ bc.name }}
+            </NuxtLink>
+            <span v-else class="text-foreground font-extrabold truncate">{{ bc.name }}</span>
+          </template>
+        </nav>
+
+        <!-- Category Title & Info -->
+        <div class="max-w-4xl space-y-4">
+          <h1 class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all">
+            {{ category?.name || 'Hardware Collection' }}
+          </h1>
+          <p class="text-muted-foreground text-base md:text-lg max-w-2xl leading-relaxed">
+            {{ category?.description || `Explore optimized enterprise-grade technology and premium ${category?.name || 'hardware'} options.` }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Section -->
+    <div class="container mx-auto px-4 py-12">
+      <div class="flex flex-col lg:flex-row gap-12">
+        <!-- Sidebar Filters -->
+        <aside class="w-full lg:w-76 shrink-0 space-y-8">
+          <div class="flex items-center justify-between border-b pb-4">
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <SlidersHorizontal class="w-4.5 h-4.5 text-primary" />
+              Advanced Filters
+            </h3>
+            <button 
+              @click="resetFilters" 
+              class="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline transition-all"
+            >
+              Reset All
+            </button>
+          </div>
+
+          <!-- Search in this Category -->
+          <div class="space-y-3">
+            <h4 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Search Category</h4>
+            <div class="relative">
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input 
+                v-model="searchQuery"
+                type="text" 
+                placeholder="Search collection..." 
+                class="w-full h-11 bg-muted/60 border rounded-xl pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium border-border/85"
+              />
+            </div>
+          </div>
+
+          <!-- Price Threshold -->
+          <div class="space-y-3">
+            <h4 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Price Threshold</h4>
+            <div class="space-y-4">
+              <input 
+                type="range" 
+                v-model="filters.maxPrice" 
+                min="0" 
+                max="10000" 
+                step="100" 
+                class="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary" 
+              />
+              <div class="flex items-center justify-between text-xs font-bold">
+                <span class="bg-muted px-2.5 py-1 rounded-md">$0</span>
+                <span class="text-primary bg-primary/10 px-3 py-1 rounded-md">Up to ${{ filters.maxPrice }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Brands Selection -->
+          <div class="space-y-3">
+            <h4 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Strategic Manufacturer</h4>
+            <div class="space-y-2">
+              <label 
+                v-for="brand in ['NVIDIA', 'AMD', 'Intel', 'Supermicro']" 
+                :key="brand" 
+                class="flex items-center gap-3 cursor-pointer group/label"
+              >
+                <input 
+                  type="radio" 
+                  name="brand_filter" 
+                  :value="brand" 
+                  v-model="filters.brand"
+                  class="w-4 h-4 rounded-full border-muted text-primary focus:ring-primary" 
+                />
+                <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground group-hover/label:text-foreground transition-colors">
+                  {{ brand }}
+                </span>
+              </label>
+              <label class="flex items-center gap-3 cursor-pointer group/label">
+                <input 
+                  type="radio" 
+                  name="brand_filter" 
+                  value="" 
+                  v-model="filters.brand"
+                  class="w-4 h-4 rounded-full border-muted text-primary focus:ring-primary" 
+                />
+                <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground group-hover/label:text-foreground transition-colors">
+                  All Brands
+                </span>
+              </label>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Product Grid Area -->
+        <div class="flex-grow space-y-8">
+          <!-- Toolbar -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b">
+            <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Displaying <span class="text-foreground font-extrabold">{{ products.length }}</span> optimal results
+            </span>
+            
+            <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+              <div class="flex items-center border rounded-lg overflow-hidden">
+                <button class="p-2.5 bg-muted text-foreground transition-all shrink-0"><Grid class="w-4 h-4" /></button>
+                <button class="p-2.5 hover:bg-muted text-muted-foreground transition-all shrink-0"><List class="w-4 h-4" /></button>
+              </div>
+              <select 
+                v-model="filters.sort"
+                class="h-11 bg-background border border-border/85 rounded-xl px-4 text-xs font-bold uppercase tracking-wider outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 shrink-0"
+              >
+                <option value="newest">Latest Arrivals</option>
+                <option value="price-low-high">Price: Low to High</option>
+                <option value="price-high-low">Price: High to Low</option>
+                <option value="rating">Top Performance</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Grid of Products -->
+          <div v-if="products.length > 0" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+            <CommerceProductCard 
+              v-for="product in products" 
+              :key="product.id" 
+              :product="product" 
+            />
+          </div>
+
+          <!-- Empty State -->
+          <div v-else class="py-24 flex flex-col items-center justify-center text-center space-y-6 bg-card border border-dashed rounded-[2rem] p-12 max-w-2xl mx-auto">
+            <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+              <Search class="w-6 h-6 text-muted-foreground animate-pulse" />
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-xl font-bold tracking-tight text-foreground">No matches found</h3>
+              <p class="text-muted-foreground max-w-sm text-sm">
+                Try loosening your limits or searching a different term inside this category workspace.
+              </p>
+            </div>
+            <UiButton variant="outline" @click="resetFilters">Clear All Filters</UiButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

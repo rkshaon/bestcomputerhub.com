@@ -181,7 +181,7 @@ if (process.client) {
               idx >= 4 ? 'hidden xl:flex' : ''
             )"
           >
-            <NuxtLink :to="`/category/${cat.slug}`" class="flex items-center gap-1 font-bold text-[10px] uppercase tracking-[0.1em] hover:text-primary transition-colors whitespace-nowrap">
+            <NuxtLink :to="categoryService.getCategoryUrl(cat, allCategories)" class="flex items-center gap-1 font-bold text-[10px] uppercase tracking-[0.1em] hover:text-primary transition-colors whitespace-nowrap">
               {{ cat.name }}
               <ChevronDown class="w-3 h-3 text-muted-foreground group-hover:rotate-180 transition-transform duration-500 hidden lg:block" />
             </NuxtLink>
@@ -199,13 +199,13 @@ if (process.client) {
             <div class="absolute top-full left-0 right-0 mx-auto hidden group-hover:block pt-3 z-50 w-[680px]">
               <div class="bg-background/95 backdrop-blur-xl border border-border/50 rounded-[2.5rem] shadow-2xl p-8 w-full grid grid-cols-2 gap-8 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top">
                 <div v-for="cat in moreCategories" :key="cat.id" class="space-y-4 text-left">
-                  <NuxtLink :to="`/category/${cat.slug}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
+                  <NuxtLink :to="categoryService.getCategoryUrl(cat, allCategories)" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
                     {{ cat.name }}
                   </NuxtLink>
                   <ul class="space-y-2 border-l border-muted pl-4">
                     <template v-if="getSubCategories(cat).length">
                       <li v-for="subCat in getSubCategories(cat)" :key="subCat.id">
-                        <NuxtLink :to="`/category/${subCat.slug}`" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
+                        <NuxtLink :to="categoryService.getCategoryUrl(subCat, allCategories)" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
                           {{ subCat.name }}
                         </NuxtLink>
                       </li>
@@ -330,7 +330,7 @@ if (process.client) {
           Catalog
         </NuxtLink>
         <div v-for="cat in visibleCategories" :key="cat.id" class="group h-full flex items-center">
-          <NuxtLink :to="`/category/${cat.slug}`" class="flex items-center gap-1 font-bold text-[10px] uppercase tracking-[0.1em] hover:text-primary transition-colors whitespace-nowrap">
+          <NuxtLink :to="categoryService.getCategoryUrl(cat, allCategories)" class="flex items-center gap-1 font-bold text-[10px] uppercase tracking-[0.1em] hover:text-primary transition-colors whitespace-nowrap">
             {{ cat.name }}
             <ChevronDown class="w-3 h-3 text-muted-foreground group-hover:rotate-180 transition-transform duration-500" />
           </NuxtLink>
@@ -348,13 +348,13 @@ if (process.client) {
           <div class="absolute top-full left-0 right-0 mx-auto hidden group-hover:block pt-3 z-50 w-[680px]">
             <div class="bg-background/95 backdrop-blur-xl border border-border/50 rounded-[2.5rem] shadow-2xl p-8 w-full grid grid-cols-2 gap-8 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top text-left">
               <div v-for="cat in moreCategories" :key="cat.id" class="space-y-4">
-                <NuxtLink :to="`/category/${cat.slug}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
+                <NuxtLink :to="categoryService.getCategoryUrl(cat, allCategories)" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
                   {{ cat.name }}
                 </NuxtLink>
                 <ul class="space-y-2 border-l border-muted pl-4">
                   <template v-if="getSubCategories(cat).length">
                     <li v-for="subCat in getSubCategories(cat)" :key="subCat.id">
-                      <NuxtLink :to="`/category/${subCat.slug}`" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
+                      <NuxtLink :to="categoryService.getCategoryUrl(subCat, allCategories)" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
                         {{ subCat.name }}
                       </NuxtLink>
                     </li>
@@ -424,7 +424,7 @@ if (process.client) {
           <div v-else class="space-y-4">
             <div v-for="cat in categories" :key="cat.id" class="space-y-2">
               <NuxtLink 
-                :to="`/category/${cat.slug}`" 
+                :to="categoryService.getCategoryUrl(cat, allCategories)" 
                 class="font-bold text-xs uppercase tracking-wider block hover:text-primary transition-colors"
                 @click="uiStore.closeMobileMenu()"
               >
@@ -435,7 +435,7 @@ if (process.client) {
               <ul v-if="getSubCategories(cat).length" class="pl-4 border-l border-border/60 space-y-1.5 py-1">
                 <li v-for="subCat in getSubCategories(cat)" :key="subCat.id">
                   <NuxtLink 
-                    :to="`/category/${subCat.slug}`" 
+                    :to="categoryService.getCategoryUrl(subCat, allCategories)" 
                     class="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary block"
                     @click="uiStore.closeMobileMenu()"
                   >

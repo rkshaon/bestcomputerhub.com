@@ -11,6 +11,7 @@ const route = useRoute();
 const productService = useProductService();
 const cartStore = useCartStore();
 const wishlistStore = useWishlistStore();
+const categoryService = useCategoryService();
 
 const slug = route.params.slug as string;
 const product = productService.getProductBySlug(slug);
@@ -22,6 +23,16 @@ if (!product) {
 const selectedImage = ref(product.images[0]);
 const quantity = ref(1);
 const activeTab = ref('description');
+
+const categoryObject = computed(() => {
+  const allCats = productService.getCategories();
+  return allCats.find(c => c.id === product.category || c.slug === product.category);
+});
+
+const categoryUrl = computed(() => {
+  if (!categoryObject.value) return '/products';
+  return categoryService.getCategoryUrl(categoryObject.value);
+});
 
 const similarProducts = computed(() => {
   return productService.getProducts({ 
@@ -45,7 +56,7 @@ const addToCart = () => {
         <nav class="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-muted-foreground overflow-x-auto whitespace-nowrap">
           <NuxtLink to="/" class="hover:text-primary transition-colors">Home</NuxtLink>
           <ChevronRight class="w-3 h-3 shrink-0" />
-          <NuxtLink :to="`/category/${product.category}`" class="hover:text-primary transition-colors">Catalog</NuxtLink>
+          <NuxtLink :to="categoryUrl" class="hover:text-primary transition-colors">{{ categoryObject?.name || 'Catalog' }}</NuxtLink>
           <ChevronRight class="w-3 h-3 shrink-0" />
           <span class="text-foreground truncate max-w-[200px]">{{ product.name }}</span>
         </nav>

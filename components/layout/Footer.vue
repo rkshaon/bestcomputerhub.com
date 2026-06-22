@@ -35,10 +35,10 @@ const currentYear = new Date().getFullYear();
         <!-- Links Grid -->
         <div v-for="section in [
           { title: 'Categories', links: [
-            { name: 'Laptops', url: '/category/laptops' },
+            { name: 'Graphics Cards', url: '/product-category/gpus/' },
             { name: 'New Arrivals', url: '/new-arrivals' },
             { name: 'Special Offers', url: '/offers' },
-            { name: 'Components', url: '/category/components' }
+            { name: 'Processors', url: '/product-category/processors/' }
           ] },
           { title: 'Support', links: [
             { name: 'Help Center', url: '/support/help-center' },

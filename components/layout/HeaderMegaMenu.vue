@@ -1,11 +1,14 @@
 <!-- File: /components/layout/HeaderMegaMenu.vue -->
 <script setup lang="ts">
 import type { Category } from '@/types';
+import { useCategoryService } from '@/composables/useCategoryService';
 
 const props = defineProps<{
   category: Category;
   allCategories: Category[];
 }>();
+
+const categoryService = useCategoryService();
 
 const getCategoryBySlug = (slug: string) => {
   return props.allCategories.find(c => c.slug === slug);
@@ -30,13 +33,13 @@ const getSubCategories = (cat: Category): Category[] => {
   <div class="absolute top-full left-0 right-0 mx-auto hidden group-hover:block pt-3 z-50 w-[680px]">
     <div class="bg-background/95 backdrop-blur-xl border border-border/50 rounded-[2.5rem] shadow-2xl p-8 w-full grid grid-cols-3 gap-8 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top">
       <div v-for="subCat in getSubCategories(category)" :key="subCat.id" class="space-y-4">
-        <NuxtLink :to="`/category/${subCat.slug}`" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
+        <NuxtLink :to="categoryService.getCategoryUrl(subCat, allCategories)" class="font-bold text-[10px] uppercase tracking-widest block text-primary hover:translate-x-1 transition-transform">
           {{ subCat.name }}
         </NuxtLink>
         <ul class="space-y-2 border-l border-muted pl-4">
           <template v-if="getSubCategories(subCat).length">
             <li v-for="subSubCat in getSubCategories(subCat)" :key="subSubCat.id">
-              <NuxtLink :to="`/category/${subSubCat.slug}`" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
+              <NuxtLink :to="categoryService.getCategoryUrl(subSubCat, allCategories)" class="text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary transition-colors block whitespace-nowrap">
                 {{ subSubCat.name }}
               </NuxtLink>
             </li>

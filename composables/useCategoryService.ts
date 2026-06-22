@@ -743,10 +743,25 @@ export const useCategoryService = () => {
     }
   };
 
+  const getCategoryUrl = (cat: Category, customList?: Category[]): string => {
+    const list = customList || getMockCategories();
+    const path: string[] = [cat.slug];
+    let current = cat;
+    for (let depth = 0; depth < 10; depth++) {
+      if (!current.parentCategoryId) break;
+      const parent = list.find(p => p.id === current.parentCategoryId);
+      if (!parent) break;
+      path.unshift(parent.slug);
+      current = parent;
+    }
+    return `/product-category/${path.join('/')}/`;
+  };
+
   return {
     getCategoriesList,
     getRootCategories,
     getCategoryDetails,
+    getCategoryUrl,
     createCategory,
     updateCategory,
     deleteCategory,

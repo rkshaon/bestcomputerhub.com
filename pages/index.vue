@@ -4,10 +4,12 @@ import { computed, ref, onMounted } from 'vue';
 import { ChevronRight, ShieldCheck, Truck, RefreshCw, Trophy } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useBrandService } from '@/composables/useBrandService';
+import { useCategoryService } from '@/composables/useCategoryService';
 
 // Explicitly use the composables (Nuxt usually auto-imports this)
 const productService = useProductService();
 const brandService = useBrandService();
+const categoryService = useCategoryService();
 
 const featuredProducts = productService.getFeaturedProducts();
 const newArrivals = productService.getNewArrivals();
@@ -132,7 +134,7 @@ onMounted(async () => {
         <NuxtLink 
           v-for="cat in homeCategories" 
           :key="cat.id" 
-          :to="`/category/${cat.slug}`"
+          :to="categoryService.getCategoryUrl(cat)"
           class="aspect-[4/3] rounded-3xl bg-muted overflow-hidden relative group"
         >
           <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors z-10"></div>
