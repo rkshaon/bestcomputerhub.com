@@ -38,29 +38,57 @@ const loadAllCategories = async () => {
     allCategoriesList.value = productService.getCategories();
   } finally {
     isPageLoading.value = false;
+    await resolveCategory();
   }
 };
+
+const activeCategory = ref<Category | null>(null);
+
+const resolveCategory = async () => {
+  const targetSlug = categorySlug.value ? categorySlug.value.toLowerCase() : '';
+  if (!targetSlug) {
+    activeCategory.value = null;
+    return;
+  }
+
+  // 1. Check in allCategoriesList first (already loaded)
+  let match = allCategoriesList.value.find(c => c.slug?.toLowerCase() === targetSlug);
+  
+  // 2. If not found, and we are not in mock mode, try querying specifically for this slug
+  if (!match && allCategoriesList.value.length > 0) {
+    try {
+      const searchRes = await categoryService.getCategoriesList({ search: targetSlug, page_size: 10 });
+      if (searchRes && searchRes.results && searchRes.results.length) {
+        const exactMatch = searchRes.results.find(c => c.slug?.toLowerCase() === targetSlug);
+        if (exactMatch) {
+          match = exactMatch;
+          if (!allCategoriesList.value.some(c => c.id === exactMatch.id)) {
+            allCategoriesList.value.push(exactMatch);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to resolve category via search:', e);
+    }
+  }
+
+  // 3. Fall back to static mock categories
+  if (!match) {
+    match = productService.getCategories().find(c => c.slug?.toLowerCase() === targetSlug);
+  }
+
+  activeCategory.value = match || null;
+};
+
+const category = computed(() => activeCategory.value);
 
 onMounted(() => {
   loadAllCategories();
 });
 
-watch(slugs, () => {
-  // Re-fetch or re-evaluate on navigation if needed
+watch([slugs, allCategoriesList], async () => {
+  await resolveCategory();
 }, { deep: true });
-
-const category = computed(() => {
-  const targetSlug = categorySlug.value ? categorySlug.value.toLowerCase() : '';
-  if (!targetSlug) return null;
-  
-  // Search in dynamically loaded categories first
-  let match = allCategoriesList.value.find(c => c.slug?.toLowerCase() === targetSlug);
-  if (!match) {
-    // Fall back to static mock categories
-    match = productService.getCategories().find(c => c.slug?.toLowerCase() === targetSlug);
-  }
-  return match;
-});
 
 // Breadcrumbs trail
 const breadcrumbs = computed(() => {

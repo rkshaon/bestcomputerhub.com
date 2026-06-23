@@ -205,8 +205,8 @@ export const useProductService = () => {
 
       const urlSuffix = qParams.toString() ? `?${qParams.toString()}` : '';
       
-      // Backend Clarification: No trailing slash on products list API
-      const response = await apiClient.request<any>(`/api/v1/products${urlSuffix}`, {
+      // Backend Clarification: ALWAYS append trailing slash to products list API endpoint per enterprise rules
+      const response = await apiClient.request<any>(`/api/v1/products/${urlSuffix}`, {
         method: 'GET'
       });
 
