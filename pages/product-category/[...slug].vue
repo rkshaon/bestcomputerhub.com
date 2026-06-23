@@ -76,8 +76,9 @@ const breadcrumbs = computed(() => {
       url: categoryService.getCategoryUrl(current, list)
     });
     
-    if (current.parentCategoryId) {
-      const parent = list.find(p => p.id === current.parentCategoryId);
+    const parentId = current.parentCategoryId;
+    if (parentId) {
+      const parent = list.find(p => p.id === parentId);
       current = parent || null;
     } else {
       current = null;
