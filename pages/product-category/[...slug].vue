@@ -5,7 +5,7 @@ import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft } 
 import { useRoute } from 'vue-router';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
-import type { Category } from '@/types';
+import type { Category, Product } from '@/types';
 
 const route = useRoute();
 const productService = useProductService();
@@ -67,23 +67,23 @@ const breadcrumbs = computed(() => {
   const trail: { name: string; url: string }[] = [];
   if (!category.value) return trail;
   
-  let current: Category | null = category.value;
   const list = allCategoriesList.value.length ? allCategoriesList.value : productService.getCategories();
   
-  while (current) {
+  const buildTrail = (cat: Category) => {
     trail.unshift({
-      name: current.name,
-      url: categoryService.getCategoryUrl(current, list)
+      name: cat.name,
+      url: categoryService.getCategoryUrl(cat, list)
     });
     
-    const parentId = current.parentCategoryId;
-    if (parentId) {
-      const parent = list.find(p => p.id === parentId);
-      current = parent || null;
-    } else {
-      current = null;
+    if (cat.parentCategoryId) {
+      const parent = list.find(p => p.id === cat.parentCategoryId);
+      if (parent) {
+        buildTrail(parent);
+      }
     }
-  }
+  };
+  
+  buildTrail(category.value);
   return trail;
 });
 
@@ -96,16 +96,54 @@ const filters = reactive({
 
 const searchQuery = ref('');
 
-const products = computed(() => {
-  if (!category.value) return [];
-  return productService.getProducts({
-    category: category.value.id || category.value.slug,
-    query: searchQuery.value,
-    minPrice: filters.minPrice,
-    maxPrice: filters.maxPrice,
-    sort: filters.sort
-  });
+const loadedProducts = ref<Product[]>([]);
+const isProductsLoading = ref(false);
+
+const fetchProducts = async () => {
+  if (!category.value) {
+    loadedProducts.value = [];
+    return;
+  }
+  isProductsLoading.value = true;
+  try {
+    const res = await productService.getProductsList({
+      category: category.value.id || category.value.slug,
+      query: searchQuery.value,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      brand: filters.brand,
+      sort: filters.sort,
+      page_size: 100
+    });
+    loadedProducts.value = res.results;
+  } catch {
+    // Fallback sync query
+    loadedProducts.value = productService.getProducts({
+      category: category.value.id || category.value.slug,
+      query: searchQuery.value,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      brand: filters.brand,
+      sort: filters.sort
+    });
+  } finally {
+    isProductsLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchProducts();
 });
+
+watch(category, () => {
+  fetchProducts();
+}, { deep: true });
+
+watch([searchQuery, () => filters.brand, () => filters.minPrice, () => filters.maxPrice, () => filters.sort], () => {
+  fetchProducts();
+});
+
+const products = computed(() => loadedProducts.value);
 
 // Reset filters helper
 const resetFilters = () => {
@@ -265,8 +303,22 @@ const resetFilters = () => {
             </div>
           </div>
 
-          <!-- Grid of Products -->
-          <div v-if="products.length > 0" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+          <!-- Grid of Products / Skeletons -->
+          <div v-if="isProductsLoading" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+            <div v-for="i in 6" :key="i" class="bg-card rounded-[2rem] border p-6 space-y-4 animate-pulse">
+              <div class="aspect-video bg-muted rounded-2xl w-full"></div>
+              <div class="space-y-2">
+                <div class="h-4 bg-muted rounded w-1/3"></div>
+                <div class="h-6 bg-muted rounded w-3/4"></div>
+              </div>
+              <div class="flex items-center justify-between pt-4">
+                <div class="h-6 bg-muted rounded w-1/4"></div>
+                <div class="h-8 bg-muted rounded-full w-1/4"></div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else-if="products.length > 0" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
             <CommerceProductCard 
               v-for="product in products" 
               :key="product.id" 
