@@ -98,10 +98,15 @@ const searchQuery = ref('');
 
 const loadedProducts = ref<Product[]>([]);
 const isProductsLoading = ref(false);
+const currentPage = ref(1);
+const totalPages = ref(1);
+const totalCount = ref(0);
 
 const fetchProducts = async () => {
   if (!category.value) {
     loadedProducts.value = [];
+    totalCount.value = 0;
+    totalPages.value = 1;
     return;
   }
   isProductsLoading.value = true;
@@ -113,12 +118,15 @@ const fetchProducts = async () => {
       maxPrice: filters.maxPrice,
       brand: filters.brand,
       sort: filters.sort,
-      page_size: 100
+      page: currentPage.value,
+      page_size: 10
     });
     loadedProducts.value = res.results;
+    totalCount.value = res.count;
+    totalPages.value = res.pages;
   } catch {
     // Fallback sync query
-    loadedProducts.value = productService.getProducts({
+    const fallbackProducts = productService.getProducts({
       category: category.value.id || category.value.slug,
       query: searchQuery.value,
       minPrice: filters.minPrice,
@@ -126,6 +134,9 @@ const fetchProducts = async () => {
       brand: filters.brand,
       sort: filters.sort
     });
+    loadedProducts.value = fallbackProducts;
+    totalCount.value = fallbackProducts.length;
+    totalPages.value = 1;
   } finally {
     isProductsLoading.value = false;
   }
@@ -136,10 +147,12 @@ onMounted(() => {
 });
 
 watch(category, () => {
+  currentPage.value = 1;
   fetchProducts();
 }, { deep: true });
 
 watch([searchQuery, () => filters.brand, () => filters.minPrice, () => filters.maxPrice, () => filters.sort], () => {
+  currentPage.value = 1;
   fetchProducts();
 });
 
@@ -283,7 +296,7 @@ const resetFilters = () => {
           <!-- Toolbar -->
           <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b">
             <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Displaying <span class="text-foreground font-extrabold">{{ products.length }}</span> optimal results
+              Displaying <span class="text-foreground font-extrabold">{{ totalCount }}</span> optimal results
             </span>
             
             <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
@@ -318,12 +331,41 @@ const resetFilters = () => {
             </div>
           </div>
 
-          <div v-else-if="products.length > 0" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-            <CommerceProductCard 
-              v-for="product in products" 
-              :key="product.id" 
-              :product="product" 
-            />
+          <div v-else-if="products.length > 0" class="space-y-12">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+              <CommerceProductCard 
+                v-for="product in products" 
+                :key="product.id" 
+                :product="product" 
+              />
+            </div>
+
+            <!-- Modern Paginated Controls -->
+            <div v-if="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-8">
+              <span class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Page <span class="text-foreground font-black">{{ currentPage }}</span> of <span class="text-foreground font-black">{{ totalPages }}</span>
+              </span>
+              <div class="flex items-center gap-3">
+                <UiButton 
+                  variant="outline" 
+                  size="sm" 
+                  :disabled="currentPage === 1" 
+                  @click="currentPage--; fetchProducts()"
+                  class="rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
+                >
+                  Previous
+                </UiButton>
+                <UiButton 
+                  variant="outline" 
+                  size="sm" 
+                  :disabled="currentPage === totalPages" 
+                  @click="currentPage++; fetchProducts()"
+                  class="rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
+                >
+                  Next
+                </UiButton>
+              </div>
+            </div>
           </div>
 
           <!-- Empty State -->
