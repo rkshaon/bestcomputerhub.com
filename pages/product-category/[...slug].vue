@@ -46,6 +46,7 @@ const activeCategory = ref<Category | null>(null);
 
 const resolveCategory = async () => {
   const targetSlug = categorySlug.value ? categorySlug.value.toLowerCase() : '';
+  console.log('[ProductCategory] Resolving category for slug:', targetSlug);
   if (!targetSlug) {
     activeCategory.value = null;
     return;
@@ -53,7 +54,9 @@ const resolveCategory = async () => {
 
   // 1. Try querying category details by slug via Category Details API
   try {
+    console.log('[ProductCategory] Calling getCategoryDetails for slug:', targetSlug);
     const detail = await categoryService.getCategoryDetails(targetSlug);
+    console.log('[ProductCategory] getCategoryDetails returned:', detail);
     if (detail) {
       activeCategory.value = detail;
       return;
@@ -126,9 +129,10 @@ onMounted(() => {
   loadAllCategories();
 });
 
-watch([slugs, allCategoriesList], async () => {
+watch(categorySlug, async (newSlug) => {
+  console.log('[ProductCategory] Watch triggered for categorySlug:', newSlug);
   await resolveCategory();
-}, { deep: true });
+}, { immediate: true });
 
 // Breadcrumbs trail
 const breadcrumbs = computed(() => {
