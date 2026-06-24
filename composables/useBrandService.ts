@@ -44,10 +44,11 @@ export const useBrandService = () => {
   };
 
   const checkMockMode = (): boolean => {
-    // Determine mock mode based on useApiClient rules
-    const config = useRuntimeConfig();
-    const apiBase = config.public.apiBase || '';
-    return !apiBase || apiBase.trim() === '';
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.has('mock') || localStorage.getItem('techcore_mock_mode') === 'true';
+    }
+    return false;
   };
 
   // 1. Get All Brands (Paginated / Filtered or simple list)

@@ -181,8 +181,13 @@ export const useApiClient = () => {
     errorMsg.value = null;
     isSuccess.value = false;
 
-    // Check if we should run in simulation mode because no apiBase is configured in the environment
-    const isMockMode = !apiBase || apiBase.trim() === '';
+    // By default, make real API calls relative to the same origin.
+    // Run in mock mode only if mock query param is present or mock mode is stored in localStorage.
+    let isMockMode = false;
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      isMockMode = urlParams.has('mock') || localStorage.getItem('techcore_mock_mode') === 'true';
+    }
 
     // If simulating, mock response data appropriately to prevent visual breakage
     if (isMockMode) {

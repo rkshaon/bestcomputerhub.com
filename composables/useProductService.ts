@@ -51,9 +51,11 @@ export const useProductService = () => {
   };
 
   const checkMockMode = (): boolean => {
-    const config = useRuntimeConfig();
-    const apiBase = config.public.apiBase || '';
-    return !apiBase || apiBase.trim() === '';
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.has('mock') || localStorage.getItem('techcore_mock_mode') === 'true';
+    }
+    return false;
   };
 
   // Maps backend response product schema if required to match Product interface
@@ -299,8 +301,8 @@ export const useProductService = () => {
     }
 
     try {
-      // Backend Clarification: No trailing slash on detail endpoint
-      const response = await apiClient.request<any>(`/api/v1/products/${idOrSlug}`, {
+      // Backend Clarification: ALWAYS append trailing slash to match enterprise rules
+      const response = await apiClient.request<any>(`/api/v1/products/${idOrSlug}/`, {
         method: 'GET'
       });
       isLoading.value = false;
@@ -351,7 +353,8 @@ export const useProductService = () => {
     }
 
     try {
-      const response = await apiClient.request<any>('/api/v1/products', {
+      // Backend Clarification: ALWAYS append trailing slash to POST requests
+      const response = await apiClient.request<any>('/api/v1/products/', {
         method: 'POST',
         body: payload
       });
@@ -409,7 +412,8 @@ export const useProductService = () => {
       // Rule compliance: Always exclude slug/readonly fields on payload mutations as explicitly mandated
       const { slug, sku, id: pId, rating, reviewCount, ...cleanPayload } = payload as any;
 
-      const response = await apiClient.request<any>(`/api/v1/products/${id}`, {
+      // Backend Clarification: ALWAYS append trailing slash to PATCH requests
+      const response = await apiClient.request<any>(`/api/v1/products/${id}/`, {
         method: 'PATCH',
         body: cleanPayload
       });
@@ -438,7 +442,8 @@ export const useProductService = () => {
     }
 
     try {
-      await apiClient.request<any>(`/api/v1/products/${id}`, {
+      // Backend Clarification: ALWAYS append trailing slash to DELETE requests
+      await apiClient.request<any>(`/api/v1/products/${id}/`, {
         method: 'DELETE'
       });
       isLoading.value = false;

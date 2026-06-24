@@ -74,9 +74,11 @@ export const useCategoryService = () => {
   };
 
   const checkMockMode = (): boolean => {
-    const config = useRuntimeConfig();
-    const apiBase = config.public.apiBase || '';
-    return !apiBase || apiBase.trim() === '';
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.has('mock') || localStorage.getItem('techcore_mock_mode') === 'true';
+    }
+    return false;
   };
 
   // Trailing Slashes Requirement: ALWAYS append trailing slash (/)
