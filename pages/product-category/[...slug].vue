@@ -51,15 +51,40 @@ const resolveCategory = async () => {
     return;
   }
 
-  // 1. Check in allCategoriesList first (already loaded)
-  let match = allCategoriesList.value.find(c => c.slug?.toLowerCase() === targetSlug);
+  // 1. Try querying category details by slug via Category Details API
+  try {
+    const detail = await categoryService.getCategoryDetails(targetSlug);
+    if (detail) {
+      activeCategory.value = detail;
+      return;
+    }
+  } catch (e) {
+    console.error('Failed to load category details via details API:', e);
+  }
+
+  // Recursive search helper to find category by slug in a hierarchy tree
+  const findCategoryBySlug = (categories: Category[], slug: string): Category | null => {
+    for (const cat of categories) {
+      if (cat.slug?.toLowerCase() === slug.toLowerCase()) {
+        return cat;
+      }
+      if (cat.children && cat.children.length > 0) {
+        const found = findCategoryBySlug(cat.children, slug);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // 2. Check in allCategoriesList first (already loaded, could be hierarchical)
+  let match = findCategoryBySlug(allCategoriesList.value, targetSlug);
   
-  // 2. If not found, and we are not in mock mode, try querying specifically for this slug
+  // 3. If not found, try querying specifically for this slug
   if (!match && allCategoriesList.value.length > 0) {
     try {
       const searchRes = await categoryService.getCategoriesList({ search: targetSlug, page_size: 10 });
       if (searchRes && searchRes.results && searchRes.results.length) {
-        const exactMatch = searchRes.results.find(c => c.slug?.toLowerCase() === targetSlug);
+        const exactMatch = findCategoryBySlug(searchRes.results, targetSlug);
         if (exactMatch) {
           match = exactMatch;
           if (!allCategoriesList.value.some(c => c.id === exactMatch.id)) {
@@ -72,15 +97,30 @@ const resolveCategory = async () => {
     }
   }
 
-  // 3. Fall back to static mock categories
+  // 4. Fall back to static mock categories
   if (!match) {
-    match = productService.getCategories().find(c => c.slug?.toLowerCase() === targetSlug);
+    match = findCategoryBySlug(productService.getCategories(), targetSlug);
   }
 
   activeCategory.value = match || null;
 };
 
 const category = computed(() => activeCategory.value);
+
+const cleanShortDescription = computed(() => {
+  const desc = category.value?.description || '';
+  if (!desc) {
+    return `Explore optimized enterprise-grade technology and premium ${category.value?.name || 'hardware'} options.`;
+  }
+  // Strip HTML tags for the short text introduction in header
+  const stripped = desc.replace(/<[^>]*>/g, ' ')
+                      .replace(/\s+/g, ' ')
+                      .trim();
+  if (stripped.length > 180) {
+    return stripped.substring(0, 180) + '...';
+  }
+  return stripped;
+});
 
 onMounted(() => {
   loadAllCategories();
@@ -225,8 +265,8 @@ const resetFilters = () => {
           <h1 class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all">
             {{ category?.name || 'Hardware Collection' }}
           </h1>
-          <p class="text-muted-foreground text-base md:text-lg max-w-2xl leading-relaxed">
-            {{ category?.description || `Explore optimized enterprise-grade technology and premium ${category?.name || 'hardware'} options.` }}
+          <p class="text-muted-foreground text-sm md:text-base max-w-2xl leading-relaxed">
+            {{ cleanShortDescription }}
           </p>
         </div>
       </div>
@@ -411,6 +451,44 @@ const resetFilters = () => {
           </div>
         </div>
       </div>
+
+      <!-- Bottom Rich Category Details Section -->
+      <div 
+        v-if="category?.description && (category.description.includes('<') || category.description.length > 200)" 
+        class="mt-16 bg-card border border-border/80 rounded-[2rem] p-8 md:p-12 space-y-6 shadow-sm"
+      >
+        <h2 class="text-2xl font-display font-black tracking-tight text-foreground border-b pb-4">
+          Detailed Guide to {{ category.name }}
+        </h2>
+        <div 
+          class="prose prose-slate dark:prose-invert max-w-none"
+          v-html="category.description"
+        />
+      </div>
     </div>
   </div>
 </template>
+
+<style>
+.prose h2 {
+  @apply text-xl font-bold text-foreground mt-8 mb-4;
+}
+.prose h3 {
+  @apply text-lg font-bold text-foreground mt-6 mb-3;
+}
+.prose h4 {
+  @apply text-base font-bold text-foreground mt-4 mb-2;
+}
+.prose p {
+  @apply mb-4 text-muted-foreground leading-relaxed text-sm;
+}
+.prose ul {
+  @apply list-disc pl-6 mb-6 space-y-2;
+}
+.prose li {
+  @apply text-muted-foreground text-sm leading-relaxed;
+}
+.prose a {
+  @apply text-primary hover:underline transition-all;
+}
+</style>
