@@ -52,19 +52,6 @@ const resolveCategory = async () => {
     return;
   }
 
-  // 1. Try querying category details by slug via Category Details API
-  try {
-    console.log('[ProductCategory] Calling getCategoryDetails for slug:', targetSlug);
-    const detail = await categoryService.getCategoryDetails(targetSlug);
-    console.log('[ProductCategory] getCategoryDetails returned:', detail);
-    if (detail) {
-      activeCategory.value = detail;
-      return;
-    }
-  } catch (e) {
-    console.error('Failed to load category details via details API:', e);
-  }
-
   // Recursive search helper to find category by slug in a hierarchy tree
   const findCategoryBySlug = (categories: Category[], slug: string): Category | null => {
     for (const cat of categories) {
@@ -79,17 +66,45 @@ const resolveCategory = async () => {
     return null;
   };
 
-  // 2. Check in allCategoriesList first (already loaded, could be hierarchical)
+  // 1. Instantly check for match in allCategoriesList (from menu's data/hierarchy list)
   let match = findCategoryBySlug(allCategoriesList.value, targetSlug);
   
-  // 3. If not found, try querying specifically for this slug
-  if (!match && allCategoriesList.value.length > 0) {
+  // 2. Fall back to static mock categories if not found in list
+  if (!match) {
+    match = findCategoryBySlug(productService.getCategories(), targetSlug);
+  }
+
+  // Set local match immediately so user gets an instant layout & visual response
+  if (match) {
+    activeCategory.value = { ...match };
+  }
+
+  // 3. Regardless of finding local match, ALWAYS call the Category Details API to load full rich content/description
+  try {
+    console.log('[ProductCategory] Calling getCategoryDetails for slug:', targetSlug);
+    const detail = await categoryService.getCategoryDetails(targetSlug);
+    console.log('[ProductCategory] getCategoryDetails returned:', detail);
+    if (detail) {
+      if (activeCategory.value) {
+        // Merge rich details (like full description/guide) onto the basic category object
+        activeCategory.value = { ...activeCategory.value, ...detail };
+      } else {
+        activeCategory.value = detail;
+      }
+      return;
+    }
+  } catch (e) {
+    console.error('Failed to load category details via details API:', e);
+  }
+
+  // 4. If still not matched at all, try query search by slug
+  if (!activeCategory.value && allCategoriesList.value.length > 0) {
     try {
       const searchRes = await categoryService.getCategoriesList({ search: targetSlug, page_size: 10 });
       if (searchRes && searchRes.results && searchRes.results.length) {
         const exactMatch = findCategoryBySlug(searchRes.results, targetSlug);
         if (exactMatch) {
-          match = exactMatch;
+          activeCategory.value = exactMatch;
           if (!allCategoriesList.value.some(c => c.id === exactMatch.id)) {
             allCategoriesList.value.push(exactMatch);
           }
@@ -99,13 +114,6 @@ const resolveCategory = async () => {
       console.error('Failed to resolve category via search:', e);
     }
   }
-
-  // 4. Fall back to static mock categories
-  if (!match) {
-    match = findCategoryBySlug(productService.getCategories(), targetSlug);
-  }
-
-  activeCategory.value = match || null;
 };
 
 const category = computed(() => activeCategory.value);
@@ -129,10 +137,10 @@ onMounted(() => {
   loadAllCategories();
 });
 
-watch(categorySlug, async (newSlug) => {
-  console.log('[ProductCategory] Watch triggered for categorySlug:', newSlug);
+watch(() => route.params.slug, async (newVal) => {
+  console.log('[ProductCategory] route.params.slug changed:', newVal);
   await resolveCategory();
-}, { immediate: true });
+}, { immediate: true, deep: true });
 
 // Breadcrumbs trail
 const breadcrumbs = computed(() => {
