@@ -195,12 +195,52 @@ export const useProductService = () => {
       qParams.append('page', page.toString());
       qParams.append('page_size', pageSize.toString());
 
-      // Real backend category ID must be integer as verified by backend developer
+      // Forward category filter - support both numeric ID and string slug formats
       if (categoryFilter !== undefined && categoryFilter !== '') {
         const isNumeric = /^\d+$/.test(categoryFilter.toString());
         if (isNumeric) {
           qParams.append('category', categoryFilter.toString());
+        } else {
+          // Append as category_slug and category to support any backend implementation
+          qParams.append('category_slug', categoryFilter.toString());
+          qParams.append('category', categoryFilter.toString());
         }
+      }
+
+      // Forward search/query keywords
+      if (search) {
+        qParams.append('search', search);
+        qParams.append('query', search);
+        qParams.append('q', search);
+      }
+
+      // Forward brand filter
+      if (brandFilter) {
+        qParams.append('brand', brandFilter);
+      }
+
+      // Forward price range filters (standard & alternative casings)
+      if (minPrice !== undefined) {
+        qParams.append('min_price', minPrice.toString());
+        qParams.append('minPrice', minPrice.toString());
+      }
+      if (maxPrice !== undefined) {
+        qParams.append('max_price', maxPrice.toString());
+        qParams.append('maxPrice', maxPrice.toString());
+      }
+
+      // Forward ordering / sorting options
+      if (sort) {
+        let backendOrdering = sort;
+        if (sort === 'price-low-high') backendOrdering = 'price';
+        if (sort === 'price-high-low') backendOrdering = '-price';
+        if (sort === 'rating') backendOrdering = '-rating';
+        if (sort === 'newest') backendOrdering = '-id';
+        
+        qParams.append('ordering', backendOrdering);
+        qParams.append('sort', sort);
+      } else if (ordering) {
+        qParams.append('ordering', ordering);
       }
 
       const urlSuffix = qParams.toString() ? `?${qParams.toString()}` : '';

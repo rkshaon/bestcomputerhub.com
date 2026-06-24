@@ -77,6 +77,7 @@ const resolveCategory = async () => {
   // Set local match immediately so user gets an instant layout & visual response
   if (match) {
     activeCategory.value = { ...match };
+    fetchProducts();
   }
 
   // 3. Regardless of finding local match, ALWAYS call the Category Details API to load full rich content/description
@@ -91,6 +92,7 @@ const resolveCategory = async () => {
       } else {
         activeCategory.value = detail;
       }
+      fetchProducts();
       return;
     }
   } catch (e) {
