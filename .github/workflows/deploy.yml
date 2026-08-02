@@ -1,0 +1,194 @@
+name: CI/CD Pipeline
+run-name: >
+  ${{ github.event_name == 'pull_request'
+      && format('PR #{0}: {1}', github.event.pull_request.number, github.event.pull_request.title)
+      || format('{0}: {1}', github.ref_name, github.event.head_commit.message) }}
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+# Grants the workflow permissions to write packages to GitHub Container Registry (GHCR)
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  # Converts repository owner and name to lowercase for Docker compatibility
+  # IMAGE_NAME: ${{ github.repository_owner }}/bikkhato-frontend
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Job 1: Lint & Type Check the code quality
+  test:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run Lint / Checks
+        run: pnpm run lint
+
+  # Job 2: Build the Nuxt 4 production application to check for any build-time failures
+  build-nuxt:
+    name: Build Nuxt App
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build standalone app
+        run: pnpm run build
+
+  # Job 3 & 4: Build and Push Docker Image to GHCR (only on branch push, not on PR)
+  docker-release:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, build-nuxt]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Setup QEMU for multi-platform build support if required in the future
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Setup Buildx for advanced caching and optimization
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Authenticate to GHCR using automatic runner token
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata (tags, labels) for Docker images
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=,suffix=,format=short
+            latest
+
+      # Build and push the Docker image with GitHub Actions caching support
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Utilizes GH Actions cache backend for extremely fast successive builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Job 4: Securely deploy to VPS over SSH
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: docker-release
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          script: |
+            # 1. Navigate to your project directory on the VPS
+            sudo mkdir -p /var/www/best-computers.rkshaon.info
+            sudo chown -R ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} /var/www/best-computers.rkshaon.info || true
+            cd /var/www/best-computers.rkshaon.info
+
+            # 2. Re-create or update docker-compose.yml on target machine if needed
+            cat << 'EOF' > docker-compose.yml
+            services:
+              frontend:
+                container_name: bestcomputerhub-frontend
+                image: ghcr.io/${{ github.repository }}:latest
+                ports:
+                  - "3000:3000"
+                environment:
+                  - NODE_ENV=production
+                  - PORT=3000
+                  - HOST=0.0.0.0
+                  - NUXT_PUBLIC_API_BASE=${{ secrets.DEV_NUXT_PUBLIC_API_BASE }}
+                  # Add other production environment variables here
+                restart: unless-stopped
+            EOF
+
+            # 3. Log in to GitHub Container Registry inside VPS
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # 4. Pull the latest image and restart service gracefully
+            docker compose pull
+            docker compose up -d --remove-orphans
+
+            # 5. Clean up dangling images to prevent disk space leaks
+            docker image prune -f
