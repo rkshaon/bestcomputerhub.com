@@ -2,17 +2,16 @@
   "name": "tech-core-enterprise",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.0.0",
+  "packageManager": "pnpm@9.0.0",
   "type": "module",
   "scripts": {
-    "build": "nuxt generate && rm -rf dist && mv .output/public dist",
+    "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "nuxt typecheck",
-    "type-check": "nuxt typecheck",
-    "build:dev": "nuxt generate && rm -rf dist && mv .output/public dist"
+    "type-check": "nuxt typecheck"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
