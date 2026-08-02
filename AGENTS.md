@@ -1,9 +1,10 @@
+<!-- File: /AGENTS.md -->
 # TechCore Enterprise - Agent Guidelines
 
 This document contains project-specific instructions and context to ensure consistency across development sessions.
 
 ## 🏗 Project Overview
-TechCore is a high-performance enterprise hardware marketplace built with **Nuxt 3**, **Tailwind CSS**, and **Lucide Icons**. The aesthetic is "Technical Premium": clean, high-contrast, with precise typography and subtle animations.
+TechCore is a high-performance enterprise hardware marketplace built with **Nuxt 3** (`^4.4.6`), **Vue 3** (`^3.5.34`), **Tailwind CSS** (`^3.4.19`), **Pinia** (`^3.0.4`), and **Lucide Icons** (`lucide-vue-next`). The aesthetic is "Technical Premium": clean, high-contrast, with precise typography and subtle animations.
 
 ## 🌀 Structural Autonomy
 The agent is granted full, unconditional autonomy to maintain, refactor, and modify the project's file structure.

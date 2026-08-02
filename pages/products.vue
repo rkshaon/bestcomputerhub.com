@@ -12,6 +12,7 @@ import {
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { cn } from '@/utils';
+import type { Product } from '@/types';
 
 const productService = useProductService();
 const route = useRoute();
@@ -30,16 +31,47 @@ const filters = ref({
 const isFilterSidebarOpen = ref(false);
 const viewMode = ref<'grid' | 'list'>('grid');
 
-const products = computed(() => {
-  return productService.getProducts({
-    query: filters.value.query,
-    category: filters.value.category,
-    brand: filters.value.brand,
-    minPrice: filters.value.minPrice,
-    maxPrice: filters.value.maxPrice,
-    sort: filters.value.sort
-  });
-});
+const loadedProducts = ref<Product[]>([]);
+const isProductsLoading = ref(false);
+const currentPage = ref(1);
+const totalPages = ref(1);
+const totalCount = ref(0);
+
+const fetchProducts = async () => {
+  isProductsLoading.value = true;
+  try {
+    const res = await productService.getProductsList({
+      query: filters.value.query,
+      category: filters.value.category,
+      brand: filters.value.brand,
+      minPrice: filters.value.minPrice,
+      maxPrice: filters.value.maxPrice,
+      sort: filters.value.sort,
+      page: currentPage.value,
+      page_size: 12
+    });
+    loadedProducts.value = res.results;
+    totalCount.value = res.count;
+    totalPages.value = res.pages;
+  } catch {
+    // Fallback sync query
+    const fallbackProducts = productService.getProducts({
+      query: filters.value.query,
+      category: filters.value.category,
+      brand: filters.value.brand,
+      minPrice: filters.value.minPrice,
+      maxPrice: filters.value.maxPrice,
+      sort: filters.value.sort
+    });
+    loadedProducts.value = fallbackProducts;
+    totalCount.value = fallbackProducts.length;
+    totalPages.value = 1;
+  } finally {
+    isProductsLoading.value = false;
+  }
+};
+
+const products = computed(() => loadedProducts.value);
 
 const allCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
 const allBrands = Array.from(new Set(productService.getProducts().map(p => p.brand)));
@@ -57,7 +89,15 @@ const updateRoute = () => {
   });
 };
 
-watch(filters, updateRoute, { deep: true });
+watch(filters, () => {
+  currentPage.value = 1;
+  updateRoute();
+  fetchProducts();
+}, { deep: true });
+
+onMounted(() => {
+  fetchProducts();
+});
 
 const clearFilters = () => {
   filters.value = {
@@ -158,15 +198,61 @@ const activeFiltersCount = computed(() => {
 
     <!-- Main Grid -->
     <div class="container mx-auto px-4 py-12">
-      <div v-if="products.length > 0" :class="cn(
+      <div v-if="isProductsLoading" :class="cn(
         'grid gap-8',
         viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
       )">
-        <CommerceProductCard 
-          v-for="product in products" 
-          :key="product.id" 
-          :product="product" 
-        />
+        <div v-for="i in 8" :key="i" class="bg-card rounded-[2rem] border p-6 space-y-4 animate-pulse">
+          <div class="aspect-video bg-muted rounded-2xl w-full"></div>
+          <div class="space-y-2">
+            <div class="h-4 bg-muted rounded w-1/3"></div>
+            <div class="h-6 bg-muted rounded w-3/4"></div>
+          </div>
+          <div class="flex items-center justify-between pt-4">
+            <div class="h-6 bg-muted rounded w-1/4"></div>
+            <div class="h-8 bg-muted rounded-full w-1/4"></div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="products.length > 0" class="space-y-12">
+        <div :class="cn(
+          'grid gap-8',
+          viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
+        )">
+          <CommerceProductCard 
+            v-for="product in products" 
+            :key="product.id" 
+            :product="product" 
+          />
+        </div>
+
+        <!-- Modern Paginated Controls -->
+        <div v-if="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-8">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Page <span class="text-foreground font-black">{{ currentPage }}</span> of <span class="text-foreground font-black">{{ totalPages }}</span>
+          </span>
+          <div class="flex items-center gap-3">
+            <UiButton 
+              variant="outline" 
+              size="sm" 
+              :disabled="currentPage === 1" 
+              @click="currentPage--; fetchProducts()"
+              class="rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              Previous
+            </UiButton>
+            <UiButton 
+              variant="outline" 
+              size="sm" 
+              :disabled="currentPage === totalPages" 
+              @click="currentPage++; fetchProducts()"
+              class="rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              Next
+            </UiButton>
+          </div>
+        </div>
       </div>
 
       <!-- Empty State -->
