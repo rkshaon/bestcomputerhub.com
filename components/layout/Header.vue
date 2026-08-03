@@ -321,7 +321,7 @@ if (process.client) {
       <!-- Collapsible Secondary Row (Visible only when not scrolled) -->
       <nav 
         :class="cn(
-          'hidden md:flex relative items-center justify-between gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-6 transition-all duration-500 ease-in-out w-full flex-nowrap',
+          'hidden md:flex relative items-center justify-start gap-3 lg:gap-5 xl:gap-6 transition-all duration-500 ease-in-out w-full flex-nowrap',
           isScrolled 
             ? 'h-0 overflow-hidden opacity-0 mt-0 pt-0 border-t-0 pointer-events-none' 
             : 'h-12 overflow-visible opacity-100 mt-3 pt-3 border-t border-border/50'
