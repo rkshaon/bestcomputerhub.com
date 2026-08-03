@@ -634,3 +634,11 @@ When working on any task in this repository:
 - Do not create new abstractions, components, utilities, services, or configuration unless they provide clear value for the current requirement.
 - Preserve existing behavior unless the task explicitly requires changing it.
 - If you notice an unrelated issue, mention it in the final report rather than fixing it unless it blocks the requested work.
+
+---
+
+### Clarification Rule
+
+Do not ask for clarification when the answer can be reliably determined by inspecting the repository, existing implementation, project context, or established conventions.
+
+Ask for clarification when required information is genuinely missing or when multiple materially different choices would affect business behavior, architecture, API contracts, user experience, or task scope.

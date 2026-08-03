@@ -209,6 +209,8 @@ Apply the same principle to other semantic background/foreground pairs.
 
 ## 6. Dark Mode
 
+Light mode is the default theme. An explicitly saved user theme preference takes precedence.
+
 Dark mode uses the `.dark` class.
 
 All reusable UI should remain usable in both light and dark modes.

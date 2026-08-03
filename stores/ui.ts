@@ -4,7 +4,7 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 
 export const useUIStore = defineStore('ui', {
   state: () => ({
-    themeMode: 'system' as ThemeMode,
+    themeMode: 'light' as ThemeMode,
     isCartOpen: false,
     isMobileMenuOpen: false,
     isSearchOpen: false,
