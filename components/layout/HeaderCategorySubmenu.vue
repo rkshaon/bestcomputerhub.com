@@ -17,11 +17,13 @@ const props = withDefaults(
     level?: number;
     isOpen?: boolean;
     alignRight?: boolean;
+    flyoutLeft?: boolean;
   }>(),
   {
     level: 1,
     isOpen: true,
-    alignRight: false
+    alignRight: false,
+    flyoutLeft: false
   }
 );
 
@@ -34,7 +36,7 @@ const categoryService = useCategoryService();
 
 // State for active / hovered item at THIS level
 const activeItemId = ref<string | null>(null);
-const flyoutPositionLeft = ref<boolean>(false);
+const flyoutLeftMap = ref<Record<string, boolean>>({});
 
 let hoverTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -60,6 +62,21 @@ const getSubCategories = (cat: Category): Category[] => {
   return [];
 };
 
+const checkFlyoutDirection = (el: HTMLElement): boolean => {
+  if (typeof window === 'undefined') return false;
+  const rect = el.getBoundingClientRect();
+  const flyoutWidth = 240;
+  const margin = 16;
+
+  const spaceOnRight = window.innerWidth - rect.right - margin;
+  const spaceOnLeft = rect.left - margin;
+
+  if (spaceOnRight < flyoutWidth && spaceOnLeft > spaceOnRight) {
+    return true; // Flyout to the LEFT
+  }
+  return false; // Flyout to the RIGHT
+};
+
 const handleItemHover = (item: Category, event?: MouseEvent | FocusEvent) => {
   if (hoverTimer) clearTimeout(hoverTimer);
   emit('keepOpen');
@@ -68,15 +85,9 @@ const handleItemHover = (item: Category, event?: MouseEvent | FocusEvent) => {
   if (children.length > 0) {
     activeItemId.value = item.id;
 
-    // Viewport boundary collision check for flyouts (level >= 2)
     if (event && event.currentTarget && typeof window !== 'undefined') {
-      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-      const flyoutWidth = 220;
-      if (rect.right + flyoutWidth > window.innerWidth - 16) {
-        flyoutPositionLeft.value = true;
-      } else {
-        flyoutPositionLeft.value = false;
-      }
+      const isLeft = checkFlyoutDirection(event.currentTarget as HTMLElement);
+      flyoutLeftMap.value[item.id] = isLeft;
     }
   } else {
     activeItemId.value = null;
@@ -120,7 +131,7 @@ onUnmounted(() => {
       'absolute z-50 transition-all duration-150 origin-top pointer-events-auto',
       level === 1 
         ? (alignRight ? 'top-full right-0 pt-1.5' : 'top-full left-0 pt-1.5')
-        : (flyoutPositionLeft ? 'top-0 right-full pr-1.5' : 'top-0 left-full pl-1.5')
+        : (flyoutLeft ? 'top-0 right-full pr-1.5' : 'top-0 left-full pl-1.5')
     )"
     @mouseenter="handlePanelMouseEnter"
     @mouseleave="handlePanelMouseLeave"
@@ -133,8 +144,8 @@ onUnmounted(() => {
     <div 
       v-else 
       :class="cn(
-        'absolute inset-y-0 w-2 pointer-events-auto',
-        flyoutPositionLeft ? '-right-2' : '-left-2'
+        'absolute inset-y-0 w-3 pointer-events-auto',
+        flyoutLeft ? '-right-3' : '-left-3'
       )"
     ></div>
 
@@ -178,6 +189,7 @@ onUnmounted(() => {
             :all-categories="allCategories"
             :level="level + 1"
             :is-open="activeItemId === item.id"
+            :flyout-left="flyoutLeftMap[item.id] || false"
             @keep-open="handlePanelMouseEnter"
             @close="handleLinkClick"
           />
