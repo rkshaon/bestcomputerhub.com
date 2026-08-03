@@ -98,7 +98,7 @@ const handleSave = async () => {
               </div>
               <div class="space-y-2">
                 <label class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Support Endpoint</label>
-                <input type="email" value="support@bestcomputerhub.com" class="w-full h-12 px-4 bg-muted border border-input rounded-xl outline-none focus:ring-2 focus:ring-ring/20 transition-all font-medium text-sm" />
+                <input type="email" value="bestcomputerhubltd@gmail.com" class="w-full h-12 px-4 bg-muted border border-input rounded-xl outline-none focus:ring-2 focus:ring-ring/20 transition-all font-medium text-sm" />
               </div>
             </div>
           </div>

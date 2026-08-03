@@ -11,6 +11,7 @@ import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
 import type { Category } from '@/types';
 import HeaderMegaMenu from '@/components/layout/HeaderMegaMenu.vue';
+import HeaderUtilityBar from '@/components/layout/HeaderUtilityBar.vue';
 
 const uiStore = useUIStore();
 const cartStore = useCartStore();
@@ -121,10 +122,12 @@ if (process.client) {
   <header 
     :class="cn(
       'sticky top-0 z-50 w-full transition-all duration-500 border-b',
-      isScrolled ? 'bg-background/90 backdrop-blur-xl py-2 shadow-sm' : 'bg-background py-4'
+      isScrolled ? 'bg-background/90 backdrop-blur-xl py-2 shadow-sm' : 'bg-background py-0 sm:py-1'
     )"
   >
-    <div class="container mx-auto px-4 relative">
+    <HeaderUtilityBar :is-scrolled="isScrolled" />
+
+    <div class="container mx-auto px-4 relative py-3">
       <!-- Main Row -->
       <div class="flex items-center justify-between transition-all duration-500 gap-4 lg:gap-6">
         <!-- Logo -->
