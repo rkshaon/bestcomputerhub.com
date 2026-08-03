@@ -615,3 +615,22 @@ Development should prioritize:
 6. progressive replacement of legacy WordPress functionality
 
 The rebuild should favor maintainability and incremental migration over unnecessary large-scale rewrites.
+
+---
+
+## Implementation Discipline
+
+When working on any task in this repository:
+
+- Do not assume missing requirements, business rules, API contracts, data shapes, routes, or intended behavior.
+- Inspect the existing implementation and relevant project context before making changes.
+- If information required for a correct implementation cannot be determined from the repository, context, or task description, ask for clarification before proceeding.
+- Do not invent requirements or silently choose behavior when multiple materially different interpretations are possible.
+- Do not over-engineer. Prefer the simplest solution that correctly satisfies the requirement and fits the existing architecture.
+- Do not over-implement. Implement only what is required for the current task.
+- Do not modify unrelated code, components, styles, APIs, routes, configuration, or architecture.
+- Do not perform opportunistic refactoring or cleanup outside the task scope.
+- Reuse existing abstractions and patterns when they are appropriate instead of introducing unnecessary new ones.
+- Do not create new abstractions, components, utilities, services, or configuration unless they provide clear value for the current requirement.
+- Preserve existing behavior unless the task explicitly requires changing it.
+- If you notice an unrelated issue, mention it in the final report rather than fixing it unless it blocks the requested work.
