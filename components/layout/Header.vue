@@ -216,11 +216,6 @@ if (process.client) {
               </div>
             </div>
           </div>
-          
-          <div class="flex items-center gap-6 hidden xl:flex">
-            <NuxtLink to="/offers" class="font-bold text-[10px] uppercase tracking-widest text-destructive hover:opacity-80 transition-opacity whitespace-nowrap">Offers</NuxtLink>
-            <NuxtLink to="/blog" class="font-bold text-[10px] uppercase tracking-widest hover:text-primary transition-colors whitespace-nowrap">Insights</NuxtLink>
-          </div>
         </nav>
 
         <!-- Actions -->
@@ -364,12 +359,6 @@ if (process.client) {
               </div>
             </div>
           </div>
-        </div>
-        
-        <div class="flex-grow"></div>
-        <div class="flex items-center gap-6">
-          <NuxtLink to="/offers" class="font-bold text-[10px] uppercase tracking-widest text-destructive hover:opacity-80 transition-opacity whitespace-nowrap">Offers</NuxtLink>
-          <NuxtLink to="/blog" class="font-bold text-[10px] uppercase tracking-widest hover:text-primary transition-colors whitespace-nowrap">Insights</NuxtLink>
         </div>
       </nav>
     </div>
