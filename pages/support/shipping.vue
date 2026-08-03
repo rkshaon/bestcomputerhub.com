@@ -74,7 +74,7 @@ const shippingMethods = [
       <div class="bg-muted rounded-[3rem] p-12 space-y-8">
         <div class="max-w-2xl">
           <h2 class="text-3xl font-display font-bold mb-4">Precision <span class="text-primary">Handling</span></h2>
-          <p class="text-muted-foreground">Every TechCore shipment utilizes ESD-safe packaging and environmental temperature monitoring. For sensitive semiconductor shipments, we provide tamper-evident digital seals.</p>
+          <p class="text-muted-foreground">Every Best Computer Hub shipment utilizes ESD-safe packaging and environmental temperature monitoring. For sensitive electronics, we provide tamper-evident digital seals.</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div class="space-y-4">

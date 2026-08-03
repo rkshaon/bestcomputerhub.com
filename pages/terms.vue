@@ -9,31 +9,31 @@ const sections = [
     id: 'acceptance',
     title: 'Acceptance of Terms',
     icon: Scale,
-    content: 'By accessing or using the TechCore Enterprise platforms, you agree to be bound by these Terms of Service. If you are using our services on behalf of an organization, you agree to these terms for that organization and represent that you have the authority to bind that organization to these terms.'
+    content: 'By accessing or using the Best Computer Hub platforms, you agree to be bound by these Terms of Service. If you are using our services on behalf of an organization, you agree to these terms for that organization and represent that you have the authority to bind that organization to these terms.'
   },
   {
     id: 'accounts',
-    title: 'Enterprise Accounts',
+    title: 'User Accounts',
     icon: FileCheck,
-    content: 'Users must provide accurate, complete, and current information when creating an account. You are responsible for safeguarding the password and for any activities or actions under your account. TechCore reserves the right to suspend accounts engaged in suspicious high-frequency procurement patterns without prior notice.'
+    content: 'Users must provide accurate, complete, and current information when creating an account. You are responsible for safeguarding the password and for any activities or actions under your account. Best Computer Hub reserves the right to suspend accounts engaged in suspicious or fraudulent activity without prior notice.'
   },
   {
     id: 'payments',
     title: 'Pricing & Payments',
     icon: CreditCard,
-    content: 'Hardware prices are subject to global market volatility and may change without notice. Enterprise quotes are valid for 72 hours. All payments are processed securely; however, we reserve the right to cancel orders if we detect fraudulent activity or unauthorized payment methods.'
+    content: 'Hardware prices are subject to global market volatility and may change without notice. All payments are processed securely; however, we reserve the right to cancel orders if we detect fraudulent activity or unauthorized payment methods.'
   },
   {
     id: 'shipping',
     title: 'Shipping & Logistics',
     icon: Truck,
-    content: 'We utilize a distributed logistics network for hardware fulfillment. While we aim for rapid delivery, shipping dates are estimates. High-performance components may require specialized handling and may be subject to regional import-export compliance checks.'
+    content: 'We utilize a distributed logistics network for hardware fulfillment. While we aim for rapid delivery, shipping dates are estimates. High-performance components may require specialized handling and may be subject to regional compliance checks.'
   },
   {
     id: 'returns',
     title: 'Returns & Warranties',
     icon: RefreshCw,
-    content: 'Hardware manufacturers provide the primary warranties. TechCore offers a 14-day technical assessment window for DOA (Dead on Arrival) enterprise components. Custom-configured server clusters and opened semiconductor components may have restricted return eligibility.'
+    content: 'Hardware manufacturers provide the primary warranties. Best Computer Hub offers a 14-day technical assessment window for DOA (Dead on Arrival) hardware components. Custom-configured hardware systems and opened semiconductor components may have restricted return eligibility.'
   }
 ];
 </script>
@@ -111,7 +111,7 @@ const sections = [
           <div class="p-10 bg-muted/30 rounded-[3rem] border border-dashed space-y-6">
              <h2 class="text-3xl font-display font-bold">Limitation of Liability</h2>
              <p class="text-muted-foreground leading-relaxed italic">
-              "To the maximum extent permitted by law, TechCore Enterprise shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues (including server downtime or data loss) whether incurred directly or indirectly."
+              "To the maximum extent permitted by law, Best Computer Hub shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues (including server downtime or data loss) whether incurred directly or indirectly."
              </p>
           </div>
 

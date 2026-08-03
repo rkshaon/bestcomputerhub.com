@@ -289,7 +289,7 @@ const handleUpdateBrand = async () => {
 };
 
 const handleDeleteBrand = async (brand: Brand) => {
-  const confirmMsg = `Verify Deletion: Are you sure you want to decommission [${brand.name}] from TechCore registries? All mapped inventory counts will stay, but mapping nodes will be unlinked.`;
+  const confirmMsg = `Verify Deletion: Are you sure you want to decommission [${brand.name}] from Best Computer Hub registries? All mapped inventory counts will stay, but mapping nodes will be unlinked.`;
   if (confirm(confirmMsg)) {
     try {
       await brandService.deleteBrand(brand.id);

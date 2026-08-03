@@ -58,13 +58,11 @@ if (authStore.isLoggedIn) {
       <div class="max-w-md mx-auto">
         <!-- Logo/Brand Header -->
         <div class="text-center mb-8 space-y-2">
-          <NuxtLink to="/" class="inline-flex items-center gap-2 group mb-4">
-            <div class="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110">
-              <ShieldCheck class="w-6 h-6" />
-            </div>
+          <NuxtLink to="/" class="inline-flex items-center justify-center mb-4">
+            <UiBrandLogo size="lg" />
           </NuxtLink>
-          <h1 class="text-3xl font-display font-extrabold tracking-tight">Secure Access</h1>
-          <p class="text-muted-foreground text-sm">Enter your enterprise credentials to continue</p>
+          <h1 class="text-3xl font-display font-extrabold tracking-tight">Sign In</h1>
+          <p class="text-muted-foreground text-sm">Enter your account credentials to continue</p>
         </div>
 
         <!-- Login Card -->
@@ -136,7 +134,7 @@ if (authStore.isLoggedIn) {
                 <Loader2 class="w-5 h-5 animate-spin" /> Verifying...
               </div>
               <div v-else class="flex items-center gap-2">
-                Sign In to TechCore <ArrowRight class="w-5 h-5" />
+                Sign In to Best Computer Hub <ArrowRight class="w-5 h-5" />
               </div>
             </UiButton>
           </form>
@@ -147,7 +145,7 @@ if (authStore.isLoggedIn) {
               <div class="w-full border-t border-border/50"></div>
             </div>
             <div class="relative flex justify-center text-[10px] uppercase tracking-[0.2em] font-bold">
-              <span class="bg-background px-4 text-muted-foreground">Enterprise SSO</span>
+              <span class="bg-background px-4 text-muted-foreground">Account Access</span>
             </div>
           </div>
 
@@ -164,8 +162,8 @@ if (authStore.isLoggedIn) {
 
         <!-- Footer Links -->
         <p class="text-center mt-10 text-sm text-muted-foreground">
-          New to TechCore? 
-          <NuxtLink to="/signup" class="text-primary font-bold hover:underline">Create an enterprise account</NuxtLink>
+          New to Best Computer Hub? 
+          <NuxtLink to="/signup" class="text-primary font-bold hover:underline">Create an account</NuxtLink>
         </p>
 
         <!-- Trust Badge -->

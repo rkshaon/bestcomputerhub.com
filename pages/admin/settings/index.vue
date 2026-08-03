@@ -94,11 +94,11 @@ const handleSave = async () => {
             <div class="grid grid-cols-1 gap-6">
               <div class="space-y-2">
                 <label class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Environment Name</label>
-                <input type="text" value="TechCore Global Enterprise" class="w-full h-12 px-4 bg-muted border border-input rounded-xl outline-none focus:ring-2 focus:ring-ring/20 transition-all font-medium text-sm" />
+                <input type="text" value="Best Computer Hub Storefront" class="w-full h-12 px-4 bg-muted border border-input rounded-xl outline-none focus:ring-2 focus:ring-ring/20 transition-all font-medium text-sm" />
               </div>
               <div class="space-y-2">
                 <label class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Support Endpoint</label>
-                <input type="email" value="ops@techcore.io" class="w-full h-12 px-4 bg-muted border border-input rounded-xl outline-none focus:ring-2 focus:ring-ring/20 transition-all font-medium text-sm" />
+                <input type="email" value="support@bestcomputerhub.com" class="w-full h-12 px-4 bg-muted border border-input rounded-xl outline-none focus:ring-2 focus:ring-ring/20 transition-all font-medium text-sm" />
               </div>
             </div>
           </div>

@@ -111,14 +111,9 @@ const breadcrumbs = computed(() => {
     >
       <div class="flex flex-col h-full">
         <!-- Logo Area -->
-        <div class="h-16 flex items-center px-6 border-b border-border overflow-hidden">
+        <div class="h-16 flex items-center px-4 border-b border-border overflow-hidden">
           <NuxtLink to="/admin" class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-              <ShieldCheck class="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span v-if="isSidebarOpen" class="font-display font-bold text-lg tracking-tight whitespace-nowrap">
-              Admin<span class="text-primary">Core</span>
-            </span>
+            <UiBrandLogo size="sm" :show-text="isSidebarOpen" />
           </NuxtLink>
         </div>
 

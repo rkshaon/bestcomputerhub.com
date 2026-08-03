@@ -130,14 +130,9 @@ if (process.client) {
         <!-- Logo -->
         <NuxtLink 
           to="/" 
-          class="flex items-center gap-2 shrink-0 group transition-all duration-500"
+          class="flex items-center shrink-0 group transition-all duration-500"
         >
-          <div :class="cn('bg-primary rounded-xl flex items-center justify-center transition-all duration-500', isScrolled ? 'w-8 h-8' : 'w-10 h-10')">
-            <PackageSearch :class="cn('text-primary-foreground transition-all duration-500', isScrolled ? 'w-4 h-4' : 'w-6 h-6')" />
-          </div>
-          <span :class="cn('font-display font-extrabold tracking-tighter hidden sm:block transition-all duration-500', isScrolled ? 'text-lg' : 'text-xl')">
-            Tech<span class="text-primary italic">Core</span>
-          </span>
+          <UiBrandLogo :size="isScrolled ? 'sm' : 'md'" />
         </NuxtLink>
 
         <!-- Search Bar -->

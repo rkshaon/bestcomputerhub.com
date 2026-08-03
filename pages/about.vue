@@ -22,7 +22,7 @@ const stats = [
           Engineering the <span class="text-primary italic">Foundation</span> of Modern Industry.
         </h1>
         <p class="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-          TechCore was founded with a single mission: to provide the world's most reliable and high-performance hardware ecosystem for the architects of tomorrow.
+          Best Computer Hub was founded with a single mission: to provide the world's most reliable and high-performance hardware ecosystem for the architects of tomorrow.
         </p>
       </div>
     </div>
@@ -37,15 +37,15 @@ const stats = [
       </div>
     </div>
 
-    <!-- The TechCore Story -->
+    <!-- The Best Computer Hub Story -->
     <div class="bg-black text-white py-32 mb-32">
       <div class="container mx-auto px-4">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           <div class="space-y-8">
             <h2 class="text-4xl md:text-5xl font-display font-bold leading-tight">A Decade of <span class="text-primary italic">Hardware Excellence</span></h2>
             <div class="space-y-6 text-lg text-white/70">
-              <p>In 2012, a group of system architects realized that the enterprise hardware market was fragmented and slow. They envisioned a unified portal where performance was the only metric that mattered.</p>
-              <p>Today, TechCore serves as the backbone for top-tier data centers, specialized engineering firms, and high-frequency trading floors globally. We don't just sell components; we provide the tools for breakthrough performance.</p>
+              <p>In 2012, a group of system architects realized that the hardware market was fragmented and slow. They envisioned a unified portal where performance was the only metric that mattered.</p>
+              <p>Today, Best Computer Hub serves as the backbone for top-tier data centers, specialized engineering firms, and tech enthusiasts globally. We don't just sell components; we provide the tools for breakthrough performance.</p>
             </div>
             <div class="flex flex-wrap gap-4">
                <div v-for="item in ['ISO 9001 Certified', 'TAA Compliant', 'Global Support 24/7']" :key="item" class="px-4 py-2 border border-white/20 rounded-full text-xs font-bold uppercase tracking-widest text-white/60">

@@ -69,13 +69,11 @@ const handleSignUp = async () => {
       <div class="max-w-md mx-auto">
         <!-- Brand Header -->
         <div class="text-center mb-8 space-y-2">
-          <NuxtLink to="/" class="inline-flex items-center gap-2 group mb-4">
-            <div class="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110">
-              <ShieldCheck class="w-6 h-6" />
-            </div>
+          <NuxtLink to="/" class="inline-flex items-center justify-center mb-4">
+            <UiBrandLogo size="lg" />
           </NuxtLink>
-          <h1 class="text-3xl font-display font-extrabold tracking-tight">Sign Up</h1>
-          <p class="text-muted-foreground text-sm">Join the TechCore enterprise ecosystem</p>
+          <h1 class="text-3xl font-display font-extrabold tracking-tight">Create Account</h1>
+          <p class="text-muted-foreground text-sm">Join Best Computer Hub today</p>
         </div>
 
         <!-- Sign Up Card -->

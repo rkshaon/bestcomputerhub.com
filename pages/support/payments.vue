@@ -95,7 +95,7 @@ const paymentCertifications = [
         <div class="max-w-xl space-y-4">
           <h3 class="text-xl font-display font-bold">Enterprise Transaction Surcharge Estimator</h3>
           <p class="text-xs text-muted-foreground leading-relaxed">
-            TechCore implements zero corporate processing surcharges on purchase orders (PO) or ACH settlement routing configurations. Enter transaction value to audit compliance.
+            Best Computer Hub implements zero corporate processing surcharges on purchase orders (PO) or ACH settlement routing configurations. Enter transaction value to audit compliance.
           </p>
           <div class="flex flex-col sm:flex-row items-center gap-4 pt-2">
             <div class="relative w-full">

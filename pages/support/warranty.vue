@@ -5,7 +5,7 @@ import { cn } from '@/utils';
 
 const plans = [
   {
-    name: 'TechCore Standard',
+    name: 'Best Computer Hub Standard',
     price: 'Included',
     features: ['3 Year Hardware Warranty', 'Business Hour Email Support', 'Standard RMA Processing', 'Self-Service Documentation']
   },

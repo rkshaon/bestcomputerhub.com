@@ -379,7 +379,7 @@ const refreshLogs = async () => {
               <span class="text-[10px] font-black uppercase tracking-widest">Admin Elevation Policy</span>
             </div>
             <p class="text-xs text-slate-500 leading-relaxed italic">
-              "Privileged actions require secondary biometric verification through the TechCore ID app. Logs are automatically mirrored to the compliance vault."
+              "Privileged actions require secondary verification through the Authenticator app. Logs are automatically mirrored to the compliance vault."
             </p>
           </div>
 

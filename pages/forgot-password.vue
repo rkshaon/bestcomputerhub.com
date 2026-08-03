@@ -45,13 +45,11 @@ const handleResetRequest = async () => {
       <div class="max-w-md mx-auto">
         <!-- Logo/Brand Header -->
         <div class="text-center mb-8 space-y-2">
-          <NuxtLink to="/" class="inline-flex items-center gap-2 group mb-4">
-            <div class="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110">
-              <ShieldCheck class="w-6 h-6" />
-            </div>
+          <NuxtLink to="/" class="inline-flex items-center justify-center mb-4">
+            <UiBrandLogo size="lg" />
           </NuxtLink>
           <h1 class="text-3xl font-display font-extrabold tracking-tight">Recovery Access</h1>
-          <p class="text-muted-foreground text-sm">We'll help you regain access to your enterprise account</p>
+          <p class="text-muted-foreground text-sm">We'll help you regain access to your account</p>
         </div>
 
         <!-- Success State -->
@@ -99,7 +97,7 @@ const handleResetRequest = async () => {
             </div>
 
             <p class="text-xs text-muted-foreground ml-1 leading-relaxed">
-              For security reasons, recovery links are only sent to verified enterprise email domains authorized by TechCore.
+              For security reasons, recovery links are only sent to verified email domains authorized by Best Computer Hub.
             </p>
 
             <!-- Reset Button -->

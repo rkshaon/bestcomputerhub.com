@@ -11,14 +11,11 @@ const currentYear = new Date().getFullYear();
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-20">
         <!-- Brand -->
         <div class="lg:col-span-2 space-y-6">
-          <NuxtLink to="/" class="flex items-center gap-2">
-            <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <PackageSearch class="text-primary-foreground w-6 h-6" />
-            </div>
-            <span class="font-display font-bold text-2xl tracking-tight">TechCore</span>
+          <NuxtLink to="/" class="flex items-center">
+            <UiBrandLogo size="lg" />
           </NuxtLink>
           <p class="text-muted-foreground text-sm max-w-sm leading-relaxed">
-            Enterprise e-commerce platform dedicated to professional hardware and cutting-edge digital accessories. Trusted by 250,000+ engineers worldwide.
+            Premier e-commerce platform dedicated to professional hardware and cutting-edge computing components. Trusted by thousands of tech enthusiasts and engineers.
           </p>
           <div class="flex items-center gap-4">
             <a v-for="social in [
@@ -66,7 +63,7 @@ const currentYear = new Date().getFullYear();
       <!-- Newsletter -->
       <div class="p-8 md:p-12 bg-muted rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 mb-20">
         <div class="space-y-2">
-          <h3 class="text-2xl font-display font-bold">Join the TechCore Insider</h3>
+          <h3 class="text-2xl font-display font-bold">Join Best Computer Hub Insider</h3>
           <p class="text-muted-foreground text-sm">Expert reviews, early access to hardware drops, and weekly deep dives.</p>
         </div>
         <div class="flex w-full md:w-auto max-w-md gap-2">
@@ -83,7 +80,7 @@ const currentYear = new Date().getFullYear();
       <!-- Bottom Bar -->
       <div class="pt-10 border-t flex flex-col md:flex-row justify-between items-center gap-6">
         <div class="flex flex-wrap justify-center gap-6 text-xs font-medium text-muted-foreground">
-          <span>&copy; {{ currentYear }} TechCore Global Ltd.</span>
+          <span>&copy; {{ currentYear }} Best Computer Hub Ltd.</span>
           <NuxtLink to="/privacy" class="hover:text-primary transition-colors">Privacy Policy</NuxtLink>
           <NuxtLink to="/terms" class="hover:text-primary transition-colors">Terms of Service</NuxtLink>
           <NuxtLink to="/cookies" class="hover:text-primary transition-colors">Cookie Settings</NuxtLink>

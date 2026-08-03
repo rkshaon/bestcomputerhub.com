@@ -39,7 +39,7 @@ onMounted(() => {
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h1 class="text-3xl font-display font-extrabold tracking-tight">System Overview</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium italic">Command Center: TechCore Intelligence Protocol v4.2.1</p>
+        <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium italic">Command Center: Best Computer Hub Control v4.2.1</p>
       </div>
       <div class="flex items-center gap-3">
         <button class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">

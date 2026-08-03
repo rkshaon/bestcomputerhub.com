@@ -128,7 +128,7 @@ const timeline = [
                           <Package class="w-6 h-6 text-slate-400" />
                        </div>
                        <div>
-                          <p class="text-sm font-bold">TechCore Module-X{{ i }}</p>
+                          <p class="text-sm font-bold">Hardware Module-X{{ i }}</p>
                           <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Type: Enterprise Hardware</p>
                        </div>
                     </div>

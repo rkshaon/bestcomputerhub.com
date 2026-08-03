@@ -40,7 +40,9 @@ const handlePlaceOrder = () => {
     <!-- Header Minimal -->
     <div class="bg-background border-b py-6 mb-12">
       <div class="container mx-auto px-4 flex items-center justify-between">
-        <NuxtLink to="/" class="font-display font-bold text-2xl tracking-tight text-primary">TechCore</NuxtLink>
+        <NuxtLink to="/">
+          <UiBrandLogo size="md" />
+        </NuxtLink>
         <div class="flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-muted-foreground">
           <span :class="{ 'text-primary': step >= 1 }">Shipping</span>
           <ChevronRight class="w-4 h-4" />

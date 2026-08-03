@@ -30,7 +30,7 @@ const initiatives = [
           <Leaf class="w-3 h-3" /> Impact Report
         </div>
         <h1 class="text-5xl md:text-7xl font-display font-bold tracking-tight">Sustainable <span class="text-emerald-500 italic">High-Performance</span>.</h1>
-        <p class="text-xl text-muted-foreground max-w-2xl mx-auto">TechCore is redefining the relationship between enterprise computation and environmental stewardship.</p>
+        <p class="text-xl text-muted-foreground max-w-2xl mx-auto">Best Computer Hub is redefining the relationship between high-performance computation and environmental stewardship.</p>
       </div>
 
       <!-- Stats Grid -->
