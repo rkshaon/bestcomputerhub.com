@@ -39,6 +39,9 @@ onMounted(async () => {
     <!-- Hero Section -->
     <HomeHeroSection />
 
+    <!-- Quick Links -->
+    <HomeQuickLinks />
+
     <!-- Brand Marquee -->
     <HomeBrandMarquee :brands="brandsList" />
 
