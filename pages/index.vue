@@ -42,6 +42,9 @@ onMounted(async () => {
     <!-- Quick Links -->
     <HomeQuickLinks />
 
+    <!-- Featured Categories -->
+    <HomeFeaturedCategories />
+
     <!-- Brand Marquee -->
     <HomeBrandMarquee :brands="brandsList" />
 
