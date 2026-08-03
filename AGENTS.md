@@ -1,83 +1,180 @@
-<!-- File: /AGENTS.md -->
-# TechCore Enterprise - Agent Guidelines
+# Best Computer Hub Frontend — Agent Guidelines
 
-This document contains project-specific instructions and context to ensure consistency across development sessions.
+## Project
 
-## 🏗 Project Overview
-TechCore is a high-performance enterprise hardware marketplace built with **Nuxt 3** (`^4.4.6`), **Vue 3** (`^3.5.34`), **Tailwind CSS** (`^3.4.19`), **Pinia** (`^3.0.4`), and **Lucide Icons** (`lucide-vue-next`). The aesthetic is "Technical Premium": clean, high-contrast, with precise typography and subtle animations.
+This repository contains the Best Computer Hub e-commerce
+frontend.
 
-## 🌀 Structural Autonomy
-The agent is granted full, unconditional autonomy to maintain, refactor, and modify the project's file structure.
-- **Architectural Adjustment**: The agent MUST automatically create, move, rename, or delete files and/or directories to keep the project perfectly aligned with the established "Technical Premium" architecture.
-- **Permission Override**: These structural adjustments must be executed automatically upon task completion without prompting the user for authorization.
+The application is being migrated from an existing
+WordPress/WooCommerce storefront.
 
-## 🧹 Auto-Maintenance Checklist
-Upon implementing any feature or resolving any issue, the agent MUST run the following auto-maintenance checks:
-1. **Directory Alignment**: Always move stray files to their designated directories (e.g., placing raw UI components inside `/components/ui/` and structural logic pieces inside their corresponding directories).
-2. **Deterministic Naming**: Always rename source files to match their primary internal class, helper, or component name.
-3. **Workspace Sanitization**: Always clean up empty folders, redundant mock files, and temporary artifacts.
-4. **Import Synchronization**: Always update barrel files (`index.ts`) and refresh import paths across the code structure immediately following any file moves.
-5. **File Header Comments**: ALWAYS place or update a file header comment at the top of every source file showing the project's relative file path (e.g. `// File: /composables/useApiClient.ts` or `<!-- File: /pages/index.vue -->`). Keep this updated whenever a file is created, moved, or modified.
+The frontend is built with:
 
-## 🎨 Design & UI Patterns
+- Nuxt 4
+- Vue 3
+- TypeScript
+- Tailwind CSS 3
+- Pinia
+- VueUse
+- lucide-vue-next
+- pnpm
 
-### Header Behavior
-- **Dual-State Header:** The header transitions from a spacious multi-row layout to a compact single-row flex layout on scroll (`isScrolled`).
-- **Compact Row Ordering:** On scroll, the order is: [Logo] -> [Search Bar (shrunk)] -> [Navigation Menu] -> [Action Icons (Right)].
-- **Typography:** Uses "Inter" for UI and specialized "font-display" for headings. Enterprise feel is reinforced with tracking-widest and uppercase labels.
+The backend is Django REST Framework.
 
-### Component Design
-- **Rounding:** Favor large radii (`rounded-[2.5rem]` or `rounded-[3rem]`) for major layout containers and cards to create a modern tech-forward look.
-- **Buttons:** Use the `UiButton` component (or `Button`) with `primary`, `outline`, or `ghost` variants. Avoid "default" unless explicitly defined. **Contrast Security Rule:** Never couple background class `bg-primary` with static text color classes like `text-white` or `text-black`. Instead, ALWAYS utilize `text-primary-foreground` (or component default wrapping) so the text contrasts correctly when `bg-primary` is dark (in light mode) and light/white (in dark mode). All manual HTML buttons with `bg-primary` must have `text-primary-foreground` to prevent invisible text against a white background/text color collision.
-- **Animations:** Use `framer-motion` (via `motion/react`) for complex transitions or standard Tailwind `transition-all duration-500` for layout shifts.
-- **Modals & Overlays:** Every modal popup or drawer overlay must support click-outside closure. Implement this by mapping the close event handler using back-propagation defense triggers (e.g., Vue's `@click.self` modifier) directly on the background backdrop overlay. Enhance spatial cueing by adding a `cursor-pointer` class to the backdrop element and a `cursor-default` class to the central modal container. Additionally, upon modal open, active focus must immediately be placed on the first input field within the modal using template references and watchers coupled with `nextTick()` to guarantee superior keyboard ergonomics and professional application flow. Every interactive modal that collects data or forms must be wrapped in an HTML `<form @submit.prevent="submitHandler">` container. Ensure all auxiliary buttons (close, cancel, help) inside the modal explicitly declare `type="button"` to avoid trigger conflicts, and style the primary confirmation button as `type="submit"`, enabling natural, instant keyboard submission via the Enter key.
+## Primary Goals
 
-## 🛠 Coding Standards
+The storefront must prioritize:
 
-### Package Management
-- **Exclusive Client**: This project uses **pnpm** exclusively as the package manager (`pnpm-lock.yaml`).
-- Do not run `npm install` or generate `package-lock.json`. Delete any accidental `package-lock.json` if created.
+1. SEO
+2. performance
+3. accessibility
+4. maintainability
+5. responsive design
+6. commerce-data accuracy
 
-### TypeScript
-- All components must be typed.
-- Prefer `interface` for props and state.
-- Use the `cn()` utility from `@/utils` (or the lib directory) for dynamic class merging.
+## Architecture
 
-### API Endpoints & Trailing Slashes
-- **Trailing Slashes Requirement**: ALWAYS append a trailing slash (`/`) to all API endpoints/routes when making requests via `apiClient.request`. This applies to all HTTP verbs, including GET, POST, PUT, PATCH, and DELETE (e.g. `/api/v1/brands/`, `/api/v1/brands/${id}/`, `/api/v1/auth/login/`, and `/api/v1/auth/register/`). Never omit the trailing slash.
-- **PUT/PATCH Request Body Exclusions**: For update operations using PUT or PATCH, any un-editable fields like `slug` must NOT be sent in the request body payload. Always strip out un-editable fields such as `slug` from the `body` option on the request before dispatching it to the server.
+Use this dependency direction where practical:
 
-### 🌐 Admin List State URL Synchronization
-- **URL Query Parameters Mandate**: All main dashboard listing interfaces in the admin panel (e.g., categories list, brands list, etc.) must reflect and bind their operational state to the browser's URL query string.
-- **Fields to Synchronize**: This includes current page number (`page`), page size (`pageSize`), search keyword (`search`), sorting/ordering key (`ordering`), and any active filters.
-- **Bidirectional Bindings**: On mount or on route update, the component must parse these parameters from the URL and initialize its internal reactive trackers accordingly. Any subsequent user action that mutates page status, filters, or search bars must immediately commit those corrections to the route router using active push/replace operations to preserve link shareability and reliable history tracking.
+Page
+  ↓
+Feature / Component
+  ↓
+Store / Composable
+  ↓
+Domain Service
+  ↓
+useApiClient
+  ↓
+DRF
 
-### 📋 Generic Pagination Interfaces for List Responses
-- **Paginated Response Interface**: ALL listing/categories/brands/products responses from pagination list APIs MUST use the globally defined generic `PaginatedResponse<T>` interface rather than bespoke domain-oriented pagination interfaces.
-- **Generic Interface Mandate**: Ensure that any new list API called in the admin panel or main website integrates this generic template style instead of defining discrete interface shapes.
+Pages should primarily handle:
 
-### 🔑 Automatic Token Refresh & Security Node Authorization
-- **Automatic Token Refresh**: All API integrations MUST run through the centralized `useApiClient` composable. It handles automatic JWT access token refresh using a queued interceptor pattern to resolve concurrent response race conditions.
-- **Refresh Fallbacks**: The token-refresh interceptor automatically queries standard secure endpoints sequentially (`/api/v1/token/refresh/`, `/api/v1/auth/token/refresh/`, and `/api/v1/auth/refresh/`) with the body parameter `{ refresh: string }`.
-- **Session Expiry Events**: If token-refresh fails, is unprovisioned, or credentials are completely logged out, the API client broadcasts a global `'techcore-auth-required'` event. All authenticated admin UI view components must listen to this event, trigger a user-friendly error notification, and open the Authorization Modal dashboard interface to configure active credentials.
-- **Storage Strategy**: Access and refresh tokens are stored reactively across both Nuxt `useCookie` state containers and persistent `localStorage` browser instances (`techcore_admin_token` / `techcore_admin_refresh_token`) to guarantee secure synchronization between SSR server renderings and client executions.
+- routing
+- server data fetching
+- SEO
+- route-level errors
+- feature composition
 
-### File Structure
-- **Pages:** 
-  - User-facing support pages: `/pages/support/*.vue`.
-  - Corporate/Company pages: `/pages/*.vue` (About, Careers, Sustainability).
-- **Components:** Logic-heavy layout pieces reside in `/components/layout/`.
+Components should primarily handle presentation and
+user interaction.
 
-### Icons
-- Exclusively use `lucide-vue-next`.
+Domain services own API-specific operations.
 
-## 📌 Active Context
-- **Footer Structure:** The "Catalog" section has been renamed to **"Categories"** per user preference.
-- **Search Logic:** The search bar remains functional and visible even in the compact scrolled state.
-- **Support Ecosystem:** Fully implemented Help Center, Shipping, Returns, and Warranty pages with enterprise-grade copy.
+useApiClient owns shared HTTP concerns.
 
-## ✅ Definition of Done
-Every task is governed by a strict set of completion criteria:
-1. **Compilation & Types**: The application MUST build without warnings or errors via `pnpm build`, and both `lint_applet` and type-checking must pass cleanly.
-2. **Structural Audit**: The agent MUST perform a formal structural audit over the codebase to ensure no architectural patterns were violated during execution, files conform to directory layouts, and files are named correctly.
-3. **Clean Footprint**: Verify that no temporary files, unused assets, empty folders, or stray code elements are left behind in the workspace.
+## TypeScript
+
+TypeScript strict mode is enabled.
+
+Avoid `any`.
+
+Do not use `any` merely because an API response differs
+from the frontend model.
+
+Model API contracts explicitly.
+
+## Commerce Data Integrity
+
+Never fabricate production commerce data.
+
+This includes:
+
+- prices
+- discounts
+- stock
+- ratings
+- reviews
+- specifications
+- warranty
+- certifications
+- shipping promises
+- product compatibility
+- availability
+
+Mock values are allowed only inside explicitly isolated
+mock/demo systems.
+
+The backend is authoritative for commerce-critical
+business data and calculations.
+
+## Authentication & Authorization
+
+Never infer permissions or roles from:
+
+- email addresses
+- usernames
+- routes
+- frontend state
+
+Roles and permissions come from the backend.
+
+Frontend route/UI guards improve UX but are not security
+boundaries.
+
+DRF must enforce protected operations.
+
+## Package Management
+
+Use pnpm exclusively.
+
+Do not use npm or yarn.
+
+Do not generate package-lock.json.
+
+## Styling
+
+Use Tailwind CSS and the project's semantic design tokens.
+
+Prefer:
+
+bg-primary
+text-primary-foreground
+bg-card
+text-card-foreground
+border-border
+
+over hard-coded theme-dependent colors.
+
+Use lucide-vue-next for icons.
+
+## API
+
+All DRF endpoints must use trailing slashes.
+
+Do not guess API field names, query parameters, response
+structures, or authentication contracts.
+
+Integrate against the established backend contract.
+
+All shared HTTP communication must go through useApiClient.
+
+## SEO
+
+Public catalog and content pages are SEO-sensitive.
+
+Product, category, brand and content pages should be
+server-renderable and expose appropriate metadata.
+
+Do not replace existing WordPress URLs without considering
+SEO migration and redirects.
+
+## Structural Changes
+
+Agents may autonomously perform small, task-local,
+convention-preserving structural changes.
+
+Do not perform broad architectural restructuring,
+authentication redesign, dependency replacement or
+cross-domain refactoring unless required by the task.
+
+## Definition of Done
+
+Before considering implementation complete:
+
+- TypeScript passes
+- build passes
+- affected flows are verified
+- no temporary artifacts remain
+- no obvious architectural violation was introduced
+- no fabricated production commerce data was introduced

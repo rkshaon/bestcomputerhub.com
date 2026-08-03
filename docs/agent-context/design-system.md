@@ -1,0 +1,1014 @@
+# Best Computer Hub — Design System
+
+This document defines the visual language, UI principles, component conventions, interaction patterns, and accessibility expectations for the Best Computer Hub frontend.
+
+The goal is to maintain a consistent, professional, customer-oriented e-commerce experience across the storefront and administrative interfaces.
+
+---
+
+## 1. Design Direction
+
+The primary visual direction is:
+
+**Technical Premium**
+
+The interface should feel:
+
+* clean
+* modern
+* professional
+* trustworthy
+* precise
+* spacious
+* technology-focused
+* commerce-oriented
+
+The design should prioritize usability and product discovery over decoration.
+
+Avoid excessive visual effects that compete with product information or customer actions.
+
+---
+
+## 2. Core Design Principles
+
+When designing or modifying UI, prioritize in this order:
+
+1. Usability
+2. Accessibility
+3. Information clarity
+4. Commerce conversion
+5. Visual consistency
+6. Responsive behavior
+7. Performance
+8. Animation and decoration
+
+A visually impressive interface must not make shopping harder.
+
+Important customer actions such as:
+
+* searching
+* browsing categories
+* viewing prices
+* checking availability
+* adding to cart
+* managing wishlist
+* checking out
+
+must remain obvious and easy to use.
+
+---
+
+## 3. Styling Technology
+
+The project currently uses:
+
+* Tailwind CSS 3
+* CSS custom properties
+* semantic color tokens
+* class-based dark mode
+
+Prefer Tailwind utility classes for component styling.
+
+Avoid introducing additional styling frameworks without an architectural reason.
+
+---
+
+## 4. Semantic Color System
+
+The design system uses CSS variables exposed through Tailwind semantic colors.
+
+Available semantic tokens include:
+
+```text
+background
+foreground
+
+card
+card-foreground
+
+popover
+popover-foreground
+
+primary
+primary-foreground
+
+secondary
+secondary-foreground
+
+muted
+muted-foreground
+
+accent
+accent-foreground
+
+destructive
+destructive-foreground
+
+border
+input
+ring
+```
+
+Prefer semantic colors over hard-coded theme-specific colors.
+
+### Preferred
+
+```text
+bg-background
+text-foreground
+
+bg-card
+text-card-foreground
+
+bg-primary
+text-primary-foreground
+
+bg-secondary
+text-secondary-foreground
+
+bg-muted
+text-muted-foreground
+
+bg-destructive
+text-destructive-foreground
+
+border-border
+```
+
+### Avoid
+
+Avoid unnecessarily hard-coding colors such as:
+
+```text
+bg-white
+text-black
+bg-gray-100
+text-gray-900
+```
+
+when an equivalent semantic token exists.
+
+Hard-coded colors may still be used when the color itself carries intentional meaning, such as a specific rating or status treatment, but semantic tokens should remain the default.
+
+---
+
+## 5. Foreground Contrast
+
+Background and foreground semantic tokens should normally be paired.
+
+For example:
+
+```text
+bg-primary
+text-primary-foreground
+```
+
+and:
+
+```text
+bg-card
+text-card-foreground
+```
+
+Do not assume `text-white` will always contrast with `bg-primary`.
+
+The primary color changes between light and dark themes.
+
+Incorrect:
+
+```text
+bg-primary text-white
+```
+
+Preferred:
+
+```text
+bg-primary text-primary-foreground
+```
+
+Apply the same principle to other semantic background/foreground pairs.
+
+---
+
+## 6. Dark Mode
+
+Dark mode uses the `.dark` class.
+
+All reusable UI should remain usable in both light and dark modes.
+
+Prefer semantic tokens because they automatically adapt to theme changes.
+
+When introducing custom colors, verify:
+
+* text contrast
+* borders
+* hover states
+* disabled states
+* focus states
+* cards
+* overlays
+* inputs
+* icons
+
+in both themes.
+
+Do not create components that depend exclusively on light-mode assumptions.
+
+---
+
+## 7. Typography
+
+Typography should communicate a clean enterprise technology aesthetic.
+
+Use clear hierarchy between:
+
+* page titles
+* section headings
+* product names
+* prices
+* supporting labels
+* metadata
+* descriptions
+
+UI text should prioritize readability.
+
+Uppercase text with increased tracking may be used for small labels, category indicators, metadata, and technical labels.
+
+Example:
+
+```text
+text-xs
+font-medium
+uppercase
+tracking-widest
+```
+
+Do not overuse uppercase text for long content.
+
+Product names and important customer information should remain easy to scan.
+
+---
+
+## 8. Spacing
+
+Prefer consistent spacing over arbitrary values.
+
+Use Tailwind's spacing scale whenever practical.
+
+Layouts should feel spacious without wasting screen area.
+
+Commerce pages should maintain enough separation between:
+
+* product information
+* pricing
+* purchasing actions
+* specifications
+* reviews
+* related products
+
+Avoid excessively dense interfaces.
+
+Administrative interfaces may use slightly tighter spacing where information density is more important.
+
+---
+
+## 9. Border Radius
+
+The visual language favors rounded interfaces.
+
+Reusable controls commonly use moderate rounding:
+
+```text
+rounded-lg
+rounded-xl
+rounded-2xl
+```
+
+Large visual containers may use stronger rounding when appropriate:
+
+```text
+rounded-3xl
+rounded-[2.5rem]
+rounded-[3rem]
+```
+
+Large radius values should primarily be used for major visual sections, hero containers, promotional areas, or intentionally prominent cards.
+
+Do not apply extreme rounding to every element.
+
+Maintain visual hierarchy through different radius sizes.
+
+---
+
+## 10. Borders and Shadows
+
+Borders should generally use:
+
+```text
+border
+border-border
+```
+
+Use borders to establish structure without creating excessive visual noise.
+
+Shadows should be subtle by default.
+
+Stronger shadows may appear during interactive states such as:
+
+```text
+hover:shadow-xl
+hover:shadow-2xl
+```
+
+Avoid heavy permanent shadows across every card.
+
+Cards should usually gain visual emphasis through a combination of:
+
+* border
+* background
+* spacing
+* hover state
+* subtle shadow
+
+---
+
+## 11. Buttons
+
+Prefer reusable button components such as:
+
+```text
+UiButton
+Button
+```
+
+rather than repeatedly implementing button styles manually.
+
+Supported conceptual variants include:
+
+```text
+primary
+outline
+ghost
+```
+
+Additional variants should only be introduced when there is a recurring UI requirement.
+
+### Primary Button
+
+Use for the dominant action.
+
+Examples:
+
+* Add to Cart
+* Checkout
+* Save
+* Submit
+* Confirm
+
+### Outline Button
+
+Use for secondary actions.
+
+### Ghost Button
+
+Use for low-emphasis actions, toolbar controls, and contextual interactions.
+
+Avoid placing multiple visually dominant primary actions next to each other unless the workflow genuinely requires equal emphasis.
+
+---
+
+## 12. Button Behavior
+
+Buttons must communicate interaction states.
+
+Consider:
+
+* default
+* hover
+* focus
+* active
+* loading
+* disabled
+
+Buttons performing asynchronous operations should prevent accidental repeated submission when appropriate.
+
+Buttons inside forms must explicitly use the correct HTML type.
+
+Use:
+
+```html
+<button type="button">
+```
+
+for non-submission actions.
+
+Use:
+
+```html
+<button type="submit">
+```
+
+for form submission.
+
+---
+
+## 13. Icon Buttons
+
+Icon-only buttons must have an accessible name.
+
+For example, wishlist controls should provide an `aria-label` describing the action.
+
+Examples:
+
+```text
+Add product to wishlist
+Remove product from wishlist
+Add product to cart
+Close dialog
+Open menu
+```
+
+Do not rely on the icon alone to communicate meaning to assistive technologies.
+
+---
+
+## 14. Icons
+
+Use:
+
+```text
+lucide-vue-next
+```
+
+for application icons.
+
+Do not introduce `lucide-react` or other React icon packages into Vue components.
+
+Keep icon sizing consistent within similar controls.
+
+Typical sizes include:
+
+```text
+w-4 h-4
+w-5 h-5
+w-6 h-6
+```
+
+Icons should support the interface rather than become decorative clutter.
+
+---
+
+## 15. Cards
+
+Cards are used extensively for:
+
+* products
+* categories
+* brands
+* dashboard information
+* content previews
+* account information
+
+A typical card should use semantic styling such as:
+
+```text
+bg-card
+text-card-foreground
+border
+border-border
+rounded-2xl
+```
+
+Interactive cards may add:
+
+```text
+hover:shadow-xl
+hover:border-primary/20
+transition-all
+```
+
+Do not make every card excessively animated.
+
+---
+
+## 16. Product Cards
+
+Product cards should make the following information easy to scan:
+
+* product image
+* product name
+* brand when available
+* current price
+* previous price when applicable
+* rating when real rating data exists
+* product status
+* important customer actions
+
+Product cards must not invent missing commerce information.
+
+For example, if rating data is unavailable, do not display a fabricated rating merely to fill the layout.
+
+Product cards should remain reusable across:
+
+* homepage sections
+* category pages
+* search results
+* related products
+* new arrivals
+* promotional listings
+
+---
+
+## 17. Product Images
+
+Product imagery is a major part of the storefront experience.
+
+Product image containers should maintain predictable dimensions to prevent layout shift.
+
+Common product-card imagery may use:
+
+```text
+aspect-square
+object-cover
+```
+
+or another intentionally defined aspect ratio.
+
+Always provide meaningful `alt` text.
+
+For product images, the product name is usually an appropriate baseline alt value unless more specific image context is available.
+
+Do not assume a product always has an image.
+
+Provide an intentional missing-image state.
+
+Image loading strategy should consider whether the image is:
+
+* above the fold
+* part of the primary product gallery
+* below the fold
+* part of a large listing
+
+Avoid lazy-loading critical above-the-fold imagery without considering performance impact.
+
+---
+
+## 18. Forms
+
+Forms should use semantic HTML.
+
+Interactive forms should generally use:
+
+```html
+<form @submit.prevent="submitHandler">
+```
+
+instead of depending only on button click handlers.
+
+Forms should provide clear:
+
+* labels
+* required states
+* validation errors
+* disabled states
+* loading states
+* submission feedback
+
+Do not rely solely on placeholder text as the field label.
+
+Validation messages should appear close to the relevant field when possible.
+
+---
+
+## 19. Inputs
+
+Inputs should use the semantic input and focus tokens.
+
+Inputs should have visible focus behavior.
+
+Consider:
+
+```text
+border-input
+focus:ring-ring
+```
+
+or the equivalent behavior implemented by the project's reusable input components.
+
+Input states should clearly distinguish:
+
+* normal
+* focused
+* disabled
+* invalid
+
+---
+
+## 20. Modals and Dialogs
+
+Modals should provide predictable interaction behavior.
+
+The backdrop should support click-outside closure when closing the modal that way is safe for the workflow.
+
+Vue's:
+
+```text
+@click.self
+```
+
+may be used on the backdrop.
+
+The modal container must prevent backdrop interaction from incorrectly triggering closure.
+
+For data-entry modals:
+
+* use a semantic `<form>`
+* focus the first meaningful input when appropriate
+* support keyboard submission
+* use `type="button"` for auxiliary actions
+* use `type="submit"` for the confirmation action
+
+Use `nextTick()` when necessary to focus an element after the modal has rendered.
+
+Do not automatically close destructive or sensitive dialogs from accidental interaction if doing so could cause user frustration or data loss.
+
+---
+
+## 21. Drawers
+
+Drawers may be used for experiences such as:
+
+* cart
+* mobile navigation
+* filters
+* account actions
+
+Drawers should:
+
+* provide an obvious close control
+* support keyboard interaction
+* prevent confusing background interaction
+* maintain clear visual hierarchy
+* behave appropriately on mobile
+
+Do not use drawers when a normal page provides a substantially better experience for complex workflows.
+
+---
+
+## 22. Accessibility
+
+Accessibility is part of the definition of a complete UI, not an optional enhancement.
+
+When building components, consider:
+
+* semantic HTML
+* keyboard navigation
+* focus visibility
+* accessible names
+* form labels
+* image alt text
+* color contrast
+* disabled states
+* screen-reader context
+
+Interactive non-button elements should not replace native buttons unnecessarily.
+
+Prefer:
+
+```html
+<button>
+```
+
+over clickable:
+
+```html
+<div>
+```
+
+for actions.
+
+Prefer:
+
+```html
+<NuxtLink>
+```
+
+for navigation.
+
+---
+
+## 23. Focus Management
+
+Keyboard users must be able to identify the currently focused interactive element.
+
+Do not globally remove focus outlines without providing an accessible replacement.
+
+Dialogs and similar overlays should manage focus intentionally.
+
+When opening a data-entry modal, focus may move to the first meaningful input.
+
+When closing an overlay, returning focus to the triggering control is preferred where practical.
+
+---
+
+## 24. Responsive Design
+
+The storefront must work across:
+
+* mobile
+* tablet
+* laptop
+* desktop
+
+Design mobile behavior intentionally rather than treating it as a compressed desktop layout.
+
+Important customer actions must remain accessible on smaller screens.
+
+Product grids should adapt to available width.
+
+Large multi-column product layouts should collapse into appropriate mobile structures.
+
+Navigation should provide a dedicated mobile experience when desktop navigation cannot fit naturally.
+
+---
+
+## 25. Header
+
+The storefront header supports two conceptual states:
+
+```text
+Expanded
+Compact / Scrolled
+```
+
+The expanded header may contain multiple rows.
+
+When the compact scrolled state is used, the intended order is:
+
+```text
+Logo
+  →
+Search
+  →
+Navigation
+  →
+Action Icons
+```
+
+Search must remain discoverable and usable in the compact state.
+
+Header transitions should remain smooth without causing distracting layout jumps.
+
+Mobile header behavior may differ from desktop behavior where necessary.
+
+---
+
+## 26. Search
+
+Search is a primary e-commerce navigation mechanism.
+
+The search interface should be:
+
+* easy to find
+* easy to focus
+* keyboard accessible
+* usable on mobile
+* visually prominent without overwhelming navigation
+
+Search UI should clearly distinguish between:
+
+* empty state
+* typing state
+* loading state
+* results
+* no results
+* errors
+
+Do not hide search solely for visual simplification when it is a primary storefront action.
+
+---
+
+## 27. Navigation
+
+Navigation should help customers understand the product catalog.
+
+Desktop navigation may use:
+
+* category menus
+* mega menus
+* nested navigation
+
+Mobile navigation should prioritize clarity over reproducing the desktop mega menu exactly.
+
+Navigation labels should use customer-facing terminology.
+
+Avoid exposing internal backend terminology when a clearer customer-facing label exists.
+
+---
+
+## 28. Loading States
+
+Asynchronous UI must provide appropriate feedback.
+
+Depending on the interaction, use:
+
+* loading indicators
+* skeletons
+* disabled controls
+* progress feedback
+
+Avoid large layout jumps between loading and loaded states.
+
+For storefront product listings, skeleton layouts are preferred when they help preserve page structure.
+
+---
+
+## 29. Empty States
+
+Empty states should explain what happened and, where useful, provide a next action.
+
+Examples:
+
+```text
+No products found.
+Your cart is empty.
+Your wishlist is empty.
+No reviews yet.
+No orders found.
+```
+
+Do not display broken or partially rendered UI when a collection is empty.
+
+---
+
+## 30. Error States
+
+Errors should be understandable to customers.
+
+Avoid exposing raw backend exceptions, stack traces, or implementation details.
+
+Where appropriate, provide:
+
+* concise explanation
+* retry action
+* navigation alternative
+* support path
+
+Validation errors from DRF should be presented near the relevant form fields when possible.
+
+---
+
+## 31. Toasts and Notifications
+
+Use transient notifications for lightweight feedback such as:
+
+* item added
+* item removed
+* settings saved
+* operation failed
+
+Do not use toasts as the only mechanism for important information that the user must read or act upon.
+
+Avoid excessive toast notifications for routine interactions.
+
+---
+
+## 32. Animation
+
+Animation should communicate state and hierarchy.
+
+Use Tailwind transitions for normal UI interactions.
+
+Examples:
+
+```text
+transition-colors
+transition-transform
+transition-all
+duration-200
+duration-300
+duration-500
+```
+
+Use more advanced animation only when it materially improves the experience.
+
+If the `motion` package is used, use its Vue-compatible API.
+
+Do not use React-specific imports such as:
+
+```text
+motion/react
+```
+
+inside the Nuxt/Vue application.
+
+Avoid excessive motion on commerce pages.
+
+Product information and customer actions should remain the visual priority.
+
+---
+
+## 33. Hover Behavior
+
+Hover effects may provide additional feedback on pointer-capable devices.
+
+Examples include:
+
+* subtle image zoom
+* border emphasis
+* shadow elevation
+* text color changes
+* contextual quick actions
+
+Do not make essential actions available only through hover.
+
+Touch users must still be able to access important functionality.
+
+---
+
+## 34. Customer-Facing vs Admin UI
+
+The storefront and administration interface share the same core design system but have different priorities.
+
+### Storefront
+
+Prioritize:
+
+* product discovery
+* visual hierarchy
+* trust
+* readability
+* conversion
+* responsive behavior
+* SEO-compatible rendering
+
+### Admin
+
+Prioritize:
+
+* information density
+* efficiency
+* predictable forms
+* filtering
+* tables
+* status visibility
+* operational clarity
+
+Do not force decorative storefront patterns into dense administrative workflows.
+
+---
+
+## 35. Component Reuse
+
+Before creating a new generic UI component, check whether an existing component already solves the problem.
+
+Prefer extending reusable primitives where appropriate rather than creating visually inconsistent duplicates.
+
+Examples include:
+
+```text
+UiButton
+UiBadge
+UiCard
+UiSearchInput
+```
+
+Do not over-generalize components prematurely.
+
+A component should become generic because multiple real use cases share the abstraction, not because it might theoretically be reusable later.
+
+---
+
+## 36. Design Consistency Rule
+
+When implementing new UI, first inspect nearby existing components and established design tokens.
+
+Prefer consistency with the existing system unless the task explicitly introduces a design-system change.
+
+New components should feel like part of the same application rather than isolated designs.
+
+---
+
+## 37. Final UI Check
+
+Before considering a UI implementation complete, verify:
+
+```text
+Visual hierarchy
+Responsive behavior
+Light mode
+Dark mode
+Keyboard accessibility
+Focus states
+Semantic colors
+Loading state
+Empty state
+Error state
+Interactive states
+Commerce-data accuracy
+Reuse of existing primitives
+```
+
+Not every component requires every state, but each applicable state should be considered.
+
+The goal is a consistent, accessible, customer-oriented interface rather than visual complexity.

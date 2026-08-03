@@ -1,0 +1,331 @@
+# Frontend Architecture
+
+This document describes the structural architecture of the Best Computer Hub frontend and defines the intended responsibilities of each application layer.
+
+## 1. Architecture Overview
+
+The frontend is built with:
+
+* Nuxt 4
+* Vue 3
+* TypeScript
+* Tailwind CSS
+* Pinia
+* VueUse
+
+The backend is a separate Django REST Framework application.
+
+The frontend follows this general dependency flow:
+
+```text
+Page
+  ↓
+Feature / Component
+  ↓
+Store / Composable
+  ↓
+Domain Service
+  ↓
+useApiClient
+  ↓
+Django REST Framework
+```
+
+Not every feature requires every layer. Avoid introducing unnecessary abstractions for simple functionality.
+
+---
+
+## 2. Pages
+
+Directory:
+
+```text
+/pages/
+```
+
+Pages represent application routes.
+
+Pages are responsible for:
+
+* route parameters
+* route-level data fetching
+* SSR-sensitive data loading
+* SEO integration
+* route-level error and 404 handling
+* composing features and components
+
+Keep pages reasonably thin.
+
+Large UI sections should be extracted into appropriate feature or reusable components rather than allowing route files to grow indefinitely.
+
+Public storefront pages such as product, category, brand, and content pages must be designed with server rendering and SEO in mind.
+
+---
+
+## 3. Components
+
+### UI Components
+
+Directory:
+
+```text
+/components/ui/
+```
+
+Contains generic reusable UI primitives.
+
+Examples:
+
+* buttons
+* badges
+* cards
+* inputs
+* dialogs
+* pagination controls
+
+UI components should not contain e-commerce business logic or directly integrate with domain APIs unless their responsibility explicitly requires it.
+
+### Layout Components
+
+Directory:
+
+```text
+/components/layout/
+```
+
+Contains application-wide structural components.
+
+Examples:
+
+* header
+* footer
+* navigation
+* mega menu
+* cookie banner
+* global drawers
+
+### Commerce Components
+
+Directory:
+
+```text
+/components/commerce/
+```
+
+Contains reusable storefront/e-commerce presentation components.
+
+Examples:
+
+* product cards
+* price displays
+* product badges
+* cart-related presentation
+* wishlist controls
+
+Commerce components may interact with stores or composables for user actions, but business-critical rules remain backend-authoritative.
+
+---
+
+## 4. Features
+
+Directory:
+
+```text
+/features/
+```
+
+Use feature directories for larger domain-specific functionality that contains multiple related components or supporting code.
+
+Examples:
+
+```text
+/features/
+├── admin/
+├── product/
+├── checkout/
+└── account/
+```
+
+Do not create a feature directory for every small component.
+
+Prefer `/components/` when something is broadly reusable.
+
+Prefer `/features/` when implementation is strongly tied to one application domain or workflow.
+
+---
+
+## 5. Composables and Domain Services
+
+Directory:
+
+```text
+/composables/
+```
+
+Composable services provide reusable application and domain behavior.
+
+Examples:
+
+```text
+useApiClient
+useProductService
+useCategoryService
+useBrandService
+useToast
+```
+
+Domain services are responsible for operations related to their own domain.
+
+For example:
+
+```text
+useProductService
+    → product operations
+
+useCategoryService
+    → category operations
+
+useBrandService
+    → brand operations
+```
+
+Avoid putting unrelated domain operations into the same service.
+
+Domain services should use `useApiClient` for HTTP communication rather than implementing their own HTTP/authentication infrastructure.
+
+---
+
+## 6. API Client
+
+`useApiClient` is the centralized HTTP communication layer.
+
+Its responsibility is shared transport-level behavior such as:
+
+* API base URL handling
+* request execution
+* authentication credentials
+* shared request/response behavior
+* standardized transport errors
+* session/token infrastructure
+
+Domain-specific API endpoints and business operations should remain in their respective services.
+
+Do not duplicate authentication or token-refresh infrastructure across domain services.
+
+---
+
+## 7. Stores
+
+Directory:
+
+```text
+/stores/
+```
+
+Pinia stores manage shared client/application state.
+
+Examples:
+
+* authentication state
+* cart state
+* wishlist state
+* UI state
+* cookie/preferences state
+
+Stores should not become replacements for backend business logic.
+
+For commerce-critical information, Django REST Framework remains the authoritative source.
+
+---
+
+## 8. Types
+
+Directory:
+
+```text
+/types/
+```
+
+Shared TypeScript domain and API contracts belong here.
+
+As the application grows, prefer domain-oriented files:
+
+```text
+types/
+├── api.ts
+├── auth.ts
+├── product.ts
+├── category.ts
+├── brand.ts
+├── cart.ts
+├── customer.ts
+├── order.ts
+└── admin.ts
+```
+
+Use explicit API response/request types when the backend representation differs from the frontend domain model.
+
+Avoid using `any` to bypass API contract differences.
+
+---
+
+## 9. Utilities
+
+Directory:
+
+```text
+/utils/
+```
+
+Contains small, reusable, domain-independent helpers.
+
+Examples:
+
+* currency formatting
+* class-name merging
+* formatting helpers
+* pure transformations
+
+Utilities should generally remain stateless and free from API communication.
+
+---
+
+## 10. Architectural Principle
+
+Before creating new code, determine the correct responsibility:
+
+```text
+Routing / SSR / SEO
+        → Page
+
+Reusable visual primitive
+        → components/ui
+
+Shared layout
+        → components/layout
+
+Reusable commerce presentation
+        → components/commerce
+
+Large domain-specific UI/workflow
+        → features
+
+Shared application state
+        → store
+
+Domain/API operation
+        → domain service/composable
+
+HTTP transport
+        → useApiClient
+
+Shared type contract
+        → types
+
+Pure helper
+        → utils
+```
+
+Prefer the simplest layer that correctly owns the responsibility.
+
+Do not introduce new architectural layers unless the project has a concrete need for them.
