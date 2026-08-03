@@ -77,37 +77,54 @@ Avoid introducing additional styling frameworks without an architectural reason.
 
 The design system uses CSS variables exposed through Tailwind semantic colors.
 
-Available semantic tokens include:
+### Light / Default Palette
 
-```text
-background
-foreground
+| Token | Value |
+| --- | --- |
+| `background` | `#F7F9FC` |
+| `foreground` | `#101828` |
+| `card` | `#FFFFFF` |
+| `card-foreground` | `#101828` |
+| `primary` | `#237BEA` |
+| `primary-foreground` | `#FFFFFF` |
+| `primary-hover` | `#1764C0` |
+| `primary-soft` | `#EAF3FF` |
+| `secondary` | `#E9EEF5` |
+| `secondary-foreground` | `#243247` |
+| `muted` | `#EEF2F7` |
+| `muted-foreground` | `#667085` |
+| `border` | `#E2E8F0` |
+| `input` | `#FFFFFF` |
+| `ring` | `#237BEA` |
 
-card
-card-foreground
+### Dark Palette
 
-popover
-popover-foreground
+| Token | Value |
+| --- | --- |
+| `background` | `#071426` |
+| `foreground` | `#F8FAFC` |
+| `card` | `#111F33` |
+| `card-foreground` | `#F8FAFC` |
+| `primary` | `#3B8DF5` |
+| `primary-foreground` | `#FFFFFF` |
+| `primary-hover` | `#65A5F7` |
+| `primary-soft` | `#102E52` |
+| `secondary` | `#1A2A40` |
+| `secondary-foreground` | `#E2E8F0` |
+| `muted` | `#16253A` |
+| `muted-foreground` | `#94A3B8` |
+| `border` | `#26364B` |
+| `input` | `#0D1B2E` |
+| `ring` | `#3B8DF5` |
 
-primary
-primary-foreground
+### Semantic State Colors
 
-secondary
-secondary-foreground
-
-muted
-muted-foreground
-
-accent
-accent-foreground
-
-destructive
-destructive-foreground
-
-border
-input
-ring
-```
+| State | Light Value | Dark Value |
+| --- | --- | --- |
+| `success` | `#16A34A` | `#4ADE80` |
+| `warning` | `#D97706` | `#FBBF24` |
+| `destructive` | `#DC2626` | `#F87171` |
+| `info` | `#0284C7` | `#38BDF8` |
 
 Prefer semantic colors over hard-coded theme-specific colors.
 

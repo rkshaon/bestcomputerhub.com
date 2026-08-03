@@ -3,7 +3,7 @@
 import { cn } from '@/utils';
 
 interface Props {
-  variant?: 'primary' | 'secondary' | 'success'| 'warning' | 'error' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'success'| 'warning' | 'error' | 'info' | 'ghost';
   size?: 'xs' | 'sm' | 'md';
 }
 
@@ -15,9 +15,10 @@ const props = withDefaults(defineProps<Props>(), {
 const variants = {
   primary: 'bg-primary/10 text-primary border-primary/20',
   secondary: 'bg-secondary text-secondary-foreground border-border',
-  success: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border-emerald-100 dark:border-emerald-900',
-  warning: 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 border-amber-100 dark:border-amber-900',
-  error: 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 border-rose-100 dark:border-rose-900',
+  success: 'bg-success/10 text-success border-success/20',
+  warning: 'bg-warning/10 text-warning border-warning/20',
+  error: 'bg-destructive/10 text-destructive border-destructive/20',
+  info: 'bg-info/10 text-info border-info/20',
   ghost: 'bg-transparent text-muted-foreground border-transparent'
 };
 
