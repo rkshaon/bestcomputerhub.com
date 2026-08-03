@@ -188,9 +188,9 @@ if (process.client) {
           )"
         >
           <div 
-            v-for="cat in categories" 
+            v-for="(cat, index) in categories" 
             :key="cat.id" 
-            class="group h-full flex items-center shrink-0"
+            class="group relative h-full flex items-center shrink-0"
             @mouseenter="openMegaMenu(cat.id)"
             @mouseleave="closeMegaMenu"
             @focusin="openMegaMenu(cat.id)"
@@ -211,6 +211,7 @@ if (process.client) {
               :category="cat" 
               :all-categories="allCategories"
               :is-open="activeMegaMenuId === cat.id"
+              :align-right="index >= categories.length / 2"
               @keep-open="keepMegaMenuOpen"
               @close="closeMegaMenu"
             />
@@ -318,9 +319,9 @@ if (process.client) {
         )"
       >
         <div 
-          v-for="cat in categories" 
+          v-for="(cat, index) in categories" 
           :key="cat.id" 
-          class="group h-full flex items-center shrink-0"
+          class="group relative h-full flex items-center shrink-0"
           @mouseenter="openMegaMenu(cat.id)"
           @mouseleave="closeMegaMenu"
           @focusin="openMegaMenu(cat.id)"
@@ -341,6 +342,7 @@ if (process.client) {
             :category="cat" 
             :all-categories="allCategories"
             :is-open="activeMegaMenuId === cat.id"
+            :align-right="index >= categories.length / 2"
             @keep-open="keepMegaMenuOpen"
             @close="closeMegaMenu"
           />
