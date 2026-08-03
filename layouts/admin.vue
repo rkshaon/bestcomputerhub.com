@@ -101,20 +101,20 @@ const breadcrumbs = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#F8FAFC] dark:bg-[#020617] text-slate-900 dark:text-slate-100 font-sans">
+  <div class="min-h-screen bg-background text-foreground font-sans">
     <!-- Sidebar for Desktop -->
     <aside 
       :class="cn(
-        'fixed top-0 left-0 z-40 h-screen transition-all duration-300 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950',
+        'fixed top-0 left-0 z-40 h-screen transition-all duration-300 border-r border-border bg-card text-card-foreground',
         isSidebarOpen ? 'w-64' : 'w-20'
       )"
     >
       <div class="flex flex-col h-full">
         <!-- Logo Area -->
-        <div class="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="h-16 flex items-center px-6 border-b border-border overflow-hidden">
           <NuxtLink to="/admin" class="flex items-center gap-3">
             <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-              <ShieldCheck class="w-5 h-5 text-white" />
+              <ShieldCheck class="w-5 h-5 text-primary-foreground" />
             </div>
             <span v-if="isSidebarOpen" class="font-display font-bold text-lg tracking-tight whitespace-nowrap">
               Admin<span class="text-primary">Core</span>
@@ -131,8 +131,8 @@ const breadcrumbs = computed(() => {
             :class="cn(
               'group flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm',
               $route.path === item.href 
-                ? 'bg-primary/10 text-primary' 
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-primary/10 text-primary font-bold' 
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
             )"
           >
             <component :is="iconMap[item.iconKey as keyof typeof iconMap]" :class="cn('w-5 h-5 shrink-0')" />
@@ -140,8 +140,8 @@ const breadcrumbs = computed(() => {
           </NuxtLink>
 
           <div class="pt-6 pb-2">
-            <div v-if="isSidebarOpen" class="px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">System</div>
-            <div v-else class="mx-auto w-4 border-t border-slate-200 dark:border-slate-800 my-4"></div>
+            <div v-if="isSidebarOpen" class="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">System</div>
+            <div v-else class="mx-auto w-4 border-t border-border my-4"></div>
           </div>
 
           <NuxtLink 
@@ -151,8 +151,8 @@ const breadcrumbs = computed(() => {
             :class="cn(
               'group flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm',
               $route.path === item.href 
-                ? 'bg-primary/10 text-primary' 
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-primary/10 text-primary font-bold' 
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
             )"
           >
             <component :is="iconMap[item.iconKey as keyof typeof iconMap]" :class="cn('w-5 h-5 shrink-0')" />
@@ -161,10 +161,10 @@ const breadcrumbs = computed(() => {
         </nav>
 
         <!-- Sidebar Footer -->
-        <div class="p-3 border-t border-slate-200 dark:border-slate-800">
+        <div class="p-3 border-t border-border">
           <button 
             @click="handleLogout"
-            class="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 transition-all text-sm font-medium"
+            class="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all text-sm font-medium"
           >
             <LogOut class="w-5 h-5 shrink-0" />
             <span v-if="isSidebarOpen">Logout</span>
@@ -175,7 +175,7 @@ const breadcrumbs = computed(() => {
       <!-- Toggle Button -->
       <button 
         @click="toggleSidebar"
-        class="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-full flex items-center justify-center shadow-md text-slate-500 hover:text-primary transition-all z-50 hidden md:flex"
+        class="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-card border border-border rounded-full flex items-center justify-center shadow-md text-muted-foreground hover:text-primary transition-all z-50 hidden md:flex"
       >
         <ChevronLeft :class="cn('w-4 h-4 transition-transform duration-300', !isSidebarOpen && 'rotate-180')" />
       </button>
@@ -189,18 +189,18 @@ const breadcrumbs = computed(() => {
       )"
     >
       <!-- Header -->
-      <header class="h-16 sticky top-0 z-30 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
+      <header class="h-16 sticky top-0 z-30 bg-card/80 backdrop-blur-md border-b border-border px-6 flex items-center justify-between">
         <div class="flex items-center gap-4">
           <!-- Mobile Menu Toggle -->
-          <button @click="isMobileMenuOpen = true" class="md:hidden p-2 text-slate-500">
+          <button @click="isMobileMenuOpen = true" class="md:hidden p-2 text-muted-foreground">
             <Menu class="w-6 h-6" />
           </button>
 
           <!-- Search Bar (Placeholder) -->
-          <div class="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-1.5 w-64 lg:w-96">
-            <Search class="w-4 h-4 text-slate-400" />
+          <div class="hidden sm:flex items-center gap-2 bg-muted border border-input rounded-full px-4 py-1.5 w-64 lg:w-96">
+            <Search class="w-4 h-4 text-muted-foreground" />
             <input type="text" placeholder="Search operations..." class="bg-transparent border-none outline-none text-xs w-full focus:ring-0" />
-            <div class="text-[10px] font-bold text-slate-400 px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border dark:border-slate-700">⌘K</div>
+            <div class="text-[10px] font-bold text-muted-foreground px-1.5 py-0.5 rounded bg-background border border-border">⌘K</div>
           </div>
         </div>
 
@@ -208,17 +208,17 @@ const breadcrumbs = computed(() => {
           <!-- Visit Website -->
           <NuxtLink 
             to="/" 
-            class="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 rounded-full transition-all duration-300 hover:scale-[1.02] shrink-0 text-slate-700 dark:text-slate-300"
+            class="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 border border-border hover:border-primary/30 bg-secondary hover:bg-secondary/80 rounded-full transition-all duration-300 hover:scale-[1.02] shrink-0 text-secondary-foreground"
             title="Return to Main Marketplace"
           >
-            <ExternalLink class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+            <ExternalLink class="w-3.5 h-3.5 text-muted-foreground" />
             <span class="text-[9px] font-extrabold uppercase tracking-widest">Visit Website</span>
           </NuxtLink>
 
           <!-- Mobile Visit Website icon button -->
           <NuxtLink 
             to="/" 
-            class="sm:hidden p-2 hover:bg-slate-50 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 rounded-xl transition-all shrink-0"
+            class="sm:hidden p-2 hover:bg-accent border border-border text-muted-foreground hover:text-foreground rounded-xl transition-all shrink-0"
             title="Return to Main Marketplace"
           >
             <ExternalLink class="w-4 h-4" />
@@ -228,7 +228,7 @@ const breadcrumbs = computed(() => {
           <div class="relative theme-dropdown">
             <button 
               @click="isThemeMenuOpen = !isThemeMenuOpen"
-              class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl transition-colors flex items-center justify-center h-9 w-9"
+              class="p-2 text-muted-foreground hover:bg-accent hover:text-foreground rounded-xl transition-colors flex items-center justify-center h-9 w-9"
             >
               <Sun v-if="uiStore.themeMode === 'light'" class="w-5 h-5" />
               <Moon v-else-if="uiStore.themeMode === 'dark'" class="w-5 h-5" />
@@ -243,14 +243,14 @@ const breadcrumbs = computed(() => {
               leave-from-class="transform scale-100 opacity-100"
               leave-to-class="transform scale-95 opacity-0"
             >
-              <div v-if="isThemeMenuOpen" class="absolute top-full right-0 mt-2 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50">
+              <div v-if="isThemeMenuOpen" class="absolute top-full right-0 mt-2 w-40 bg-popover text-popover-foreground border border-border rounded-2xl shadow-xl p-2 z-50">
                 <button 
                   v-for="mode in ['light', 'dark', 'system'] as const" 
                   :key="mode"
                   @click="uiStore.setTheme(mode); isThemeMenuOpen = false"
                   :class="cn(
                     'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors',
-                    uiStore.themeMode === mode ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
+                    uiStore.themeMode === mode ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   )"
                 >
                   <Sun v-if="mode === 'light'" class="w-4 h-4" />
@@ -263,14 +263,14 @@ const breadcrumbs = computed(() => {
           </div>
 
           <!-- User Profile -->
-          <NuxtLink to="/admin/profile" class="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800 hover:opacity-80 transition-opacity">
+          <NuxtLink to="/admin/profile" class="flex items-center gap-3 pl-3 border-l border-border hover:opacity-80 transition-opacity">
             <div class="text-right hidden lg:block">
               <p class="text-xs font-bold leading-none">{{ authStore.user?.name || 'Admin User' }}</p>
-              <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">Super Admin</p>
+              <p class="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Super Admin</p>
             </div>
-            <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden">
+            <div class="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center overflow-hidden">
               <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" class="w-full h-full object-cover" />
-              <UserIcon v-else class="w-5 h-5 text-slate-400" />
+              <UserIcon v-else class="w-5 h-5 text-muted-foreground" />
             </div>
           </NuxtLink>
         </div>
@@ -282,15 +282,15 @@ const breadcrumbs = computed(() => {
         <nav class="flex mb-6" aria-label="Breadcrumb">
           <ol class="flex items-center space-x-2 text-xs font-medium">
             <li>
-              <NuxtLink to="/admin" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">Admin</NuxtLink>
+              <NuxtLink to="/admin" class="text-muted-foreground hover:text-foreground">Admin</NuxtLink>
             </li>
             <li v-for="crumb in breadcrumbs" :key="crumb.href" class="flex items-center">
-              <ChevronLeft class="w-3 h-3 text-slate-300 dark:text-slate-700 rotate-180 flex-shrink-0" />
+              <ChevronLeft class="w-3 h-3 text-muted-foreground/50 rotate-180 flex-shrink-0" />
               <NuxtLink 
                 :to="crumb.href" 
                 :class="cn(
                   'ml-2',
-                  crumb.current ? 'text-primary font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                  crumb.current ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
                 )"
                 :aria-current="crumb.current ? 'page' : undefined"
               >
@@ -307,15 +307,15 @@ const breadcrumbs = computed(() => {
     <!-- Mobile Sidebar Backdrop -->
     <div v-if="isMobileMenuOpen" class="fixed inset-0 z-50 md:hidden overflow-hidden">
       <div 
-        class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
         @click="isMobileMenuOpen = false"
       ></div>
-      <div class="absolute inset-y-0 left-0 w-72 bg-white dark:bg-slate-950 shadow-2xl animate-in slide-in-from-left duration-300">
+      <div class="absolute inset-y-0 left-0 w-72 bg-card text-card-foreground shadow-2xl animate-in slide-in-from-left duration-300">
         <!-- Re-use sidebar content for mobile -->
         <div class="flex flex-col h-full">
-          <div class="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800">
+          <div class="h-16 flex items-center px-6 border-b border-border">
             <span class="font-display font-bold text-lg tracking-tight">Admin<span class="text-primary">Core</span></span>
-            <button @click="isMobileMenuOpen = false" class="ml-auto p-2 text-slate-500">
+            <button @click="isMobileMenuOpen = false" class="ml-auto p-2 text-muted-foreground">
               <ChevronLeft class="w-6 h-6" />
             </button>
           </div>
@@ -329,7 +329,7 @@ const breadcrumbs = computed(() => {
                 'flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-medium text-sm',
                 $route.path === item.href 
                   ? 'bg-primary/10 text-primary' 
-                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900'
+                  : 'text-muted-foreground hover:bg-accent'
               )"
             >
               <component :is="iconMap[item.iconKey as keyof typeof iconMap]" class="w-5 h-5" />

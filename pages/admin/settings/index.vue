@@ -46,7 +46,7 @@ const handleSave = async () => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-display font-extrabold tracking-tight">System Configuration</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">Manage global enterprise settings and security protocols.</p>
+        <p class="text-muted-foreground mt-1">Manage global enterprise settings and security protocols.</p>
       </div>
       <button 
         @click="handleSave"
@@ -75,7 +75,7 @@ const handleSave = async () => {
             'w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-bold text-sm',
             activeTab === tab.id 
               ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
-              : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent'
+              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground border border-transparent'
           )"
         >
           <component :is="tab.icon" class="w-4 h-4" />
@@ -86,41 +86,41 @@ const handleSave = async () => {
       <!-- Settings Panels -->
       <div class="flex-1 space-y-6">
         <!-- General Panel -->
-        <div v-show="activeTab === 'general'" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-sm space-y-8">
+        <div v-show="activeTab === 'general'" class="bg-card text-card-foreground border border-border rounded-[2.5rem] p-8 shadow-sm space-y-8">
           <div class="space-y-6">
             <h3 class="text-lg font-display font-bold flex items-center gap-2">
               <Monitor class="w-5 h-5 text-primary" /> Store Configuration
             </h3>
             <div class="grid grid-cols-1 gap-6">
               <div class="space-y-2">
-                <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Environment Name</label>
-                <input type="text" value="TechCore Global Enterprise" class="w-full h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm" />
+                <label class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Environment Name</label>
+                <input type="text" value="TechCore Global Enterprise" class="w-full h-12 px-4 bg-muted border border-input rounded-xl outline-none focus:ring-2 focus:ring-ring/20 transition-all font-medium text-sm" />
               </div>
               <div class="space-y-2">
-                <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Support Endpoint</label>
-                <input type="email" value="ops@techcore.io" class="w-full h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm" />
+                <label class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Support Endpoint</label>
+                <input type="email" value="ops@techcore.io" class="w-full h-12 px-4 bg-muted border border-input rounded-xl outline-none focus:ring-2 focus:ring-ring/20 transition-all font-medium text-sm" />
               </div>
             </div>
           </div>
 
-          <div class="pt-8 border-t border-slate-100 dark:border-slate-900 space-y-6">
+          <div class="pt-8 border-t border-border space-y-6">
             <h3 class="text-lg font-display font-bold flex items-center gap-2 text-rose-500">
               <Database class="w-5 h-5" /> Maintenance Zone
             </h3>
-            <div class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div class="bg-muted p-6 rounded-3xl border border-border flex items-center justify-between">
               <div>
-                <p class="text-sm font-bold text-slate-900 dark:text-slate-100">Maintenance Mode</p>
-                <p class="text-xs text-slate-400">Offline store for scheduled hardware updates.</p>
+                <p class="text-sm font-bold">Maintenance Mode</p>
+                <p class="text-xs text-muted-foreground">Offline store for scheduled hardware updates.</p>
               </div>
-              <div class="w-12 h-6 bg-slate-200 dark:bg-slate-800 rounded-full relative cursor-pointer group">
-                <div class="absolute left-1 top-1 w-4 h-4 bg-white dark:bg-slate-600 rounded-full transition-all group-hover:bg-slate-300"></div>
+              <div class="w-12 h-6 bg-secondary rounded-full relative cursor-pointer group">
+                <div class="absolute left-1 top-1 w-4 h-4 bg-card rounded-full transition-all group-hover:bg-primary"></div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Security Panel -->
-        <div v-show="activeTab === 'security'" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
+        <div v-show="activeTab === 'security'" class="bg-card text-card-foreground border border-border rounded-[2.5rem] p-8 shadow-sm space-y-6">
            <h3 class="text-lg font-display font-bold flex items-center gap-2">
               <Lock class="w-5 h-5 text-primary" /> Access Control
             </h3>
@@ -140,8 +140,8 @@ const handleSave = async () => {
 
               <div class="space-y-4">
                 <div class="space-y-2">
-                  <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Session Timeout (minutes)</label>
-                  <input type="number" value="60" class="w-full h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm" />
+                  <label class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Session Timeout (minutes)</label>
+                  <input type="number" value="60" class="w-full h-12 px-4 bg-muted border border-input rounded-xl outline-none focus:ring-2 focus:ring-ring/20 transition-all font-medium text-sm" />
                 </div>
               </div>
             </div>

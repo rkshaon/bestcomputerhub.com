@@ -14,11 +14,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const variants = {
   primary: 'bg-primary/10 text-primary border-primary/20',
-  secondary: 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800',
+  secondary: 'bg-secondary text-secondary-foreground border-border',
   success: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border-emerald-100 dark:border-emerald-900',
   warning: 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 border-amber-100 dark:border-amber-900',
   error: 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 border-rose-100 dark:border-rose-900',
-  ghost: 'bg-transparent text-slate-400 border-transparent'
+  ghost: 'bg-transparent text-muted-foreground border-transparent'
 };
 
 const sizes = {

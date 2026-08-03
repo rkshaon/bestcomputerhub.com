@@ -43,7 +43,7 @@ const stats = [
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           <div class="space-y-8">
             <h2 class="text-4xl md:text-5xl font-display font-bold leading-tight">A Decade of <span class="text-primary italic">Hardware Excellence</span></h2>
-            <div class="space-y-6 text-lg text-gray-400">
+            <div class="space-y-6 text-lg text-white/70">
               <p>In 2012, a group of system architects realized that the enterprise hardware market was fragmented and slow. They envisioned a unified portal where performance was the only metric that mattered.</p>
               <p>Today, TechCore serves as the backbone for top-tier data centers, specialized engineering firms, and high-frequency trading floors globally. We don't just sell components; we provide the tools for breakthrough performance.</p>
             </div>

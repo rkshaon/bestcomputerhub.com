@@ -297,7 +297,7 @@ if (process.client) {
 
           <NuxtLink to="/wishlist" class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground">
             <Heart class="w-4 h-4 sm:w-5 h-5" />
-            <span v-if="wishlistStore.wishlistCount > 0" class="absolute top-1 right-1 bg-red-500 text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
+            <span v-if="wishlistStore.wishlistCount > 0" class="absolute top-1 right-1 bg-destructive text-destructive-foreground text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
               {{ wishlistStore.wishlistCount }}
             </span>
           </NuxtLink>

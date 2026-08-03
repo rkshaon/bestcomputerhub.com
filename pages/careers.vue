@@ -83,7 +83,7 @@ const perks = [
       <div class="mt-32 p-16 bg-black text-white rounded-[4rem] text-center space-y-8 relative overflow-hidden">
         <div class="relative z-10 space-y-4">
           <h2 class="text-4xl font-display font-bold">Don't see a <span class="text-primary">perfect match?</span></h2>
-          <p class="text-gray-400 max-w-xl mx-auto">We are always looking for exceptional talent. If you have unique expertise in high-performance computing, let us know.</p>
+          <p class="text-white/70 max-w-xl mx-auto">We are always looking for exceptional talent. If you have unique expertise in high-performance computing, let us know.</p>
           <UiButton class="rounded-full px-12 h-14 font-bold bg-primary hover:bg-primary/90 mt-4">Send General Application</UiButton>
         </div>
         <div class="absolute inset-0 bg-primary/5 blur-[100px]"></div>

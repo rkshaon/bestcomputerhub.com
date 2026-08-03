@@ -21,7 +21,7 @@ defineEmits(['update:modelValue']);
 
 <template>
   <div class="relative group">
-    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
       <component :is="displayIcon" class="w-4 h-4" />
     </div>
     <input 
@@ -30,7 +30,7 @@ defineEmits(['update:modelValue']);
       :placeholder="placeholder"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       :class="cn(
-        'w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium',
+        'w-full h-12 pl-12 pr-4 bg-muted/50 border border-input rounded-2xl outline-none focus:ring-2 focus:ring-ring/20 transition-all text-sm font-medium',
         $attrs.class as string
       )"
     />

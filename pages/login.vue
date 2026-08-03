@@ -122,7 +122,7 @@ if (authStore.isLoggedIn) {
 
             <!-- Remember Me -->
             <div class="flex items-center gap-2 ml-1">
-              <input type="checkbox" id="remember" class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary/20" />
+              <input type="checkbox" id="remember" class="w-4 h-4 rounded border-input text-primary focus:ring-primary/20" />
               <label for="remember" class="text-xs text-muted-foreground font-medium select-none">Remember this session for 30 days</label>
             </div>
 

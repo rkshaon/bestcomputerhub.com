@@ -91,7 +91,7 @@ const paymentCertifications = [
       </div>
 
       <!-- PO Surcharge Quick Calculator -->
-      <div class="bg-muted rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 mb-20">
+      <div class="bg-muted rounded-[2.5rem] p-8 border border-border mb-20">
         <div class="max-w-xl space-y-4">
           <h3 class="text-xl font-display font-bold">Enterprise Transaction Surcharge Estimator</h3>
           <p class="text-xs text-muted-foreground leading-relaxed">
