@@ -181,7 +181,7 @@ if (process.client) {
         <!-- Compact Navigation Menu (Visible only when scrolled) -->
         <nav 
           :class="cn(
-            'hidden md:flex items-center justify-start gap-2.5 lg:gap-3.5 xl:gap-5 transition-all duration-500 ease-in-out h-8 flex-1 flex-nowrap',
+            'hidden md:flex relative items-center justify-between gap-2 transition-all duration-500 ease-in-out h-8 flex-1 flex-nowrap',
             isScrolled 
               ? 'opacity-100 overflow-visible translate-x-0 pointer-events-auto' 
               : 'opacity-0 overflow-hidden max-w-0 -translate-x-4 pointer-events-none'
@@ -311,7 +311,7 @@ if (process.client) {
       <!-- Collapsible Secondary Row (Visible only when not scrolled) -->
       <nav 
         :class="cn(
-          'hidden md:flex relative items-center justify-start gap-3 lg:gap-4.5 xl:gap-6 transition-all duration-500 ease-in-out w-full flex-nowrap',
+          'hidden md:flex relative items-center justify-between gap-2 transition-all duration-500 ease-in-out w-full flex-nowrap',
           isScrolled 
             ? 'h-0 overflow-hidden opacity-0 mt-0 pt-0 border-t-0 pointer-events-none' 
             : 'h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50'
