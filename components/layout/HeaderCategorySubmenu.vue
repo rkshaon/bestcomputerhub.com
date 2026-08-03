@@ -140,7 +140,7 @@ onUnmounted(() => {
 
     <!-- Submenu Card Panel -->
     <div
-      class="bg-card/98 backdrop-blur-xl border border-border/80 shadow-2xl rounded-xl p-1.5 min-w-[200px] max-w-[260px] text-foreground relative overflow-visible"
+      class="bg-card border border-border shadow-2xl rounded-xl p-1.5 min-w-[200px] max-w-[260px] text-card-foreground relative overflow-visible"
     >
       <ul class="space-y-0.5">
         <li 
