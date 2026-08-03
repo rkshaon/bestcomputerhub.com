@@ -1,7 +1,7 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, Monitor, ChevronDown, PackageSearch, Grid2X2, ShieldCheck } from 'lucide-vue-next';
+import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -181,7 +181,7 @@ if (process.client) {
         <!-- Compact Navigation Menu (Visible only when scrolled) -->
         <nav 
           :class="cn(
-            'hidden md:flex items-center gap-2 lg:gap-3.5 xl:gap-5 transition-all duration-500 ease-in-out h-9 flex-1 justify-center flex-nowrap',
+            'hidden md:flex items-center justify-start gap-2.5 lg:gap-3.5 xl:gap-5 transition-all duration-500 ease-in-out h-8 flex-1 flex-nowrap',
             isScrolled 
               ? 'opacity-100 overflow-visible translate-x-0 pointer-events-auto' 
               : 'opacity-0 overflow-hidden max-w-0 -translate-x-4 pointer-events-none'
@@ -199,17 +199,11 @@ if (process.client) {
             <NuxtLink 
               :to="categoryService.getCategoryUrl(cat, allCategories)" 
               :class="cn(
-                'flex items-center gap-0.5 lg:gap-1 font-bold text-[10px] xl:text-xs uppercase tracking-wider transition-colors whitespace-nowrap py-2 px-1 hover:text-primary',
-                activeMegaMenuId === cat.id ? 'text-primary font-black' : ''
+                'relative flex items-center font-semibold text-xs lg:text-[13px] tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200',
+                activeMegaMenuId === cat.id ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
               )"
             >
               {{ cat.name }}
-              <ChevronDown 
-                :class="cn(
-                  'w-3 h-3 text-muted-foreground transition-transform duration-300',
-                  activeMegaMenuId === cat.id ? 'rotate-180 text-primary' : 'group-hover:rotate-180'
-                )" 
-              />
             </NuxtLink>
             
             <!-- Mega Menu Dropdown -->
@@ -317,10 +311,10 @@ if (process.client) {
       <!-- Collapsible Secondary Row (Visible only when not scrolled) -->
       <nav 
         :class="cn(
-          'hidden md:flex relative items-center justify-start gap-3 lg:gap-5 xl:gap-6 transition-all duration-500 ease-in-out w-full flex-nowrap',
+          'hidden md:flex relative items-center justify-start gap-3 lg:gap-4.5 xl:gap-6 transition-all duration-500 ease-in-out w-full flex-nowrap',
           isScrolled 
             ? 'h-0 overflow-hidden opacity-0 mt-0 pt-0 border-t-0 pointer-events-none' 
-            : 'h-12 overflow-visible opacity-100 mt-3 pt-3 border-t border-border/50'
+            : 'h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50'
         )"
       >
         <div 
@@ -335,17 +329,11 @@ if (process.client) {
           <NuxtLink 
             :to="categoryService.getCategoryUrl(cat, allCategories)" 
             :class="cn(
-              'flex items-center gap-0.5 lg:gap-1 font-bold text-[10px] sm:text-[11px] lg:text-xs uppercase tracking-wider transition-colors whitespace-nowrap py-2 px-1 hover:text-primary',
-              activeMegaMenuId === cat.id ? 'text-primary font-black' : ''
+              'relative flex items-center font-semibold text-xs lg:text-[13px] tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200',
+              activeMegaMenuId === cat.id ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
             )"
           >
             {{ cat.name }}
-            <ChevronDown 
-              :class="cn(
-                'w-3 h-3 text-muted-foreground transition-transform duration-300',
-                activeMegaMenuId === cat.id ? 'rotate-180 text-primary' : 'group-hover:rotate-180'
-              )" 
-            />
           </NuxtLink>
           
           <!-- Mega Menu Dropdown -->
