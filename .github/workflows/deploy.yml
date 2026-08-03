@@ -151,7 +151,7 @@ jobs:
     name: Deploy to VPS
     runs-on: ubuntu-latest
     environment:
-      name: production
+      name: development
     needs: docker-release
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:

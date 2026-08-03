@@ -518,6 +518,10 @@ export const useProductService = () => {
     return getMockProducts().filter(p => p.onSale);
   };
 
+  const getBestSellers = (): Product[] => {
+    return [...getMockProducts()].sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+  };
+
   const getBrands = (): Brand[] => {
     return brands;
   };
@@ -537,6 +541,7 @@ export const useProductService = () => {
     getFeaturedProducts,
     getNewArrivals,
     getOnSaleProducts,
+    getBestSellers,
     getBrands
   };
 };

@@ -11,6 +11,8 @@ const brandService = useBrandService();
 
 const featuredProducts = productService.getFeaturedProducts();
 const newArrivals = productService.getNewArrivals();
+const flashSaleProducts = productService.getOnSaleProducts();
+const bestSellerProducts = productService.getBestSellers();
 const homeCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
 
 // Initialize brands with standard defaults from product service mapping for high SSR alignment and zero layout pop
@@ -44,6 +46,26 @@ onMounted(async () => {
 
     <!-- Featured Categories -->
     <HomeFeaturedCategories />
+
+    <!-- Flash Sale -->
+    <HomeProductSection
+      title="Flash Sale"
+      title-highlight="Sale"
+      subtitle="Limited time enterprise hardware deals & promotional prices."
+      view-all-route="/offers"
+      view-all-text="View All Deals"
+      :products="flashSaleProducts"
+    />
+
+    <!-- Best Sellers -->
+    <HomeProductSection
+      title="Best Sellers"
+      title-highlight="Sellers"
+      subtitle="Top performing hardware & enterprise solutions chosen by our clients."
+      view-all-route="/products"
+      view-all-text="Explore All Products"
+      :products="bestSellerProducts"
+    />
 
     <!-- Brand Marquee -->
     <HomeBrandMarquee :brands="brandsList" />
