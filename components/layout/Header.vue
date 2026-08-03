@@ -187,10 +187,6 @@ if (process.client) {
               : 'opacity-0 overflow-hidden max-w-0 -translate-x-4 pointer-events-none'
           )"
         >
-          <NuxtLink to="/products" class="font-bold text-[10px] xl:text-xs uppercase tracking-wider text-primary flex items-center gap-1 group whitespace-nowrap shrink-0">
-            <Grid2X2 class="w-3.5 h-3.5 transition-transform group-hover:rotate-90 duration-500" />
-            Catalog
-          </NuxtLink>
           <div 
             v-for="cat in categories" 
             :key="cat.id" 
@@ -327,10 +323,6 @@ if (process.client) {
             : 'h-12 overflow-visible opacity-100 mt-3 pt-3 border-t border-border/50'
         )"
       >
-        <NuxtLink to="/products" class="font-bold text-[10px] sm:text-[11px] lg:text-xs uppercase tracking-wider text-primary flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-          <Grid2X2 class="w-3.5 h-3.5 transition-transform group-hover:rotate-90 duration-500" />
-          Catalog
-        </NuxtLink>
         <div 
           v-for="cat in categories" 
           :key="cat.id" 
