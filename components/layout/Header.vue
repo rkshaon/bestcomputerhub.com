@@ -118,9 +118,6 @@ const keepMegaMenuOpen = () => {
   if (megaMenuTimer) clearTimeout(megaMenuTimer);
 };
 
-const visibleCategories = computed(() => categories.value.slice(0, 5));
-const moreCategories = computed(() => categories.value.slice(5));
-
 if (process.client) {
   window.addEventListener('scroll', () => {
     isScrolled.value = window.scrollY > 20;
@@ -184,24 +181,20 @@ if (process.client) {
         <!-- Compact Navigation Menu (Visible only when scrolled) -->
         <nav 
           :class="cn(
-            'hidden md:flex items-center gap-1.5 lg:gap-4 transition-all duration-500 ease-in-out h-9 flex-1 justify-center',
+            'hidden md:flex items-center gap-2 lg:gap-3.5 xl:gap-5 transition-all duration-500 ease-in-out h-9 flex-1 justify-center flex-nowrap',
             isScrolled 
-              ? 'opacity-100 overflow-visible max-w-lg lg:max-w-xl translate-x-0 pointer-events-auto' 
+              ? 'opacity-100 overflow-visible translate-x-0 pointer-events-auto' 
               : 'opacity-0 overflow-hidden max-w-0 -translate-x-4 pointer-events-none'
           )"
         >
-          <NuxtLink to="/products" class="font-bold text-[10px] uppercase tracking-widest text-primary flex items-center gap-1.5 group whitespace-nowrap">
+          <NuxtLink to="/products" class="font-bold text-[10px] xl:text-xs uppercase tracking-wider text-primary flex items-center gap-1 group whitespace-nowrap shrink-0">
             <Grid2X2 class="w-3.5 h-3.5 transition-transform group-hover:rotate-90 duration-500" />
             Catalog
           </NuxtLink>
           <div 
-            v-for="(cat, idx) in visibleCategories" 
+            v-for="cat in categories" 
             :key="cat.id" 
-            :class="cn(
-              'group h-full flex items-center',
-              idx >= 2 ? 'hidden lg:flex' : '',
-              idx >= 4 ? 'hidden xl:flex' : ''
-            )"
+            class="group h-full flex items-center shrink-0"
             @mouseenter="openMegaMenu(cat.id)"
             @mouseleave="closeMegaMenu"
             @focusin="openMegaMenu(cat.id)"
@@ -210,14 +203,14 @@ if (process.client) {
             <NuxtLink 
               :to="categoryService.getCategoryUrl(cat, allCategories)" 
               :class="cn(
-                'flex items-center gap-1 font-bold text-[10px] uppercase tracking-[0.1em] transition-colors whitespace-nowrap py-2',
-                activeMegaMenuId === cat.id ? 'text-primary font-black' : 'hover:text-primary'
+                'flex items-center gap-0.5 lg:gap-1 font-bold text-[10px] xl:text-xs uppercase tracking-wider transition-colors whitespace-nowrap py-2 px-1 hover:text-primary',
+                activeMegaMenuId === cat.id ? 'text-primary font-black' : ''
               )"
             >
               {{ cat.name }}
               <ChevronDown 
                 :class="cn(
-                  'w-3 h-3 text-muted-foreground transition-transform duration-300 hidden lg:block',
+                  'w-3 h-3 text-muted-foreground transition-transform duration-300',
                   activeMegaMenuId === cat.id ? 'rotate-180 text-primary' : 'group-hover:rotate-180'
                 )" 
               />
@@ -231,48 +224,6 @@ if (process.client) {
               @keep-open="keepMegaMenuOpen"
               @close="closeMegaMenu"
             />
-          </div>
-
-          <!-- Beautiful Unified "More" Dropdown Menu when scrolled -->
-          <div v-if="moreCategories.length > 0" class="group h-full flex items-center">
-            <button class="flex items-center gap-1 font-bold text-[10px] uppercase tracking-[0.1em] hover:text-primary transition-colors whitespace-nowrap">
-              More
-              <ChevronDown class="w-3 h-3 text-muted-foreground group-hover:rotate-180 transition-transform duration-500" />
-            </button>
-            <div class="absolute top-full left-0 right-0 w-full pt-2 z-50 hidden group-hover:block group-focus-within:block">
-              <div class="absolute -top-3 inset-x-0 h-3 pointer-events-auto"></div>
-              <div class="bg-card/98 backdrop-blur-2xl border border-border/80 shadow-2xl shadow-primary/5 rounded-b-2xl rounded-t-sm p-6 sm:p-8 w-full max-w-7xl mx-auto text-foreground">
-                <div class="flex items-center justify-between pb-4 mb-6 border-b border-border/60">
-                  <h3 class="text-sm font-extrabold font-display uppercase tracking-wider text-foreground">
-                    Additional Technical Categories
-                  </h3>
-                  <NuxtLink to="/products" class="text-xs font-bold text-primary hover:underline">
-                    View Full Storefront Catalog →
-                  </NuxtLink>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-left">
-                  <div v-for="cat in moreCategories" :key="cat.id" class="space-y-3 p-3 rounded-xl hover:bg-muted/30 transition-colors">
-                    <NuxtLink :to="categoryService.getCategoryUrl(cat, allCategories)" class="font-extrabold text-xs uppercase tracking-wider block text-primary hover:opacity-80 transition-opacity">
-                      {{ cat.name }}
-                    </NuxtLink>
-                    <ul class="space-y-1.5">
-                      <template v-if="getSubCategories(cat).length">
-                        <li v-for="subCat in getSubCategories(cat)" :key="subCat.id">
-                          <NuxtLink :to="categoryService.getCategoryUrl(subCat, allCategories)" class="text-xs text-muted-foreground hover:text-foreground font-medium transition-colors block whitespace-nowrap">
-                            {{ subCat.name }}
-                          </NuxtLink>
-                        </li>
-                      </template>
-                      <template v-else>
-                        <li>
-                          <span class="text-xs text-muted-foreground/60 italic font-medium">Enterprise Hardware</span>
-                        </li>
-                      </template>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </nav>
 
@@ -370,20 +321,20 @@ if (process.client) {
       <!-- Collapsible Secondary Row (Visible only when not scrolled) -->
       <nav 
         :class="cn(
-          'hidden md:flex relative items-center gap-6 transition-all duration-500 ease-in-out',
+          'hidden md:flex relative items-center justify-between gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-6 transition-all duration-500 ease-in-out w-full flex-nowrap',
           isScrolled 
             ? 'h-0 overflow-hidden opacity-0 mt-0 pt-0 border-t-0 pointer-events-none' 
-            : 'h-12 overflow-visible opacity-100 mt-4 pt-4 border-t border-border/50'
+            : 'h-12 overflow-visible opacity-100 mt-3 pt-3 border-t border-border/50'
         )"
       >
-        <NuxtLink to="/products" class="font-bold text-[10px] uppercase tracking-widest text-primary flex items-center gap-2 group whitespace-nowrap">
+        <NuxtLink to="/products" class="font-bold text-[10px] sm:text-[11px] lg:text-xs uppercase tracking-wider text-primary flex items-center gap-1.5 shrink-0 whitespace-nowrap">
           <Grid2X2 class="w-3.5 h-3.5 transition-transform group-hover:rotate-90 duration-500" />
           Catalog
         </NuxtLink>
         <div 
-          v-for="cat in visibleCategories" 
+          v-for="cat in categories" 
           :key="cat.id" 
-          class="group h-full flex items-center"
+          class="group h-full flex items-center shrink-0"
           @mouseenter="openMegaMenu(cat.id)"
           @mouseleave="closeMegaMenu"
           @focusin="openMegaMenu(cat.id)"
@@ -392,8 +343,8 @@ if (process.client) {
           <NuxtLink 
             :to="categoryService.getCategoryUrl(cat, allCategories)" 
             :class="cn(
-              'flex items-center gap-1 font-bold text-[10px] uppercase tracking-[0.1em] transition-colors whitespace-nowrap py-2',
-              activeMegaMenuId === cat.id ? 'text-primary font-black' : 'hover:text-primary'
+              'flex items-center gap-0.5 lg:gap-1 font-bold text-[10px] sm:text-[11px] lg:text-xs uppercase tracking-wider transition-colors whitespace-nowrap py-2 px-1 hover:text-primary',
+              activeMegaMenuId === cat.id ? 'text-primary font-black' : ''
             )"
           >
             {{ cat.name }}
@@ -413,48 +364,6 @@ if (process.client) {
             @keep-open="keepMegaMenuOpen"
             @close="closeMegaMenu"
           />
-        </div>
-
-        <!-- Beautiful Unified "More" Dropdown Menu when not scrolled -->
-        <div v-if="moreCategories.length > 0" class="group h-full flex items-center">
-          <button class="flex items-center gap-1 font-bold text-[10px] uppercase tracking-[0.1em] hover:text-primary transition-colors whitespace-nowrap">
-            More
-            <ChevronDown class="w-3 h-3 text-muted-foreground group-hover:rotate-180 transition-transform duration-300" />
-          </button>
-          <div class="absolute top-full left-0 right-0 w-full pt-2 z-50 hidden group-hover:block group-focus-within:block">
-            <div class="absolute -top-3 inset-x-0 h-3 pointer-events-auto"></div>
-            <div class="bg-card/98 backdrop-blur-2xl border border-border/80 shadow-2xl shadow-primary/5 rounded-b-2xl rounded-t-sm p-6 sm:p-8 w-full max-w-7xl mx-auto text-foreground">
-              <div class="flex items-center justify-between pb-4 mb-6 border-b border-border/60">
-                <h3 class="text-sm font-extrabold font-display uppercase tracking-wider text-foreground">
-                  Additional Technical Categories
-                </h3>
-                <NuxtLink to="/products" class="text-xs font-bold text-primary hover:underline">
-                  View Full Storefront Catalog →
-                </NuxtLink>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-left">
-                <div v-for="cat in moreCategories" :key="cat.id" class="space-y-3 p-3 rounded-xl hover:bg-muted/30 transition-colors">
-                  <NuxtLink :to="categoryService.getCategoryUrl(cat, allCategories)" class="font-extrabold text-xs uppercase tracking-wider block text-primary hover:opacity-80 transition-opacity">
-                    {{ cat.name }}
-                  </NuxtLink>
-                  <ul class="space-y-1.5">
-                    <template v-if="getSubCategories(cat).length">
-                      <li v-for="subCat in getSubCategories(cat)" :key="subCat.id">
-                        <NuxtLink :to="categoryService.getCategoryUrl(subCat, allCategories)" class="text-xs text-muted-foreground hover:text-foreground font-medium transition-colors block whitespace-nowrap">
-                          {{ subCat.name }}
-                        </NuxtLink>
-                      </li>
-                    </template>
-                    <template v-else>
-                      <li>
-                        <span class="text-xs text-muted-foreground/60 italic font-medium">Enterprise Hardware</span>
-                      </li>
-                    </template>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </nav>
     </div>
