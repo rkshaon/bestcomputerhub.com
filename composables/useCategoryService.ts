@@ -2,27 +2,10 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
-import type { Category, PaginatedResponse } from '@/types';
+import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse } from '@/types';
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 const rootCategoriesCache = ref<Category[] | null>(null);
-
-export interface CategoryFilters {
-  page?: number;
-  page_size?: number;
-  search?: string;
-  ordering?: string;
-  parent?: string; // parentCategoryId filter
-  is_parent?: boolean; // Return only root-level categories
-}
-
-export type PaginatedCategoriesResponse = PaginatedResponse<Category>;
-
-export interface CategoryImportResponse {
-  success: boolean;
-  created: number;
-  errors: string[];
-}
 
 export const useCategoryService = () => {
   const apiClient = useApiClient();

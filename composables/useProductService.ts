@@ -2,26 +2,10 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { products as initialProducts, categories, brands } from '@/mock/data';
-import type { Product, Category, Brand, PaginatedResponse } from '@/types';
+import type { Product, Category, Brand, PaginatedResponse, ProductFilters } from '@/types';
 import { useRuntimeConfig } from '#app';
 
 const PRODUCTS_STORAGE_KEY = 'techcore_mock_products_registry';
-
-export interface ProductFilters {
-  page?: number;
-  page_size?: number;
-  category?: string | number;
-  query?: string;
-  search?: string;
-  brand?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  sort?: string;
-  ordering?: string;
-  isFeatured?: boolean;
-  isNew?: boolean;
-  onSale?: boolean;
-}
 
 export const useProductService = () => {
   const apiClient = useApiClient();

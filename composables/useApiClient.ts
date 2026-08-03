@@ -3,27 +3,22 @@ import { ref } from 'vue';
 import { useCookie, useRuntimeConfig, navigateTo } from '#app';
 import { useAuthStore } from '@/stores/auth';
 import { toastError } from '@/composables/useToast';
+import type {
+  UserEntity,
+  CustomerProfileEntity,
+  User,
+  Customer,
+  RegisterPayload,
+  RegisterResponse,
+  LoginPayload,
+  LoginResponse,
+  TokenRefreshPayload,
+  TokenRefreshResponse
+} from '@/types';
 
 // Mock DB configuration for local storage persistence
 const USERS_STORAGE_KEY = 'techcore_mock_users2';
 const CUSTOMERS_STORAGE_KEY = 'techcore_mock_customers2';
-
-export interface UserEntity {
-  id: string;
-  full_name: string;
-  email: string;
-  phone?: string;
-  role: 'customer' | 'admin' | 'staff';
-  joinedAt: string;
-}
-
-export interface CustomerProfileEntity {
-  id: string;
-  user_id: string;
-  totalOrders: number;
-  totalSpent: number;
-  status: 'active' | 'inactive' | 'blocked';
-}
 
 const getLocalUsers = (): UserEntity[] => {
   if (typeof window === 'undefined') return [];
@@ -96,59 +91,6 @@ export function create_customer_profile(userEntity: UserEntity): CustomerProfile
   customers.push(newCustomerProfile);
   saveLocalCustomers(customers);
   return newCustomerProfile;
-}
-
-// Reusable typed models/interfaces
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  phone?: string;
-  role: 'customer' | 'admin' | 'staff';
-  joinedAt: string;
-}
-
-export interface Customer extends User {
-  totalOrders: number;
-  totalSpent: number;
-  lastOrderDate?: string;
-  status: 'active' | 'inactive' | 'blocked';
-}
-
-export interface RegisterPayload {
-  name?: string;
-  full_name?: string;
-  email: string;
-  password?: string;
-  confirm_password?: string;
-  phone?: string;
-}
-
-export interface RegisterResponse {
-  customer: Customer;
-  message?: string;
-}
-
-export interface LoginPayload {
-  credential?: string;
-  email?: string;
-  password?: string;
-}
-
-export interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
-
-export interface TokenRefreshPayload {
-  refreshToken: string;
-}
-
-export interface TokenRefreshResponse {
-  accessToken: string;
-  refreshToken?: string;
 }
 
 // Shared token refresh promise to prevent duplicate concurrent refresh requests
