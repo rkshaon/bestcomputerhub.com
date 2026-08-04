@@ -8,8 +8,8 @@ defineProps<{
 </script>
 
 <template>
-  <section class="w-full bg-muted/20 border-y py-8">
-    <div class="container mx-auto px-4 overflow-hidden group">
+  <section class="container mx-auto px-4">
+    <div class="w-full bg-muted/20 border border-border/60 rounded-2xl py-6 overflow-hidden group shadow-xs">
       <div class="flex whitespace-nowrap animate-marquee">
         <!-- Double the content for seamless looping -->
         <div v-for="i in 2" :key="i" class="flex items-center space-x-16 px-4 select-none">
