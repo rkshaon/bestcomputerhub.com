@@ -1,14 +1,28 @@
 <!-- File: /components/home/FeaturedCategories.vue -->
 <script setup lang="ts">
-import { ChevronRight, ArrowUpRight } from 'lucide-vue-next';
+import { 
+  ChevronRight, 
+  Cpu, 
+  Server, 
+  HardDrive, 
+  Layers, 
+  CircuitBoard, 
+  Database, 
+  Monitor, 
+  ShieldCheck, 
+  Zap,
+  Box,
+  Terminal
+} from 'lucide-vue-next';
+import type { Component } from 'vue';
 
 export interface FeaturedCategory {
   id: string;
   name: string;
   slug: string;
   route: string;
-  description: string;
-  image: string;
+  description?: string;
+  image?: string;
   itemCount?: number;
 }
 
@@ -23,62 +37,99 @@ const MOCK_FEATURED_CATEGORIES: FeaturedCategory[] = [
     name: 'Graphics Processors',
     slug: 'gpus',
     route: '/product-category/gpus/',
-    description: 'AI acceleration, deep learning & high-end rendering GPUs.',
-    image: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80',
-    itemCount: 42,
   },
   {
     id: 'cat_cpu',
     name: 'Processors & CPUs',
     slug: 'processors',
     route: '/product-category/processors/',
-    description: 'Server & workstation multi-core central processing units.',
-    image: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&h=600&fit=crop&q=80',
-    itemCount: 38,
   },
   {
     id: 'cat_server',
     name: 'Enterprise Servers',
     slug: 'servers',
     route: '/product-category/servers/',
-    description: 'High-density rackmount nodes & blade compute enclosures.',
-    image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=600&fit=crop&q=80',
-    itemCount: 24,
   },
   {
-    id: 'cat_motherboard',
+    id: 'cat_nvidia',
     name: 'NVIDIA RTX Workstations',
     slug: 'nvidia-rtx',
     route: '/product-category/nvidia-rtx/',
-    description: 'Enterprise workstation nodes powered by NVIDIA architecture.',
-    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&h=600&fit=crop&q=80',
-    itemCount: 31,
   },
   {
-    id: 'cat_memory',
+    id: 'cat_amd',
     name: 'Radeon Accelerators',
     slug: 'amd-radeon',
     route: '/product-category/amd-radeon/',
-    description: 'High-throughput compute & rendering hardware from AMD.',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&h=600&fit=crop&q=80',
-    itemCount: 29,
   },
   {
     id: 'cat_datacenter',
     name: 'Data Center Compute',
     slug: 'datacenter-accelerators',
     route: '/product-category/datacenter-accelerators/',
-    description: 'AI clusters, FPGA modules & datacenter accelerators.',
-    image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&h=600&fit=crop&q=80',
-    itemCount: 19,
+  },
+  {
+    id: 'cat_memory',
+    name: 'Memory & RAM',
+    slug: 'memory',
+    route: '/product-category/memory/',
+  },
+  {
+    id: 'cat_storage',
+    name: 'Enterprise Storage & SSDs',
+    slug: 'storage',
+    route: '/product-category/storage/',
+  },
+  {
+    id: 'cat_motherboard',
+    name: 'Motherboards & Chassis',
+    slug: 'motherboards',
+    route: '/product-category/motherboards/',
+  },
+  {
+    id: 'cat_cooling',
+    name: 'Liquid Cooling & Fans',
+    slug: 'cooling',
+    route: '/product-category/cooling/',
+  },
+  {
+    id: 'cat_power',
+    name: 'Power Supply Units (PSU)',
+    slug: 'power-supplies',
+    route: '/product-category/power-supplies/',
+  },
+  {
+    id: 'cat_networking',
+    name: 'Networking & Switches',
+    slug: 'networking',
+    route: '/product-category/networking/',
   },
 ];
+
+// Centralized icon mapping resolver based on category slug or name
+const getCategoryIcon = (slug: string, name: string): Component => {
+  const s = slug.toLowerCase();
+  const n = name.toLowerCase();
+
+  if (s.includes('gpu') || n.includes('graphic')) return Monitor;
+  if (s.includes('processor') || s.includes('cpu') || n.includes('processor')) return Cpu;
+  if (s.includes('server') || n.includes('server')) return Server;
+  if (s.includes('memory') || s.includes('ram')) return Layers;
+  if (s.includes('storage') || s.includes('ssd') || s.includes('drive')) return HardDrive;
+  if (s.includes('motherboard') || s.includes('chassis')) return CircuitBoard;
+  if (s.includes('datacenter') || s.includes('accelerator')) return Database;
+  if (s.includes('cooling') || s.includes('fan')) return Zap;
+  if (s.includes('power') || s.includes('psu')) return ShieldCheck;
+  if (s.includes('network') || s.includes('switch')) return Terminal;
+
+  return Box; // Fallback icon
+};
 </script>
 
 <template>
   <section class="container mx-auto px-4" aria-labelledby="featured-categories-heading">
     <!-- Header Row -->
-    <div class="flex items-end justify-between mb-8 pb-4 border-b border-border/40">
+    <div class="flex items-end justify-between mb-6 pb-4 border-b border-border/40">
       <div>
         <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary mb-1">
           <span>Explore Infrastructure</span>
@@ -97,48 +148,25 @@ const MOCK_FEATURED_CATEGORIES: FeaturedCategory[] = [
       </NuxtLink>
     </div>
 
-    <!-- Category Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Category Grid - Compact Icon Tiles -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
       <NuxtLink
         v-for="cat in MOCK_FEATURED_CATEGORIES"
         :key="cat.id"
         :to="cat.route"
-        class="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-card border border-border/60 hover:border-primary/50 shadow-sm hover:shadow-xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary h-64"
+        class="group relative flex flex-col items-center justify-center text-center p-4 rounded-xl bg-card border border-border/60 hover:border-primary/60 hover:bg-muted/30 shadow-xs hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary h-32 sm:h-36"
       >
-        <!-- Background Image with Overlay -->
-        <div class="absolute inset-0 z-0 bg-muted overflow-hidden">
-          <img 
-            :src="cat.image" 
-            :alt="`${cat.name} category illustration`"
-            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 dark:opacity-80"
-            loading="lazy"
-          />
-          <div class="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-10"></div>
+        <!-- Icon Container -->
+        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200 shadow-xs">
+          <component :is="getCategoryIcon(cat.slug, cat.name)" class="w-6 h-6" aria-hidden="true" />
         </div>
 
-        <!-- Top Badge / Action Icon -->
-        <div class="relative z-20 p-5 flex items-center justify-between">
-          <span 
-            v-if="cat.itemCount" 
-            class="text-[10px] font-bold uppercase tracking-wider bg-background/80 backdrop-blur-md text-foreground/80 px-2.5 py-1 rounded-full border border-border/40 shadow-xs"
-          >
-            {{ cat.itemCount }} Products
-          </span>
-          <div class="w-8 h-8 rounded-full bg-background/80 backdrop-blur-md border border-border/40 text-foreground flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all duration-300 ml-auto shadow-xs">
-            <ArrowUpRight class="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
-          </div>
-        </div>
-
-        <!-- Bottom Content Area -->
-        <div class="relative z-20 p-5 space-y-1">
-          <h3 class="text-xl font-bold font-display text-foreground group-hover:text-primary transition-colors leading-snug">
-            {{ cat.name }}
-          </h3>
-          <p class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {{ cat.description }}
-          </p>
-        </div>
+        <!-- Category Name -->
+        <h3 class="text-xs sm:text-[13px] font-semibold text-foreground/90 group-hover:text-primary transition-colors line-clamp-2 leading-tight px-1">
+          {{ cat.name }}
+        </h3>
       </NuxtLink>
     </div>
   </section>
 </template>
+
