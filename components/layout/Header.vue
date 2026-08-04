@@ -171,22 +171,22 @@ if (process.client) {
 
     <div class="container mx-auto px-4 relative py-3">
       <!-- Main Row -->
-      <div class="flex items-center justify-between gap-4 lg:gap-6 group/mainheader">
+      <div class="flex items-center justify-between gap-4 md:gap-6 lg:gap-8 group/mainheader">
         <!-- Logo -->
         <NuxtLink 
           to="/" 
           class="flex items-center shrink-0 group"
           aria-label="Best Computer Hub Home"
         >
-          <UiBrandLogo size="md" :show-text="false" />
+          <UiBrandLogo size="lg" :show-text="false" />
         </NuxtLink>
 
         <!-- Search Bar -->
-        <div class="hidden md:flex relative group shrink-0 flex-1 max-w-xl lg:max-w-2xl mx-4 lg:mx-12">
+        <div class="hidden md:flex relative group flex-1 min-w-0">
           <input 
             type="text" 
             placeholder="Search items..." 
-            class="w-full bg-muted/50 border-input border rounded-full focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none h-11 text-sm px-12"
+            class="w-full bg-muted/50 border-input border rounded-full focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none h-11 text-sm px-12 transition-colors"
             @keyup.enter="navigateTo(`/products?q=${($event.target as HTMLInputElement).value}`)"
           />
           <Search class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary w-5 h-5" />
