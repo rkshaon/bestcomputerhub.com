@@ -1,6 +1,9 @@
 <!-- File: /components/layout/HeaderUtilityBar.vue -->
 <script setup lang="ts">
-import { Tag, Sparkles, Store, BookOpen, Construction } from 'lucide-vue-next';
+import { Tag, Sparkles, Store, BookOpen, Construction, User, PackageSearch } from 'lucide-vue-next';
+import { useAuthStore } from '@/stores/auth';
+
+const authStore = useAuthStore();
 </script>
 
 <template>
@@ -20,7 +23,26 @@ import { Tag, Sparkles, Store, BookOpen, Construction } from 'lucide-vue-next';
       </div>
 
       <!-- Right side: Quick Shortcuts -->
-      <div class="flex items-center gap-4 md:gap-6 shrink-0">
+      <div class="flex items-center gap-3.5 md:gap-5 shrink-0">
+        <!-- 1. Login / Sign Up or Account -->
+        <NuxtLink 
+          :to="authStore.isLoggedIn ? '/account' : '/login'" 
+          class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
+        >
+          <User class="w-3 h-3 text-primary shrink-0" aria-hidden="true" />
+          <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Login / Sign Up' }}</span>
+        </NuxtLink>
+
+        <!-- 2. Track Your Order -->
+        <NuxtLink 
+          to="/account" 
+          class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
+        >
+          <PackageSearch class="w-3 h-3 text-primary shrink-0" aria-hidden="true" />
+          <span>Track Your Order</span>
+        </NuxtLink>
+
+        <!-- 3. Offers -->
         <NuxtLink 
           to="/offers" 
           class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm group"
@@ -30,6 +52,7 @@ import { Tag, Sparkles, Store, BookOpen, Construction } from 'lucide-vue-next';
           <span class="bg-destructive/10 text-destructive text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Hot</span>
         </NuxtLink>
 
+        <!-- 4. Insights -->
         <NuxtLink 
           to="/blog" 
           class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
@@ -38,6 +61,7 @@ import { Tag, Sparkles, Store, BookOpen, Construction } from 'lucide-vue-next';
           <span>Insights</span>
         </NuxtLink>
 
+        <!-- 5. New Arrivals -->
         <NuxtLink 
           to="/new-arrivals" 
           class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
@@ -46,6 +70,7 @@ import { Tag, Sparkles, Store, BookOpen, Construction } from 'lucide-vue-next';
           <span>New Arrivals</span>
         </NuxtLink>
 
+        <!-- 6. Store -->
         <NuxtLink 
           to="/products" 
           class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"

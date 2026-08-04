@@ -1,13 +1,14 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { ShoppingCart, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home } from 'lucide-vue-next';
+import { ShoppingBag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
 import { useAuthStore } from '@/stores/auth';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
+import { useToast } from '@/composables/useToast';
 import type { Category } from '@/types';
 import HeaderMegaMenu from '@/components/layout/HeaderMegaMenu.vue';
 import HeaderUtilityBar from '@/components/layout/HeaderUtilityBar.vue';
@@ -17,7 +18,14 @@ const cartStore = useCartStore();
 const authStore = useAuthStore();
 const productService = useProductService();
 const categoryService = useCategoryService();
+const { toastInfo } = useToast();
 const route = useRoute();
+
+const handleCompareClick = () => {
+  toastInfo('Product comparison coming soon!', {
+    description: 'Select products on catalog pages to compare specifications.'
+  });
+};
 
 const isSuperAdmin = computed(() => {
   if (!authStore.isLoggedIn || !authStore.user) return false;
@@ -261,18 +269,41 @@ if (process.client) {
             <ShieldCheck class="w-5 h-5" />
           </NuxtLink>
 
-          <NuxtLink :to="authStore.isLoggedIn ? '/account' : '/login'" class="p-1 hover:bg-accent rounded-full transition-colors text-muted-foreground hover:text-foreground">
-            <div v-if="authStore.isLoggedIn && authStore.user" class="w-8 h-8 rounded-full overflow-hidden border border-border">
-              <img :src="authStore.user.avatar" :alt="authStore.user.name" class="w-full h-full object-cover" />
-            </div>
-            <div v-else class="p-1">
-              <User class="w-4 h-4 sm:w-5 h-5" />
-            </div>
+          <!-- PC Builder -->
+          <NuxtLink 
+            to="/products"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            title="PC Builder"
+            aria-label="PC Builder"
+          >
+            <Cpu class="w-4 h-4 text-primary shrink-0" />
+            <span>PC Builder</span>
           </NuxtLink>
 
-          <button @click="uiStore.toggleCart()" class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground">
-            <ShoppingCart class="w-4 h-4 sm:w-5 h-5" />
-            <span v-if="cartStore.totalItems > 0" class="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+          <!-- Compare -->
+          <button 
+            @click="handleCompareClick"
+            type="button"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0 cursor-pointer"
+            title="Compare products"
+            aria-label="Compare products"
+          >
+            <ArrowLeftRight class="w-4 h-4 text-primary shrink-0" />
+            <span>Compare</span>
+          </button>
+
+          <!-- Bag (Cart) -->
+          <button 
+            @click="uiStore.toggleCart()" 
+            class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground shrink-0"
+            title="Shopping Bag"
+            aria-label="Shopping Bag"
+          >
+            <ShoppingBag class="w-5 h-5" />
+            <span 
+              v-if="cartStore.totalItems > 0" 
+              class="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
+            >
               {{ cartStore.totalItems }}
             </span>
           </button>
@@ -404,6 +435,30 @@ if (process.client) {
 
         <!-- Secondary Support / Corporate Links -->
         <div class="space-y-3 pt-4 border-t border-border/50">
+          <NuxtLink 
+            :to="authStore.isLoggedIn ? '/account' : '/login'" 
+            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
+            @click="uiStore.closeMobileMenu()"
+          >
+            <User class="w-4 h-4 text-primary" />
+            <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Login / Sign Up' }}</span>
+          </NuxtLink>
+          <NuxtLink 
+            to="/products" 
+            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
+            @click="uiStore.closeMobileMenu()"
+          >
+            <Cpu class="w-4 h-4 text-primary" />
+            <span>PC Builder</span>
+          </NuxtLink>
+          <button 
+            @click="handleCompareClick(); uiStore.closeMobileMenu()" 
+            type="button"
+            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors w-full text-left cursor-pointer"
+          >
+            <ArrowLeftRight class="w-4 h-4 text-primary" />
+            <span>Compare</span>
+          </button>
           <NuxtLink 
             to="/offers" 
             class="font-bold text-xs uppercase tracking-widest text-destructive block hover:translate-x-1 transition-transform"
