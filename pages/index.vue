@@ -10,7 +10,6 @@ const productService = useProductService();
 const brandService = useBrandService();
 
 const featuredProducts = productService.getFeaturedProducts();
-const newArrivals = productService.getNewArrivals();
 const flashSaleProducts = productService.getOnSaleProducts();
 const bestSellerProducts = productService.getBestSellers();
 
@@ -79,12 +78,5 @@ onMounted(async () => {
 
     <!-- Special Promo Banner -->
     <HomePromoBanner />
-
-    <!-- New Arrivals -->
-    <HomeProductSection
-      title="Fresh in Stock"
-      title-highlight="Stock"
-      :products="newArrivals"
-    />
   </div>
 </template>
