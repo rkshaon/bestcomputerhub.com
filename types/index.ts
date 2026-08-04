@@ -9,3 +9,4 @@ export * from './cart';
 export * from './order';
 export * from './admin';
 export * from './blog';
+export * from './hero';

@@ -1,132 +1,195 @@
 <!-- File: /components/home/HeroSection.vue -->
 <script setup lang="ts">
-import { Trophy, ChevronRight, Server, Cpu, ArrowUpRight } from 'lucide-vue-next';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-vue-next';
+import { useIntervalFn, useSwipe, usePreferredReducedMotion } from '@vueuse/core';
+import { HERO_SLIDES } from '@/data/heroSlides';
+import type { HeroSlideData } from '@/types/hero';
+import HeroSlide from './HeroSlide.vue';
+import { cn } from '@/utils';
+
+const slides = HERO_SLIDES;
+const currentIndex = ref(0);
+const direction = ref<'next' | 'prev'>('next');
+const isPaused = ref(false);
+const sliderRef = ref<HTMLElement | null>(null);
+
+const prefersReducedMotion = usePreferredReducedMotion();
+
+const currentSlide = computed<HeroSlideData>(() => slides[currentIndex.value] ?? slides[0]!);
+
+// Navigation methods
+const nextSlide = () => {
+  direction.value = 'next';
+  currentIndex.value = (currentIndex.value + 1) % slides.length;
+};
+
+const prevSlide = () => {
+  direction.value = 'prev';
+  currentIndex.value = (currentIndex.value - 1 + slides.length) % slides.length;
+};
+
+const goToSlide = (index: number) => {
+  if (index === currentIndex.value) return;
+  direction.value = index > currentIndex.value ? 'next' : 'prev';
+  currentIndex.value = index;
+};
+
+// Autoplay interval (6 seconds)
+const { pause: stopAutoplay, resume: startAutoplay } = useIntervalFn(() => {
+  if (!isPaused.value && prefersReducedMotion.value !== 'reduce') {
+    nextSlide();
+  }
+}, 6000);
+
+// Mouse hover pause handlers
+const handleMouseEnter = () => {
+  isPaused.value = true;
+};
+
+const handleMouseLeave = () => {
+  isPaused.value = false;
+};
+
+// Touch / Swipe support
+const { isSwiping, direction: swipeDirection } = useSwipe(sliderRef, {
+  onSwipeEnd() {
+    if (swipeDirection.value === 'left') {
+      nextSlide();
+    } else if (swipeDirection.value === 'right') {
+      prevSlide();
+    }
+  }
+});
+
+// Keyboard navigation when focused
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.key === 'ArrowLeft') {
+    prevSlide();
+  } else if (event.key === 'ArrowRight') {
+    nextSlide();
+  }
+};
 </script>
 
 <template>
-  <section class="container mx-auto px-4 pt-2">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-[540px]">
-      
-      <!-- Left: Primary Hero (approx 2/3 width on desktop) -->
-      <div class="lg:col-span-8 relative rounded-3xl overflow-hidden bg-black text-white flex items-center p-8 md:p-12 shadow-xl group">
-        <div class="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?auto=format&fit=crop&q=80&w=2000" 
-            alt="Tech hardware hero banner"
-            class="w-full h-full object-cover opacity-45 mix-blend-overlay group-hover:scale-105 transition-transform duration-700"
+  <section 
+    class="container mx-auto px-4 pt-2"
+    role="region"
+    aria-roledescription="carousel"
+    aria-label="Promotional Hero Slider"
+    aria-live="polite"
+  >
+    <div 
+      ref="sliderRef"
+      class="relative group/slider rounded-3xl"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+      @focusin="handleMouseEnter"
+      @focusout="handleMouseLeave"
+      @keydown="handleKeyDown"
+      tabindex="0"
+    >
+      <!-- Slide Container with fixed height matching slide compositions -->
+      <div class="relative overflow-hidden rounded-3xl min-h-[540px]">
+        <Transition :name="prefersReducedMotion === 'reduce' ? 'fade' : `slide-${direction}`">
+          <HeroSlide 
+            :key="currentSlide.id"
+            :slide="currentSlide"
+            :is-first-slide="currentIndex === 0"
           />
-          <div class="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent"></div>
-        </div>
-        
-        <div class="relative z-10 max-w-xl space-y-6">
-          <div class="inline-flex items-center gap-2 bg-primary/15 text-primary px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase border border-primary/20 animate-fade-in">
-            <Trophy class="w-3.5 h-3.5" />
-            <span>#1 Tech Retailer 2026</span>
-          </div>
-          
-          <h1 class="text-4xl sm:text-5xl md:text-6xl font-display font-extrabold tracking-tight leading-[1.05] text-white">
-            The Future of <span class="text-primary italic">Hardware</span>
-          </h1>
-          
-          <p class="text-base sm:text-lg text-white/80 leading-relaxed font-normal max-w-lg">
-            Elevate your digital workflow with exclusive access to top-tier components, enterprise servers, and precision engineering.
-          </p>
-          
-          <div class="flex flex-wrap items-center gap-3 pt-2">
-            <UiButton size="lg" class="rounded-full gap-2 px-7 font-semibold" to="/products">
-              Explore Catalog <ChevronRight class="w-4 h-4" />
-            </UiButton>
-            <UiButton variant="outline" size="lg" class="rounded-full text-white border-white/25 hover:bg-white/15 backdrop-blur-sm font-semibold" to="/offers">
-              View Special Offers
-            </UiButton>
-          </div>
-        </div>
+        </Transition>
       </div>
 
-      <!-- Right: Two Stacked Promotional Banners (approx 1/3 width on desktop) -->
-      <div class="lg:col-span-4 flex flex-col gap-4 h-full">
-        
-        <!-- Secondary Banner 1 -->
-        <NuxtLink 
-          to="/products"
-          class="flex-1 relative rounded-2xl overflow-hidden bg-card border border-border/60 p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300 min-h-[220px]"
+      <!-- Navigation Arrows (Subtle overlay controls) -->
+      <button 
+        @click="prevSlide" 
+        class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-background/60 dark:bg-black/50 hover:bg-background/90 dark:hover:bg-black/80 backdrop-blur-md text-foreground border border-border/50 flex items-center justify-center transition-all duration-200 shadow-md opacity-80 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        aria-label="Previous slide"
+      >
+        <ChevronLeft class="w-5 h-5" />
+      </button>
+
+      <button 
+        @click="nextSlide" 
+        class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-background/60 dark:bg-black/50 hover:bg-background/90 dark:hover:bg-black/80 backdrop-blur-md text-foreground border border-border/50 flex items-center justify-center transition-all duration-200 shadow-md opacity-80 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        aria-label="Next slide"
+      >
+        <ChevronRight class="w-5 h-5" />
+      </button>
+
+      <!-- Bottom Controls: Indicators + Pause Status -->
+      <div class="absolute bottom-4 left-6 md:left-12 z-20 flex items-center gap-3">
+        <!-- Slide Indicators -->
+        <div class="flex items-center gap-2 bg-black/40 dark:bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-sm">
+          <button 
+            v-for="(slide, index) in slides" 
+            :key="slide.id" 
+            @click="goToSlide(index)" 
+            :class="cn(
+              'h-2 rounded-full transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+              currentIndex === index 
+                ? 'w-7 bg-primary shadow-sm' 
+                : 'w-2 bg-white/40 hover:bg-white/70'
+            )" 
+            :aria-label="`Go to slide ${index + 1}: ${slide.primary.titlePrefix}${slide.primary.titleHighlight}`"
+            :aria-current="currentIndex === index ? 'true' : undefined" 
+          />
+        </div>
+
+        <!-- Pause Indicator badge (subtle feedback when hovering) -->
+        <span 
+          v-if="isPaused" 
+          class="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-white/80 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 animate-fade-in"
         >
-          <div class="absolute inset-0 z-0">
-            <img 
-              src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=1000" 
-              alt="Advanced Server Architecture"
-              class="w-full h-full object-cover opacity-25 group-hover:scale-105 transition-transform duration-500"
-            />
-            <div class="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
-          </div>
-
-          <div class="relative z-10 flex items-start justify-between">
-            <span class="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-              <Server class="w-3 h-3" />
-              Enterprise Solution
-            </span>
-            <div class="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors">
-              <ArrowUpRight class="w-4 h-4" />
-            </div>
-          </div>
-
-          <div class="relative z-10 space-y-1.5 pt-4">
-            <h3 class="text-xl font-display font-bold text-foreground group-hover:text-primary transition-colors">
-              Advanced Server Architecture
-            </h3>
-            <p class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-              Custom-configured enterprise server racks & high-density compute solutions for scale.
-            </p>
-          </div>
-        </NuxtLink>
-
-        <!-- Secondary Banner 2 -->
-        <NuxtLink 
-          to="/offers"
-          class="flex-1 relative rounded-2xl overflow-hidden bg-card border border-border/60 p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300 min-h-[220px]"
-        >
-          <div class="absolute inset-0 z-0">
-            <img 
-              src="https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&q=80&w=1000" 
-              alt="Workstation Customization"
-              class="w-full h-full object-cover opacity-25 group-hover:scale-105 transition-transform duration-500"
-            />
-            <div class="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
-          </div>
-
-          <div class="relative z-10 flex items-start justify-between">
-            <span class="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-              <Cpu class="w-3 h-3" />
-              Featured Rig
-            </span>
-            <div class="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors">
-              <ArrowUpRight class="w-4 h-4" />
-            </div>
-          </div>
-
-          <div class="relative z-10 space-y-1.5 pt-4">
-            <h3 class="text-xl font-display font-bold text-foreground group-hover:text-primary transition-colors">
-              Workstation Customization
-            </h3>
-            <p class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-              Tailored multi-GPU rigs and precision liquid cooling built for professional creators.
-            </p>
-          </div>
-        </NuxtLink>
-
+          <Pause class="w-3 h-3 text-primary" />
+          <span>Paused</span>
+        </span>
       </div>
-
     </div>
   </section>
 </template>
 
 <style scoped>
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Slide animations */
+.slide-next-enter-active,
+.slide-next-leave-active,
+.slide-prev-enter-active,
+.slide-prev-leave-active {
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
 }
-.animate-fade-in {
-  animation: fade-in 0.8s ease forwards;
+
+.slide-next-enter-from {
+  transform: translateX(100%);
+  opacity: 0.8;
+}
+
+.slide-next-leave-to {
+  transform: translateX(-100%);
+  opacity: 0.8;
+}
+
+.slide-prev-enter-from {
+  transform: translateX(-100%);
+  opacity: 0.8;
+}
+
+.slide-prev-leave-to {
+  transform: translateX(100%);
+  opacity: 0.8;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
-
