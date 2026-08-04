@@ -1,6 +1,6 @@
 <!-- File: /components/layout/HeaderCategorySubmenu.vue -->
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { ChevronRight } from 'lucide-vue-next';
 import type { Category } from '@/types';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -18,12 +18,14 @@ const props = withDefaults(
     isOpen?: boolean;
     alignRight?: boolean;
     flyoutLeft?: boolean;
+    customStyle?: Record<string, any>;
   }>(),
   {
     level: 1,
     isOpen: true,
     alignRight: false,
-    flyoutLeft: false
+    flyoutLeft: false,
+    customStyle: () => ({})
   }
 );
 
@@ -36,9 +38,29 @@ const categoryService = useCategoryService();
 
 // State for active / hovered item at THIS level
 const activeItemId = ref<string | null>(null);
+const activeItemTop = ref<number>(0);
 const flyoutLeftMap = ref<Record<string, boolean>>({});
 
+const panelRef = ref<HTMLElement | null>(null);
+const outerCardRef = ref<HTMLElement | null>(null);
+const scrollContainerRef = ref<HTMLElement | null>(null);
+const itemRefs = new Map<string, HTMLElement>();
+
+const maxScrollHeight = ref<number | null>(null);
 let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+
+const setItemRef = (id: string, el: any) => {
+  if (el) {
+    itemRefs.set(id, (el as any).$el || el);
+  } else {
+    itemRefs.delete(id);
+  }
+};
+
+const activeItem = computed(() => {
+  if (!activeItemId.value) return null;
+  return props.items.find(i => i.id === activeItemId.value) || null;
+});
 
 // Helper to resolve child categories
 const getSubCategories = (cat: Category): Category[] => {
@@ -77,6 +99,45 @@ const checkFlyoutDirection = (el: HTMLElement): boolean => {
   return false; // Flyout to the RIGHT
 };
 
+const updateMaxScrollHeight = () => {
+  if (typeof window === 'undefined') return;
+  const el = outerCardRef.value || panelRef.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const topPos = rect.top;
+  const bottomMargin = 16;
+  
+  const available = window.innerHeight - topPos - bottomMargin;
+  const minHeight = 120;
+  
+  if (available > 0) {
+    maxScrollHeight.value = Math.max(minHeight, Math.floor(available));
+  }
+};
+
+const updateActiveItemTop = () => {
+  if (!activeItemId.value || !outerCardRef.value) return;
+  const itemEl = itemRefs.get(activeItemId.value);
+  if (!itemEl) return;
+
+  const cardRect = outerCardRef.value.getBoundingClientRect();
+  const itemRect = itemEl.getBoundingClientRect();
+
+  // If item has scrolled off top or bottom of container
+  if (itemRect.bottom < cardRect.top || itemRect.top > cardRect.bottom) {
+    activeItemId.value = null;
+    return;
+  }
+
+  activeItemTop.value = Math.max(0, itemRect.top - cardRect.top);
+};
+
+const handleScroll = () => {
+  updateActiveItemTop();
+  updateMaxScrollHeight();
+};
+
 const handleItemHover = (item: Category, event?: MouseEvent | FocusEvent) => {
   if (hoverTimer) clearTimeout(hoverTimer);
   emit('keepOpen');
@@ -89,6 +150,9 @@ const handleItemHover = (item: Category, event?: MouseEvent | FocusEvent) => {
       const isLeft = checkFlyoutDirection(event.currentTarget as HTMLElement);
       flyoutLeftMap.value[item.id] = isLeft;
     }
+    nextTick(() => {
+      updateActiveItemTop();
+    });
   } else {
     activeItemId.value = null;
   }
@@ -119,20 +183,51 @@ const handleLinkClick = () => {
   emit('close');
 };
 
+const handleWindowResizeOrScroll = () => {
+  updateMaxScrollHeight();
+  updateActiveItemTop();
+};
+
+onMounted(() => {
+  nextTick(() => {
+    updateMaxScrollHeight();
+  });
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', handleWindowResizeOrScroll, { passive: true });
+    window.addEventListener('scroll', handleWindowResizeOrScroll, { passive: true });
+  }
+});
+
 onUnmounted(() => {
   if (hoverTimer) clearTimeout(hoverTimer);
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', handleWindowResizeOrScroll);
+    window.removeEventListener('scroll', handleWindowResizeOrScroll);
+  }
+});
+
+watch(() => props.isOpen, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      updateMaxScrollHeight();
+    });
+  } else {
+    activeItemId.value = null;
+  }
 });
 </script>
 
 <template>
   <div
+    ref="panelRef"
     v-if="isOpen && items.length > 0"
     :class="cn(
       'absolute z-50 transition-all duration-150 origin-top pointer-events-auto',
       level === 1 
         ? (alignRight ? 'top-full right-0 pt-1.5' : 'top-full left-0 pt-1.5')
-        : (flyoutLeft ? 'top-0 right-full pr-1.5' : 'top-0 left-full pl-1.5')
+        : (flyoutLeft ? 'right-full pr-1.5' : 'left-full pl-1.5')
     )"
+    :style="customStyle"
     @mouseenter="handlePanelMouseEnter"
     @mouseleave="handlePanelMouseLeave"
   >
@@ -151,50 +246,60 @@ onUnmounted(() => {
 
     <!-- Submenu Card Panel -->
     <div
-      class="bg-card border border-border shadow-2xl rounded-xl p-1.5 min-w-[200px] max-w-[260px] text-card-foreground relative overflow-visible"
+      ref="outerCardRef"
+      class="bg-card border border-border shadow-2xl rounded-xl text-card-foreground relative overflow-visible min-w-[200px] max-w-[260px]"
     >
-      <ul class="space-y-0.5">
-        <li 
-          v-for="item in items" 
-          :key="item.id" 
-          class="relative group/item"
-          @mouseenter="handleItemHover(item, $event)"
-          @mouseleave="handleItemLeave"
-        >
-          <NuxtLink
-            :to="categoryService.getCategoryUrl(item, allCategories)"
-            :class="cn(
-              'flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors select-none cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary',
-              activeItemId === item.id 
-                ? 'bg-primary/10 text-primary font-bold' 
-                : 'text-foreground/85 hover:bg-muted/70 hover:text-foreground'
-            )"
-            @focus="handleItemHover(item, $event)"
-            @click="handleLinkClick"
+      <div
+        ref="scrollContainerRef"
+        class="p-1.5 overflow-y-auto custom-submenu-scrollbar"
+        :style="{ maxHeight: maxScrollHeight ? `${maxScrollHeight}px` : undefined }"
+        @scroll="handleScroll"
+      >
+        <ul class="space-y-0.5">
+          <li 
+            v-for="item in items" 
+            :key="item.id" 
+            :ref="el => setItemRef(item.id, el)"
+            class="relative group/item"
+            @mouseenter="handleItemHover(item, $event)"
+            @mouseleave="handleItemLeave"
           >
-            <span class="truncate">{{ item.name }}</span>
-            <ChevronRight 
-              v-if="getSubCategories(item).length > 0"
+            <NuxtLink
+              :to="categoryService.getCategoryUrl(item, allCategories)"
               :class="cn(
-                'w-3.5 h-3.5 transition-transform duration-150 shrink-0 ml-2',
-                activeItemId === item.id ? 'text-primary translate-x-0.5' : 'text-muted-foreground/60 group-hover/item:translate-x-0.5 group-hover/item:text-foreground'
+                'flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors select-none cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary',
+                activeItemId === item.id 
+                  ? 'bg-primary/10 text-primary font-bold' 
+                  : 'text-foreground/85 hover:bg-muted/70 hover:text-foreground'
               )"
-            />
-          </NuxtLink>
+              @focus="handleItemHover(item, $event)"
+              @click="handleLinkClick"
+            >
+              <span class="truncate">{{ item.name }}</span>
+              <ChevronRight 
+                v-if="getSubCategories(item).length > 0"
+                :class="cn(
+                  'w-3.5 h-3.5 transition-transform duration-150 shrink-0 ml-2',
+                  activeItemId === item.id ? 'text-primary translate-x-0.5' : 'text-muted-foreground/60 group-hover/item:translate-x-0.5 group-hover/item:text-foreground'
+                )"
+              />
+            </NuxtLink>
+          </li>
+        </ul>
+      </div>
 
-          <!-- Recursive Child Flyout Panel -->
-          <HeaderCategorySubmenu
-            v-if="getSubCategories(item).length > 0 && activeItemId === item.id"
-            :items="getSubCategories(item)"
-            :all-categories="allCategories"
-            :level="level + 1"
-            :is-open="activeItemId === item.id"
-            :flyout-left="flyoutLeftMap[item.id] || false"
-            @keep-open="handlePanelMouseEnter"
-            @close="handleLinkClick"
-          />
-        </li>
-      </ul>
+      <!-- Recursive Child Flyout Panel -->
+      <HeaderCategorySubmenu
+        v-if="activeItem && getSubCategories(activeItem).length > 0"
+        :items="getSubCategories(activeItem)"
+        :all-categories="allCategories"
+        :level="level + 1"
+        :is-open="true"
+        :flyout-left="flyoutLeftMap[activeItem.id] || false"
+        :custom-style="{ top: activeItemTop + 'px' }"
+        @keep-open="handlePanelMouseEnter"
+        @close="handleLinkClick"
+      />
     </div>
   </div>
 </template>
