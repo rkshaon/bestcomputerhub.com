@@ -1,11 +1,11 @@
 <!-- File: /components/layout/HeaderUtilityBar.vue -->
 <script setup lang="ts">
 import { Phone, Mail, Headphones, Tag, Sparkles, Store, BookOpen } from 'lucide-vue-next';
+import { STORE_CONTACT } from '@/constants/contact';
 
-// Contact information for Best Computer Hub
 const contactInfo = {
-  email: 'bestcomputerhubltd@gmail.com',
-  phone: '+880 1922-232794'
+  email: STORE_CONTACT.email,
+  phone: STORE_CONTACT.displayPhone
 };
 </script>
 
