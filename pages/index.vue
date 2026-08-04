@@ -9,7 +9,6 @@ import type { Brand } from '@/types';
 const productService = useProductService();
 const brandService = useBrandService();
 
-const featuredProducts = productService.getFeaturedProducts();
 const flashSaleProducts = productService.getOnSaleProducts();
 const bestSellerProducts = productService.getBestSellers();
 
@@ -67,14 +66,6 @@ onMounted(async () => {
 
     <!-- Brand Marquee -->
     <HomeBrandMarquee :brands="brandsList" />
-
-    <!-- Featured Products -->
-    <HomeProductSection
-      title="Weekly Headliners"
-      title-highlight="Headliners"
-      subtitle="Hand-picked premium selections for enthusiasts."
-      :products="featuredProducts"
-    />
 
     <!-- Special Promo Banner -->
     <HomePromoBanner />
