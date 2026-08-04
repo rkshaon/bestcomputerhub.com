@@ -145,8 +145,9 @@ if (process.client) {
         <NuxtLink 
           to="/" 
           class="flex items-center shrink-0 group"
+          aria-label="Best Computer Hub Home"
         >
-          <UiBrandLogo size="md" />
+          <UiBrandLogo size="md" :show-text="false" />
         </NuxtLink>
 
         <!-- Search Bar -->
