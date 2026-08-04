@@ -152,7 +152,14 @@ if (process.client) {
 </script>
 
 <template>
-  <header class="sticky top-0 z-50 w-full border-b bg-background shadow-sm py-0 sm:py-1">
+  <header 
+    :class="cn(
+      'sticky top-0 z-50 w-full border-b py-0 sm:py-1 transition-colors transition-shadow duration-300',
+      isScrolled 
+        ? 'bg-card border-border shadow-md' 
+        : 'bg-background border-border/50 shadow-sm'
+    )"
+  >
     <div 
       :class="cn(
         'grid transition-all duration-300 ease-in-out overflow-hidden',
