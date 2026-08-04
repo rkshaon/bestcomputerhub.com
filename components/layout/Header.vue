@@ -1,7 +1,7 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { ShoppingBag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight } from 'lucide-vue-next';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { ShoppingBag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ArrowRight } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useToast } from '@/composables/useToast';
-import type { Category } from '@/types';
+import type { Category, Product } from '@/types';
 import HeaderMegaMenu from '@/components/layout/HeaderMegaMenu.vue';
 import HeaderUtilityBar from '@/components/layout/HeaderUtilityBar.vue';
 
@@ -20,6 +20,70 @@ const productService = useProductService();
 const categoryService = useCategoryService();
 const { toastInfo } = useToast();
 const route = useRoute();
+
+// Expanded Search State
+const isSearchExpanded = ref(false);
+const searchQuery = ref('');
+const searchResults = ref<Product[]>([]);
+const isSearching = ref(false);
+const searchContainerRef = ref<HTMLElement | null>(null);
+const searchInputRef = ref<HTMLInputElement | null>(null);
+
+const popularSearches = [
+  'RTX 4090',
+  'DDR5 RAM',
+  'Intel Core i9',
+  'Gaming Laptops',
+  'NVMe SSD',
+  'Monitors'
+];
+
+const openSearch = () => {
+  isSearchExpanded.value = true;
+  nextTick(() => {
+    searchInputRef.value?.focus();
+  });
+};
+
+const closeSearch = () => {
+  isSearchExpanded.value = false;
+  searchInputRef.value?.blur();
+};
+
+const handleSearchSubmit = () => {
+  if (searchQuery.value.trim()) {
+    navigateTo(`/products?q=${encodeURIComponent(searchQuery.value.trim())}`);
+    closeSearch();
+  }
+};
+
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch(searchQuery, (newQuery) => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  
+  if (!newQuery.trim()) {
+    searchResults.value = [];
+    isSearching.value = false;
+    return;
+  }
+
+  isSearching.value = true;
+  searchDebounceTimer = setTimeout(async () => {
+    try {
+      const res = await productService.getProductsList({
+        search: newQuery.trim(),
+        page_size: 6
+      });
+      searchResults.value = res.results || [];
+    } catch (err) {
+      console.error('Header search error:', err);
+      searchResults.value = [];
+    } finally {
+      isSearching.value = false;
+    }
+  }, 250);
+});
 
 const handleCompareClick = () => {
   toastInfo('Product comparison coming soon!', {
@@ -141,18 +205,36 @@ const keepMegaMenuOpen = () => {
 };
 
 if (process.client) {
-  // Close theme menu on click outside
-  window.addEventListener('click', (e) => {
+  // Close theme menu & mega menu on click outside / escape
+  const handleWindowClick = (e: MouseEvent) => {
     const target = e.target as HTMLElement;
     if (!target.closest('.theme-dropdown')) {
       isThemeMenuOpen.value = false;
     }
-  });
+    if (
+      isSearchExpanded.value &&
+      searchContainerRef.value &&
+      !searchContainerRef.value.contains(e.target as Node)
+    ) {
+      closeSearch();
+    }
+  };
 
-  window.addEventListener('keydown', (e) => {
+  const handleWindowKeydown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       activeMegaMenuId.value = null;
+      if (isSearchExpanded.value) {
+        closeSearch();
+      }
     }
+  };
+
+  window.addEventListener('click', handleWindowClick);
+  window.addEventListener('keydown', handleWindowKeydown);
+
+  onUnmounted(() => {
+    window.removeEventListener('click', handleWindowClick);
+    window.removeEventListener('keydown', handleWindowKeydown);
   });
 }
 </script>
@@ -177,31 +259,58 @@ if (process.client) {
       </div>
     </div>
 
-    <div class="container mx-auto px-4 relative py-3">
+    <div ref="searchContainerRef" class="container mx-auto px-4 relative py-3">
       <!-- Main Row -->
-      <div class="flex items-center justify-between gap-4 md:gap-6 lg:gap-8 group/mainheader">
+      <div class="flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader">
         <!-- Logo -->
         <NuxtLink 
           to="/" 
           class="flex items-center shrink-0 group"
           aria-label="Best Computer Hub Home"
+          @click="closeSearch"
         >
           <UiBrandLogo size="lg" :show-text="false" />
         </NuxtLink>
 
         <!-- Search Bar -->
-        <div class="hidden md:flex relative group flex-1 min-w-0">
+        <div 
+          :class="cn(
+            'hidden md:flex relative group flex-1 min-w-0 transition-all duration-300 ease-in-out',
+            isSearchExpanded ? 'z-50' : ''
+          )"
+        >
           <input 
+            ref="searchInputRef"
+            v-model="searchQuery"
             type="text" 
-            placeholder="Search items..." 
-            class="w-full bg-muted/50 border-input border rounded-full focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none h-11 text-sm px-12 transition-colors"
-            @keyup.enter="navigateTo(`/products?q=${($event.target as HTMLInputElement).value}`)"
+            :placeholder="isSearchExpanded ? 'Search products, brands or models...' : 'Search items...'" 
+            role="combobox"
+            :aria-expanded="isSearchExpanded"
+            aria-autocomplete="list"
+            aria-label="Search items"
+            :class="cn(
+              'w-full bg-muted/50 border rounded-full outline-none h-11 text-sm px-12 transition-all duration-200',
+              isSearchExpanded 
+                ? 'bg-background border-primary/50 shadow-md ring-2 ring-primary/20' 
+                : 'border-input focus:bg-background focus:ring-2 focus:ring-primary/20'
+            )"
+            @focus="openSearch"
+            @keyup.enter="handleSearchSubmit"
           />
-          <Search class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary w-5 h-5" />
+          <Search class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary w-5 h-5 transition-colors" />
+          <button 
+            v-if="searchQuery && isSearchExpanded" 
+            type="button" 
+            @click="searchQuery = ''; searchInputRef?.focus()"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 rounded-full hover:bg-muted"
+            aria-label="Clear search text"
+          >
+            <X class="w-4 h-4" />
+          </button>
         </div>
 
-        <!-- Actions -->
-        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+        <!-- Normal Header Actions (Hidden when Search is Expanded) -->
+        <div v-if="!isSearchExpanded" class="flex items-center gap-1 sm:gap-2 shrink-0 transition-opacity duration-200">
           <!-- Theme Dropdown -->
           <div 
             :class="cn(
@@ -313,10 +422,130 @@ if (process.client) {
             <X v-else class="w-6 h-6" />
           </button>
         </div>
+
+        <!-- Cancel Action (Shown when Search is Expanded) -->
+        <div v-else class="hidden md:flex items-center shrink-0 z-50">
+          <button 
+            type="button" 
+            @click="closeSearch"
+            class="px-4 py-2 text-xs font-bold text-muted-foreground hover:text-foreground rounded-full hover:bg-accent border border-border/50 transition-all cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
 
-      <!-- Category Navigation Row -->
-      <nav class="hidden md:flex relative items-center justify-between gap-2 w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50">
+      <!-- Expanded Search Results / Suggestions Panel -->
+      <transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 -translate-y-2 scale-[0.99]"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 -translate-y-2 scale-[0.99]"
+      >
+        <div 
+          v-if="isSearchExpanded" 
+          class="hidden md:block absolute top-full left-4 right-4 z-50 mt-2 bg-background/98 backdrop-blur-xl border border-border/80 rounded-2xl shadow-2xl p-4 sm:p-6 overflow-hidden space-y-4 max-h-[75vh] overflow-y-auto"
+        >
+          <!-- Popular Searches when query is empty -->
+          <div v-if="!searchQuery.trim()" class="space-y-4">
+            <div class="space-y-2">
+              <p class="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                Popular Searches
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="tag in popularSearches"
+                  :key="tag"
+                  type="button"
+                  @click="searchQuery = tag; searchInputRef?.focus()"
+                  class="px-3.5 py-1.5 rounded-full bg-muted/60 hover:bg-primary/10 hover:text-primary border border-border/40 text-xs font-semibold transition-all cursor-pointer"
+                >
+                  {{ tag }}
+                </button>
+              </div>
+            </div>
+
+            <div class="border-t border-border/50 pt-3 space-y-2">
+              <p class="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                Explore Top Categories
+              </p>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <NuxtLink
+                  v-for="cat in categories.slice(0, 4)"
+                  :key="cat.id"
+                  :to="categoryService.getCategoryUrl(cat, allCategories)"
+                  @click="closeSearch"
+                  class="p-2.5 rounded-xl bg-muted/40 hover:bg-accent border border-border/30 hover:border-primary/30 transition-all text-xs font-bold text-foreground hover:text-primary flex items-center justify-between group"
+                >
+                  <span class="truncate">{{ cat.name }}</span>
+                  <ChevronRight class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary shrink-0 transition-transform group-hover:translate-x-0.5" />
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Search Results when query typed -->
+          <div v-else class="space-y-3">
+            <div class="flex items-center justify-between border-b border-border/40 pb-2.5">
+              <p class="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                Matching Catalog Products
+              </p>
+              <button
+                type="button"
+                @click="handleSearchSubmit"
+                class="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>View all results</span>
+                <ArrowRight class="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div v-if="isSearching" class="py-8 flex items-center justify-center gap-2 text-xs text-muted-foreground animate-pulse">
+              <span class="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></span>
+              <span>Searching catalog database...</span>
+            </div>
+
+            <div v-else-if="searchResults.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <NuxtLink
+                v-for="product in searchResults"
+                :key="product.id"
+                :to="`/product/${product.slug}`"
+                @click="closeSearch"
+                class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-accent border border-transparent hover:border-border/60 transition-all group"
+              >
+                <div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border/50">
+                  <img :src="product.images[0]" :alt="product.name" class="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                    {{ product.name }}
+                  </p>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-xs font-extrabold text-primary">${{ product.price }}</span>
+                    <span v-if="product.brand" class="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                      {{ product.brand }}
+                    </span>
+                  </div>
+                </div>
+              </NuxtLink>
+            </div>
+
+            <div v-else class="py-8 text-center space-y-1">
+              <p class="text-xs font-medium text-muted-foreground">
+                No matching products found for "<span class="font-bold text-foreground">{{ searchQuery }}</span>"
+              </p>
+              <p class="text-[11px] text-muted-foreground/80">
+                Try searching for GPU models, processors, RAM modules, or brand names.
+              </p>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Category Navigation Row (Hidden when Search is Expanded) -->
+      <nav v-if="!isSearchExpanded" class="hidden md:flex relative items-center justify-between gap-2 w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50">
         <!-- Static Home Link -->
         <NuxtLink 
           to="/" 
@@ -362,6 +591,22 @@ if (process.client) {
       </nav>
     </div>
 
+    <!-- Backdrop Overlay for Expanded Search -->
+    <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div 
+        v-if="isSearchExpanded" 
+        class="fixed inset-0 bg-background/60 backdrop-blur-xs z-40 top-[56px] sm:top-[64px]"
+        @click="closeSearch"
+      />
+    </transition>
+
     <!-- Mobile Navigation Drawer representing the full Taxonomy hierarchy dynamically fetched -->
     <transition
       enter-active-class="transition duration-300 ease-out"
@@ -379,7 +624,7 @@ if (process.client) {
         <div class="relative group">
           <input 
             type="text" 
-            placeholder="Search classes..." 
+            placeholder="Search items..." 
             class="w-full bg-muted/50 border border-input rounded-full h-10 text-xs px-10 outline-none focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all duration-300"
             @keyup.enter="navigateTo(`/products?q=${($event.target as HTMLInputElement).value}`); uiStore.closeMobileMenu()"
           />
@@ -478,3 +723,4 @@ if (process.client) {
     </transition>
   </header>
 </template>
+
