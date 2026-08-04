@@ -173,7 +173,7 @@ if (process.client) {
 
     <div class="container mx-auto px-4 relative py-3">
       <!-- Main Row -->
-      <div class="flex items-center justify-between gap-4 lg:gap-6">
+      <div class="flex items-center justify-between gap-4 lg:gap-6 group/mainheader">
         <!-- Logo -->
         <NuxtLink 
           to="/" 
@@ -197,10 +197,18 @@ if (process.client) {
         <!-- Actions -->
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
           <!-- Theme Dropdown -->
-          <div class="relative theme-dropdown">
+          <div 
+            :class="cn(
+              'relative theme-dropdown transition-opacity duration-200',
+              isThemeMenuOpen
+                ? 'opacity-100 pointer-events-auto'
+                : 'sm:opacity-0 sm:pointer-events-none sm:group-hover/mainheader:opacity-100 sm:group-hover/mainheader:pointer-events-auto sm:group-focus-within/mainheader:opacity-100 sm:group-focus-within/mainheader:pointer-events-auto'
+            )"
+          >
             <button 
               @click="isThemeMenuOpen = !isThemeMenuOpen" 
               class="p-2 hover:bg-accent rounded-full transition-colors text-muted-foreground hover:text-foreground flex items-center"
+              aria-label="Toggle theme"
             >
               <Sun v-if="uiStore.themeMode === 'light'" class="w-5 h-5" />
               <Moon v-else-if="uiStore.themeMode === 'dark'" class="w-5 h-5" />
