@@ -69,9 +69,6 @@ onMounted(async () => {
     <!-- Brand Marquee -->
     <HomeBrandMarquee :brands="brandsList" />
 
-    <!-- Value Propositions -->
-    <HomeValuePropositions />
-
     <!-- Featured Products -->
     <HomeProductSection
       title="Weekly Headliners"
