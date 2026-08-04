@@ -1,7 +1,7 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck } from 'lucide-vue-next';
+import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -19,6 +19,7 @@ const wishlistStore = useWishlistStore();
 const authStore = useAuthStore();
 const productService = useProductService();
 const categoryService = useCategoryService();
+const route = useRoute();
 
 const isSuperAdmin = computed(() => {
   if (!authStore.isLoggedIn || !authStore.user) return false;
@@ -254,6 +255,19 @@ if (process.client) {
 
       <!-- Category Navigation Row -->
       <nav class="hidden md:flex relative items-center justify-between gap-2 w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50">
+        <!-- Static Home Link -->
+        <NuxtLink 
+          to="/" 
+          aria-label="Home"
+          title="Home"
+          :class="cn(
+            'relative flex items-center justify-center font-semibold text-xs lg:text-[13px] tracking-normal transition-colors whitespace-nowrap py-1.5 px-1 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xs',
+            route.path === '/' ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
+          )"
+        >
+          <Home class="w-4 h-4" />
+        </NuxtLink>
+
         <div 
           v-for="(cat, index) in categories" 
           :key="cat.id" 
