@@ -259,19 +259,37 @@ if (process.client) {
       </div>
     </div>
 
-    <div ref="searchContainerRef" class="container mx-auto px-4 relative py-3">
-      <!-- Main Row -->
-      <div class="flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader">
-        <!-- Logo -->
-        <NuxtLink 
-          to="/" 
-          class="flex items-center shrink-0 group"
-          aria-label="Best Computer Hub Home"
-          @click="closeSearch"
-        >
-          <UiBrandLogo size="lg" :show-text="false" />
-        </NuxtLink>
+    <div 
+      ref="searchContainerRef" 
+      :class="cn(
+        'container mx-auto px-4 relative py-2 sm:py-2.5 flex items-center justify-between gap-3 md:gap-0',
+        !isSearchExpanded && 'md:grid md:grid-cols-[auto_1fr] md:gap-x-5 lg:gap-x-6'
+      )"
+    >
+      <!-- Spanning Brand Logo (Spans Row 1 Search + Row 2 Category Nav on Desktop) -->
+      <NuxtLink 
+        to="/" 
+        :class="cn(
+          'flex items-center justify-center shrink-0 group transition-all duration-300',
+          !isSearchExpanded && 'md:row-span-2 md:self-center pr-1 lg:pr-2'
+        )"
+        aria-label="Best Computer Hub Home"
+        @click="closeSearch"
+      >
+        <UiBrandLogo 
+          size="lg" 
+          :show-text="false" 
+          :img-class="cn(
+            'object-contain transition-all duration-300 group-hover:scale-105 shrink-0',
+            isSearchExpanded 
+              ? 'w-9 h-9 md:w-11 md:h-11' 
+              : 'w-9 h-9 md:w-18 md:h-18 lg:w-20 lg:h-20 max-h-[76px] w-auto'
+          )"
+        />
+      </NuxtLink>
 
+      <!-- Main Row -->
+      <div class="flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader flex-1 min-w-0">
         <!-- Search Bar -->
         <div 
           :class="cn(
