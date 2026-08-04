@@ -1,6 +1,6 @@
 <!-- File: /pages/index.vue -->
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useProductService } from '@/composables/useProductService';
 import { useBrandService } from '@/composables/useBrandService';
 import type { Brand } from '@/types';
@@ -13,7 +13,6 @@ const featuredProducts = productService.getFeaturedProducts();
 const newArrivals = productService.getNewArrivals();
 const flashSaleProducts = productService.getOnSaleProducts();
 const bestSellerProducts = productService.getBestSellers();
-const homeCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
 
 // Initialize brands with standard defaults from product service mapping for high SSR alignment and zero layout pop
 const brandsList = ref<Brand[]>(
@@ -72,9 +71,6 @@ onMounted(async () => {
 
     <!-- Value Propositions -->
     <HomeValuePropositions />
-
-    <!-- Shop by Department -->
-    <HomeDepartmentGrid :categories="homeCategories" />
 
     <!-- Featured Products -->
     <HomeProductSection
