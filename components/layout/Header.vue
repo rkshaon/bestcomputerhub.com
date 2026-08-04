@@ -1,11 +1,10 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home } from 'lucide-vue-next';
+import { ShoppingCart, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
-import { useWishlistStore } from '@/stores/wishlist';
 import { useAuthStore } from '@/stores/auth';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -15,7 +14,6 @@ import HeaderUtilityBar from '@/components/layout/HeaderUtilityBar.vue';
 
 const uiStore = useUIStore();
 const cartStore = useCartStore();
-const wishlistStore = useWishlistStore();
 const authStore = useAuthStore();
 const productService = useProductService();
 const categoryService = useCategoryService();
@@ -270,13 +268,6 @@ if (process.client) {
             <div v-else class="p-1">
               <User class="w-4 h-4 sm:w-5 h-5" />
             </div>
-          </NuxtLink>
-
-          <NuxtLink to="/wishlist" class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground">
-            <Heart class="w-4 h-4 sm:w-5 h-5" />
-            <span v-if="wishlistStore.wishlistCount > 0" class="absolute top-1 right-1 bg-destructive text-destructive-foreground text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
-              {{ wishlistStore.wishlistCount }}
-            </span>
           </NuxtLink>
 
           <button @click="uiStore.toggleCart()" class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground">

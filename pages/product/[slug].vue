@@ -1,16 +1,14 @@
 <!-- File: /pages/product/[slug].vue -->
 <script setup lang="ts">
-import { ChevronRight, ArrowLeft, Star, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Info, Plus, Minus, Zap, Cpu, Globe } from 'lucide-vue-next';
+import { ChevronRight, ArrowLeft, Star, ShoppingCart, ShieldCheck, Truck, RotateCcw, Info, Plus, Minus, Zap, Cpu, Globe } from 'lucide-vue-next';
 import { formatCurrency, cn } from '@/utils';
 
 import { useCartStore } from '@/stores/cart';
-import { useWishlistStore } from '@/stores/wishlist';
 import { useUIStore } from '@/stores/ui';
 
 const route = useRoute();
 const productService = useProductService();
 const cartStore = useCartStore();
-const wishlistStore = useWishlistStore();
 const categoryService = useCategoryService();
 
 const slug = route.params.slug as string;
@@ -162,13 +160,6 @@ const addToCart = () => {
               <UiButton @click="addToCart" class="h-14 flex-grow px-10 gap-3 rounded-2xl text-lg">
                 <ShoppingCart class="w-5 h-5" />
                 Add to Cart
-              </UiButton>
-              <UiButton 
-                variant="outline" 
-                :class="cn('h-14 w-14 shrink-0 rounded-2xl', wishlistStore.isInWishlist(product.id) && 'bg-primary/10 text-primary border-primary/50')"
-                @click="wishlistStore.toggleWishlist(product)"
-              >
-                <Heart :class="cn('w-6 h-6', wishlistStore.isInWishlist(product.id) && 'fill-current')" />
               </UiButton>
             </div>
 
