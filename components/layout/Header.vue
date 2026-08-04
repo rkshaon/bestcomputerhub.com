@@ -1,6 +1,6 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { ShoppingCart, Heart, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
@@ -76,8 +76,24 @@ const loadMenuCategories = async () => {
   }
 };
 
+const isScrolled = ref(false);
+
+const handleScroll = () => {
+  if (typeof window !== 'undefined') {
+    isScrolled.value = window.scrollY > 20;
+  }
+};
+
 onMounted(() => {
   loadMenuCategories();
+  handleScroll();
+  window.addEventListener('scroll', handleScroll, { passive: true });
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('scroll', handleScroll);
+  }
 });
 
 // Helper to get category by slug safely
@@ -137,7 +153,16 @@ if (process.client) {
 
 <template>
   <header class="sticky top-0 z-50 w-full border-b bg-background shadow-sm py-0 sm:py-1">
-    <HeaderUtilityBar />
+    <div 
+      :class="cn(
+        'grid transition-all duration-300 ease-in-out overflow-hidden',
+        isScrolled ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'
+      )"
+    >
+      <div class="min-h-0">
+        <HeaderUtilityBar />
+      </div>
+    </div>
 
     <div class="container mx-auto px-4 relative py-3">
       <!-- Main Row -->
