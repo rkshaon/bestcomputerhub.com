@@ -97,7 +97,6 @@ const getSubCategories = (cat: Category): Category[] => {
   return [];
 };
 
-const isScrolled = ref(false);
 const isThemeMenuOpen = ref(false);
 
 const activeMegaMenuId = ref<string | null>(null);
@@ -119,10 +118,6 @@ const keepMegaMenuOpen = () => {
 };
 
 if (process.client) {
-  window.addEventListener('scroll', () => {
-    isScrolled.value = window.scrollY > 20;
-  });
-  
   // Close theme menu on click outside
   window.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
@@ -140,86 +135,33 @@ if (process.client) {
 </script>
 
 <template>
-  <header 
-    :class="cn(
-      'sticky top-0 z-50 w-full transition-all duration-500 border-b',
-      isScrolled ? 'bg-background/90 backdrop-blur-xl py-2 shadow-sm' : 'bg-background py-0 sm:py-1'
-    )"
-  >
-    <HeaderUtilityBar :is-scrolled="isScrolled" />
+  <header class="sticky top-0 z-50 w-full border-b bg-background shadow-sm py-0 sm:py-1">
+    <HeaderUtilityBar />
 
     <div class="container mx-auto px-4 relative py-3">
       <!-- Main Row -->
-      <div class="flex items-center justify-between transition-all duration-500 gap-4 lg:gap-6">
+      <div class="flex items-center justify-between gap-4 lg:gap-6">
         <!-- Logo -->
         <NuxtLink 
           to="/" 
-          class="flex items-center shrink-0 group transition-all duration-500"
+          class="flex items-center shrink-0 group"
         >
-          <UiBrandLogo :size="isScrolled ? 'sm' : 'md'" />
+          <UiBrandLogo size="md" />
         </NuxtLink>
 
         <!-- Search Bar -->
-        <div 
-          :class="cn(
-            'hidden md:flex relative group transition-all duration-500 ease-in-out shrink-0',
-            isScrolled ? 'w-40 lg:w-48' : 'flex-1 max-w-xl lg:max-w-2xl mx-4 lg:mx-12'
-          )"
-        >
+        <div class="hidden md:flex relative group shrink-0 flex-1 max-w-xl lg:max-w-2xl mx-4 lg:mx-12">
           <input 
             type="text" 
             placeholder="Search items..." 
-            :class="cn(
-              'w-full bg-muted/50 border-input border rounded-full focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all duration-500 outline-none',
-              isScrolled ? 'h-8 text-[10px] px-8 pl-9' : 'h-11 text-sm px-12'
-            )"
+            class="w-full bg-muted/50 border-input border rounded-full focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none h-11 text-sm px-12"
             @keyup.enter="navigateTo(`/products?q=${($event.target as HTMLInputElement).value}`)"
           />
-          <Search :class="cn('absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-all duration-500', isScrolled ? 'w-3.5 h-3.5 left-3' : 'w-5 h-5')" />
+          <Search class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary w-5 h-5" />
         </div>
 
-        <!-- Compact Navigation Menu (Visible only when scrolled) -->
-        <nav 
-          :class="cn(
-            'hidden md:flex relative items-center justify-between gap-2 transition-all duration-500 ease-in-out h-8 flex-1 flex-nowrap',
-            isScrolled 
-              ? 'opacity-100 overflow-visible translate-x-0 pointer-events-auto' 
-              : 'opacity-0 overflow-hidden max-w-0 -translate-x-4 pointer-events-none'
-          )"
-        >
-          <div 
-            v-for="(cat, index) in categories" 
-            :key="cat.id" 
-            class="group relative h-full flex items-center shrink-0"
-            @mouseenter="openMegaMenu(cat.id)"
-            @mouseleave="closeMegaMenu"
-            @focusin="openMegaMenu(cat.id)"
-            @focusout="closeMegaMenu"
-          >
-            <NuxtLink 
-              :to="categoryService.getCategoryUrl(cat, allCategories)" 
-              :class="cn(
-                'relative flex items-center font-semibold text-xs lg:text-[13px] tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200',
-                activeMegaMenuId === cat.id ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
-              )"
-            >
-              {{ cat.name }}
-            </NuxtLink>
-            
-            <!-- Mega Menu Dropdown -->
-            <HeaderMegaMenu 
-              :category="cat" 
-              :all-categories="allCategories"
-              :is-open="activeMegaMenuId === cat.id"
-              :align-right="index >= categories.length / 2"
-              @keep-open="keepMegaMenuOpen"
-              @close="closeMegaMenu"
-            />
-          </div>
-        </nav>
-
         <!-- Actions -->
-        <div class="flex items-center gap-1 sm:gap-2 shrink-0 transition-all duration-500">
+        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
           <!-- Theme Dropdown -->
           <div class="relative theme-dropdown">
             <button 
@@ -309,15 +251,8 @@ if (process.client) {
         </div>
       </div>
 
-      <!-- Collapsible Secondary Row (Visible only when not scrolled) -->
-      <nav 
-        :class="cn(
-          'hidden md:flex relative items-center justify-between gap-2 transition-all duration-500 ease-in-out w-full flex-nowrap',
-          isScrolled 
-            ? 'h-0 overflow-hidden opacity-0 mt-0 pt-0 border-t-0 pointer-events-none' 
-            : 'h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50'
-        )"
-      >
+      <!-- Category Navigation Row -->
+      <nav class="hidden md:flex relative items-center justify-between gap-2 w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50">
         <div 
           v-for="(cat, index) in categories" 
           :key="cat.id" 

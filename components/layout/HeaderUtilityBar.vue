@@ -1,11 +1,6 @@
 <!-- File: /components/layout/HeaderUtilityBar.vue -->
 <script setup lang="ts">
 import { Phone, Mail, Headphones, Tag, Sparkles, Store, BookOpen } from 'lucide-vue-next';
-import { cn } from '@/utils';
-
-defineProps<{
-  isScrolled?: boolean;
-}>();
 
 // Contact information for Best Computer Hub
 const contactInfo = {
@@ -16,10 +11,7 @@ const contactInfo = {
 
 <template>
   <div 
-    :class="cn(
-      'w-full border-b border-border/40 bg-muted/30 text-muted-foreground transition-all duration-300 text-[11px] font-medium hidden sm:block',
-      isScrolled ? 'max-h-0 opacity-0 py-0 overflow-hidden border-none' : 'max-h-10 opacity-100 py-1.5'
-    )"
+    class="w-full border-b border-border/40 bg-muted/30 text-muted-foreground text-[11px] font-medium hidden sm:block py-1.5"
   >
     <div class="container mx-auto px-4 flex items-center justify-between gap-4">
       <!-- Left side: Contact & Support info -->
