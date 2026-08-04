@@ -1,7 +1,7 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
-import { ShoppingBag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ArrowRight } from 'lucide-vue-next';
+import { Handbag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ArrowRight } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -406,12 +406,12 @@ if (process.client) {
             @click="uiStore.toggleCart()" 
             class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground shrink-0"
             title="Shopping Bag"
-            aria-label="Shopping Bag"
+            aria-label="Cart"
           >
-            <ShoppingBag class="w-5 h-5" />
+            <Handbag class="w-5 h-5" />
             <span 
               v-if="cartStore.totalItems > 0" 
-              class="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
+              class="absolute -bottom-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
             >
               {{ cartStore.totalItems }}
             </span>
@@ -686,7 +686,7 @@ if (process.client) {
             @click="uiStore.closeMobileMenu()"
           >
             <User class="w-4 h-4 text-primary" />
-            <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Login / Sign Up' }}</span>
+            <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
           </NuxtLink>
           <NuxtLink 
             to="/products" 
