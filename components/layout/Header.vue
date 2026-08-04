@@ -1,7 +1,7 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
-import { Handbag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ArrowRight } from 'lucide-vue-next';
+import { Handbag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ArrowRight, Tag, Sparkles, Zap, Clock } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -378,6 +378,53 @@ if (process.client) {
             <ShieldCheck class="w-5 h-5" />
           </NuxtLink>
 
+          <!-- Promotional Actions (Offers, New Arrivals, Flash Sale, Happy Hours) -->
+          <div class="hidden lg:flex items-center gap-1.5 shrink-0">
+            <!-- Offers -->
+            <NuxtLink 
+              to="/offers" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-destructive/40 hover:bg-destructive/10 text-muted-foreground hover:text-destructive text-xs font-semibold transition-all shrink-0 group"
+              title="Offers"
+              aria-label="Offers"
+            >
+              <Tag class="w-3.5 h-3.5 text-destructive shrink-0 transition-transform group-hover:rotate-12" />
+              <span>Offers</span>
+            </NuxtLink>
+
+            <!-- New Arrivals -->
+            <NuxtLink 
+              to="/new-arrivals" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-amber-500/40 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-500 text-xs font-semibold transition-all shrink-0"
+              title="New Arrivals"
+              aria-label="New Arrivals"
+            >
+              <Sparkles class="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>New Arrivals</span>
+            </NuxtLink>
+
+            <!-- Flash Sale -->
+            <NuxtLink 
+              to="/offers" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-primary/10 text-muted-foreground hover:text-primary text-xs font-semibold transition-all shrink-0"
+              title="Flash Sale"
+              aria-label="Flash Sale"
+            >
+              <Zap class="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>Flash Sale</span>
+            </NuxtLink>
+
+            <!-- Happy Hours -->
+            <NuxtLink 
+              to="/offers" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-sky-500/40 hover:bg-sky-500/10 text-muted-foreground hover:text-sky-500 text-xs font-semibold transition-all shrink-0"
+              title="Happy Hours"
+              aria-label="Happy Hours"
+            >
+              <Clock class="w-3.5 h-3.5 text-sky-500 shrink-0" />
+              <span>Happy Hours</span>
+            </NuxtLink>
+          </div>
+
           <!-- PC Builder -->
           <NuxtLink 
             to="/products"
@@ -706,10 +753,35 @@ if (process.client) {
           </button>
           <NuxtLink 
             to="/offers" 
-            class="font-bold text-xs uppercase tracking-widest text-destructive block hover:translate-x-1 transition-transform"
+            class="font-bold text-xs uppercase tracking-widest text-destructive flex items-center gap-2 hover:translate-x-1 transition-transform"
             @click="uiStore.closeMobileMenu()"
           >
-            Special Offers
+            <Tag class="w-4 h-4 text-destructive" />
+            <span>Offers</span>
+          </NuxtLink>
+          <NuxtLink 
+            to="/new-arrivals" 
+            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-amber-500 transition-colors"
+            @click="uiStore.closeMobileMenu()"
+          >
+            <Sparkles class="w-4 h-4 text-amber-500" />
+            <span>New Arrivals</span>
+          </NuxtLink>
+          <NuxtLink 
+            to="/offers" 
+            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
+            @click="uiStore.closeMobileMenu()"
+          >
+            <Zap class="w-4 h-4 text-primary" />
+            <span>Flash Sale</span>
+          </NuxtLink>
+          <NuxtLink 
+            to="/offers" 
+            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-sky-500 transition-colors"
+            @click="uiStore.closeMobileMenu()"
+          >
+            <Clock class="w-4 h-4 text-sky-500" />
+            <span>Happy Hours</span>
           </NuxtLink>
           <NuxtLink 
             to="/blog" 
