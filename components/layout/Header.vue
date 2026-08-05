@@ -271,7 +271,7 @@ if (process.client) {
         to="/" 
         :class="cn(
           'flex items-center justify-center shrink-0 group transition-all duration-300',
-          !isSearchExpanded && 'md:row-span-2 md:self-center pr-1 lg:pr-2'
+          !isSearchExpanded && 'md:col-start-1 md:row-start-1 md:row-span-2 md:self-center pr-2 lg:pr-3'
         )"
         aria-label="Best Computer Hub Home"
         @click="closeSearch"
@@ -282,14 +282,19 @@ if (process.client) {
           :img-class="cn(
             'object-contain transition-all duration-300 group-hover:scale-105 shrink-0',
             isSearchExpanded 
-              ? 'w-9 h-9 md:w-11 md:h-11' 
-              : 'w-9 h-9 md:w-18 md:h-18 lg:w-20 lg:h-20 max-h-[76px] w-auto'
+              ? 'h-9 w-auto md:h-11' 
+              : 'h-9 w-auto md:h-[80px] lg:h-[84px] max-h-[86px]'
           )"
         />
       </NuxtLink>
 
       <!-- Main Row -->
-      <div class="flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader flex-1 min-w-0">
+      <div 
+        :class="cn(
+          'flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader flex-1 min-w-0',
+          !isSearchExpanded && 'md:col-start-2 md:row-start-1'
+        )"
+      >
         <!-- Search Bar -->
         <div 
           :class="cn(
@@ -610,7 +615,7 @@ if (process.client) {
       </transition>
 
       <!-- Category Navigation Row (Hidden when Search is Expanded) -->
-      <nav v-if="!isSearchExpanded" class="hidden md:flex relative items-center justify-between gap-2 w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50">
+      <nav v-if="!isSearchExpanded" class="hidden md:flex relative items-center justify-between gap-2 w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50 md:col-start-2 md:row-start-2">
         <!-- Static Home Link -->
         <NuxtLink 
           to="/" 
