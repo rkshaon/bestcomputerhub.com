@@ -6,25 +6,25 @@ const currentYear = new Date().getFullYear();
 </script>
 
 <template>
-  <footer class="bg-card pt-20 pb-10 border-t">
+  <footer class="bg-card pt-10 sm:pt-16 md:pt-20 pb-8 sm:pb-10 border-t">
     <div class="container mx-auto px-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-20">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-12 mb-10 sm:mb-20">
         <!-- Brand -->
-        <div class="lg:col-span-2 space-y-6">
+        <div class="sm:col-span-2 space-y-6">
           <NuxtLink to="/" class="flex items-center">
             <UiBrandLogo size="lg" />
           </NuxtLink>
-          <p class="text-muted-foreground text-sm max-w-sm leading-relaxed">
+          <p class="text-muted-foreground text-xs sm:text-sm max-w-sm leading-relaxed">
             Premier e-commerce platform dedicated to professional hardware and cutting-edge computing components. Trusted by thousands of tech enthusiasts and engineers.
           </p>
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3.5">
             <a v-for="social in [
               { icon: Facebook, label: 'Facebook' },
               { icon: Twitter, label: 'Twitter' },
               { icon: Instagram, label: 'Instagram' },
               { icon: Youtube, label: 'Youtube' }
-            ]" :key="social.label" href="#" class="w-10 h-10 border rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all">
-              <component :is="social.icon" class="w-5 h-5" />
+            ]" :key="social.label" href="#" class="w-9 h-9 sm:w-10 sm:h-10 border rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all" :aria-label="social.label">
+              <component :is="social.icon" class="w-4 h-4 sm:w-5 sm:h-5" />
             </a>
           </div>
         </div>
@@ -50,28 +50,28 @@ const currentYear = new Date().getFullYear();
             { name: 'Careers', url: '/careers' },
             { name: 'Sustainability', url: '/sustainability' }
           ] }
-        ]" :key="section.title" class="space-y-6">
-          <h4 class="font-bold text-sm uppercase tracking-widest">{{ section.title }}</h4>
-          <ul class="space-y-4">
+        ]" :key="section.title" class="space-y-4 sm:space-y-6">
+          <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground">{{ section.title }}</h4>
+          <ul class="space-y-2.5 sm:space-y-4">
             <li v-for="link in section.links" :key="link.name">
-              <NuxtLink :to="link.url" class="text-sm text-muted-foreground hover:text-primary transition-colors">{{ link.name }}</NuxtLink>
+              <NuxtLink :to="link.url" class="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">{{ link.name }}</NuxtLink>
             </li>
           </ul>
         </div>
       </div>
 
       <!-- Newsletter -->
-      <div class="p-8 md:p-12 bg-muted rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 mb-20">
-        <div class="space-y-2">
-          <h3 class="text-2xl font-display font-bold">Join Best Computer Hub Insider</h3>
-          <p class="text-muted-foreground text-sm">Expert reviews, early access to hardware drops, and weekly deep dives.</p>
+      <div class="p-6 sm:p-8 md:p-12 bg-muted rounded-2xl sm:rounded-3xl lg:rounded-[2.5rem] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 sm:gap-8 mb-12 sm:mb-20">
+        <div class="space-y-2 text-center md:text-left">
+          <h3 class="text-xl sm:text-2xl font-display font-bold">Join Best Computer Hub Insider</h3>
+          <p class="text-muted-foreground text-xs sm:text-sm">Expert reviews, early access to hardware drops, and weekly deep dives.</p>
         </div>
-        <div class="flex w-full md:w-auto max-w-md gap-2">
+        <div class="flex flex-col sm:flex-row w-full md:w-auto max-w-md gap-2.5">
           <div class="relative flex-grow">
-            <Mail class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input type="email" placeholder="Your work email" class="w-full h-12 bg-background border rounded-full px-12 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
+            <Mail class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+            <input type="email" placeholder="Your work email" class="w-full h-11 sm:h-12 bg-background border rounded-full px-11 sm:px-12 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-xs sm:text-sm" />
           </div>
-          <UiButton class="rounded-full gap-2 px-6">
+          <UiButton class="rounded-full gap-2 px-6 h-11 sm:h-12 font-bold shrink-0">
             Join <ArrowRight class="w-4 h-4" />
           </UiButton>
         </div>

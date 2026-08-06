@@ -91,7 +91,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
       tabindex="0"
     >
       <!-- Slide Container with fixed height matching slide compositions -->
-      <div class="relative overflow-hidden rounded-3xl min-h-[540px]">
+      <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl min-h-0 lg:min-h-[540px]">
         <Transition :name="prefersReducedMotion === 'reduce' ? 'fade' : `slide-${direction}`">
           <HeroSlide 
             :key="currentSlide.id"

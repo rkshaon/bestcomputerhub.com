@@ -15,21 +15,21 @@ const cookieStore = useCookieStore();
     leave-from-class="translate-y-0 opacity-100"
     leave-to-class="translate-y-full opacity-0"
   >
-    <div v-if="cookieStore.isBannerVisible" class="fixed bottom-6 left-6 right-6 z-[100] md:left-auto md:max-w-md">
-      <div class="bg-black/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-white space-y-6">
-        <div class="flex items-start justify-between gap-4">
+    <div v-if="cookieStore.isBannerVisible" class="fixed bottom-3 left-3 right-3 sm:bottom-6 sm:left-6 sm:right-6 z-[100] md:left-auto md:max-w-md">
+      <div class="bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-3xl lg:rounded-[2.5rem] p-5 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-white space-y-4 sm:space-y-6">
+        <div class="flex items-start justify-between gap-3">
           <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shrink-0">
-              <Cookie class="w-6 h-6 text-white" />
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+              <Cookie class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <h3 class="text-xl font-display font-bold">Cookie Policy</h3>
+            <h3 class="text-lg sm:text-xl font-display font-bold">Cookie Policy</h3>
           </div>
-          <button @click="cookieStore.isBannerVisible = false" class="p-2 hover:bg-white/10 rounded-full transition-colors opacity-50 hover:opacity-100">
+          <button @click="cookieStore.isBannerVisible = false" class="p-1.5 hover:bg-white/10 rounded-full transition-colors opacity-50 hover:opacity-100">
             <X class="w-4 h-4" />
           </button>
         </div>
 
-        <p class="text-sm text-white/70 leading-relaxed">
+        <p class="text-xs sm:text-sm text-white/70 leading-relaxed">
           We use enterprise-grade cookies to enhance your navigation, analyze site usage, and assist in our marketing efforts.
         </p>
 

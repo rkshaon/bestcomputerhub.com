@@ -21,6 +21,16 @@ const categoryService = useCategoryService();
 const { toastInfo } = useToast();
 const route = useRoute();
 
+// Mobile Category Drawer Accordion State
+const openMobileCategoryIds = ref<string[]>([]);
+const toggleMobileCategory = (catId: string) => {
+  if (openMobileCategoryIds.value.includes(catId)) {
+    openMobileCategoryIds.value = openMobileCategoryIds.value.filter(id => id !== catId);
+  } else {
+    openMobileCategoryIds.value.push(catId);
+  }
+};
+
 // Expanded Search State
 const isSearchExpanded = ref(false);
 const searchQuery = ref('');
@@ -262,15 +272,95 @@ if (process.client) {
     <div 
       ref="searchContainerRef" 
       :class="cn(
-        'container mx-auto px-4 relative py-2 sm:py-2.5 flex items-center justify-between gap-3 md:gap-0',
+        'container mx-auto px-4 relative py-2 sm:py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0',
         !isSearchExpanded && 'md:grid md:grid-cols-[auto_1fr] md:gap-x-5 lg:gap-x-6'
       )"
     >
-      <!-- Spanning Brand Logo (Spans Row 1 Search + Row 2 Category Nav on Desktop) -->
+      <!-- Mobile Row 1 (< md): [ Menu Toggle ] [ Brand Logo ] [ Theme & Bag ] -->
+      <div class="flex md:hidden items-center justify-between w-full gap-2 py-0.5">
+        <button 
+          @click="uiStore.toggleMobileMenu()" 
+          class="p-2 hover:bg-accent rounded-full transition-colors shrink-0 text-foreground"
+          aria-label="Toggle navigation menu"
+        >
+          <Menu v-if="!uiStore.isMobileMenuOpen" class="w-6 h-6" />
+          <X v-else class="w-6 h-6" />
+        </button>
+
+        <NuxtLink 
+          to="/" 
+          class="flex items-center justify-center shrink-0 group transition-all duration-300"
+          aria-label="Best Computer Hub Home"
+          @click="closeSearch"
+        >
+          <UiBrandLogo 
+            size="lg" 
+            :show-text="false" 
+            img-class="h-9 w-auto object-contain transition-all duration-300 group-hover:scale-105 shrink-0"
+          />
+        </NuxtLink>
+
+        <div class="flex items-center gap-1 shrink-0">
+          <!-- Theme Toggle -->
+          <button 
+            @click="isThemeMenuOpen = !isThemeMenuOpen" 
+            class="p-2 hover:bg-accent rounded-full transition-colors text-muted-foreground hover:text-foreground flex items-center"
+            aria-label="Toggle theme"
+          >
+            <Sun v-if="uiStore.themeMode === 'light'" class="w-5 h-5" />
+            <Moon v-else-if="uiStore.themeMode === 'dark'" class="w-5 h-5" />
+            <Monitor v-else class="w-5 h-5" />
+          </button>
+
+          <!-- Shopping Bag -->
+          <button 
+            @click="uiStore.toggleCart()" 
+            class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground shrink-0"
+            title="Shopping Bag"
+            aria-label="Cart"
+          >
+            <Handbag class="w-5 h-5" />
+            <span 
+              v-if="cartStore.totalItems > 0" 
+              class="absolute -bottom-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
+            >
+              {{ cartStore.totalItems }}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Row 2 (< md): Real Mobile Search Input Bar -->
+      <div class="w-full relative md:hidden pb-1">
+        <input 
+          v-model="searchQuery"
+          type="text" 
+          placeholder="Search products, brands or models..." 
+          role="combobox"
+          :aria-expanded="isSearchExpanded"
+          aria-autocomplete="list"
+          aria-label="Search items"
+          class="w-full bg-muted/60 border border-input focus:border-primary/50 rounded-full outline-none h-10 text-xs px-10 transition-all focus:bg-background focus:ring-2 focus:ring-primary/20 font-medium"
+          @focus="openSearch"
+          @keyup.enter="handleSearchSubmit"
+        />
+        <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <button 
+          v-if="searchQuery" 
+          type="button" 
+          @click="searchQuery = ''"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 rounded-full hover:bg-muted"
+          aria-label="Clear search text"
+        >
+          <X class="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <!-- Desktop Spanning Brand Logo (md: and up) -->
       <NuxtLink 
         to="/" 
         :class="cn(
-          'flex items-center justify-center shrink-0 group transition-all duration-300',
+          'hidden md:flex items-center justify-center shrink-0 group transition-all duration-300',
           !isSearchExpanded && 'md:col-start-1 md:row-start-1 md:row-span-2 md:self-center pr-2 lg:pr-3'
         )"
         aria-label="Best Computer Hub Home"
@@ -288,10 +378,10 @@ if (process.client) {
         />
       </NuxtLink>
 
-      <!-- Main Row -->
+      <!-- Desktop Main Row (md: and up) -->
       <div 
         :class="cn(
-          'flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader flex-1 min-w-0',
+          'hidden md:flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader flex-1 min-w-0',
           !isSearchExpanded && 'md:col-start-2 md:row-start-1'
         )"
       >
@@ -516,7 +606,7 @@ if (process.client) {
       >
         <div 
           v-if="isSearchExpanded" 
-          class="hidden md:block absolute top-full left-4 right-4 z-50 mt-2 bg-background/98 backdrop-blur-xl border border-border/80 rounded-2xl shadow-2xl p-4 sm:p-6 overflow-hidden space-y-4 max-h-[75vh] overflow-y-auto"
+          class="absolute top-full left-2 right-2 md:left-4 md:right-4 z-50 mt-1 sm:mt-2 bg-background/98 backdrop-blur-xl border border-border/80 rounded-2xl shadow-2xl p-4 sm:p-6 overflow-hidden space-y-4 max-h-[75vh] overflow-y-auto"
         >
           <!-- Popular Searches when query is empty -->
           <div v-if="!searchQuery.trim()" class="space-y-4">
@@ -722,28 +812,54 @@ if (process.client) {
             Synchronizing Nodes...
           </div>
           
-          <div v-else class="space-y-4">
-            <div v-for="cat in categories" :key="cat.id" class="space-y-2">
-              <NuxtLink 
-                :to="categoryService.getCategoryUrl(cat, allCategories)" 
-                class="font-bold text-xs uppercase tracking-wider block hover:text-primary transition-colors"
-                @click="uiStore.closeMobileMenu()"
-              >
-                {{ cat.name }}
-              </NuxtLink>
+          <div v-else class="space-y-3">
+            <div v-for="cat in categories" :key="cat.id" class="border-b border-border/40 pb-2">
+              <div class="flex items-center justify-between">
+                <NuxtLink 
+                  :to="categoryService.getCategoryUrl(cat, allCategories)" 
+                  class="font-bold text-xs uppercase tracking-wider block hover:text-primary transition-colors py-1"
+                  @click="uiStore.closeMobileMenu()"
+                >
+                  {{ cat.name }}
+                </NuxtLink>
+
+                <button 
+                  v-if="getSubCategories(cat).length"
+                  type="button"
+                  @click="toggleMobileCategory(cat.id)"
+                  class="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                  :aria-label="`Toggle subcategories for ${cat.name}`"
+                >
+                  <ChevronRight 
+                    :class="cn('w-4 h-4 transition-transform duration-200', openMobileCategoryIds.includes(cat.id) ? 'rotate-90 text-primary' : '')" 
+                  />
+                </button>
+              </div>
               
-              <!-- Subcategories simple mapping -->
-              <ul v-if="getSubCategories(cat).length" class="pl-4 border-l border-border/60 space-y-1.5 py-1">
-                <li v-for="subCat in getSubCategories(cat)" :key="subCat.id">
-                  <NuxtLink 
-                    :to="categoryService.getCategoryUrl(subCat, allCategories)" 
-                    class="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary block"
-                    @click="uiStore.closeMobileMenu()"
-                  >
-                    {{ subCat.name }}
-                  </NuxtLink>
-                </li>
-              </ul>
+              <!-- Subcategories expandable via tap -->
+              <transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="max-h-0 opacity-0 overflow-hidden"
+                enter-to-class="max-h-96 opacity-100 overflow-hidden"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="max-h-96 opacity-100 overflow-hidden"
+                leave-to-class="max-h-0 opacity-0 overflow-hidden"
+              >
+                <ul 
+                  v-if="getSubCategories(cat).length && openMobileCategoryIds.includes(cat.id)" 
+                  class="pl-3 mt-1.5 border-l-2 border-primary/40 space-y-2 py-1.5 bg-muted/20 rounded-r-lg"
+                >
+                  <li v-for="subCat in getSubCategories(cat)" :key="subCat.id">
+                    <NuxtLink 
+                      :to="categoryService.getCategoryUrl(subCat, allCategories)" 
+                      class="text-[11px] font-semibold tracking-wide text-muted-foreground hover:text-primary block py-1 px-1.5 rounded hover:bg-muted/50 transition-colors"
+                      @click="uiStore.closeMobileMenu()"
+                    >
+                      {{ subCat.name }}
+                    </NuxtLink>
+                  </li>
+                </ul>
+              </transition>
             </div>
           </div>
         </div>

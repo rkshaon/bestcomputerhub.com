@@ -74,8 +74,8 @@ const handleCheckout = () => {
             <img :src="item.product.images[0]" class="w-full h-full object-cover" />
           </div>
           <div class="flex-grow space-y-1">
-            <div class="flex justify-between items-start">
-              <h4 class="font-bold text-sm line-clamp-1 truncate w-40">{{ item.product.name }}</h4>
+            <div class="flex justify-between items-start gap-2">
+              <h4 class="font-bold text-sm line-clamp-1 truncate flex-1 min-w-0">{{ item.product.name }}</h4>
               <button 
                 @click="cartStore.removeFromCart(item.productId)"
                 class="text-muted-foreground hover:text-destructive transition-colors"
