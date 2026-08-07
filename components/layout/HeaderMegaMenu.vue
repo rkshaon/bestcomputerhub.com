@@ -4,12 +4,21 @@ import { computed } from 'vue';
 import type { Category } from '@/types';
 import HeaderCategorySubmenu from '@/components/layout/HeaderCategorySubmenu.vue';
 
-const props = defineProps<{
-  category: Category;
-  allCategories: Category[];
-  isOpen?: boolean;
-  alignRight?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    category: Category;
+    allCategories: Category[];
+    isOpen?: boolean;
+    alignRight?: boolean;
+    level?: number;
+    flyoutLeft?: boolean;
+  }>(),
+  {
+    level: 1,
+    alignRight: false,
+    flyoutLeft: false
+  }
+);
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -47,9 +56,10 @@ const level1Items = computed(() => {
     v-if="isOpen && level1Items.length > 0"
     :items="level1Items"
     :all-categories="allCategories"
-    :level="1"
+    :level="level"
     :is-open="isOpen"
     :align-right="alignRight"
+    :flyout-left="flyoutLeft"
     @keep-open="emit('keepOpen')"
     @close="emit('close')"
   />

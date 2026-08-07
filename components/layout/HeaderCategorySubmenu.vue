@@ -225,7 +225,7 @@ watch(() => props.isOpen, (newVal) => {
       'absolute z-50 transition-all duration-150 origin-top pointer-events-auto',
       level === 1 
         ? (alignRight ? 'top-full right-0 pt-1.5' : 'top-full left-0 pt-1.5')
-        : (flyoutLeft ? 'right-full pr-1.5' : 'left-full pl-1.5')
+        : (flyoutLeft ? 'right-full top-0 pr-1.5' : 'left-full top-0 pl-1.5')
     )"
     :style="customStyle"
     @mouseenter="handlePanelMouseEnter"

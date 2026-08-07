@@ -1,7 +1,7 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
-import { Handbag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ArrowRight, Tag, Sparkles, Zap, Clock } from 'lucide-vue-next';
+import { Handbag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, ArrowRight, Tag, Sparkles, Zap, Clock } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -164,18 +164,6 @@ const handleScroll = () => {
   }
 };
 
-onMounted(() => {
-  loadMenuCategories();
-  handleScroll();
-  window.addEventListener('scroll', handleScroll, { passive: true });
-});
-
-onUnmounted(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('scroll', handleScroll);
-  }
-});
-
 // Helper to get category by slug safely
 const getCategoryBySlug = (slug: string) => allCategories.value.find(c => c.slug === slug);
 
@@ -214,6 +202,154 @@ const keepMegaMenuOpen = () => {
   if (megaMenuTimer) clearTimeout(megaMenuTimer);
 };
 
+// ==========================================
+// Adaptive Desktop Navigation System
+// ==========================================
+const navRef = ref<HTMLElement | null>(null);
+const measureContainerRef = ref<HTMLElement | null>(null);
+const measureHomeRef = ref<HTMLElement | null>(null);
+const measureMoreRef = ref<HTMLElement | null>(null);
+const measureItemRefs = ref<HTMLElement[]>([]);
+
+const visibleCount = ref<number>(categories.value.length);
+const isNavCompact = ref(false);
+const isNavUltraCompact = ref(false);
+
+const setMeasureItemRef = (el: any, index: number) => {
+  if (el) {
+    measureItemRefs.value[index] = (el as any).$el || el;
+  }
+};
+
+const visibleCategories = computed(() => {
+  if (visibleCount.value >= categories.value.length) {
+    return categories.value;
+  }
+  return categories.value.slice(0, visibleCount.value);
+});
+
+const overflowCategories = computed(() => {
+  if (visibleCount.value >= categories.value.length) {
+    return [];
+  }
+  return categories.value.slice(visibleCount.value);
+});
+
+// Calculate how many categories fit in the desktop nav bar dynamically
+const updateAdaptiveNav = () => {
+  if (!navRef.value) return;
+
+  const availableWidth = navRef.value.clientWidth;
+  if (availableWidth <= 0) return;
+
+  // Determine compactness based on available container width
+  if (availableWidth < 680) {
+    isNavCompact.value = true;
+    isNavUltraCompact.value = true;
+  } else if (availableWidth < 920) {
+    isNavCompact.value = true;
+    isNavUltraCompact.value = false;
+  } else {
+    isNavCompact.value = false;
+    isNavUltraCompact.value = false;
+  }
+
+  // Calculate gap in px matching the flex gap
+  const gapPx = isNavUltraCompact.value ? 4 : (isNavCompact.value ? 6 : 10);
+
+  // Measure elements
+  const homeWidth = measureHomeRef.value?.offsetWidth || 32;
+  const moreWidth = measureMoreRef.value?.offsetWidth || 75;
+
+  const itemWidths = categories.value.map((_, idx) => {
+    const el = measureItemRefs.value[idx];
+    return el ? el.offsetWidth : 90;
+  });
+
+  const totalAllWidth = homeWidth + gapPx + itemWidths.reduce((a, b) => a + b + gapPx, 0);
+
+  if (totalAllWidth <= availableWidth) {
+    // All items fit! No "More" menu needed.
+    visibleCount.value = categories.value.length;
+  } else {
+    // Overflow occurs: calculate space for items excluding Home, More, and gaps
+    const spaceForItems = availableWidth - homeWidth - gapPx - moreWidth - gapPx;
+
+    let fitCount = 0;
+    let accumulated = 0;
+
+    for (let i = 0; i < itemWidths.length; i++) {
+      const itemW = itemWidths[i] ?? 90;
+      const needed = (i === 0 ? itemW : itemW + gapPx);
+      if (accumulated + needed <= spaceForItems) {
+        accumulated += needed;
+        fitCount++;
+      } else {
+        break;
+      }
+    }
+
+    visibleCount.value = Math.max(1, Math.min(fitCount, categories.value.length - 1));
+  }
+};
+
+// "More" Dropdown State & Handlers
+const isMoreOpen = ref(false);
+let moreHoverTimer: ReturnType<typeof setTimeout> | null = null;
+
+const openMoreDropdown = () => {
+  if (moreHoverTimer) clearTimeout(moreHoverTimer);
+  isMoreOpen.value = true;
+};
+
+const closeMoreDropdown = () => {
+  moreHoverTimer = setTimeout(() => {
+    isMoreOpen.value = false;
+  }, 180);
+};
+
+const keepMoreOpen = () => {
+  if (moreHoverTimer) clearTimeout(moreHoverTimer);
+};
+
+// ResizeObserver setup
+let navResizeObserver: ResizeObserver | null = null;
+
+onMounted(() => {
+  loadMenuCategories();
+  handleScroll();
+  window.addEventListener('scroll', handleScroll, { passive: true });
+
+  if (typeof window !== 'undefined') {
+    nextTick(() => {
+      updateAdaptiveNav();
+
+      if ('ResizeObserver' in window && navRef.value) {
+        navResizeObserver = new ResizeObserver(() => {
+          updateAdaptiveNav();
+        });
+        navResizeObserver.observe(navRef.value);
+      }
+    });
+  }
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('scroll', handleScroll);
+  }
+  if (navResizeObserver) {
+    navResizeObserver.disconnect();
+    navResizeObserver = null;
+  }
+});
+
+watch([categories, isSearchExpanded], () => {
+  nextTick(() => {
+    updateAdaptiveNav();
+  });
+});
+
 if (process.client) {
   // Close theme menu & mega menu on click outside / escape
   const handleWindowClick = (e: MouseEvent) => {
@@ -228,11 +364,15 @@ if (process.client) {
     ) {
       closeSearch();
     }
+    if (!target.closest('.group\\/more') && !target.closest('.group\\/moreitem')) {
+      isMoreOpen.value = false;
+    }
   };
 
   const handleWindowKeydown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       activeMegaMenuId.value = null;
+      isMoreOpen.value = false;
       if (isSearchExpanded.value) {
         closeSearch();
       }
@@ -705,22 +845,31 @@ if (process.client) {
       </transition>
 
       <!-- Category Navigation Row (Hidden when Search is Expanded) -->
-      <nav v-if="!isSearchExpanded" class="hidden md:flex relative items-center justify-between gap-2 w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50 md:col-start-2 md:row-start-2">
+      <nav 
+        v-if="!isSearchExpanded" 
+        ref="navRef"
+        :class="cn(
+          'hidden md:flex relative items-center justify-between w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50 md:col-start-2 md:row-start-2 transition-all duration-200',
+          isNavUltraCompact ? 'gap-1' : (isNavCompact ? 'gap-1.5' : 'gap-2.5')
+        )"
+      >
         <!-- Static Home Link -->
         <NuxtLink 
           to="/" 
           aria-label="Home"
           title="Home"
           :class="cn(
-            'relative flex items-center justify-center font-semibold text-xs lg:text-[13px] tracking-normal transition-colors whitespace-nowrap py-1.5 px-1 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xs',
+            'relative flex items-center justify-center font-semibold tracking-normal transition-colors whitespace-nowrap py-1.5 px-1 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xs',
+            isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
             route.path === '/' ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
           )"
         >
           <Home class="w-4 h-4" />
         </NuxtLink>
 
+        <!-- Visible Categories -->
         <div 
-          v-for="(cat, index) in categories" 
+          v-for="(cat, index) in visibleCategories" 
           :key="cat.id" 
           class="group relative h-full flex items-center shrink-0"
           @mouseenter="openMegaMenu(cat.id)"
@@ -731,7 +880,8 @@ if (process.client) {
           <NuxtLink 
             :to="categoryService.getCategoryUrl(cat, allCategories)" 
             :class="cn(
-              'relative flex items-center font-semibold text-xs lg:text-[13px] tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200',
+              'relative flex items-center font-semibold tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200',
+              isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
               activeMegaMenuId === cat.id ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
             )"
           >
@@ -743,12 +893,112 @@ if (process.client) {
             :category="cat" 
             :all-categories="allCategories"
             :is-open="activeMegaMenuId === cat.id"
-            :align-right="index >= categories.length / 2"
+            :align-right="index >= visibleCategories.length / 2"
             @keep-open="keepMegaMenuOpen"
             @close="closeMegaMenu"
           />
         </div>
+
+        <!-- Dynamic "More" Dropdown Button (Only shown when overflowCategories exists) -->
+        <div 
+          v-if="overflowCategories.length > 0"
+          class="group/more relative h-full flex items-center shrink-0 ml-auto"
+          @mouseenter="openMoreDropdown"
+          @mouseleave="closeMoreDropdown"
+          @focusin="openMoreDropdown"
+          @focusout="closeMoreDropdown"
+        >
+          <button
+            type="button"
+            :class="cn(
+              'relative flex items-center gap-1 font-semibold transition-colors whitespace-nowrap py-1.5 px-1.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md cursor-pointer',
+              isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
+              isMoreOpen || (activeMegaMenuId && activeMegaMenuId.startsWith('more-')) ? 'text-primary font-bold' : 'text-foreground/85'
+            )"
+            :aria-expanded="isMoreOpen"
+            aria-label="More categories"
+          >
+            <span>More</span>
+            <ChevronDown :class="cn('w-3.5 h-3.5 transition-transform duration-200', isMoreOpen ? 'rotate-180 text-primary' : 'text-muted-foreground')" />
+          </button>
+
+          <!-- More Categories Dropdown Menu -->
+          <transition
+            enter-active-class="transition duration-150 ease-out"
+            enter-from-class="transform scale-95 opacity-0"
+            enter-to-class="transform scale-100 opacity-100"
+            leave-active-class="transition duration-100 ease-in"
+            leave-from-class="transform scale-100 opacity-100"
+            leave-to-class="transform scale-95 opacity-0"
+          >
+            <div 
+              v-if="isMoreOpen"
+              class="absolute top-full right-0 mt-1 min-w-[200px] max-w-[260px] bg-background/98 backdrop-blur-xl border border-border/80 shadow-2xl rounded-xl p-1.5 z-50 flex flex-col gap-0.5"
+              @mouseenter="keepMoreOpen"
+              @mouseleave="closeMoreDropdown"
+            >
+              <div 
+                v-for="cat in overflowCategories" 
+                :key="cat.id"
+                class="group/moreitem relative"
+                @mouseenter="openMegaMenu('more-' + cat.id)"
+                @mouseleave="closeMegaMenu"
+              >
+                <NuxtLink
+                  :to="categoryService.getCategoryUrl(cat, allCategories)"
+                  :class="cn(
+                    'flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+                    activeMegaMenuId === 'more-' + cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted/80 text-foreground/90 hover:text-primary'
+                  )"
+                  @click="isMoreOpen = false; activeMegaMenuId = null"
+                >
+                  <span class="truncate">{{ cat.name }}</span>
+                  <ChevronRight v-if="getSubCategories(cat).length > 0" class="w-3.5 h-3.5 text-muted-foreground group-hover/moreitem:text-primary shrink-0 ml-2" />
+                </NuxtLink>
+
+                <!-- Nested Mega Menu for overflow items -->
+                <HeaderMegaMenu 
+                  v-if="getSubCategories(cat).length > 0"
+                  :category="cat" 
+                  :all-categories="allCategories"
+                  :is-open="activeMegaMenuId === 'more-' + cat.id"
+                  :level="2"
+                  :flyout-left="true"
+                  @keep-open="keepMegaMenuOpen"
+                  @close="closeMegaMenu"
+                />
+              </div>
+            </div>
+          </transition>
+        </div>
       </nav>
+
+      <!-- Offscreen Measurement Container -->
+      <div 
+        ref="measureContainerRef" 
+        class="absolute top-0 left-0 -z-50 pointer-events-none opacity-0 invisible flex items-center flex-nowrap"
+        :class="isNavUltraCompact ? 'gap-1' : (isNavCompact ? 'gap-1.5' : 'gap-2.5')"
+        aria-hidden="true"
+      >
+        <div ref="measureHomeRef" class="py-1.5 px-1 font-semibold" :class="isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]')">
+          <Home class="w-4 h-4" />
+        </div>
+
+        <div 
+          v-for="(cat, idx) in categories" 
+          :key="cat.id"
+          :ref="el => setMeasureItemRef(el, idx)"
+          class="font-semibold py-1.5 px-0.5 whitespace-nowrap"
+          :class="isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]')"
+        >
+          {{ cat.name }}
+        </div>
+
+        <div ref="measureMoreRef" class="font-semibold py-1.5 px-1.5 flex items-center gap-1 whitespace-nowrap" :class="isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]')">
+          <span>More</span>
+          <ChevronDown class="w-3.5 h-3.5" />
+        </div>
+      </div>
     </div>
 
     <!-- Backdrop Overlay for Expanded Search -->
