@@ -8,5 +8,6 @@ export * from './brand';
 export * from './cart';
 export * from './order';
 export * from './admin';
+export * from './role';
 export * from './blog';
 export * from './hero';
