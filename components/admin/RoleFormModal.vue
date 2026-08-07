@@ -6,6 +6,7 @@ import { usePermissionService } from '@/composables/usePermissionService';
 import { useRoleService } from '@/composables/useRoleService';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useToast } from '@/composables/useToast';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import type { Role, Permission } from '@/types';
 
@@ -187,9 +188,12 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-    <div class="bg-card text-card-foreground border border-border w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
-      
+  <UiAdminModal
+    :is-open="isOpen"
+    max-width="max-w-2xl"
+    :show-close-button="false"
+    @close="emit('close')"
+  >
       <!-- Modal Header -->
       <div class="px-6 py-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
         <div class="flex items-center gap-3">
@@ -364,6 +368,5 @@ const handleSubmit = async () => {
         </UiButton>
       </div>
 
-    </div>
-  </div>
+  </UiAdminModal>
 </template>

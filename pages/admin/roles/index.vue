@@ -18,6 +18,7 @@ import { useRoleService } from '@/composables/useRoleService';
 import { usePermissionService } from '@/composables/usePermissionService';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { useToast } from '@/composables/useToast';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import RoleFormModal from '@/components/admin/RoleFormModal.vue';
 import type { Role } from '@/types';
 
@@ -308,11 +309,13 @@ const filteredRoles = computed(() => {
     />
 
     <!-- Delete Confirmation Modal -->
-    <div 
-      v-if="modalState.isDelete.value && modalState.activeEntity.value" 
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+    <UiAdminModal 
+      :is-open="modalState.isDelete.value && !!modalState.activeEntity.value"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="modalState.closeModal()"
     >
-      <div class="bg-card text-card-foreground border border-border w-full max-w-md rounded-[2rem] p-6 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+      <div class="p-6 space-y-6">
         <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
           <Trash2 class="w-6 h-6" />
         </div>
@@ -320,7 +323,7 @@ const filteredRoles = computed(() => {
         <div>
           <h3 class="text-lg font-bold text-foreground">Confirm Role Deletion</h3>
           <p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-            Are you sure you want to delete the role <span class="font-bold text-foreground">"{{ modalState.activeEntity.value.name }}"</span>? Staff members assigned to this group may lose administrative access.
+            Are you sure you want to delete the role <span class="font-bold text-foreground">"{{ modalState.activeEntity.value?.name }}"</span>? Staff members assigned to this group may lose administrative access.
           </p>
         </div>
 
@@ -344,7 +347,7 @@ const filteredRoles = computed(() => {
           </UiButton>
         </div>
       </div>
-    </div>
+    </UiAdminModal>
 
   </div>
 </template>

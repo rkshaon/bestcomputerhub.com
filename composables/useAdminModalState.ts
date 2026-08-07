@@ -1,5 +1,5 @@
 // File: /composables/useAdminModalState.ts
-import { ref, computed, watch, unref, type Ref, type MaybeRef } from 'vue';
+import { ref, computed, watch, unref, onMounted, onBeforeUnmount, type Ref, type MaybeRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 export type ModalMode = 'create' | 'edit' | 'view' | 'delete' | string;
@@ -30,6 +30,11 @@ export interface UseAdminModalStateOptions<T = any> {
    * Callback invoked when entity resolution fails for an ID in the URL.
    */
   onResolveError?: (id: string | number, error?: any) => void;
+
+  /**
+   * Automatically close modal on Escape key press. Defaults to true.
+   */
+  closeOnEscape?: boolean;
 }
 
 export function useAdminModalState<T = any>(options: UseAdminModalStateOptions<T> = {}) {
@@ -39,13 +44,14 @@ export function useAdminModalState<T = any>(options: UseAdminModalStateOptions<T
   const modalParamKey = options.modalParam || 'modal';
   const idParamKey = options.idParam || 'id';
   const getItemId = options.getItemId || ((item: any) => item?.id);
+  const closeOnEscape = options.closeOnEscape ?? true;
 
   const activeEntity = ref<T | null>(null) as Ref<T | null>;
   const isResolving = ref(false);
 
-  // Active mode from URL
+  // Active mode from URL (checks both modalParamKey and fallback 'action')
   const activeMode = computed<ModalMode | null>(() => {
-    const val = route.query[modalParamKey];
+    const val = route.query[modalParamKey] ?? route.query['action'];
     return typeof val === 'string' && val.trim() ? val.trim() : null;
   });
 
@@ -92,11 +98,12 @@ export function useAdminModalState<T = any>(options: UseAdminModalStateOptions<T
   const openView = (id: string | number, replace = false) => openModal('view', id, { replace });
   const openDelete = (id: string | number, replace = false) => openModal('delete', id, { replace });
 
-  // Close modal helper
+  // Single canonical close modal handler
   const closeModal = async (navOptions: { replace?: boolean } = {}) => {
     const query = { ...route.query };
     delete query[modalParamKey];
     delete query[idParamKey];
+    delete query['action'];
 
     activeEntity.value = null;
 
@@ -106,6 +113,23 @@ export function useAdminModalState<T = any>(options: UseAdminModalStateOptions<T
       await router.push({ query });
     }
   };
+
+  // Escape key event listener
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (closeOnEscape && isOpen.value && e.key === 'Escape') {
+      closeModal();
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    onMounted(() => {
+      window.addEventListener('keydown', handleKeyDown);
+    });
+
+    onBeforeUnmount(() => {
+      window.removeEventListener('keydown', handleKeyDown);
+    });
+  }
 
   // Entity resolution logic
   const resolveEntity = async () => {
@@ -188,3 +212,4 @@ export function useAdminModalState<T = any>(options: UseAdminModalStateOptions<T
     resolveEntity
   };
 }
+
