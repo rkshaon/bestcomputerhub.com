@@ -165,10 +165,12 @@ SEO migration and redirects.
 All paginated selectors and infinite-scroll collections must use `useInfinitePagination<T>()` from `/composables/useInfinitePagination.ts` and `<UiInfiniteScroll />` from `/components/ui/UiInfiniteScroll.vue`.
 - Features built-in deduplication, DRF pagination handling, loading states, search resets, and IntersectionObserver scroll triggering.
 
-### 2. URL-Driven Admin Modal State (`useAdminModalState`)
-Admin CRUD dialogs (Create/Edit/View/Delete) must reflect modal state in route query parameters using `useAdminModalState<T>()` from `/composables/useAdminModalState.ts`.
+### 2. URL-Driven Admin Modal State (`useAdminModalState` & `<UiAdminModal />`)
+All admin CRUD dialogs (Create/Edit/View/Delete) must synchronize their state directly with route query parameters using `useAdminModalState<T>()` from `/composables/useAdminModalState.ts` and `<UiAdminModal />` from `/components/ui/UiAdminModal.vue`.
 - Standard URL query format: `?modal=create`, `?modal=edit&id=15`, `?modal=view&id=15`, `?modal=delete&id=15`.
-- Ensures shareable URLs, page refresh state restoration, and browser Back/Forward history navigation.
+- **Single Source of Truth**: The URL drives modal visibility and entity resolution. Opens, closes, reloads, and browser Back/Forward navigation automatically stay synchronized.
+- **Unified Dismissal Flow**: All close triggers (Cancel button, Close 'X' button, clicking backdrop/outside area, and Escape key) must call the same canonical `closeModal()` method to clear query parameters and restore URL state.
+- **UI Container Requirement**: All admin modals must wrap their markup in `<UiAdminModal>` to enforce consistent z-indexing, backdrop blur, mousedown-outside tracking, and keyboard accessibility.
 
 ## Structural Changes
 
