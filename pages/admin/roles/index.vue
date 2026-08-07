@@ -11,13 +11,12 @@ import {
   Loader2, 
   AlertCircle, 
   Key, 
-  Users, 
   RefreshCw,
-  CheckCircle2,
   X
 } from 'lucide-vue-next';
 import { useRoleService } from '@/composables/useRoleService';
 import { usePermissionService } from '@/composables/usePermissionService';
+import { useAdminModalState } from '@/composables/useAdminModalState';
 import { useToast } from '@/composables/useToast';
 import RoleFormModal from '@/components/admin/RoleFormModal.vue';
 import type { Role } from '@/types';
@@ -36,11 +35,19 @@ const permissionService = usePermissionService();
 const { toastSuccess, toastError } = useToast();
 
 const searchQuery = ref('');
-const isFormModalOpen = ref(false);
-const activeEditingRole = ref<Role | null>(null);
 
-// Delete confirmation state
-const roleToDelete = ref<Role | null>(null);
+// Reusable URL-driven modal state infrastructure
+const modalState = useAdminModalState<Role>({
+  getItems: async (id) => {
+    return await roleService.getRoleById(Number(id));
+  },
+  onResolveError: (id) => {
+    toastError(`Role #${id} could not be found.`);
+    modalState.closeModal({ replace: true });
+  }
+});
+
+// Delete operation submitting state
 const isDeleting = ref(false);
 
 const roles = computed(() => roleService.roles.value || []);
@@ -62,33 +69,20 @@ const handleSearch = () => {
   roleService.getRoles({ search: searchQuery.value });
 };
 
-const handleOpenCreateModal = () => {
-  activeEditingRole.value = null;
-  isFormModalOpen.value = true;
-};
-
-const handleOpenEditModal = (role: Role) => {
-  activeEditingRole.value = role;
-  isFormModalOpen.value = true;
-};
-
-const handleRoleSaved = () => {
-  roleService.getRoles({ search: searchQuery.value });
-};
-
-const confirmDeleteRole = (role: Role) => {
-  roleToDelete.value = role;
+const handleRoleSaved = async () => {
+  await roleService.getRoles({ search: searchQuery.value });
+  await modalState.closeModal();
 };
 
 const executeDeleteRole = async () => {
-  if (!roleToDelete.value) return;
-  const targetRole = roleToDelete.value;
+  if (!modalState.activeEntity.value) return;
+  const targetRole = modalState.activeEntity.value;
   isDeleting.value = true;
 
   try {
     await roleService.deleteRole(targetRole.id);
     toastSuccess(`Role "${targetRole.name}" removed successfully.`);
-    roleToDelete.value = null;
+    await modalState.closeModal();
     await roleService.getRoles({ search: searchQuery.value });
   } catch (err: any) {
     toastError(err.message || 'Failed to delete role.');
@@ -138,7 +132,7 @@ const filteredRoles = computed(() => {
 
         <UiButton 
           class="rounded-2xl h-11 px-6 gap-2 shadow-xl shadow-primary/20 bg-primary text-primary-foreground font-bold text-xs"
-          @click="handleOpenCreateModal"
+          @click="modalState.openCreate()"
         >
           <Plus class="w-4 h-4" />
           <span>Create New Role</span>
@@ -216,7 +210,7 @@ const filteredRoles = computed(() => {
       <UiButton v-if="searchQuery" variant="outline" @click="searchQuery = ''; handleSearch()" class="rounded-2xl h-10 px-5 text-xs font-bold">
         Clear Filter
       </UiButton>
-      <UiButton v-else @click="handleOpenCreateModal" class="rounded-2xl h-10 px-5 text-xs font-bold">
+      <UiButton v-else @click="modalState.openCreate()" class="rounded-2xl h-10 px-5 text-xs font-bold">
         Create First Role
       </UiButton>
     </div>
@@ -285,7 +279,7 @@ const filteredRoles = computed(() => {
         <div class="pt-6 mt-6 border-t border-border/60 flex items-center justify-end gap-2">
           <button 
             type="button" 
-            @click="handleOpenEditModal(role)"
+            @click="modalState.openEdit(role.id)"
             class="px-4 py-2 rounded-xl border border-border text-xs font-bold hover:bg-muted text-foreground transition-all flex items-center gap-1.5"
           >
             <Edit class="w-3.5 h-3.5 text-muted-foreground" />
@@ -294,7 +288,7 @@ const filteredRoles = computed(() => {
 
           <button 
             type="button" 
-            @click="confirmDeleteRole(role)"
+            @click="modalState.openDelete(role.id)"
             class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             title="Delete Role"
           >
@@ -305,16 +299,19 @@ const filteredRoles = computed(() => {
       </div>
     </div>
 
-    <!-- Role Form Modal -->
+    <!-- Role Form Modal (Create / Edit) -->
     <RoleFormModal 
-      :is-open="isFormModalOpen"
-      :role="activeEditingRole"
-      @close="isFormModalOpen = false"
+      :is-open="modalState.isCreate.value || modalState.isEdit.value"
+      :role="modalState.isEdit.value ? modalState.activeEntity.value : null"
+      @close="modalState.closeModal()"
       @saved="handleRoleSaved"
     />
 
     <!-- Delete Confirmation Modal -->
-    <div v-if="roleToDelete" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div 
+      v-if="modalState.isDelete.value && modalState.activeEntity.value" 
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+    >
       <div class="bg-card text-card-foreground border border-border w-full max-w-md rounded-[2rem] p-6 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
         <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
           <Trash2 class="w-6 h-6" />
@@ -323,7 +320,7 @@ const filteredRoles = computed(() => {
         <div>
           <h3 class="text-lg font-bold text-foreground">Confirm Role Deletion</h3>
           <p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-            Are you sure you want to delete the role <span class="font-bold text-foreground">"{{ roleToDelete.name }}"</span>? Staff members assigned to this group may lose administrative access.
+            Are you sure you want to delete the role <span class="font-bold text-foreground">"{{ modalState.activeEntity.value.name }}"</span>? Staff members assigned to this group may lose administrative access.
           </p>
         </div>
 
@@ -331,7 +328,7 @@ const filteredRoles = computed(() => {
           <UiButton 
             variant="outline" 
             class="rounded-xl h-10 px-5 text-xs font-bold"
-            @click="roleToDelete = null"
+            @click="modalState.closeModal()"
             :disabled="isDeleting"
           >
             Cancel

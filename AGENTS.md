@@ -159,6 +159,17 @@ server-renderable and expose appropriate metadata.
 Do not replace existing WordPress URLs without considering
 SEO migration and redirects.
 
+## Reusable Admin Infrastructure & State Patterns
+
+### 1. Reusable Infinite Pagination (`useInfinitePagination`)
+All paginated selectors and infinite-scroll collections must use `useInfinitePagination<T>()` from `/composables/useInfinitePagination.ts` and `<UiInfiniteScroll />` from `/components/ui/UiInfiniteScroll.vue`.
+- Features built-in deduplication, DRF pagination handling, loading states, search resets, and IntersectionObserver scroll triggering.
+
+### 2. URL-Driven Admin Modal State (`useAdminModalState`)
+Admin CRUD dialogs (Create/Edit/View/Delete) must reflect modal state in route query parameters using `useAdminModalState<T>()` from `/composables/useAdminModalState.ts`.
+- Standard URL query format: `?modal=create`, `?modal=edit&id=15`, `?modal=view&id=15`, `?modal=delete&id=15`.
+- Ensures shareable URLs, page refresh state restoration, and browser Back/Forward history navigation.
+
 ## Structural Changes
 
 Agents may autonomously perform small, task-local,

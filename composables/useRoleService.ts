@@ -295,6 +295,27 @@ export const useRoleService = () => {
     }
   };
 
+  // 5. Get Single Role
+  const getRoleById = async (id: number): Promise<Role | null> => {
+    const existing = rolesCache.value.find(r => r.id === id);
+    if (existing) return existing;
+
+    if (checkMockMode()) {
+      const list = getMockRoles();
+      return list.find(r => r.id === id) || null;
+    }
+
+    try {
+      const data = await apiClient.request<Role>(`/api/v1/roles/${id}/`, {
+        method: 'GET'
+      });
+      return data;
+    } catch {
+      const list = getMockRoles();
+      return list.find(r => r.id === id) || null;
+    }
+  };
+
   return {
     roles: rolesCache,
     totalCount,
@@ -302,6 +323,7 @@ export const useRoleService = () => {
     isSubmitting,
     error: errorMsg,
     getRoles,
+    getRoleById,
     createRole,
     updateRole,
     deleteRole
