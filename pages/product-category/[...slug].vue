@@ -44,6 +44,27 @@ const loadAllCategories = async () => {
 
 const activeCategory = ref<Category | null>(null);
 
+const pageTitle = computed(() => {
+  if (activeCategory.value?.name) {
+    return activeCategory.value.name;
+  }
+  return categorySlug.value ? categorySlug.value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Products';
+});
+
+const pageDescription = computed(() => {
+  if (activeCategory.value?.description) {
+    return activeCategory.value.description;
+  }
+  return `Explore top quality ${pageTitle.value} at Best Computer Hub in Bangladesh. Authentic products with reliable warranty and fast shipping.`;
+});
+
+useSeoMeta({
+  title: pageTitle,
+  description: pageDescription,
+  ogTitle: pageTitle,
+  ogDescription: pageDescription
+});
+
 const resolveCategory = async () => {
   const targetSlug = categorySlug.value ? categorySlug.value.toLowerCase() : '';
   console.log('[ProductCategory] Resolving category for slug:', targetSlug);

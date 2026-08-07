@@ -11,6 +11,14 @@ if (!post) {
   throw createError({ statusCode: 404, statusMessage: 'Article not found' });
 }
 
+useSeoMeta({
+  title: post.title,
+  description: post.excerpt || `Read ${post.title} on Best Computer Hub blog.`,
+  ogTitle: post.title,
+  ogDescription: post.excerpt || `Read ${post.title} on Best Computer Hub blog.`,
+  ogImage: post.image || '/logo.svg'
+});
+
 const recentPosts = blogService.getRecentPosts(3).filter(p => p.id !== post.id);
 
 // Scroll progress for reading indicator

@@ -18,6 +18,14 @@ if (!product) {
   throw createError({ statusCode: 404, statusMessage: 'Product not found' });
 }
 
+useSeoMeta({
+  title: product.name,
+  description: product.description || `Buy ${product.name} at the best price in Bangladesh from Best Computer Hub. Authentic warranty and fast delivery.`,
+  ogTitle: product.name,
+  ogDescription: product.description || `Buy ${product.name} at the best price in Bangladesh from Best Computer Hub.`,
+  ogImage: product.images[0] || '/logo.svg'
+});
+
 const selectedImage = ref(product.images[0]);
 const quantity = ref(1);
 const activeTab = ref('description');

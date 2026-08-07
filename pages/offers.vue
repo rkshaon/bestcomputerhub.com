@@ -6,6 +6,11 @@ import { formatCurrency } from '@/utils';
 import { useProductService } from '@/composables/useProductService';
 import { useCartStore } from '@/stores/cart';
 
+useSeoMeta({
+  title: 'Special Offers & Deals',
+  description: 'Exclusive discounts, flash sales, and special offers on gaming PCs, laptops, graphics cards, and accessories at Best Computer Hub.'
+});
+
 const productService = useProductService();
 const cartStore = useCartStore();
 const offers = productService.getOnSaleProducts();

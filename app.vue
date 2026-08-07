@@ -9,6 +9,22 @@ import 'vue-sonner/style.css';
 const uiStore = useUIStore();
 const cookieStore = useCookieStore();
 
+// Configure dynamic page title template and default site title
+useHead({
+  titleTemplate: (titleChunk?: string) => {
+    if (!titleChunk) {
+      return 'Best Computer Hub | Gaming PC, Laptop & Computer Accessories in Bangladesh';
+    }
+    if (
+      titleChunk === 'Best Computer Hub | Gaming PC, Laptop & Computer Accessories in Bangladesh' ||
+      titleChunk.includes('Best Computer Hub')
+    ) {
+      return titleChunk;
+    }
+    return `${titleChunk} | Best Computer Hub`;
+  }
+});
+
 // Handle logic
 onMounted(() => {
   uiStore.initTheme();

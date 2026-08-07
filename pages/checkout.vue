@@ -3,6 +3,11 @@
 import { ChevronRight, CreditCard, ShieldCheck, Truck, PackageCheck, AlertCircle, Smartphone, Banknote } from 'lucide-vue-next';
 import { formatCurrency, cn } from '@/utils';
 
+useSeoMeta({
+  title: 'Checkout',
+  description: 'Complete your purchase securely at Best Computer Hub. Multiple payment options with fast, nationwide delivery in Bangladesh.'
+});
+
 const cartStore = useCartStore();
 const step = ref(1);
 

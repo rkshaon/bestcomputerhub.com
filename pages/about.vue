@@ -2,6 +2,11 @@
 <script setup lang="ts">
 import { Building2, Users2, Cpu, Globe2, Trophy } from 'lucide-vue-next';
 
+useSeoMeta({
+  title: 'About Us',
+  description: 'Learn about Best Computer Hub — Bangladesh\'s leading retailer for gaming hardware, laptops, computer components, and enterprise IT solutions.'
+});
+
 const stats = [
   { label: 'Founded', value: '2012' },
   { label: 'Countries', value: '120+' },

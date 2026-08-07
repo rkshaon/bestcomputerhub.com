@@ -5,6 +5,11 @@ import { useProductService } from '@/composables/useProductService';
 import { useBrandService } from '@/composables/useBrandService';
 import type { Brand } from '@/types';
 
+useSeoMeta({
+  title: 'Best Computer Hub | Gaming PC, Laptop & Computer Accessories in Bangladesh',
+  description: 'Best Computer Hub is your trusted destination for gaming PCs, laptops, computer components, networking devices, accessories, and enterprise hardware in Bangladesh. Shop authentic products at competitive prices with reliable support.'
+});
+
 // Explicitly use the composables
 const productService = useProductService();
 const brandService = useBrandService();

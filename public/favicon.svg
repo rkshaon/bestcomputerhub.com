@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%" fill="none">
+  <!-- Outer Blue Background Circle -->
+  <circle cx="100" cy="100" r="98" fill="#237BEA" />
+  
+  <!-- Inner White Concentric Ring -->
+  <circle cx="100" cy="100" r="88" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" />
+  
+  <g fill="#FFFFFF">
+    <!-- Diamond dots above left tooth (2 dots tilted 45deg) -->
+    <rect x="66" y="58" width="6" height="6" transform="rotate(45 69 61)" />
+    <rect x="79" y="58" width="6" height="6" transform="rotate(45 82 61)" />
+    
+    <!-- Diamond dots above right tooth (3 dots in pyramid) -->
+    <rect x="117" y="53" width="6" height="6" transform="rotate(45 120 56)" />
+    <rect x="110" y="62" width="6" height="6" transform="rotate(45 113 65)" />
+    <rect x="124" y="62" width="6" height="6" transform="rotate(45 127 65)" />
+    
+    <!-- TM Trademark mark -->
+    <text x="160" y="70" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="8" font-weight="800" letter-spacing="0.5">TM</text>
+    
+    <!-- Main Arabic Calligraphy "بست" (BEST) -->
+    <path d="M 40 106 L 56 94 L 88 94 L 98 78 L 105 78 L 105 94 L 118 78 L 125 78 L 125 94 L 154 70 L 160 70 L 160 106 Z" />
+    
+    <!-- Cutouts to shape teeth and horizontal baseline connection -->
+    <path d="M 52 98 L 86 98 L 94 88 L 97 98 L 112 98 L 117 88 L 120 98 L 154 98 L 154 102 L 46 102 Z" fill="#237BEA" />
+    
+    <!-- Clean Horizontal Line Separator -->
+    <rect x="39" y="122" width="122" height="2.5" rx="1" />
+    
+    <!-- Diamond Dot above the Line (right side) -->
+    <rect x="150" y="112" width="6.5" height="6.5" transform="rotate(45 153.25 115.25)" />
+    
+    <!-- Bottom English Text "B E S T" -->
+    <!-- B -->
+    <path d="M 41 138 H 53 C 56 138 57.5 139.2 57.5 141 C 57.5 142.2 56.8 143 55.5 143.4 C 57.2 143.8 58 144.8 58 146.2 C 58 148.2 56.2 149.5 53 149.5 H 41 V 138 Z M 44 140.3 V 142.8 H 52 C 53.8 142.8 54.8 142.2 54.8 141.5 C 54.8 140.8 53.8 140.3 52 140.3 H 44 Z M 44 145 H 53 C 54.8 145 55.2 145.7 55.2 146.5 C 55.2 147.3 54.2 147.5 52.5 147.5 H 44 V 145 Z" />
+    
+    <!-- E -->
+    <path d="M 78 138 H 92 V 140.5 H 81 V 142.6 H 90 V 144.8 H 81 V 147 H 92 V 149.5 H 78 V 138 Z" />
+    
+    <!-- S -->
+    <path d="M 125 139.8 C 123.8 138.6 121.8 138 119 138 C 115 138 113 139.5 113 141.5 C 113 143.2 114.5 144.1 117.5 144.7 L 120 145.2 C 122.5 145.7 123.5 146.3 123.5 147.2 C 123.5 148.3 122 148.8 119.5 148.8 C 116.8 148.8 114.8 148.1 113.2 146.8 L 111.5 148.8 C 113.5 150.2 116.2 151 119.5 151 C 124 151 126.5 149.2 126.5 147 C 126.5 145 124.8 144.1 122 143.5 L 119.5 143 C 117.2 142.5 116 142 116 141.2 C 116 140.4 117.2 139.9 119 139.9 C 121.2 139.9 122.8 140.4 124 141.3 L 125 139.8 Z" />
+    
+    <!-- T -->
+    <path d="M 148 138 H 164 V 140.5 H 157.5 V 149.5 H 154.5 V 140.5 H 148 V 138 Z" />
+  </g>
+</svg>

@@ -5,6 +5,11 @@ import { formatCurrency } from '@/utils';
 import { useProductService } from '@/composables/useProductService';
 import { useCartStore } from '@/stores/cart';
 
+useSeoMeta({
+  title: 'New Arrivals',
+  description: 'Explore the latest gaming laptops, PC components, monitors, and computer accessories just arrived at Best Computer Hub.'
+});
+
 const productService = useProductService();
 const cartStore = useCartStore();
 const newArrivals = productService.getNewArrivals();

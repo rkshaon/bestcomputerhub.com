@@ -5,6 +5,11 @@ import { Mail, Lock, ArrowRight, Github, Chrome, ShieldCheck, Eye, EyeOff, Loade
 import { useAuthStore } from '@/stores/auth';
 import { cn } from '@/utils';
 
+useSeoMeta({
+  title: 'Sign In',
+  description: 'Sign in to your Best Computer Hub account to track orders, manage warranty passes, and access exclusive member prices.'
+});
+
 const authStore = useAuthStore();
 const route = useRoute();
 const email = ref('');

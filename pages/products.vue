@@ -28,6 +28,37 @@ const filters = ref({
   sort: (route.query.sort as string) || 'featured'
 });
 
+const dynamicTitle = computed(() => {
+  if (filters.value.query) {
+    return 'Search Results';
+  }
+  if (filters.value.brand) {
+    const brandName = filters.value.brand.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return `${brandName} Products`;
+  }
+  if (filters.value.category) {
+    return filters.value.category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+  return 'All Products';
+});
+
+const dynamicDescription = computed(() => {
+  if (filters.value.query) {
+    return `Search results for "${filters.value.query}" at Best Computer Hub. Find authentic products with competitive prices and warranty.`;
+  }
+  if (filters.value.brand) {
+    return `Shop authentic ${filters.value.brand} products at Best Computer Hub. Official warranty and fast delivery in Bangladesh.`;
+  }
+  return 'Browse our extensive catalog of gaming PCs, laptops, computer components, and accessories at Best Computer Hub.';
+});
+
+useSeoMeta({
+  title: dynamicTitle,
+  description: dynamicDescription,
+  ogTitle: dynamicTitle,
+  ogDescription: dynamicDescription
+});
+
 const isFilterSidebarOpen = ref(false);
 const viewMode = ref<'grid' | 'list'>('grid');
 

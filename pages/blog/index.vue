@@ -2,6 +2,11 @@
 <script setup lang="ts">
 import { Calendar, Clock, User, ArrowRight, Search, Tag } from 'lucide-vue-next';
 
+useSeoMeta({
+  title: 'Blog & Tech News',
+  description: 'Read the latest PC hardware reviews, gaming benchmarks, buying guides, and tech news at Best Computer Hub.'
+});
+
 const blogService = useBlogService();
 const posts = ref(blogService.getPosts());
 const categories = blogService.getCategories();

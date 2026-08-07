@@ -17,6 +17,11 @@ import {
 import { useAuthStore } from '@/stores/auth';
 import { formatCurrency, cn } from '@/utils';
 
+useSeoMeta({
+  title: 'My Account',
+  description: 'Manage your profile, track orders, view saved addresses, and update security settings at Best Computer Hub.'
+});
+
 const authStore = useAuthStore();
 
 // Redirect to login if not logged in

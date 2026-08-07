@@ -4,6 +4,11 @@ import { ref } from 'vue';
 import { User, Mail, Lock, Phone, ArrowRight, ShieldCheck, Loader2, CheckCircle2 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 
+useSeoMeta({
+  title: 'Create Account',
+  description: 'Create a new account at Best Computer Hub. Fast checkout, order tracking, and authentic computer hardware in Bangladesh.'
+});
+
 const authStore = useAuthStore();
 const name = ref('');
 const email = ref('');
