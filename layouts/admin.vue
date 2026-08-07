@@ -1,6 +1,10 @@
 <!-- File: /layouts/admin.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+
+useSeoMeta({
+  robots: 'noindex, nofollow'
+});
 import { 
   LayoutDashboard, 
   Package, 

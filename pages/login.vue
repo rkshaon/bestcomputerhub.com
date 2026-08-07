@@ -7,7 +7,8 @@ import { cn } from '@/utils';
 
 useSeoMeta({
   title: 'Sign In',
-  description: 'Sign in to your Best Computer Hub account to track orders, manage warranty passes, and access exclusive member prices.'
+  description: 'Sign in to your Best Computer Hub account to track orders, manage warranty passes, and access exclusive member prices.',
+  robots: 'noindex, nofollow'
 });
 
 const authStore = useAuthStore();
@@ -17,6 +18,12 @@ const password = ref('');
 const showPassword = ref(false);
 const isLoading = ref(false);
 const error = ref('');
+
+const redirectTarget = computed(() => {
+  const redirect = route.query.redirect as string;
+  if (redirect) return redirect;
+  return authStore.isAdmin ? '/admin' : '/account';
+});
 
 const handleLogin = async () => {
   if (!email.value || !password.value) {
@@ -31,8 +38,7 @@ const handleLogin = async () => {
   try {
     await authStore.login({ email: email.value, password: password.value });
     toastSuccess('Log in successful. Secure session established.');
-    const redirect = route.query.redirect as string;
-    navigateTo(redirect || '/account');
+    navigateTo(redirectTarget.value);
   } catch (err: any) {
     error.value = authStore.error || 'Invalid credentials. Please try again.';
     handleApiError(err, 'Invalid credentials. Please try again.');
@@ -41,10 +47,9 @@ const handleLogin = async () => {
   }
 };
 
-// If already logged in, redirect to account or target route
+// If already logged in, redirect to target route
 if (authStore.isLoggedIn) {
-  const redirect = route.query.redirect as string;
-  navigateTo(redirect || '/account');
+  navigateTo(redirectTarget.value);
 }
 </script>
 
@@ -115,6 +120,7 @@ if (authStore.isLoggedIn) {
                 <button 
                   type="button"
                   @click="showPassword = !showPassword"
+                  :aria-label="showPassword ? 'Hide password' : 'Show password'"
                   class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Eye v-if="!showPassword" class="w-4 h-4" />
@@ -156,10 +162,10 @@ if (authStore.isLoggedIn) {
 
           <!-- Social Logins -->
           <div class="grid grid-cols-2 gap-4">
-            <button class="flex items-center justify-center gap-3 h-12 bg-muted/30 border border-border/50 rounded-2xl text-sm font-bold hover:bg-muted/50 hover:border-border transition-all">
+            <button type="button" aria-label="Sign in with Google" class="flex items-center justify-center gap-3 h-12 bg-muted/30 border border-border/50 rounded-2xl text-sm font-bold hover:bg-muted/50 hover:border-border transition-all">
               <Chrome class="w-4 h-4" /> Google
             </button>
-            <button class="flex items-center justify-center gap-3 h-12 bg-muted/30 border border-border/50 rounded-2xl text-sm font-bold hover:bg-muted/50 hover:border-border transition-all">
+            <button type="button" aria-label="Sign in with GitHub" class="flex items-center justify-center gap-3 h-12 bg-muted/30 border border-border/50 rounded-2xl text-sm font-bold hover:bg-muted/50 hover:border-border transition-all">
               <Github class="w-4 h-4" /> GitHub
             </button>
           </div>

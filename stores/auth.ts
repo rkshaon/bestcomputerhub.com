@@ -28,20 +28,18 @@ export const useAuthStore = defineStore('auth', {
     const userCookie = useCookie<User | null>('auth_user', { path: '/' });
     const accessToken = useCookie<string | null>('access_token', { path: '/' });
     
-    const userProfile = userCookie.value || null;
-    if (userProfile) {
-      const emailLower = (userProfile.email || '').toLowerCase().trim();
-      if (emailLower === 'rkshaon.ist@gmail.com' || emailLower.includes('admin') || emailLower.includes('staff')) {
-        userProfile.role = 'admin';
-      }
-    }
-    
     return {
-      user: userProfile,
+      user: userCookie.value || null,
       isLoggedIn: !!accessToken.value,
       isLoading: false,
       error: null as string | null,
     };
+  },
+
+  getters: {
+    isAdmin: (state): boolean => {
+      return state.user?.role === 'admin' || state.user?.role === 'staff';
+    }
   },
   
   actions: {
@@ -122,14 +120,6 @@ export const useAuthStore = defineStore('auth', {
             role: jwtData?.role || 'customer',
             joinedAt: new Date().toISOString()
           };
-        }
-
-        // Elevate roles to admin if email matches rkshaon.ist@gmail.com or other admin patterns
-        if (userProfile) {
-          const emailLower = (userProfile.email || '').toLowerCase().trim();
-          if (emailLower === 'rkshaon.ist@gmail.com' || emailLower.includes('admin') || emailLower.includes('staff')) {
-            userProfile.role = 'admin';
-          }
         }
 
         this.user = userProfile;
