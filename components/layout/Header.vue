@@ -254,10 +254,11 @@ const updateAdaptiveNav = () => {
     isNavUltraCompact.value = false;
   }
 
-  // Calculate gap in px matching the flex gap
-  const gapPx = isNavUltraCompact.value ? 4 : (isNavCompact.value ? 6 : 10);
+  // Outer gap between [Home], [Categories Container], and [More]
+  const outerGap = isNavUltraCompact.value ? 8 : (isNavCompact.value ? 12 : 16);
+  // Minimum padding/spacing required per item in categories container
+  const minItemGap = isNavUltraCompact.value ? 4 : (isNavCompact.value ? 6 : 8);
 
-  // Measure elements
   const homeWidth = measureHomeRef.value?.offsetWidth || 32;
   const moreWidth = measureMoreRef.value?.offsetWidth || 75;
 
@@ -266,23 +267,26 @@ const updateAdaptiveNav = () => {
     return el ? el.offsetWidth : 90;
   });
 
-  const totalAllWidth = homeWidth + gapPx + itemWidths.reduce((a, b) => a + b + gapPx, 0);
+  const totalItemsWidth = itemWidths.reduce((a, b) => a + b, 0);
 
-  if (totalAllWidth <= availableWidth) {
-    // All items fit! No "More" menu needed.
+  // Space needed if ALL categories fit without "More" button
+  const totalSpaceNeededForAll = homeWidth + outerGap + totalItemsWidth + Math.max(0, categories.value.length - 1) * minItemGap;
+
+  if (totalSpaceNeededForAll <= availableWidth) {
+    // All categories fit! No "More" menu needed.
     visibleCount.value = categories.value.length;
   } else {
-    // Overflow occurs: calculate space for items excluding Home, More, and gaps
-    const spaceForItems = availableWidth - homeWidth - gapPx - moreWidth - gapPx;
+    // Overflow occurs: calculate space available inside the Categories container
+    const spaceForCategoryContainer = availableWidth - homeWidth - moreWidth - (2 * outerGap);
 
     let fitCount = 0;
-    let accumulated = 0;
+    let accumulatedWidth = 0;
 
     for (let i = 0; i < itemWidths.length; i++) {
       const itemW = itemWidths[i] ?? 90;
-      const needed = (i === 0 ? itemW : itemW + gapPx);
-      if (accumulated + needed <= spaceForItems) {
-        accumulated += needed;
+      const minGapNeeded = i === 0 ? 0 : minItemGap;
+      if (accumulatedWidth + minGapNeeded + itemW <= spaceForCategoryContainer) {
+        accumulatedWidth += minGapNeeded + itemW;
         fitCount++;
       } else {
         break;
@@ -850,7 +854,7 @@ if (process.client) {
         ref="navRef"
         :class="cn(
           'hidden md:flex relative items-center justify-between w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50 md:col-start-2 md:row-start-2 transition-all duration-200',
-          isNavUltraCompact ? 'gap-1' : (isNavCompact ? 'gap-1.5' : 'gap-2.5')
+          isNavUltraCompact ? 'gap-2' : (isNavCompact ? 'gap-3' : 'gap-4')
         )"
       >
         <!-- Static Home Link -->
@@ -867,42 +871,44 @@ if (process.client) {
           <Home class="w-4 h-4" />
         </NuxtLink>
 
-        <!-- Visible Categories -->
-        <div 
-          v-for="(cat, index) in visibleCategories" 
-          :key="cat.id" 
-          class="group relative h-full flex items-center shrink-0"
-          @mouseenter="openMegaMenu(cat.id)"
-          @mouseleave="closeMegaMenu"
-          @focusin="openMegaMenu(cat.id)"
-          @focusout="closeMegaMenu"
-        >
-          <NuxtLink 
-            :to="categoryService.getCategoryUrl(cat, allCategories)" 
-            :class="cn(
-              'relative flex items-center font-semibold tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200',
-              isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
-              activeMegaMenuId === cat.id ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
-            )"
+        <!-- Categories Flexible Container (Grows to occupy all remaining horizontal space) -->
+        <div class="flex-1 flex items-center justify-between min-w-0 h-full">
+          <div 
+            v-for="(cat, index) in visibleCategories" 
+            :key="cat.id" 
+            class="group relative h-full flex items-center shrink-0"
+            @mouseenter="openMegaMenu(cat.id)"
+            @mouseleave="closeMegaMenu"
+            @focusin="openMegaMenu(cat.id)"
+            @focusout="closeMegaMenu"
           >
-            {{ cat.name }}
-          </NuxtLink>
-          
-          <!-- Mega Menu Dropdown -->
-          <HeaderMegaMenu 
-            :category="cat" 
-            :all-categories="allCategories"
-            :is-open="activeMegaMenuId === cat.id"
-            :align-right="index >= visibleCategories.length / 2"
-            @keep-open="keepMegaMenuOpen"
-            @close="closeMegaMenu"
-          />
+            <NuxtLink 
+              :to="categoryService.getCategoryUrl(cat, allCategories)" 
+              :class="cn(
+                'relative flex items-center font-semibold tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200',
+                isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
+                activeMegaMenuId === cat.id ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
+              )"
+            >
+              {{ cat.name }}
+            </NuxtLink>
+            
+            <!-- Mega Menu Dropdown -->
+            <HeaderMegaMenu 
+              :category="cat" 
+              :all-categories="allCategories"
+              :is-open="activeMegaMenuId === cat.id"
+              :align-right="index >= visibleCategories.length / 2"
+              @keep-open="keepMegaMenuOpen"
+              @close="closeMegaMenu"
+            />
+          </div>
         </div>
 
         <!-- Dynamic "More" Dropdown Button (Only shown when overflowCategories exists) -->
         <div 
           v-if="overflowCategories.length > 0"
-          class="group/more relative h-full flex items-center shrink-0 ml-auto"
+          class="group/more relative h-full flex items-center shrink-0"
           @mouseenter="openMoreDropdown"
           @mouseleave="closeMoreDropdown"
           @focusin="openMoreDropdown"
