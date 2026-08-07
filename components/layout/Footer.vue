@@ -3,6 +3,37 @@
 import { Facebook, Twitter, Instagram, Youtube, Mail, PackageSearch, ArrowRight } from 'lucide-vue-next';
 
 const currentYear = new Date().getFullYear();
+
+const socialLinks = [
+  { 
+    label: 'Facebook', 
+    icon: Facebook, 
+    href: '#',
+    brandBg: 'bg-[#1877F2]',
+    brandBorder: 'border-[#1877F2]'
+  },
+  { 
+    label: 'Twitter', 
+    icon: Twitter, 
+    href: '#',
+    brandBg: 'bg-[#1DA1F2]',
+    brandBorder: 'border-[#1DA1F2]'
+  },
+  { 
+    label: 'Instagram', 
+    icon: Instagram, 
+    href: '#',
+    brandBg: 'bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888]',
+    brandBorder: 'border-transparent'
+  },
+  { 
+    label: 'Youtube', 
+    icon: Youtube, 
+    href: '#',
+    brandBg: 'bg-[#FF0000]',
+    brandBorder: 'border-[#FF0000]'
+  }
+];
 </script>
 
 <template>
@@ -18,13 +49,27 @@ const currentYear = new Date().getFullYear();
             Premier e-commerce platform dedicated to professional hardware and cutting-edge computing components. Trusted by thousands of tech enthusiasts and engineers.
           </p>
           <div class="flex items-center gap-3.5">
-            <a v-for="social in [
-              { icon: Facebook, label: 'Facebook' },
-              { icon: Twitter, label: 'Twitter' },
-              { icon: Instagram, label: 'Instagram' },
-              { icon: Youtube, label: 'Youtube' }
-            ]" :key="social.label" href="#" class="w-9 h-9 sm:w-10 sm:h-10 border rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all" :aria-label="social.label">
-              <component :is="social.icon" class="w-4 h-4 sm:w-5 sm:h-5" />
+            <a 
+              v-for="social in socialLinks" 
+              :key="social.label" 
+              :href="social.href" 
+              :aria-label="social.label"
+              :class="[
+                'relative overflow-hidden w-9 h-9 sm:w-10 sm:h-10 border rounded-full flex items-center justify-center transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:border-primary group shadow-xs hover:shadow-md',
+                social.brandBorder
+              ]"
+            >
+              <!-- Official Brand Background (fades smoothly on hover) -->
+              <span 
+                class="absolute inset-0 transition-opacity duration-300 group-hover:opacity-0 rounded-full"
+                :class="social.brandBg"
+              />
+              
+              <!-- Icon -->
+              <component 
+                :is="social.icon" 
+                class="relative z-10 w-4 h-4 sm:w-5 sm:h-5 text-white group-hover:text-primary-foreground transition-colors duration-300" 
+              />
             </a>
           </div>
         </div>
