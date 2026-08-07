@@ -4,7 +4,9 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { X, Search, Check, Shield, Loader2, CheckSquare, Square, AlertCircle } from 'lucide-vue-next';
 import { usePermissionService } from '@/composables/usePermissionService';
 import { useRoleService } from '@/composables/useRoleService';
+import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useToast } from '@/composables/useToast';
+import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import type { Role, Permission } from '@/types';
 
 interface Props {
@@ -34,13 +36,39 @@ const formError = ref('');
 
 const isEdit = computed(() => !!props.role);
 
-// Fetch permissions on mount or modal open
-const permissionsList = computed(() => permissionService.permissions.value || []);
-const isLoadingPermissions = computed(() => permissionService.isLoading.value);
+// Reusable infinite pagination composable
+const {
+  items: paginatedPermissions,
+  isLoading: isLoadingPermissions,
+  isFetchingNextPage,
+  hasMore,
+  error: paginationError,
+  loadNextPage,
+  fetchFirstPage
+} = useInfinitePagination<Permission>({
+  fetcher: permissionService.getPermissionsPage,
+  search: searchQuery,
+  pageSize: 10,
+  dedupeKey: p => p.id,
+  autoFetch: false
+});
 
-onMounted(async () => {
+// Merged permissions list ensuring role's assigned permissions are always included
+const permissionsList = computed(() => {
+  const map = new Map<number, Permission>();
+
+  if (props.role?.permissions) {
+    props.role.permissions.forEach(p => map.set(p.id, p));
+  }
+
+  paginatedPermissions.value.forEach(p => map.set(p.id, p));
+
+  return Array.from(map.values());
+});
+
+onMounted(() => {
   if (props.isOpen) {
-    await permissionService.getPermissions();
+    fetchFirstPage();
   }
 });
 
@@ -49,9 +77,8 @@ watch(() => props.isOpen, async (newVal) => {
     formError.value = '';
     searchQuery.value = '';
     activeCategory.value = 'all';
-    
-    // Ensure permissions are loaded from cache or API
-    await permissionService.getPermissions();
+
+    fetchFirstPage();
 
     if (props.role) {
       formName.value = props.role.name;
@@ -114,10 +141,8 @@ const toggleSelectAllFiltered = () => {
   const allFilteredSelected = filteredIds.every(id => selectedPermissionIds.value.includes(id));
 
   if (allFilteredSelected) {
-    // Deselect all filtered
     selectedPermissionIds.value = selectedPermissionIds.value.filter(id => !filteredIds.includes(id));
   } else {
-    // Select all filtered
     const newSet = new Set([...selectedPermissionIds.value, ...filteredIds]);
     selectedPermissionIds.value = Array.from(newSet);
   }
@@ -268,7 +293,7 @@ const handleSubmit = async () => {
 
           <!-- Permissions Checklist Grid -->
           <div class="border border-border rounded-2xl p-3 bg-muted/10 max-h-64 overflow-y-auto space-y-2">
-            <div v-if="isLoadingPermissions" class="p-8 text-center text-muted-foreground text-xs flex flex-col items-center justify-center gap-2">
+            <div v-if="isLoadingPermissions && permissionsList.length === 0" class="p-8 text-center text-muted-foreground text-xs flex flex-col items-center justify-center gap-2">
               <Loader2 class="w-5 h-5 animate-spin text-primary" />
               <span>Loading permission catalog...</span>
             </div>
@@ -277,29 +302,40 @@ const handleSubmit = async () => {
               No permissions found matching "{{ searchQuery }}".
             </div>
 
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <label 
-                v-for="perm in filteredPermissions" 
-                :key="perm.id"
-                :class="[
-                  'flex items-start gap-3 p-2.5 rounded-xl border transition-all cursor-pointer select-none',
-                  isPermissionSelected(perm.id) 
-                    ? 'bg-primary/5 border-primary/40 text-foreground' 
-                    : 'bg-card border-border/60 hover:border-border text-muted-foreground hover:text-foreground'
-                ]"
-              >
-                <input 
-                  type="checkbox" 
-                  :checked="isPermissionSelected(perm.id)"
-                  @change="togglePermission(perm.id)"
-                  class="mt-0.5 rounded border-border text-primary focus:ring-primary/20"
-                />
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs font-bold leading-tight truncate text-foreground">{{ perm.name }}</p>
-                  <p class="text-[10px] font-mono text-muted-foreground truncate mt-0.5">{{ perm.codename }}</p>
-                </div>
-              </label>
-            </div>
+            <template v-else>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <label 
+                  v-for="perm in filteredPermissions" 
+                  :key="perm.id"
+                  :class="[
+                    'flex items-start gap-3 p-2.5 rounded-xl border transition-all cursor-pointer select-none',
+                    isPermissionSelected(perm.id) 
+                      ? 'bg-primary/5 border-primary/40 text-foreground' 
+                      : 'bg-card border-border/60 hover:border-border text-muted-foreground hover:text-foreground'
+                  ]"
+                >
+                  <input 
+                    type="checkbox" 
+                    :checked="isPermissionSelected(perm.id)"
+                    @change="togglePermission(perm.id)"
+                    class="mt-0.5 rounded border-border text-primary focus:ring-primary/20"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold leading-tight truncate text-foreground">{{ perm.name }}</p>
+                    <p class="text-[10px] font-mono text-muted-foreground truncate mt-0.5">{{ perm.codename }}</p>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Reusable Infinite Scroll Sentinel Component -->
+              <UiInfiniteScroll 
+                :has-more="hasMore" 
+                :is-loading="isFetchingNextPage" 
+                :error="paginationError" 
+                @load-more="loadNextPage"
+                @retry="loadNextPage"
+              />
+            </template>
           </div>
 
         </div>

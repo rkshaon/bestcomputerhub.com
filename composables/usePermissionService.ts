@@ -80,11 +80,78 @@ export const usePermissionService = () => {
     permissionsCache.value = null;
   };
 
+  const getPermissionsPage = async (params: { page: number; search?: string }): Promise<PaginatedPermissions> => {
+    const page = params.page || 1;
+    const search = params.search || '';
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      let all = getFallbackPermissions();
+      if (search) {
+        const q = search.toLowerCase();
+        all = all.filter(p => p.name.toLowerCase().includes(q) || p.codename.toLowerCase().includes(q));
+      }
+      const pageSize = 10;
+      const startIndex = (page - 1) * pageSize;
+      const pageItems = all.slice(startIndex, startIndex + pageSize);
+      const hasNext = startIndex + pageSize < all.length;
+
+      return {
+        count: all.length,
+        next: hasNext ? `/api/v1/permissions/?page=${page + 1}` : null,
+        previous: page > 1 ? `/api/v1/permissions/?page=${page - 1}` : null,
+        results: pageItems
+      };
+    }
+
+    try {
+      const queryObj: Record<string, any> = { page };
+      if (search) queryObj.search = search;
+
+      const data = await apiClient.request<PaginatedPermissions | Permission[]>('/api/v1/permissions/', {
+        method: 'GET',
+        params: queryObj
+      });
+
+      if (Array.isArray(data)) {
+        const pageSize = 10;
+        const startIndex = (page - 1) * pageSize;
+        const pageItems = data.slice(startIndex, startIndex + pageSize);
+        return {
+          count: data.length,
+          next: startIndex + pageSize < data.length ? `/api/v1/permissions/?page=${page + 1}` : null,
+          previous: page > 1 ? `/api/v1/permissions/?page=${page - 1}` : null,
+          results: pageItems
+        };
+      }
+
+      return data;
+    } catch (err: any) {
+      let all = getFallbackPermissions();
+      if (search) {
+        const q = search.toLowerCase();
+        all = all.filter(p => p.name.toLowerCase().includes(q) || p.codename.toLowerCase().includes(q));
+      }
+      const pageSize = 10;
+      const startIndex = (page - 1) * pageSize;
+      const pageItems = all.slice(startIndex, startIndex + pageSize);
+      const hasNext = startIndex + pageSize < all.length;
+
+      return {
+        count: all.length,
+        next: hasNext ? `/api/v1/permissions/?page=${page + 1}` : null,
+        previous: page > 1 ? `/api/v1/permissions/?page=${page - 1}` : null,
+        results: pageItems
+      };
+    }
+  };
+
   return {
     permissions: permissionsCache,
     isLoading,
     error: errorMsg,
     getPermissions,
+    getPermissionsPage,
     clearCache
   };
 };
