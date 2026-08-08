@@ -303,6 +303,8 @@ const filteredRoles = computed(() => {
     <!-- Role Form Modal (Create / Edit) -->
     <RoleFormModal 
       :is-open="modalState.isCreate.value || modalState.isEdit.value"
+      :is-edit="modalState.isEdit.value"
+      :is-resolving="modalState.isResolving.value"
       :role="modalState.isEdit.value ? modalState.activeEntity.value : null"
       @close="modalState.closeModal()"
       @saved="handleRoleSaved"

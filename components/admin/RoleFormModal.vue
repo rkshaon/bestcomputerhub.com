@@ -12,11 +12,15 @@ import type { Role, Permission } from '@/types';
 
 interface Props {
   isOpen: boolean;
+  isEdit?: boolean;
+  isResolving?: boolean;
   role?: Role | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isOpen: false,
+  isEdit: false,
+  isResolving: false,
   role: null
 });
 
@@ -35,7 +39,7 @@ const searchQuery = ref('');
 const activeCategory = ref('all');
 const formError = ref('');
 
-const isEdit = computed(() => !!props.role);
+const isEditMode = computed(() => props.isEdit || !!props.role);
 
 // Reusable infinite pagination composable
 const {
@@ -58,11 +62,19 @@ const {
 const permissionsList = computed(() => {
   const map = new Map<number, Permission>();
 
-  if (props.role?.permissions) {
-    props.role.permissions.forEach(p => map.set(p.id, p));
+  if (Array.isArray(props.role?.permissions)) {
+    props.role.permissions.forEach((p: any) => {
+      if (p && typeof p === 'object' && typeof p.id === 'number') {
+        map.set(p.id, p as Permission);
+      }
+    });
   }
 
-  paginatedPermissions.value.forEach(p => map.set(p.id, p));
+  paginatedPermissions.value.forEach(p => {
+    if (p && typeof p.id === 'number') {
+      map.set(p.id, p);
+    }
+  });
 
   return Array.from(map.values());
 });
@@ -73,23 +85,36 @@ onMounted(() => {
   }
 });
 
-watch(() => props.isOpen, async (newVal) => {
-  if (newVal) {
-    formError.value = '';
-    searchQuery.value = '';
-    activeCategory.value = 'all';
+watch(
+  [() => props.isOpen, () => props.role],
+  ([isOpen, role], oldState) => {
+    const oldIsOpen = oldState ? oldState[0] : false;
 
-    fetchFirstPage();
+    if (isOpen) {
+      if (!oldIsOpen) {
+        formError.value = '';
+        searchQuery.value = '';
+        activeCategory.value = 'all';
+        fetchFirstPage();
+      }
 
-    if (props.role) {
-      formName.value = props.role.name;
-      selectedPermissionIds.value = props.role.permissions ? props.role.permissions.map(p => p.id) : [];
-    } else {
-      formName.value = '';
-      selectedPermissionIds.value = [];
+      if (role) {
+        formName.value = role.name || '';
+        if (Array.isArray(role.permissions)) {
+          selectedPermissionIds.value = role.permissions
+            .map((p: any) => (typeof p === 'object' && p !== null ? p.id : p))
+            .filter((id): id is number => typeof id === 'number' && !isNaN(id));
+        } else {
+          selectedPermissionIds.value = [];
+        }
+      } else {
+        formName.value = '';
+        selectedPermissionIds.value = [];
+      }
     }
-  }
-});
+  },
+  { immediate: true }
+);
 
 // Category grouping helper
 const getPermissionCategory = (codename: string): string => {
@@ -164,16 +189,18 @@ const handleSubmit = async () => {
 
   try {
     let savedRole: Role;
-    if (isEdit.value && props.role) {
+    if (isEditMode.value && props.role) {
       savedRole = await roleService.updateRole(props.role.id, {
         name: formName.value.trim(),
-        permission_ids: selectedPermissionIds.value
+        permission_ids: selectedPermissionIds.value,
+        permissions: selectedPermissionIds.value
       });
       toastSuccess(`Role "${savedRole.name}" updated successfully.`);
     } else {
       savedRole = await roleService.createRole({
         name: formName.value.trim(),
-        permission_ids: selectedPermissionIds.value
+        permission_ids: selectedPermissionIds.value,
+        permissions: selectedPermissionIds.value
       });
       toastSuccess(`Role "${savedRole.name}" created successfully.`);
     }
@@ -202,10 +229,10 @@ const handleSubmit = async () => {
           </div>
           <div>
             <h2 class="text-lg font-display font-extrabold text-foreground">
-              {{ isEdit ? 'Edit Role Authority' : 'Create New Role' }}
+              {{ isEditMode ? 'Edit Role Authority' : 'Create New Role' }}
             </h2>
             <p class="text-xs text-muted-foreground font-medium">
-              {{ isEdit ? 'Update role title and permission matrix' : 'Define access scope and assign functional permissions' }}
+              {{ isEditMode ? 'Update role title and permission matrix' : 'Define access scope and assign functional permissions' }}
             </p>
           </div>
         </div>
@@ -364,7 +391,7 @@ const handleSubmit = async () => {
           :disabled="roleService.isSubmitting.value"
         >
           <Loader2 v-if="roleService.isSubmitting.value" class="w-4 h-4 animate-spin" />
-          <span>{{ isEdit ? 'Save Changes' : 'Create Role' }}</span>
+          <span>{{ isEditMode ? 'Save Changes' : 'Create Role' }}</span>
         </UiButton>
       </div>
 

@@ -29,9 +29,11 @@ export interface PaginatedRoles {
 export interface CreateRolePayload {
   name: string;
   permission_ids: number[];
+  permissions?: number[];
 }
 
 export interface UpdateRolePayload {
   name?: string;
   permission_ids?: number[];
+  permissions?: number[];
 }
