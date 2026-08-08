@@ -1,5 +1,6 @@
 // File: /middleware/auth.global.ts
 import { useAuthStore } from '@/stores/auth';
+import { useToast } from '@/composables/useToast';
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const authStore = useAuthStore();
@@ -21,4 +22,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
       return navigateTo('/account');
     }
   }
+
+  if (to.path.startsWith('/account')) {
+    if (!authStore.isLoggedIn) {
+      return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`);
+    }
+  }
 });
+

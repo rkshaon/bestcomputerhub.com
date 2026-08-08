@@ -27,10 +27,14 @@ export const useAuthStore = defineStore('auth', {
   state: () => {
     const userCookie = useCookie<User | null>('auth_user', { path: '/' });
     const accessToken = useCookie<string | null>('access_token', { path: '/' });
+    const refreshToken = useCookie<string | null>('refresh_token', { path: '/' });
     
+    const userVal = userCookie.value || null;
+    const hasSession = !!(accessToken.value || refreshToken.value || userVal);
+
     return {
-      user: userCookie.value || null,
-      isLoggedIn: !!accessToken.value,
+      user: userVal,
+      isLoggedIn: hasSession,
       isLoading: false,
       isInitialized: false,
       initPromise: null as Promise<User | null> | null,
@@ -290,7 +294,7 @@ export const useAuthStore = defineStore('auth', {
 
     // Centralized Helper to check credentials and initialize auth state dynamically
     async initialize(): Promise<User | null> {
-      if (this.isInitialized && this.user) {
+      if (this.isInitialized) {
         return this.user;
       }
 
@@ -303,30 +307,52 @@ export const useAuthStore = defineStore('auth', {
         const refreshToken = useCookie<string | null>('refresh_token', { path: '/' });
         const userCookie = useCookie<User | null>('auth_user', { path: '/' });
 
-        // Fast hydration from cookie if available
+        // Hydrate from cookie if available
         if (!this.user && userCookie.value) {
           this.user = userCookie.value;
+        }
+
+        const hasTokens = !!(accessToken.value || refreshToken.value);
+        if (hasTokens || userCookie.value) {
           this.isLoggedIn = true;
         }
 
-        const hasToken = !!(accessToken.value || refreshToken.value);
-
-        if (hasToken) {
+        if (hasTokens) {
           try {
             const profile = await this.fetchUserProfile();
             this.isInitialized = true;
             return profile;
-          } catch (e) {
-            this.user = null;
-            this.isLoggedIn = false;
+          } catch (e: any) {
+            // Check if error is due to explicit 401 unauthenticated session rejection
+            // where tokens/cookies were cleared by useApiClient or logout
+            const is401 = e?.status === 401 || e?.statusCode === 401 || e?.response?.status === 401;
+
+            if (is401 && !accessToken.value && !refreshToken.value) {
+              // Genuinely unauthenticated: tokens were cleared on failed refresh
+              this.user = null;
+              this.isLoggedIn = false;
+            } else if (userCookie.value || this.user) {
+              // Non-401 or SSR route error: maintain hydrated session from auth_user cookie
+              this.user = this.user || userCookie.value;
+              this.isLoggedIn = true;
+            } else {
+              this.isLoggedIn = hasTokens;
+            }
+
             this.isInitialized = true;
-            return null;
+            return this.user;
           }
         } else {
-          this.user = null;
-          this.isLoggedIn = false;
+          // No tokens present
+          if (userCookie.value) {
+            this.user = userCookie.value;
+            this.isLoggedIn = true;
+          } else {
+            this.user = null;
+            this.isLoggedIn = false;
+          }
           this.isInitialized = true;
-          return null;
+          return this.user;
         }
       })();
 
