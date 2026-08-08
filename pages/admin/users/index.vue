@@ -187,14 +187,16 @@ const getUserGroupNames = (user: UserItem): string[] => {
         <Users class="w-6 h-6" />
       </div>
       <div>
-        <h3 class="text-base font-bold text-foreground">No User Accounts Found</h3>
+        <h3 class="text-base font-bold text-foreground">
+          {{ searchQuery ? `No results match "${searchQuery}"` : 'No users found' }}
+        </h3>
         <p class="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-          {{ searchQuery ? `No results match "${searchQuery}". Try broadening your search.` : 'Get started by provisioning the first user account.' }}
+          {{ searchQuery ? 'Try broadening your search query or clear filters.' : 'Create your first user to get started.' }}
         </p>
       </div>
       <Button v-if="!searchQuery" variant="primary" size="sm" @click="modalState.openModal('create')" class="gap-2">
         <UserPlus class="w-4 h-4" />
-        <span>Provision User</span>
+        <span>Create User</span>
       </Button>
     </div>
 
