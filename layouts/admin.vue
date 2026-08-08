@@ -57,7 +57,7 @@ const navigation = [
   { name: 'Inventory', iconKey: 'Boxes', href: '/admin/inventory' },
   { name: 'Orders', iconKey: 'ShoppingCart', href: '/admin/orders' },
   { name: 'Customers', iconKey: 'Users', href: '/admin/customers' },
-  { name: 'Staff', iconKey: 'ShieldCheck', href: '/admin/staff' },
+  { name: 'Users & Staff', iconKey: 'ShieldCheck', href: '/admin/users' },
   { name: 'Roles', iconKey: 'ShieldAlert', href: '/admin/roles' },
   { name: 'Analytics', iconKey: 'BarChart3', href: '/admin/analytics' },
 ];

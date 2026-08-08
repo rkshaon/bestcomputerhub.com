@@ -11,3 +11,4 @@ export * from './admin';
 export * from './role';
 export * from './blog';
 export * from './hero';
+export * from './user';
