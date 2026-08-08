@@ -40,12 +40,27 @@ const handleMouseDown = (e: MouseEvent) => {
 const handleBackdropClick = (e: MouseEvent) => {
   if (!props.closeOnBackdrop) return;
 
-  // Only trigger close if both mousedown and click originated outside contentRef
-  if (
+  const targetNode = e.target as Node | null;
+  const mouseDownNode = mouseDownTarget as Node | null;
+
+  // A direct backdrop click occurs when both mousedown and click targets are the backdrop element itself
+  const isDirectBackdropClick =
     backdropRef.value &&
-    (e.target === backdropRef.value || !contentRef.value?.contains(e.target as Node)) &&
-    (mouseDownTarget === backdropRef.value || !contentRef.value?.contains(mouseDownTarget as Node))
-  ) {
+    e.target === backdropRef.value &&
+    mouseDownTarget === backdropRef.value;
+
+  // Or if the targets are still connected to the document and lie strictly outside contentRef
+  const isOutsideClick =
+    backdropRef.value &&
+    contentRef.value &&
+    targetNode &&
+    document.body.contains(targetNode) &&
+    !contentRef.value.contains(targetNode) &&
+    mouseDownNode &&
+    document.body.contains(mouseDownNode) &&
+    !contentRef.value.contains(mouseDownNode);
+
+  if (isDirectBackdropClick || isOutsideClick) {
     emit('close');
   }
 };

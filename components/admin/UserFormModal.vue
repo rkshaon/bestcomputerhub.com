@@ -308,8 +308,9 @@ const handleSubmit = async () => {
                   <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                   <button 
                     type="button" 
-                    @click="showPassword = !showPassword"
+                    @click.stop="showPassword = !showPassword"
                     class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label="Toggle password visibility"
                   >
                     <EyeOff v-if="showPassword" class="w-4 h-4" />
                     <Eye v-else class="w-4 h-4" />
@@ -333,8 +334,9 @@ const handleSubmit = async () => {
                   <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                   <button 
                     type="button" 
-                    @click="showConfirmPassword = !showConfirmPassword"
+                    @click.stop="showConfirmPassword = !showConfirmPassword"
                     class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label="Toggle confirm password visibility"
                   >
                     <EyeOff v-if="showConfirmPassword" class="w-4 h-4" />
                     <Eye v-else class="w-4 h-4" />
