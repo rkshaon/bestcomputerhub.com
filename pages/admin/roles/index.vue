@@ -17,6 +17,7 @@ import {
 import { useRoleService } from '@/composables/useRoleService';
 import { usePermissionService } from '@/composables/usePermissionService';
 import { useAdminModalState } from '@/composables/useAdminModalState';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import RoleFormModal from '@/components/admin/RoleFormModal.vue';
@@ -33,9 +34,15 @@ useSeoMeta({
 
 const roleService = useRoleService();
 const permissionService = usePermissionService();
+const { canViewModule, canCreateInModule, canEditInModule, canDeleteInModule } = useAdminPermissions();
 const { toastSuccess, toastError } = useToast();
 
 const searchQuery = ref('');
+
+const canViewRoles = computed(() => canViewModule('/admin/roles'));
+const canCreateRole = computed(() => canCreateInModule('/admin/roles'));
+const canEditRole = computed(() => canEditInModule('/admin/roles'));
+const canDeleteRole = computed(() => canDeleteInModule('/admin/roles'));
 
 // Reusable URL-driven modal state infrastructure
 const modalState = useAdminModalState<Role>({
@@ -56,6 +63,7 @@ const isLoading = computed(() => roleService.isLoading.value);
 const errorMsg = computed(() => roleService.error.value);
 
 const loadRolesData = async () => {
+  if (!canViewRoles.value) return;
   await Promise.all([
     roleService.getRoles({ search: searchQuery.value }),
     permissionService.getPermissions()
@@ -132,6 +140,7 @@ const filteredRoles = computed(() => {
         </UiButton>
 
         <UiButton 
+          v-if="canCreateRole"
           class="rounded-2xl h-11 px-6 gap-2 shadow-xl shadow-primary/20 bg-primary text-primary-foreground font-bold text-xs"
           @click="modalState.openCreate()"
         >
@@ -277,8 +286,9 @@ const filteredRoles = computed(() => {
         </div>
 
         <!-- Action Controls -->
-        <div class="pt-6 mt-6 border-t border-border/60 flex items-center justify-end gap-2">
+        <div v-if="canEditRole || canDeleteRole" class="pt-6 mt-6 border-t border-border/60 flex items-center justify-end gap-2">
           <button 
+            v-if="canEditRole"
             type="button" 
             @click="modalState.openEdit(role.id)"
             class="px-4 py-2 rounded-xl border border-border text-xs font-bold hover:bg-muted text-foreground transition-all flex items-center gap-1.5"
@@ -288,6 +298,7 @@ const filteredRoles = computed(() => {
           </button>
 
           <button 
+            v-if="canDeleteRole"
             type="button" 
             @click="modalState.openDelete(role.id)"
             class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"

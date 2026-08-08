@@ -19,6 +19,7 @@ import { useUserService } from '@/composables/useUserService';
 import { useRoleService } from '@/composables/useRoleService';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useAdminModalState } from '@/composables/useAdminModalState';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import Button from '@/components/ui/Button.vue';
@@ -36,9 +37,13 @@ useSeoMeta({
 
 const userService = useUserService();
 const roleService = useRoleService();
+const { canViewModule, canCreateInModule } = useAdminPermissions();
 const { toastSuccess, toastError } = useToast();
 
 const searchQuery = ref('');
+
+const canViewUsers = computed(() => canViewModule('/admin/users'));
+const canCreateUser = computed(() => canCreateInModule('/admin/users'));
 
 // Reusable URL-driven modal state infrastructure for create user dialog
 const modalState = useAdminModalState<UserItem>();
@@ -136,6 +141,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
         </Button>
 
         <Button 
+          v-if="canCreateUser"
           variant="primary"
           size="md"
           @click="modalState.openModal('create')"
@@ -194,7 +200,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
           {{ searchQuery ? 'Try broadening your search query or clear filters.' : 'Create your first user to get started.' }}
         </p>
       </div>
-      <Button v-if="!searchQuery" variant="primary" size="sm" @click="modalState.openModal('create')" class="gap-2">
+      <Button v-if="!searchQuery && canCreateUser" variant="primary" size="sm" @click="modalState.openModal('create')" class="gap-2">
         <UserPlus class="w-4 h-4" />
         <span>Create User</span>
       </Button>

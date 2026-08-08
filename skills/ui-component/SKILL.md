@@ -64,6 +64,7 @@ Examples:
 * Handle applicable loading, disabled, empty, and error states.
 * Do not put backend commerce business rules inside presentation components.
 * Do not fabricate commerce data to complete a component's appearance.
+* Admin UI components and action controls (Create, Edit, Delete buttons) must respect user permissions via `useAdminPermissions()` and hide or disable unauthorized operations.
 * Do not create premature generic abstractions for hypothetical future use.
 
 ## Component Placement

@@ -333,6 +333,11 @@ Frontend authorization checks exist for user experience only.
 
 DRF must enforce actual access control.
 
+### Authorization Architecture (`useAdminPermissions`)
+
+In administrative modules, user permissions returned from `GET /api/v1/users/me/` are processed by `useAdminPermissions()`. The frontend consumes this composable to filter sidebar navigation in `/layouts/admin.vue`, guard direct route access in `/middleware/auth.global.ts`, and conditionally hide action controls (Create/Edit/Delete buttons) in admin pages. DRF remains the authoritative security boundary.
+
+
 ---
 
 ## 6. Wishlist

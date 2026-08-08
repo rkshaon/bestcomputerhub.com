@@ -1,5 +1,6 @@
 // File: /middleware/auth.global.ts
 import { useAuthStore } from '@/stores/auth';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
@@ -21,6 +22,14 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
       }
       return navigateTo('/account');
     }
+
+    // Direct route permission check
+    if (to.path !== '/admin/forbidden') {
+      const { canViewModule } = useAdminPermissions();
+      if (!canViewModule(to.path)) {
+        return navigateTo('/admin/forbidden');
+      }
+    }
   }
 
   if (to.path.startsWith('/account')) {
@@ -29,4 +38,5 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
   }
 });
+
 

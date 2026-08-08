@@ -16,6 +16,7 @@ import {
   ChevronRight
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { formatCurrency, cn } from '@/utils';
 import type { Product } from '@/types';
 
@@ -24,6 +25,12 @@ definePageMeta({
 });
 
 const productService = useProductService();
+const { canCreateInModule, canEditInModule, canDeleteInModule } = useAdminPermissions();
+
+const canCreateProduct = computed(() => canCreateInModule('/admin/products'));
+const canEditProduct = computed(() => canEditInModule('/admin/products'));
+const canDeleteProduct = computed(() => canDeleteInModule('/admin/products'));
+
 const products = ref<Product[]>(productService.getProducts());
 const searchQuery = ref('');
 const statusFilter = ref('all');
@@ -59,7 +66,7 @@ const handleDelete = (id: string) => {
         <button class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
           <Download class="w-4 h-4" /> Export CSV
         </button>
-        <button class="bg-primary text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95">
+        <button v-if="canCreateProduct" class="bg-primary text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95">
           <Plus class="w-4 h-4" /> Add New Product
         </button>
       </div>

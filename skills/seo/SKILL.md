@@ -65,7 +65,7 @@ Examples:
 * Use permanent redirects when an existing indexed URL must move to a meaningful replacement.
 * Do not redirect unrelated removed pages to the homepage by default.
 * Avoid creating uncontrolled indexable URLs from filters, sorting, search, and query parameters.
-* Do not expose admin, account, cart, checkout, or other private/utility pages as SEO landing pages.
+* Do not expose admin, account, cart, checkout, or other private/utility pages as SEO landing pages; admin pages must use `robots: 'noindex, nofollow'` and be protected by permission-based authorization.
 * Do not allow mock/demo data to appear in production metadata or JSON-LD.
 
 ## Metadata

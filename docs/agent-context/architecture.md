@@ -171,10 +171,12 @@ useApiClient
 useProductService
 useCategoryService
 useBrandService
+useAdminPermissions
 useToast
 ```
 
 Domain services are responsible for operations related to their own domain.
+`useAdminPermissions` acts as the centralized permission authorization layer, converting backend user permission matrices (`GET /api/v1/users/me/`) into frontend route gating, sidebar filtering, and action control availability.
 
 For example:
 

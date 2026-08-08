@@ -30,11 +30,14 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { cn } from '@/utils';
 import { markRaw } from 'vue';
 
 const authStore = useAuthStore();
 const uiStore = useUIStore();
+const { canViewModule } = useAdminPermissions();
+
 const isSidebarOpen = ref(true);
 const isMobileMenuOpen = ref(false);
 const isThemeMenuOpen = ref(false);
@@ -68,6 +71,14 @@ const secondaryNavigation = [
   { name: 'Notifications', iconKey: 'Bell', href: '/admin/notifications' },
   { name: 'Settings', iconKey: 'Settings', href: '/admin/settings' },
 ];
+
+const filteredNavigation = computed(() => {
+  return navigation.filter(item => canViewModule(item.href));
+});
+
+const filteredSecondaryNavigation = computed(() => {
+  return secondaryNavigation.filter(item => canViewModule(item.href));
+});
 
 const iconMap = {
   LayoutDashboard,
@@ -125,7 +136,7 @@ const breadcrumbs = computed(() => {
         <!-- Navigation -->
         <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
           <NuxtLink 
-            v-for="item in navigation" 
+            v-for="item in filteredNavigation" 
             :key="item.name"
             :to="item.href"
             :class="cn(
@@ -139,13 +150,13 @@ const breadcrumbs = computed(() => {
             <span v-if="isSidebarOpen" class="whitespace-nowrap">{{ item.name }}</span>
           </NuxtLink>
 
-          <div class="pt-6 pb-2">
+          <div v-if="filteredSecondaryNavigation.length > 0" class="pt-6 pb-2">
             <div v-if="isSidebarOpen" class="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">System</div>
             <div v-else class="mx-auto w-4 border-t border-border my-4"></div>
           </div>
 
           <NuxtLink 
-            v-for="item in secondaryNavigation" 
+            v-for="item in filteredSecondaryNavigation" 
             :key="item.name"
             :to="item.href"
             :class="cn(
@@ -266,7 +277,9 @@ const breadcrumbs = computed(() => {
           <NuxtLink to="/admin/profile" class="flex items-center gap-3 pl-3 border-l border-border hover:opacity-80 transition-opacity">
             <div class="text-right hidden lg:block">
               <p class="text-xs font-bold leading-none">{{ authStore.user?.name || 'Admin User' }}</p>
-              <p class="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Super Admin</p>
+              <p class="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-1">
+                {{ authStore.user?.is_superadmin || authStore.user?.is_superuser ? 'Super Admin' : (authStore.user?.role?.toUpperCase() || 'Admin') }}
+              </p>
             </div>
             <div class="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center overflow-hidden">
               <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" class="w-full h-full object-cover" />
@@ -321,7 +334,7 @@ const breadcrumbs = computed(() => {
           </div>
           <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
             <NuxtLink 
-              v-for="item in navigation" 
+              v-for="item in filteredNavigation" 
               :key="item.name"
               :to="item.href"
               @click="isMobileMenuOpen = false"

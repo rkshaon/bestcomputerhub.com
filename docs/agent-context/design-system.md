@@ -972,6 +972,7 @@ Prioritize:
 * tables
 * status visibility
 * operational clarity
+* permission-based control visibility (hiding unauthorized navigation and CRUD actions via `useAdminPermissions()`)
 
 Do not force decorative storefront patterns into dense administrative workflows.
 

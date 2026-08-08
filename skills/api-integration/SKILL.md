@@ -33,3 +33,5 @@ Never fabricate missing backend commerce values.
 
 Always preserve DRF trailing slashes.
 
+Always verify user permissions via `useAdminPermissions()` before invoking protected admin endpoints to prevent unauthorized request execution and unnecessary 403 API errors.
+

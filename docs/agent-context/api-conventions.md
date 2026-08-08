@@ -39,3 +39,10 @@ Use the actual backend contract.
 
 Do not silently accept arbitrary alternative response
 structures in production code.
+
+## Authentication & Permission Enforcement
+
+Authenticated requests utilize JWT Bearer tokens attached via `useApiClient`.
+Backend permissions returned from `GET /api/v1/users/me/` represent the authoritative authorization source for admin operations.
+The frontend MUST verify permission via `useAdminPermissions()` before dispatching protected API requests to prevent unauthorized API calls and unexpected 403 errors.
+

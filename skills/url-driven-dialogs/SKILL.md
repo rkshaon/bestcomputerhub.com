@@ -85,6 +85,7 @@ To prevent state desynchronization between the Vue component state and the URL q
    - **Close (X) Button**: `@close="modalState.closeModal()"`
    - **Backdrop / Outside Click**: Monitored by `<UiAdminModal />` via `mousedown` + `click` target validation, calling `@close`.
    - **Escape Key**: Monitored globally by `useAdminModalState` or `<UiAdminModal />`, calling `closeModal()`.
+3. **Permission-Gated Dialog Triggers**: Dialog open methods and modal rendering MUST verify action permissions via `useAdminPermissions()`. Unprivileged users attempting to access modal URLs directly (e.g. `?modal=create` without create permission) should have the modal access blocked and query parameters cleared.
 
 ---
 

@@ -51,6 +51,7 @@ Examples:
 * Do not fabricate prices, discounts, stock, ratings, reviews, specifications, or other commerce data.
 * DRF remains authoritative for commerce-critical data and business rules.
 * Primary SEO-sensitive content must not depend exclusively on client-side `onMounted()` fetching.
+* Admin pages (as distinguished from public storefront pages) must enforce permission checks via `useAdminPermissions()` and route middleware, preventing unauthorized access.
 * Return a real 404 when a requested public entity does not exist.
 * Use existing design-system components and semantic tokens where appropriate.
 * Important actions must remain usable on mobile and by keyboard.

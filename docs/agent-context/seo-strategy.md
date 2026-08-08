@@ -862,7 +862,8 @@ customer-specific pages
 internal search results
 ```
 
-The exact noindex strategy should be implemented deliberately.
+The exact noindex strategy should be implemented deliberately. Admin routes (`/admin/*`) are excluded from search engines via `robots: 'noindex, nofollow'` meta headers and protected by permission authorization middleware (`useAdminPermissions()`).
+
 
 Authentication alone should not be relied upon as the only indexing strategy for public-but-unwanted routes.
 
