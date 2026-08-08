@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia';
 import { useCookie, navigateTo } from '#app';
 import { useApiClient } from '@/composables/useApiClient';
-import type { User, Customer, RegisterPayload, LoginPayload, LoginResponse } from '@/types';
+import type { User, Customer, RegisterPayload, LoginPayload, LoginResponse, UserProfileResponse } from '@/types';
 
 function parseJwt(token: string) {
   try {
@@ -84,6 +84,60 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Authoritative Profile Retrieval via GET /api/v1/users/me/
+    async fetchUserProfile(): Promise<User> {
+      const client = useApiClient();
+      try {
+        const profile = await client.request<UserProfileResponse>('/api/v1/users/me/', {
+          method: 'GET'
+        });
+
+        if (!profile) {
+          throw new Error('Empty user profile returned from /api/v1/users/me/');
+        }
+
+        const emailStr = profile.email || profile.username || '';
+        const emailPrefix = emailStr.split('@')[0];
+        const nameStr = profile.full_name || profile.name || profile.username || (emailPrefix ? emailPrefix.toUpperCase() : 'USER');
+        const userIdStr = profile.id || profile.user_id || '';
+
+        const rolesList = profile.roles || [];
+        const isStaff = profile.is_staff ?? profile.is_staff_user ?? false;
+        const isSuperuser = profile.is_superuser ?? false;
+
+        let roleVal: 'admin' | 'staff' | 'customer' = profile.role || 'customer';
+        if (isSuperuser || isStaff || (Array.isArray(rolesList) && rolesList.some((r: any) => {
+          const name = typeof r === 'string' ? r.toLowerCase() : (r?.name || '').toLowerCase();
+          return name === 'admin' || name === 'staff' || name === 'superuser';
+        }))) {
+          roleVal = isStaff && !isSuperuser ? 'staff' : 'admin';
+        }
+
+        const mappedUser: User = {
+          id: userIdStr,
+          name: nameStr,
+          email: emailStr,
+          avatar: profile.avatar || undefined,
+          phone: profile.phone || undefined,
+          role: roleVal,
+          roles: rolesList,
+          is_staff: isStaff,
+          is_superuser: isSuperuser,
+          joinedAt: profile.joinedAt || profile.created_at || profile.date_joined || new Date().toISOString()
+        };
+
+        this.user = mappedUser;
+        const userCookie = useCookie<User | null>('auth_user', { maxAge: 60 * 60 * 24 * 7, path: '/' });
+        userCookie.value = mappedUser;
+        this.isLoggedIn = true;
+
+        return mappedUser;
+      } catch (err: any) {
+        console.error('Failed to retrieve authoritative user profile from /api/v1/users/me/', err);
+        throw err;
+      }
+    },
+
     // 2. Core Login Integration
     async login(payload: { credential?: string; email?: string; password?: string }) {
       const client = useApiClient();
@@ -115,44 +169,27 @@ export const useAuthStore = defineStore('auth', {
           refreshTokenCookie.value = rToken;
         }
 
-        // Store active user profile from nested user object or flat response attributes
-        let userProfile: User | null = null;
-        const rawUser = response.user || response;
-        const jwtData = token ? parseJwt(token) : null;
+        // Retrieve authoritative user profile via GET /api/v1/users/me/
+        try {
+          await this.fetchUserProfile();
+        } catch (profileErr: any) {
+          // If fetching authoritative user profile fails, clear stored credentials to avoid partial/inconsistent state
+          const accessTokenCookie = useCookie<string | null>('access_token', { path: '/' });
+          const refreshTokenCookie = useCookie<string | null>('refresh_token', { path: '/' });
+          const userCookie = useCookie<User | null>('auth_user', { path: '/' });
 
-        if (rawUser) {
-          const emailStr = (rawUser as any).email || jwtData?.email || payload.email || payload.credential || '';
-          const nameStr = (rawUser as any).name || (rawUser as any).full_name || (rawUser as any).username || jwtData?.name || jwtData?.full_name || jwtData?.username || (emailStr ? emailStr.split('@')[0].toUpperCase() : '');
-          const userIdStr = (rawUser as any).user_id || (rawUser as any).id || jwtData?.user_id || jwtData?.id || jwtData?.sub || '';
+          accessTokenCookie.value = null;
+          refreshTokenCookie.value = null;
+          userCookie.value = null;
 
-          const rolesList = (rawUser as any).roles || jwtData?.roles || [];
-          const isStaff = (rawUser as any).is_staff ?? jwtData?.is_staff ?? false;
-          const isSuperuser = (rawUser as any).is_superuser ?? jwtData?.is_superuser ?? false;
-          
-          let roleVal: 'admin' | 'staff' | 'customer' = (rawUser as any).role || jwtData?.role || 'customer';
-          if (isSuperuser || isStaff || (Array.isArray(rolesList) && rolesList.some((r: any) => {
-            const name = typeof r === 'string' ? r.toLowerCase() : (r?.name || '').toLowerCase();
-            return name === 'admin' || name === 'staff' || name === 'superuser';
-          }))) {
-            roleVal = isStaff && !isSuperuser ? 'staff' : 'admin';
-          }
+          this.user = null;
+          this.isLoggedIn = false;
+          this.isLoading = false;
 
-          userProfile = {
-            id: userIdStr,
-            name: nameStr,
-            email: emailStr,
-            role: roleVal,
-            roles: rolesList,
-            is_staff: isStaff,
-            is_superuser: isSuperuser,
-            joinedAt: (rawUser as any).joinedAt || (rawUser as any).created_at || new Date().toISOString()
-          };
+          this.error = profileErr.data?.message || profileErr.message || 'Failed to retrieve user profile after login.';
+          throw profileErr;
         }
 
-        this.user = userProfile;
-        const userCookie = useCookie<User | null>('auth_user', { maxAge: 60 * 60 * 24 * 7, path: '/' });
-        userCookie.value = userProfile;
-        
         this.isLoggedIn = true;
         this.isLoading = false;
         this.error = null;
@@ -227,13 +264,22 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // Centralized Helper to check credentials and initialize auth state dynamically
-    initialize() {
+    async initialize() {
       const userCookie = useCookie<User | null>('auth_user', { path: '/' });
       const accessToken = useCookie<string | null>('access_token', { path: '/' });
       
-      if (accessToken.value && userCookie.value) {
-        this.user = userCookie.value;
-        this.isLoggedIn = true;
+      if (accessToken.value) {
+        if (userCookie.value) {
+          this.user = userCookie.value;
+          this.isLoggedIn = true;
+        } else {
+          try {
+            await this.fetchUserProfile();
+          } catch (e) {
+            this.user = null;
+            this.isLoggedIn = false;
+          }
+        }
       } else {
         this.user = null;
         this.isLoggedIn = false;

@@ -58,3 +58,22 @@ export interface TokenRefreshResponse {
   accessToken: string;
   refreshToken?: string;
 }
+
+export interface UserProfileResponse {
+  id: string | number;
+  user_id?: string | number;
+  username?: string;
+  full_name?: string;
+  name?: string;
+  email: string;
+  avatar?: string;
+  phone?: string;
+  role?: 'admin' | 'staff' | 'customer';
+  roles?: (string | { id?: string | number; name: string })[];
+  is_staff?: boolean;
+  is_staff_user?: boolean;
+  is_superuser?: boolean;
+  created_at?: string;
+  date_joined?: string;
+  joinedAt?: string;
+}

@@ -413,6 +413,24 @@ export const useApiClient = () => {
       return mockResponse as unknown as T;
     }
 
+    if (url.includes('/api/v1/users/me') || url.includes('/users/me')) {
+      const mockUser = {
+        id: 1,
+        user_id: 1,
+        username: 'admin',
+        full_name: 'System Administrator',
+        email: 'admin@admin.com',
+        role: 'admin' as const,
+        roles: [{ id: 1, name: 'admin' }],
+        is_staff: true,
+        is_superuser: true,
+        created_at: new Date().toISOString()
+      };
+      isSuccess.value = true;
+      isLoading.value = false;
+      return mockUser as unknown as T;
+    }
+
     if (url.includes('/api/v1/auth/refresh')) {
       const mockResponse: TokenRefreshResponse = {
         accessToken: 'simulated_refreshed_access_token_jwt_' + Date.now()
