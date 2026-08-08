@@ -150,9 +150,11 @@ export const useApiClient = () => {
       }
     }
     
-    // Auto-attach Bearer token
-    if (accessTokenCookie.value) {
-      headers['Authorization'] = `Bearer ${accessTokenCookie.value}`;
+    // Auto-attach Bearer token dynamically at request execution time
+    const currentAccessToken = headers['Authorization'] || headers['authorization'] || useCookie<string | null>('access_token', { maxAge: 60 * 60 * 24 * 7, path: '/' }).value;
+    if (currentAccessToken) {
+      const bearerVal = currentAccessToken.startsWith('Bearer ') ? currentAccessToken : `Bearer ${currentAccessToken}`;
+      headers['Authorization'] = bearerVal;
     }
 
     try {

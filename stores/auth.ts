@@ -85,11 +85,16 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // Authoritative Profile Retrieval via GET /api/v1/users/me/
-    async fetchUserProfile(): Promise<User> {
+    async fetchUserProfile(overrideToken?: string): Promise<User> {
       const client = useApiClient();
       try {
+        const reqHeaders: Record<string, string> = {};
+        if (overrideToken) {
+          reqHeaders['Authorization'] = `Bearer ${overrideToken}`;
+        }
         const profile = await client.request<UserProfileResponse>('/api/v1/users/me/', {
-          method: 'GET'
+          method: 'GET',
+          headers: reqHeaders
         });
 
         if (!profile) {
@@ -171,7 +176,7 @@ export const useAuthStore = defineStore('auth', {
 
         // Retrieve authoritative user profile via GET /api/v1/users/me/
         try {
-          await this.fetchUserProfile();
+          await this.fetchUserProfile(token);
         } catch (profileErr: any) {
           // If fetching authoritative user profile fails, clear stored credentials to avoid partial/inconsistent state
           const accessTokenCookie = useCookie<string | null>('access_token', { path: '/' });
