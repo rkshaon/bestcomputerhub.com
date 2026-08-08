@@ -1,8 +1,12 @@
 // File: /middleware/auth.global.ts
 import { useAuthStore } from '@/stores/auth';
 
-export default defineNuxtRouteMiddleware((to, from) => {
+export default defineNuxtRouteMiddleware(async (to, from) => {
   const authStore = useAuthStore();
+  
+  if (!authStore.isInitialized) {
+    await authStore.initialize();
+  }
   
   if (to.path.startsWith('/admin')) {
     if (!authStore.isLoggedIn) {

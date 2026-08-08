@@ -32,6 +32,8 @@ export const useAuthStore = defineStore('auth', {
       user: userCookie.value || null,
       isLoggedIn: !!accessToken.value,
       isLoading: false,
+      isInitialized: false,
+      initPromise: null as Promise<User | null> | null,
       error: null as string | null,
     };
   },
@@ -152,6 +154,7 @@ export const useAuthStore = defineStore('auth', {
         const userCookie = useCookie<User | null>('auth_user', { maxAge: 60 * 60 * 24 * 7, path: '/' });
         userCookie.value = mappedUser;
         this.isLoggedIn = true;
+        this.isInitialized = true;
 
         return mappedUser;
       } catch (err: any) {
@@ -286,25 +289,51 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // Centralized Helper to check credentials and initialize auth state dynamically
-    async initialize() {
-      const userCookie = useCookie<User | null>('auth_user', { path: '/' });
-      const accessToken = useCookie<string | null>('access_token', { path: '/' });
-      
-      if (accessToken.value) {
-        if (userCookie.value) {
+    async initialize(): Promise<User | null> {
+      if (this.isInitialized && this.user) {
+        return this.user;
+      }
+
+      if (this.initPromise) {
+        return this.initPromise;
+      }
+
+      this.initPromise = (async () => {
+        const accessToken = useCookie<string | null>('access_token', { path: '/' });
+        const refreshToken = useCookie<string | null>('refresh_token', { path: '/' });
+        const userCookie = useCookie<User | null>('auth_user', { path: '/' });
+
+        // Fast hydration from cookie if available
+        if (!this.user && userCookie.value) {
           this.user = userCookie.value;
           this.isLoggedIn = true;
-        } else {
+        }
+
+        const hasToken = !!(accessToken.value || refreshToken.value);
+
+        if (hasToken) {
           try {
-            await this.fetchUserProfile();
+            const profile = await this.fetchUserProfile();
+            this.isInitialized = true;
+            return profile;
           } catch (e) {
             this.user = null;
             this.isLoggedIn = false;
+            this.isInitialized = true;
+            return null;
           }
+        } else {
+          this.user = null;
+          this.isLoggedIn = false;
+          this.isInitialized = true;
+          return null;
         }
-      } else {
-        this.user = null;
-        this.isLoggedIn = false;
+      })();
+
+      try {
+        return await this.initPromise;
+      } finally {
+        this.initPromise = null;
       }
     }
   }
