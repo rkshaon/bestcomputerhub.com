@@ -1,8 +1,9 @@
 <!-- File: /components/admin/UserFormModal.vue -->
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch } from 'vue';
 import { 
   UserPlus, 
+  Edit as EditIcon, 
   X, 
   Check, 
   Loader2, 
@@ -19,14 +20,20 @@ import Button from '@/components/ui/Button.vue';
 import { useUserService } from '@/composables/useUserService';
 import { useRoleService } from '@/composables/useRoleService';
 import { useToast } from '@/composables/useToast';
-import type { Role, CreateUserPayload } from '@/types';
+import type { Role, UserItem, CreateUserPayload, UpdateUserPayload } from '@/types';
 
 interface Props {
   isOpen: boolean;
+  isEdit?: boolean;
+  isResolving?: boolean;
+  user?: UserItem | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isOpen: false
+  isOpen: false,
+  isEdit: false,
+  isResolving: false,
+  user: null
 });
 
 const emit = defineEmits<{
@@ -69,23 +76,46 @@ const loadAvailableRoles = async () => {
   }
 };
 
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    formError.value = '';
-    firstName.value = '';
-    middleName.value = '';
-    lastName.value = '';
-    email.value = '';
-    username.value = '';
-    password.value = '';
-    confirmPassword.value = '';
-    selectedGroupIds.value = [];
-    showPassword.value = false;
-    showConfirmPassword.value = false;
+watch(
+  [() => props.isOpen, () => props.user, () => props.isEdit],
+  () => {
+    if (props.isOpen) {
+      formError.value = '';
+      showPassword.value = false;
+      showConfirmPassword.value = false;
 
-    loadAvailableRoles();
-  }
-}, { immediate: true });
+      if (props.isEdit && props.user) {
+        firstName.value = props.user.first_name || '';
+        middleName.value = props.user.middle_name || '';
+        lastName.value = props.user.last_name || '';
+        email.value = props.user.email || '';
+        username.value = props.user.username || '';
+        password.value = '';
+        confirmPassword.value = '';
+
+        if (props.user.groups && Array.isArray(props.user.groups)) {
+          selectedGroupIds.value = props.user.groups.map(g => 
+            typeof g === 'object' && g !== null ? (g as any).id : Number(g)
+          ).filter(id => !isNaN(id));
+        } else {
+          selectedGroupIds.value = [];
+        }
+      } else {
+        firstName.value = '';
+        middleName.value = '';
+        lastName.value = '';
+        email.value = '';
+        username.value = '';
+        password.value = '';
+        confirmPassword.value = '';
+        selectedGroupIds.value = [];
+      }
+
+      loadAvailableRoles();
+    }
+  },
+  { immediate: true }
+);
 
 const toggleRoleSelection = (roleId: number) => {
   if (selectedGroupIds.value.includes(roleId)) {
@@ -98,7 +128,7 @@ const toggleRoleSelection = (roleId: number) => {
 const handleSubmit = async () => {
   formError.value = '';
 
-  // Validation
+  // Common Validations
   if (!email.value.trim()) {
     formError.value = 'Email address is required.';
     return;
@@ -107,48 +137,103 @@ const handleSubmit = async () => {
     formError.value = 'Username is required.';
     return;
   }
-  if (!password.value) {
-    formError.value = 'Password is required.';
-    return;
-  }
-  if (password.value !== confirmPassword.value) {
-    formError.value = 'Passwords do not match.';
-    return;
-  }
 
-  const payload: CreateUserPayload = {
-    first_name: firstName.value.trim(),
-    middle_name: middleName.value.trim(),
-    last_name: lastName.value.trim(),
-    email: email.value.trim(),
-    username: username.value.trim(),
-    password: password.value,
-    confirm_password: confirmPassword.value,
-    groups: selectedGroupIds.value
-  };
-
-  try {
-    const newUser = await userService.createUser(payload);
-    const displayName = newUser.full_name || newUser.username || newUser.email;
-    toastSuccess(`User account "${displayName}" created successfully.`);
-    emit('saved');
-    emit('close');
-  } catch (err: any) {
-    let msg = 'Failed to create user account.';
-    if (err?.data) {
-      if (typeof err.data === 'string') msg = err.data;
-      else if (err.data.detail) msg = err.data.detail;
-      else if (typeof err.data === 'object') {
-        const errors = Object.entries(err.data)
-          .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${Array.isArray(v) ? v.join(', ') : v}`)
-          .join(' | ');
-        if (errors) msg = errors;
-      }
-    } else if (err?.message) {
-      msg = err.message;
+  if (props.isEdit) {
+    if (!props.user) {
+      formError.value = 'Target user record could not be resolved.';
+      return;
     }
-    formError.value = msg;
-    toastError('Please resolve errors in the form.');
+
+    // Password validation for edit (only validate if user typed a new password)
+    if (password.value) {
+      if (password.value !== confirmPassword.value) {
+        formError.value = 'Passwords do not match.';
+        return;
+      }
+    }
+
+    const payload: UpdateUserPayload = {
+      first_name: firstName.value.trim(),
+      middle_name: middleName.value.trim(),
+      last_name: lastName.value.trim(),
+      email: email.value.trim(),
+      username: username.value.trim(),
+      groups: selectedGroupIds.value
+    };
+
+    if (password.value) {
+      payload.password = password.value;
+      payload.confirm_password = confirmPassword.value;
+    }
+
+    try {
+      const updatedUser = await userService.updateUser(props.user.id, payload);
+      const displayName = updatedUser.full_name || updatedUser.username || updatedUser.email;
+      toastSuccess(`User account "${displayName}" updated successfully.`);
+      emit('saved');
+      emit('close');
+    } catch (err: any) {
+      let msg = 'Failed to update user account.';
+      if (err?.data) {
+        if (typeof err.data === 'string') msg = err.data;
+        else if (err.data.detail) msg = err.data.detail;
+        else if (typeof err.data === 'object') {
+          const errors = Object.entries(err.data)
+            .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .join(' | ');
+          if (errors) msg = errors;
+        }
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      formError.value = msg;
+      toastError('Please resolve errors in the form.');
+    }
+  } else {
+    // Create Mode
+    if (!password.value) {
+      formError.value = 'Password is required.';
+      return;
+    }
+    if (password.value !== confirmPassword.value) {
+      formError.value = 'Passwords do not match.';
+      return;
+    }
+
+    const payload: CreateUserPayload = {
+      first_name: firstName.value.trim(),
+      middle_name: middleName.value.trim(),
+      last_name: lastName.value.trim(),
+      email: email.value.trim(),
+      username: username.value.trim(),
+      password: password.value,
+      confirm_password: confirmPassword.value,
+      groups: selectedGroupIds.value
+    };
+
+    try {
+      const newUser = await userService.createUser(payload);
+      const displayName = newUser.full_name || newUser.username || newUser.email;
+      toastSuccess(`User account "${displayName}" created successfully.`);
+      emit('saved');
+      emit('close');
+    } catch (err: any) {
+      let msg = 'Failed to create user account.';
+      if (err?.data) {
+        if (typeof err.data === 'string') msg = err.data;
+        else if (err.data.detail) msg = err.data.detail;
+        else if (typeof err.data === 'object') {
+          const errors = Object.entries(err.data)
+            .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .join(' | ');
+          if (errors) msg = errors;
+        }
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      formError.value = msg;
+      toastError('Please resolve errors in the form.');
+    }
   }
 };
 </script>
@@ -166,14 +251,15 @@ const handleSubmit = async () => {
       <div class="px-6 py-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
         <div class="flex items-center gap-3">
           <div class="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
-            <UserPlus class="w-5 h-5" />
+            <EditIcon v-if="isEdit" class="w-5 h-5" />
+            <UserPlus v-else class="w-5 h-5" />
           </div>
           <div>
             <h2 class="text-lg font-display font-extrabold text-foreground">
-              Provision New User Account
+              {{ isEdit ? 'Edit User Account' : 'Provision New User Account' }}
             </h2>
             <p class="text-xs text-muted-foreground font-medium">
-              Create a new user account, define credentials, and assign security groups.
+              {{ isEdit ? 'Modify personnel credentials, account details, and group assignments.' : 'Create a new user account, define credentials, and assign security groups.' }}
             </p>
           </div>
         </div>
@@ -187,8 +273,14 @@ const handleSubmit = async () => {
         </button>
       </div>
 
+      <!-- Resolving State -->
+      <div v-if="isResolving" class="p-12 text-center space-y-3 my-auto">
+        <Loader2 class="w-8 h-8 animate-spin text-primary mx-auto" />
+        <p class="text-xs font-semibold text-muted-foreground">Loading user record details...</p>
+      </div>
+
       <!-- Modal Body (Scrollable) -->
-      <div class="p-6 overflow-y-auto space-y-6 flex-1">
+      <div v-else class="p-6 overflow-y-auto space-y-6 flex-1">
         
         <!-- Error Banner -->
         <div 
@@ -199,7 +291,7 @@ const handleSubmit = async () => {
           <span>{{ formError || userService.error.value }}</span>
         </div>
 
-        <form @submit.prevent="handleSubmit" id="create-user-form" class="space-y-6">
+        <form @submit.prevent="handleSubmit" id="user-form" class="space-y-6">
           
           <!-- Name Section -->
           <div class="space-y-4">
@@ -295,13 +387,15 @@ const handleSubmit = async () => {
               <!-- Password -->
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">
-                  Password <span class="text-destructive">*</span>
+                  {{ isEdit ? 'New Password' : 'Password' }} 
+                  <span v-if="!isEdit" class="text-destructive">*</span>
+                  <span v-else class="text-[10px] text-muted-foreground font-normal">(Leave blank to keep existing)</span>
                 </label>
                 <div class="relative">
                   <input 
                     v-model="password"
                     :type="showPassword ? 'text' : 'password'"
-                    required
+                    :required="!isEdit"
                     placeholder="••••••••••••"
                     class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   />
@@ -321,13 +415,14 @@ const handleSubmit = async () => {
               <!-- Confirm Password -->
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">
-                  Confirm Password <span class="text-destructive">*</span>
+                  {{ isEdit ? 'Confirm New Password' : 'Confirm Password' }}
+                  <span v-if="!isEdit" class="text-destructive">*</span>
                 </label>
                 <div class="relative">
                   <input 
                     v-model="confirmPassword"
                     :type="showConfirmPassword ? 'text' : 'password'"
-                    required
+                    :required="!isEdit && !!password"
                     placeholder="••••••••••••"
                     class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   />
@@ -423,12 +518,19 @@ const handleSubmit = async () => {
 
         <Button 
           type="submit" 
-          form="create-user-form"
+          form="user-form"
           variant="primary" 
-          :disabled="userService.isSubmitting.value"
+          :disabled="userService.isSubmitting.value || isResolving"
         >
           <Loader2 v-if="userService.isSubmitting.value" class="w-4 h-4 animate-spin" />
-          <span>{{ userService.isSubmitting.value ? 'Provisioning...' : 'Provision User Account' }}</span>
+          <span>
+            <template v-if="userService.isSubmitting.value">
+              {{ isEdit ? 'Saving Changes...' : 'Provisioning...' }}
+            </template>
+            <template v-else>
+              {{ isEdit ? 'Save Changes' : 'Provision User Account' }}
+            </template>
+          </span>
         </Button>
       </div>
 

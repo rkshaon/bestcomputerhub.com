@@ -1,7 +1,7 @@
 // File: /composables/useUserService.ts
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
-import type { UserItem, PaginatedUsers, CreateUserPayload } from '@/types';
+import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload } from '@/types';
 
 const usersCache = ref<UserItem[]>([]);
 const totalCount = ref<number>(0);
@@ -63,7 +63,30 @@ export const useUserService = () => {
     }
   };
 
-  // 2. Create User (POST /api/v1/users/)
+  // 2. Get User By ID (GET /api/v1/users/{id}/)
+  const getUserById = async (id: number | string): Promise<UserItem> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<UserItem>(`/api/v1/users/${id}/`, {
+        method: 'GET'
+      });
+      return data;
+    } catch (err: any) {
+      // Fallback: Check if cached in list
+      const cached = usersCache.value.find(u => u.id == id);
+      if (cached) return cached;
+
+      const msg = err.data?.detail || err.data?.message || err.message || `Failed to retrieve user #${id}.`;
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  // 3. Create User (POST /api/v1/users/)
   const createUser = async (payload: CreateUserPayload): Promise<UserItem> => {
     isSubmitting.value = true;
     errorMsg.value = null;
@@ -106,6 +129,83 @@ export const useUserService = () => {
     }
   };
 
+  // 4. Update User (PATCH /api/v1/users/{id}/)
+  const updateUser = async (id: number | string, payload: UpdateUserPayload): Promise<UserItem> => {
+    isSubmitting.value = true;
+    errorMsg.value = null;
+
+    try {
+      const updated = await apiClient.request<UserItem>(`/api/v1/users/${id}/`, {
+        method: 'PATCH',
+        body: payload
+      });
+
+      const idx = usersCache.value.findIndex(u => u.id == id);
+      if (idx !== -1) {
+        usersCache.value[idx] = updated;
+      }
+      return updated;
+    } catch (err: any) {
+      let msg = 'Failed to update user account.';
+      if (err.data) {
+        if (typeof err.data === 'string') {
+          msg = err.data;
+        } else if (err.data.detail) {
+          msg = err.data.detail;
+        } else if (typeof err.data === 'object') {
+          const fieldErrors = Object.entries(err.data)
+            .map(([field, errs]) => {
+              const formattedField = field.replace(/_/g, ' ');
+              const errStr = Array.isArray(errs) ? errs.join(', ') : String(errs);
+              return `${formattedField}: ${errStr}`;
+            })
+            .join(' | ');
+          if (fieldErrors) msg = fieldErrors;
+        }
+      } else if (err.message) {
+        msg = err.message;
+      }
+
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isSubmitting.value = false;
+    }
+  };
+
+  // 5. Delete User (DELETE /api/v1/users/{id}/)
+  const deleteUser = async (id: number | string): Promise<void> => {
+    isSubmitting.value = true;
+    errorMsg.value = null;
+
+    try {
+      await apiClient.request(`/api/v1/users/${id}/`, {
+        method: 'DELETE'
+      });
+
+      usersCache.value = usersCache.value.filter(u => u.id != id);
+      if (totalCount.value > 0) {
+        totalCount.value -= 1;
+      }
+    } catch (err: any) {
+      let msg = 'Failed to delete user account.';
+      if (err.data) {
+        if (typeof err.data === 'string') {
+          msg = err.data;
+        } else if (err.data.detail) {
+          msg = err.data.detail;
+        }
+      } else if (err.message) {
+        msg = err.message;
+      }
+
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isSubmitting.value = false;
+    }
+  };
+
   return {
     users: usersCache,
     totalCount,
@@ -113,7 +213,11 @@ export const useUserService = () => {
     isSubmitting,
     error: errorMsg,
     getUsers,
-    createUser
+    getUserById,
+    createUser,
+    updateUser,
+    deleteUser
   };
 };
+
 

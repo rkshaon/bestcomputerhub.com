@@ -30,3 +30,14 @@ export interface CreateUserPayload {
   confirm_password: string;
   groups: number[];
 }
+
+export interface UpdateUserPayload {
+  first_name?: string;
+  middle_name?: string;
+  last_name?: string;
+  email?: string;
+  username?: string;
+  password?: string;
+  confirm_password?: string;
+  groups?: number[];
+}
