@@ -38,7 +38,16 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAdmin: (state): boolean => {
-      return state.user?.role === 'admin' || state.user?.role === 'staff';
+      if (!state.user) return false;
+      if (state.user.role === 'admin' || state.user.role === 'staff') return true;
+      if (state.user.is_superuser || state.user.is_staff) return true;
+      if (Array.isArray(state.user.roles) && state.user.roles.length > 0) {
+        return state.user.roles.some((r: any) => {
+          const roleName = typeof r === 'string' ? r.toLowerCase() : (r?.name || '').toLowerCase();
+          return roleName === 'admin' || roleName === 'staff' || roleName === 'superuser';
+        });
+      }
+      return false;
     }
   },
   
@@ -106,19 +115,37 @@ export const useAuthStore = defineStore('auth', {
           refreshTokenCookie.value = rToken;
         }
 
-        // Store active user profile, fallback gracefully to token parsing or credentials info
-        let userProfile = response.user;
-        if (!userProfile && token) {
-          const jwtData = parseJwt(token);
-          const emailStr = jwtData?.email || payload.email || payload.credential || 'sarah.a@techcore.io';
-          const nameStr = jwtData?.name || jwtData?.full_name || jwtData?.username || emailStr.split('@')[0].toUpperCase();
-          const userIdStr = jwtData?.user_id || jwtData?.id || jwtData?.sub || 'usr_' + Math.floor(Math.random() * 100000);
+        // Store active user profile from nested user object or flat response attributes
+        let userProfile: User | null = null;
+        const rawUser = response.user || response;
+        const jwtData = token ? parseJwt(token) : null;
+
+        if (rawUser) {
+          const emailStr = (rawUser as any).email || jwtData?.email || payload.email || payload.credential || '';
+          const nameStr = (rawUser as any).name || (rawUser as any).full_name || (rawUser as any).username || jwtData?.name || jwtData?.full_name || jwtData?.username || (emailStr ? emailStr.split('@')[0].toUpperCase() : '');
+          const userIdStr = (rawUser as any).user_id || (rawUser as any).id || jwtData?.user_id || jwtData?.id || jwtData?.sub || '';
+
+          const rolesList = (rawUser as any).roles || jwtData?.roles || [];
+          const isStaff = (rawUser as any).is_staff ?? jwtData?.is_staff ?? false;
+          const isSuperuser = (rawUser as any).is_superuser ?? jwtData?.is_superuser ?? false;
+          
+          let roleVal: 'admin' | 'staff' | 'customer' = (rawUser as any).role || jwtData?.role || 'customer';
+          if (isSuperuser || isStaff || (Array.isArray(rolesList) && rolesList.some((r: any) => {
+            const name = typeof r === 'string' ? r.toLowerCase() : (r?.name || '').toLowerCase();
+            return name === 'admin' || name === 'staff' || name === 'superuser';
+          }))) {
+            roleVal = isStaff && !isSuperuser ? 'staff' : 'admin';
+          }
+
           userProfile = {
             id: userIdStr,
             name: nameStr,
             email: emailStr,
-            role: jwtData?.role || 'customer',
-            joinedAt: new Date().toISOString()
+            role: roleVal,
+            roles: rolesList,
+            is_staff: isStaff,
+            is_superuser: isSuperuser,
+            joinedAt: (rawUser as any).joinedAt || (rawUser as any).created_at || new Date().toISOString()
           };
         }
 

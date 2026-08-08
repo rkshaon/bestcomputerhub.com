@@ -116,7 +116,7 @@ const joinDateFormatted = computed(() => {
                 <span class="font-mono text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
                   {{ authStore.user?.id || 'usr_sys_001923' }}
                   <button 
-                    @click="copyToClipboard(authStore.user?.id || 'usr_sys_001923', 'id')"
+                    @click="copyToClipboard(String(authStore.user?.id || 'usr_sys_001923'), 'id')"
                     class="text-slate-400 hover:text-primary transition-colors"
                     title="Copy identifier"
                   >

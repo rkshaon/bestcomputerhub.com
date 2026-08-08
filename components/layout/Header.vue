@@ -187,9 +187,9 @@ const isThemeMenuOpen = ref(false);
 const activeMegaMenuId = ref<string | null>(null);
 let megaMenuTimer: ReturnType<typeof setTimeout> | null = null;
 
-const openMegaMenu = (catId: string) => {
+const openMegaMenu = (catId: string | number) => {
   if (megaMenuTimer) clearTimeout(megaMenuTimer);
-  activeMegaMenuId.value = catId;
+  activeMegaMenuId.value = String(catId);
 };
 
 const closeMegaMenu = () => {
@@ -887,7 +887,7 @@ if (process.client) {
               :class="cn(
                 'relative flex items-center font-semibold tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200',
                 isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
-                activeMegaMenuId === cat.id ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
+                activeMegaMenuId === String(cat.id) ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
               )"
             >
               {{ cat.name }}
@@ -897,7 +897,7 @@ if (process.client) {
             <HeaderMegaMenu 
               :category="cat" 
               :all-categories="allCategories"
-              :is-open="activeMegaMenuId === cat.id"
+              :is-open="activeMegaMenuId === String(cat.id)"
               :align-right="index >= visibleCategories.length / 2"
               @keep-open="keepMegaMenuOpen"
               @close="closeMegaMenu"
@@ -919,7 +919,7 @@ if (process.client) {
             :class="cn(
               'relative flex items-center gap-1 font-semibold transition-colors whitespace-nowrap py-1.5 px-1.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md cursor-pointer',
               isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
-              isMoreOpen || (activeMegaMenuId && activeMegaMenuId.startsWith('more-')) ? 'text-primary font-bold' : 'text-foreground/85'
+              isMoreOpen || (typeof activeMegaMenuId === 'string' && activeMegaMenuId.startsWith('more-')) ? 'text-primary font-bold' : 'text-foreground/85'
             )"
             :aria-expanded="isMoreOpen"
             aria-label="More categories"

@@ -1,12 +1,15 @@
 // File: /types/auth.ts
 
 export interface User {
-  id: string;
+  id: string | number;
   name: string;
   email: string;
   avatar?: string;
   phone?: string;
-  role: 'admin' | 'staff' | 'customer';
+  role?: 'admin' | 'staff' | 'customer';
+  roles?: (string | { id?: string | number; name: string })[];
+  is_staff?: boolean;
+  is_superuser?: boolean;
   joinedAt: string;
 }
 
