@@ -8,8 +8,11 @@ export interface User {
   phone?: string;
   role?: 'admin' | 'staff' | 'customer';
   roles?: (string | { id?: string | number; name: string })[];
+  groups?: (string | { id?: string | number; name: string })[];
+  permissions?: (string | { id?: string | number; name?: string; codename?: string })[];
   is_staff?: boolean;
   is_superuser?: boolean;
+  is_superadmin?: boolean;
   joinedAt: string;
 }
 
@@ -70,9 +73,12 @@ export interface UserProfileResponse {
   phone?: string;
   role?: 'admin' | 'staff' | 'customer';
   roles?: (string | { id?: string | number; name: string })[];
+  groups?: (string | { id?: string | number; name: string })[];
+  permissions?: (string | { id?: string | number; name?: string; codename?: string })[];
   is_staff?: boolean;
   is_staff_user?: boolean;
   is_superuser?: boolean;
+  is_superadmin?: boolean;
   created_at?: string;
   date_joined?: string;
   joinedAt?: string;

@@ -40,12 +40,20 @@ export const useAuthStore = defineStore('auth', {
     isAdmin: (state): boolean => {
       if (!state.user) return false;
       if (state.user.role === 'admin' || state.user.role === 'staff') return true;
-      if (state.user.is_superuser || state.user.is_staff) return true;
+      if (state.user.is_superadmin || state.user.is_superuser || state.user.is_staff) return true;
       if (Array.isArray(state.user.roles) && state.user.roles.length > 0) {
-        return state.user.roles.some((r: any) => {
+        const hasAdminRole = state.user.roles.some((r: any) => {
           const roleName = typeof r === 'string' ? r.toLowerCase() : (r?.name || '').toLowerCase();
-          return roleName === 'admin' || roleName === 'staff' || roleName === 'superuser';
+          return roleName === 'admin' || roleName === 'staff' || roleName === 'superuser' || roleName === 'superadmin';
         });
+        if (hasAdminRole) return true;
+      }
+      if (Array.isArray(state.user.groups) && state.user.groups.length > 0) {
+        const hasAdminGroup = state.user.groups.some((g: any) => {
+          const groupName = typeof g === 'string' ? g.toLowerCase() : (g?.name || '').toLowerCase();
+          return groupName === 'admin' || groupName === 'staff' || groupName === 'superuser' || groupName === 'superadmin';
+        });
+        if (hasAdminGroup) return true;
       }
       return false;
     }
@@ -107,15 +115,21 @@ export const useAuthStore = defineStore('auth', {
         const userIdStr = profile.id || profile.user_id || '';
 
         const rolesList = profile.roles || [];
+        const groupsList = profile.groups || [];
+        const permissionsList = profile.permissions || [];
         const isStaff = profile.is_staff ?? profile.is_staff_user ?? false;
         const isSuperuser = profile.is_superuser ?? false;
+        const isSuperadmin = profile.is_superadmin ?? false;
 
         let roleVal: 'admin' | 'staff' | 'customer' = profile.role || 'customer';
-        if (isSuperuser || isStaff || (Array.isArray(rolesList) && rolesList.some((r: any) => {
+        if (isSuperadmin || isSuperuser || isStaff || (Array.isArray(rolesList) && rolesList.some((r: any) => {
           const name = typeof r === 'string' ? r.toLowerCase() : (r?.name || '').toLowerCase();
-          return name === 'admin' || name === 'staff' || name === 'superuser';
+          return name === 'admin' || name === 'staff' || name === 'superuser' || name === 'superadmin';
+        })) || (Array.isArray(groupsList) && groupsList.some((g: any) => {
+          const name = typeof g === 'string' ? g.toLowerCase() : (g?.name || '').toLowerCase();
+          return name === 'admin' || name === 'staff' || name === 'superuser' || name === 'superadmin';
         }))) {
-          roleVal = isStaff && !isSuperuser ? 'staff' : 'admin';
+          roleVal = isStaff && !isSuperuser && !isSuperadmin ? 'staff' : 'admin';
         }
 
         const mappedUser: User = {
@@ -126,8 +140,11 @@ export const useAuthStore = defineStore('auth', {
           phone: profile.phone || undefined,
           role: roleVal,
           roles: rolesList,
+          groups: groupsList,
+          permissions: permissionsList,
           is_staff: isStaff,
           is_superuser: isSuperuser,
+          is_superadmin: isSuperadmin,
           joinedAt: profile.joinedAt || profile.created_at || profile.date_joined || new Date().toISOString()
         };
 

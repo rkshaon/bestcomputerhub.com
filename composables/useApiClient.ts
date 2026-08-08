@@ -426,6 +426,7 @@ export const useApiClient = () => {
         roles: [{ id: 1, name: 'admin' }],
         is_staff: true,
         is_superuser: true,
+        is_superadmin: true,
         created_at: new Date().toISOString()
       };
       isSuccess.value = true;
