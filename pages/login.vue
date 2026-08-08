@@ -1,7 +1,7 @@
 <!-- File: /pages/login.vue -->
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Mail, Lock, ArrowRight, Github, Chrome, ShieldCheck, Eye, EyeOff, Loader2 } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
+import { User, Lock, ArrowRight, Github, Chrome, ShieldCheck, Eye, EyeOff, Loader2 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { cn } from '@/utils';
 
@@ -13,7 +13,7 @@ useSeoMeta({
 
 const authStore = useAuthStore();
 const route = useRoute();
-const email = ref('');
+const credential = ref('');
 const password = ref('');
 const showPassword = ref(false);
 const isLoading = ref(false);
@@ -26,9 +26,9 @@ const redirectTarget = computed(() => {
 });
 
 const handleLogin = async () => {
-  if (!email.value || !password.value) {
-    error.value = 'Please fill in all fields';
-    toastWarning('Please fill in all fields to log in.');
+  if (!credential.value.trim() || !password.value) {
+    error.value = 'Please enter your email, username or phone number and password.';
+    toastWarning('Please enter your email, username or phone number and password to log in.');
     return;
   }
 
@@ -36,7 +36,7 @@ const handleLogin = async () => {
   error.value = '';
 
   try {
-    await authStore.login({ email: email.value, password: password.value });
+    await authStore.login({ credential: credential.value.trim(), password: password.value });
     toastSuccess('Log in successful. Secure session established.');
     navigateTo(redirectTarget.value);
   } catch (err: any) {
@@ -83,17 +83,17 @@ if (authStore.isLoggedIn) {
               {{ error }}
             </div>
 
-            <!-- Email Field -->
+            <!-- Credential Field -->
             <div class="space-y-2">
-              <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Email Address</label>
+              <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Email, Username or Phone Number</label>
               <div class="relative group">
                 <div class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                  <Mail class="w-4 h-4" />
+                  <User class="w-4 h-4" />
                 </div>
                 <input 
-                  v-model="email"
-                  type="email" 
-                  placeholder="name@enterprise.com"
+                  v-model="credential"
+                  type="text" 
+                  placeholder="Enter email, username or phone number"
                   class="w-full h-14 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium"
                   required
                 />
