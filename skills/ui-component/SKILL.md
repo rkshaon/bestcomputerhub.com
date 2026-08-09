@@ -61,7 +61,7 @@ Examples:
 * Submit actions must use `type="submit"`.
 * Modals and drawers must provide clear close behavior and appropriate keyboard interaction.
 * Data-entry modals should focus the first meaningful input when appropriate.
-* Handle applicable loading, disabled, empty, and error states.
+* Handle applicable loading, disabled, empty, and error states; API error toasts must delegate to centralized error handling (`handleApiError` in `useToast.ts`) rather than displaying raw technical request strings or status codes.
 * Do not put backend commerce business rules inside presentation components.
 * Do not fabricate commerce data to complete a component's appearance.
 * Admin UI components and action controls (Create, Edit, Delete buttons) must respect user permissions via `useAdminPermissions()` and hide or disable unauthorized operations.

@@ -346,3 +346,12 @@ API requests must be driven by actual data requirements, not merely by component
 - **Defer Auxiliary Workflows**: Fetch auxiliary datasets (such as modal dropdown options or full entity details) only when the corresponding workflow is actively initiated.
 - **Prevent Mounting Side-Effects**: Do not call secondary or unrelated APIs in `onMounted()` or top-level setup scripts simply because a component or composable is mounted.
 
+## 13. Centralized API Error Message Handling Principle
+
+API errors across all status codes (`400`, `401`, `403`, `404`, `409`, `422`, `429`, `500`, etc.) are processed centrally through `useApiClient` and the centralized toast error handling architecture (`useToast`'s `handleApiError` / `extractErrorMessage`).
+- **Delegated Responsibility**: Feature components and domain services delegate error parsing and toast display to the centralized handler rather than implementing bespoke error parsing logic.
+- **Extraction Priority**: The centralized error handler extracts user-facing messages from backend API response payloads (e.g. `detail`, `message`, `error`, `non_field_errors`, or field error arrays).
+- **Fallback**: When the backend provides no specific message, the handler falls back to a friendly, generic error message (e.g. "An unexpected error occurred.").
+- **User Privacy & Cleanliness**: Raw request URLs, HTTP method names, status strings (such as `[POST] "...": 403 Forbidden`), or technical stack traces are never exposed in user-facing toasts or UI error messages.
+
+

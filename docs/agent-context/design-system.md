@@ -862,18 +862,20 @@ Do not display broken or partially rendered UI when a collection is empty.
 
 ## 30. Error States
 
-Errors should be understandable to customers.
+Errors should be understandable to customers and administrative users alike.
 
-Avoid exposing raw backend exceptions, stack traces, or implementation details.
+Avoid exposing raw backend exceptions, technical request strings, HTTP method names, URLs, or status code signatures (such as `[POST] "...": 403 Forbidden`).
 
 Where appropriate, provide:
 
-* concise explanation
+* concise explanation extracted from the backend response (e.g. `detail` or `message`)
 * retry action
 * navigation alternative
 * support path
 
 Validation errors from DRF should be presented near the relevant form fields when possible.
+
+API error toasts must utilize the centralized error handling utilities (`handleApiError` / `extractErrorMessage`) to present user-facing API messages or clean fallbacks.
 
 ---
 
@@ -885,6 +887,8 @@ Use transient notifications for lightweight feedback such as:
 * item removed
 * settings saved
 * operation failed
+
+Error toasts must consistently display backend-supplied user-facing error messages (such as `detail` or `message`) or generic user-friendly fallbacks. They must never display raw technical request strings, internal error objects, or status headers.
 
 Do not use toasts as the only mechanism for important information that the user must read or act upon.
 

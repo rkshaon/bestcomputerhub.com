@@ -39,3 +39,5 @@ Always debounce user-input-driven search and filter requests at the query/compos
 
 Always enforce demand-driven API calling: never dispatch API requests on component mount, watcher triggers, or route initialization unless the data is immediately required by the current view. Reuse available state/props/store data before issuing new requests, and fetch auxiliary workflow data (such as option lists or detailed entity records) only when the specific user workflow demands it.
 
+Always process API errors centrally through `useApiClient` and `useToast` (`handleApiError` / `extractErrorMessage`). Extract backend-provided user-facing messages (such as `detail`, `message`, or field errors) for toasts rather than displaying raw technical request strings, URLs, or HTTP status signatures. Fall back to a generic user-friendly error message when no backend message is provided.
+

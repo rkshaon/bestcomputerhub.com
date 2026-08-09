@@ -61,3 +61,12 @@ The application must not make API requests unless the data is required by the cu
 - **Defer Workflow Data**: Auxiliary dataset queries (such as modal dropdown options or full entity details) must be fetched when the user triggers that specific workflow (e.g. opening a modal), not on component mount or page load.
 - **Avoid Side-Effects**: Prevent unintended API calls caused prematurely by component mounting, watchers, reactive state updates, or dialog setup.
 
+## Centralized Error Message Handling
+
+All HTTP errors (`400`, `401`, `403`, `404`, `409`, `422`, `429`, `500`, etc.) must be processed centrally through `useApiClient` and the centralized toast error handler (`handleApiError` / `extractErrorMessage` in `useToast.ts`).
+- **Centralized Handling**: Components and domain services delegate error message formatting and toast presentation to the centralized layer rather than manually parsing response structures in individual feature code.
+- **Backend Message Extraction**: The error handler inspects backend API error responses and extracts the user-facing message supplied by DRF (e.g. `detail`, `message`, `error`, `non_field_errors`, or field-level validation errors).
+- **Fallback Behavior**: When the backend API response does not include a usable error message, the handler falls back to a clean, user-friendly default message (e.g. "An unexpected error occurred.").
+- **No Technical Leakage**: Toasts and user notifications must never expose raw technical request signatures, request URLs, HTTP method names, or status code strings (such as `[POST] "...": 403 Forbidden`).
+
+

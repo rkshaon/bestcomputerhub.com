@@ -190,6 +190,13 @@ API requests must be driven by actual data requirements, not merely by component
 - **Lazy Workflow Fetching**: Fetch workflow-specific or auxiliary data (such as form selection lists or modal entity details) only when the user actively opens or triggers that specific workflow, never on page or parent component mount.
 - **No Duplicate Requests**: Avoid redundant API calls when usable data has already been fetched or is currently being processed.
 
+### 6. Centralized API Error Message Handling
+All API errors (`400`, `401`, `403`, `404`, `409`, `422`, `429`, `500`, etc.) must be processed centrally through the existing API client and toast error-handling architecture (`useApiClient` / `useToast`'s `handleApiError` / `extractErrorMessage`).
+- **No Independent Component Parsing**: Components and feature views must NOT manually parse API errors independently unless explicitly required by a specific feature workflow.
+- **Error Message Priority & Extraction**: The centralized handler must inspect error responses, extract user-facing messages provided by the backend (e.g. `detail`, `message`, `error`, `non_field_errors`, or field errors), and display them via the toast notification system.
+- **User-Friendly Fallbacks**: When no backend error message is provided, fall back to a clear, generic user-facing message (e.g. "An unexpected error occurred.").
+- **No Raw Technical Strings**: Never expose raw HTTP request signatures, URLs, HTTP methods, status code headers (e.g. `[POST] "...": 403 Forbidden`), or internal error objects to end users in toasts or UI error states.
+
 ## Structural Changes
 
 Agents may autonomously perform small, task-local,
