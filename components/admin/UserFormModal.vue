@@ -99,14 +99,14 @@ watch(
         if (!firstName.value && !lastName.value && props.user.full_name) {
           const parts = props.user.full_name.trim().split(/\s+/);
           if (parts.length === 1) {
-            firstName.value = parts[0];
+            firstName.value = parts[0] || '';
           } else if (parts.length === 2) {
-            firstName.value = parts[0];
-            lastName.value = parts[1];
+            firstName.value = parts[0] || '';
+            lastName.value = parts[1] || '';
           } else if (parts.length > 2) {
-            firstName.value = parts[0];
+            firstName.value = parts[0] || '';
             middleName.value = parts.slice(1, -1).join(' ');
-            lastName.value = parts[parts.length - 1];
+            lastName.value = parts[parts.length - 1] || '';
           }
         }
 
