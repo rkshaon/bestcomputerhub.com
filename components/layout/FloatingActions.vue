@@ -1,11 +1,19 @@
 <!-- File: /components/layout/FloatingActions.vue -->
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Phone } from 'lucide-vue-next';
 import { STORE_CONTACT } from '@/constants/contact';
+
+const route = useRoute();
+
+const showActions = computed(() => {
+  return !route.path.startsWith('/admin');
+});
 </script>
 
 <template>
   <div 
+    v-if="showActions"
     class="fixed bottom-20 right-4 sm:bottom-24 sm:right-6 z-40 flex flex-col gap-3 items-end"
     aria-label="Quick contact and utility actions"
   >
