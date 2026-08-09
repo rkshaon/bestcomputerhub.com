@@ -135,22 +135,60 @@ const availableRoles = computed(() => {
   return rolesList.value.filter(role => !selectedGroupIds.value.includes(role.id));
 });
 
-const isNewlyAddedRole = (roleId: number) => {
-  return selectedGroupIds.value.includes(roleId) && !initialGroupIds.value.includes(roleId);
-};
+const loadingRoleId = ref<number | null>(null);
 
-const isPendingRemovalRole = (roleId: number) => {
-  return !selectedGroupIds.value.includes(roleId) && initialGroupIds.value.includes(roleId);
-};
+const addRole = async (roleId: number) => {
+  if (selectedGroupIds.value.includes(roleId) || loadingRoleId.value === roleId) return;
 
-const addRole = (roleId: number) => {
-  if (!selectedGroupIds.value.includes(roleId)) {
-    selectedGroupIds.value = [...selectedGroupIds.value, roleId];
+  if (props.isEdit && props.user?.id) {
+    loadingRoleId.value = roleId;
+    try {
+      await userService.assignRole(props.user.id, roleId);
+      if (!selectedGroupIds.value.includes(roleId)) {
+        selectedGroupIds.value = [...selectedGroupIds.value, roleId];
+      }
+      if (!initialGroupIds.value.includes(roleId)) {
+        initialGroupIds.value = [...initialGroupIds.value, roleId];
+      }
+      const roleObj = rolesList.value.find(r => r.id === roleId);
+      toastSuccess(`Role "${roleObj?.name || 'Role'}" assigned successfully.`);
+    } catch (err: any) {
+      let msg = 'Failed to assign role.';
+      if (err?.data?.detail) msg = err.data.detail;
+      else if (err?.message) msg = err.message;
+      toastError(msg);
+    } finally {
+      loadingRoleId.value = null;
+    }
+  } else {
+    if (!selectedGroupIds.value.includes(roleId)) {
+      selectedGroupIds.value = [...selectedGroupIds.value, roleId];
+    }
   }
 };
 
-const removeRole = (roleId: number) => {
-  selectedGroupIds.value = selectedGroupIds.value.filter(id => id !== roleId);
+const removeRole = async (roleId: number) => {
+  if (!selectedGroupIds.value.includes(roleId) || loadingRoleId.value === roleId) return;
+
+  if (props.isEdit && props.user?.id) {
+    loadingRoleId.value = roleId;
+    try {
+      await userService.removeRole(props.user.id, roleId);
+      selectedGroupIds.value = selectedGroupIds.value.filter(id => id !== roleId);
+      initialGroupIds.value = initialGroupIds.value.filter(id => id !== roleId);
+      const roleObj = rolesList.value.find(r => r.id === roleId);
+      toastSuccess(`Role "${roleObj?.name || 'Role'}" removed successfully.`);
+    } catch (err: any) {
+      let msg = 'Failed to remove role.';
+      if (err?.data?.detail) msg = err.data.detail;
+      else if (err?.message) msg = err.message;
+      toastError(msg);
+    } finally {
+      loadingRoleId.value = null;
+    }
+  } else {
+    selectedGroupIds.value = selectedGroupIds.value.filter(id => id !== roleId);
+  }
 };
 
 const handleSubmit = async () => {
@@ -195,21 +233,9 @@ const handleSubmit = async () => {
 
     try {
       await userService.updateUser(props.user.id, payload);
-
-      // Explicitly call assignRole for newly added roles and removeRole for removed roles
-      const addedRoleIds = selectedGroupIds.value.filter(id => !initialGroupIds.value.includes(id));
-      const removedRoleIds = initialGroupIds.value.filter(id => !selectedGroupIds.value.includes(id));
-
-      for (const roleId of addedRoleIds) {
-        await userService.assignRole(props.user.id, roleId);
-      }
-      for (const roleId of removedRoleIds) {
-        await userService.removeRole(props.user.id, roleId);
-      }
-
       const freshUser = await userService.getUserById(props.user.id);
       const displayName = freshUser.full_name || freshUser.username || freshUser.email;
-      toastSuccess(`User account "${displayName}" and role assignments updated successfully.`);
+      toastSuccess(`User account "${displayName}" updated successfully.`);
       emit('saved');
       emit('close');
     } catch (err: any) {
@@ -521,8 +547,7 @@ const handleSubmit = async () => {
                     <div class="min-w-0 flex-1">
                       <div class="text-xs font-bold text-foreground flex items-center gap-2">
                         <span>{{ role.name }}</span>
-                        <span v-if="isNewlyAddedRole(role.id)" class="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">Pending Addition</span>
-                        <span v-else class="text-[9px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">Assigned</span>
+                        <span class="text-[9px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">Assigned</span>
                       </div>
                       <div class="text-[10px] text-muted-foreground mt-0.5">
                         {{ role.permissions ? `${role.permissions.length} permissions assigned` : 'Custom group scope' }}
@@ -531,10 +556,12 @@ const handleSubmit = async () => {
                     <button
                       v-if="canEditRoles"
                       type="button"
+                      :disabled="loadingRoleId === role.id"
                       @click="removeRole(role.id)"
-                      class="px-3 py-1.5 rounded-lg border border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive/10 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                      class="px-3 py-1.5 rounded-lg border border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive/10 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-50"
                     >
-                      <X class="w-3.5 h-3.5" />
+                      <Loader2 v-if="loadingRoleId === role.id" class="w-3.5 h-3.5 animate-spin" />
+                      <X v-else class="w-3.5 h-3.5" />
                       <span>Remove</span>
                     </button>
                   </div>
@@ -557,15 +584,11 @@ const handleSubmit = async () => {
                   <div 
                     v-for="role in availableRoles" 
                     :key="role.id"
-                    :class="[
-                      'p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all',
-                      isPendingRemovalRole(role.id) ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-card hover:border-border/80'
-                    ]"
+                    class="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between gap-3 hover:border-border/80 transition-all"
                   >
                     <div class="min-w-0 flex-1">
                       <div class="text-xs font-bold text-foreground flex items-center gap-2">
                         <span>{{ role.name }}</span>
-                        <span v-if="isPendingRemovalRole(role.id)" class="text-[9px] bg-destructive/15 text-destructive px-2 py-0.5 rounded-full font-semibold">Pending Removal</span>
                       </div>
                       <div class="text-[10px] text-muted-foreground mt-0.5">
                         {{ role.permissions ? `${role.permissions.length} permissions assigned` : 'Custom group scope' }}
@@ -574,16 +597,13 @@ const handleSubmit = async () => {
                     <button
                       v-if="canEditRoles"
                       type="button"
+                      :disabled="loadingRoleId === role.id"
                       @click="addRole(role.id)"
-                      :class="[
-                        'px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0',
-                        isPendingRemovalRole(role.id)
-                          ? 'border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
-                          : 'border-primary/30 text-primary bg-primary/5 hover:bg-primary/10'
-                      ]"
+                      class="px-3 py-1.5 rounded-lg border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-50"
                     >
-                      <Plus v-if="!isPendingRemovalRole(role.id)" class="w-3.5 h-3.5" />
-                      <span>{{ isPendingRemovalRole(role.id) ? 'Restore' : 'Add' }}</span>
+                      <Loader2 v-if="loadingRoleId === role.id" class="w-3.5 h-3.5 animate-spin" />
+                      <Plus v-else class="w-3.5 h-3.5" />
+                      <span>Add</span>
                     </button>
                   </div>
                 </div>
