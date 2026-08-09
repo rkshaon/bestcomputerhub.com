@@ -6,7 +6,7 @@ export interface User {
   email: string;
   avatar?: string;
   phone?: string;
-  role?: 'admin' | 'staff' | 'customer';
+  role?: string;
   roles?: (string | { id?: string | number; name: string })[];
   groups?: (string | { id?: string | number; name: string })[];
   permissions?: (string | { id?: string | number; name?: string; codename?: string })[];
@@ -21,7 +21,7 @@ export interface UserEntity {
   full_name: string;
   email: string;
   phone?: string;
-  role: 'customer' | 'admin' | 'staff';
+  role?: string;
   joinedAt: string;
 }
 
@@ -71,7 +71,7 @@ export interface UserProfileResponse {
   email: string;
   avatar?: string;
   phone?: string;
-  role?: 'admin' | 'staff' | 'customer';
+  role?: string;
   roles?: (string | { id?: string | number; name: string })[];
   groups?: (string | { id?: string | number; name: string })[];
   permissions?: (string | { id?: string | number; name?: string; codename?: string })[];

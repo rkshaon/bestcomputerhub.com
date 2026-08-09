@@ -16,18 +16,20 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
 
     if (!authStore.isAdmin) {
-      if (process.client) {
-        const { toastWarning } = useToast();
-        toastWarning('Access denied. Administrative privileges required.');
-      }
-      return navigateTo('/account');
-    }
-
-    // Direct route permission check
-    if (to.path !== '/admin/forbidden') {
-      const { canViewModule } = useAdminPermissions();
-      if (!canViewModule(to.path)) {
+      if (to.path !== '/admin/forbidden') {
+        if (process.client) {
+          const { toastWarning } = useToast();
+          toastWarning('Access denied. Administrative privileges required.');
+        }
         return navigateTo('/admin/forbidden');
+      }
+    } else {
+      // Direct route permission check
+      if (to.path !== '/admin/forbidden') {
+        const { canViewModule } = useAdminPermissions();
+        if (!canViewModule(to.path)) {
+          return navigateTo('/admin/forbidden');
+        }
       }
     }
   }
