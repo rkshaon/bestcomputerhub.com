@@ -1119,6 +1119,15 @@ if (process.client) {
         <!-- Secondary Support / Corporate Links -->
         <div class="space-y-3 pt-4 border-t border-border/50">
           <NuxtLink 
+            v-if="isSuperAdmin"
+            to="/admin" 
+            class="font-bold text-xs uppercase tracking-widest text-primary flex items-center gap-2 hover:underline transition-colors"
+            @click="uiStore.closeMobileMenu()"
+          >
+            <ShieldCheck class="w-4 h-4 text-primary" />
+            <span>Admin Panel</span>
+          </NuxtLink>
+          <NuxtLink 
             :to="authStore.isLoggedIn ? '/account' : '/login'" 
             class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
             @click="uiStore.closeMobileMenu()"

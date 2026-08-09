@@ -1,6 +1,6 @@
 <!-- File: /components/layout/HeaderUtilityBar.vue -->
 <script setup lang="ts">
-import { MapPin, BookOpen, Construction, User, PackageSearch } from 'lucide-vue-next';
+import { MapPin, BookOpen, Construction, User, PackageSearch, ShieldCheck } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
@@ -24,6 +24,16 @@ const authStore = useAuthStore();
 
       <!-- Right side: Quick Shortcuts -->
       <div class="flex items-center gap-3.5 md:gap-5 shrink-0">
+        <!-- 0. Admin Panel (Visible when authorized) -->
+        <NuxtLink 
+          v-if="authStore.isAdmin"
+          to="/admin" 
+          class="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-bold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
+        >
+          <ShieldCheck class="w-3 h-3 text-primary shrink-0" aria-hidden="true" />
+          <span>Admin</span>
+        </NuxtLink>
+
         <!-- 1. Track Your Order -->
         <NuxtLink 
           to="/account" 
