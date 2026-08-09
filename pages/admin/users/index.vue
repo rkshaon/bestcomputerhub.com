@@ -153,7 +153,7 @@ const getUserDisplayName = (user: UserItem | null | undefined): string => {
 // Helper to format role names from group IDs or objects
 const getUserGroupNames = (user: UserItem): string[] => {
   if (!user.groups || !Array.isArray(user.groups) || user.groups.length === 0) {
-    return user.is_superuser ? ['Super Administrator'] : ['Standard User'];
+    return ['No groups assigned'];
   }
 
   return user.groups.map(g => {
@@ -319,7 +319,12 @@ const getUserGroupNames = (user: UserItem): string[] => {
               <span 
                 v-for="(groupName, idx) in getUserGroupNames(user)" 
                 :key="idx"
-                class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-muted text-foreground border border-border"
+                :class="[
+                  'inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-semibold border',
+                  groupName === 'No groups assigned'
+                    ? 'bg-muted/40 text-muted-foreground border-border/40 italic'
+                    : 'bg-muted text-foreground border-border'
+                ]"
               >
                 {{ groupName }}
               </span>
