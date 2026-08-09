@@ -71,8 +71,6 @@ const {
 // Reusable URL-driven modal state infrastructure for users CRUD dialogs
 const modalState = useAdminModalState<UserItem>({
   getItems: async (id) => {
-    const existing = userList.value.find(u => u.id == id);
-    if (existing) return existing;
     return await userService.getUserById(Number(id));
   },
   onResolveError: (id) => {

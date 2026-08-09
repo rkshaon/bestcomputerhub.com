@@ -94,6 +94,22 @@ watch(
         firstName.value = props.user.first_name || '';
         middleName.value = props.user.middle_name || '';
         lastName.value = props.user.last_name || '';
+
+        // If first and last name are empty but full_name exists, derive from full_name
+        if (!firstName.value && !lastName.value && props.user.full_name) {
+          const parts = props.user.full_name.trim().split(/\s+/);
+          if (parts.length === 1) {
+            firstName.value = parts[0];
+          } else if (parts.length === 2) {
+            firstName.value = parts[0];
+            lastName.value = parts[1];
+          } else if (parts.length > 2) {
+            firstName.value = parts[0];
+            middleName.value = parts.slice(1, -1).join(' ');
+            lastName.value = parts[parts.length - 1];
+          }
+        }
+
         email.value = props.user.email || '';
         username.value = props.user.username || '';
         password.value = '';
