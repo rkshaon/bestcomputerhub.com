@@ -16,7 +16,6 @@ import {
   X
 } from 'lucide-vue-next';
 import { useRoleService } from '@/composables/useRoleService';
-import { usePermissionService } from '@/composables/usePermissionService';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
@@ -34,7 +33,6 @@ useSeoMeta({
 });
 
 const roleService = useRoleService();
-const permissionService = usePermissionService();
 const { canViewModule, canCreateInModule, canEditInModule, canDeleteInModule } = useAdminPermissions();
 const { toastSuccess, toastError } = useToast();
 
@@ -70,10 +68,7 @@ const errorMsg = computed(() => roleService.error.value);
 
 const loadRolesData = async () => {
   if (!canViewRoles.value) return;
-  await Promise.all([
-    roleService.getRoles({ search: searchQuery.value }),
-    permissionService.getPermissions()
-  ]);
+  await roleService.getRoles({ search: searchQuery.value });
 };
 
 onMounted(() => {
