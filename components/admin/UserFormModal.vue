@@ -20,6 +20,7 @@ import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import Button from '@/components/ui/Button.vue';
 import { useUserService } from '@/composables/useUserService';
 import { useRoleService } from '@/composables/useRoleService';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
 import type { Role, UserItem, CreateUserPayload, UpdateUserPayload } from '@/types';
 
@@ -44,7 +45,10 @@ const emit = defineEmits<{
 
 const userService = useUserService();
 const roleService = useRoleService();
+const { canEditInModule } = useAdminPermissions();
 const { toastSuccess, toastError } = useToast();
+
+const canEditRoles = computed(() => canEditInModule('users'));
 
 // Form Fields
 const firstName = ref('');
@@ -130,6 +134,14 @@ const assignedRoles = computed(() => {
 const availableRoles = computed(() => {
   return rolesList.value.filter(role => !selectedGroupIds.value.includes(role.id));
 });
+
+const isNewlyAddedRole = (roleId: number) => {
+  return selectedGroupIds.value.includes(roleId) && !initialGroupIds.value.includes(roleId);
+};
+
+const isPendingRemovalRole = (roleId: number) => {
+  return !selectedGroupIds.value.includes(roleId) && initialGroupIds.value.includes(roleId);
+};
 
 const addRole = (roleId: number) => {
   if (!selectedGroupIds.value.includes(roleId)) {
@@ -509,13 +521,15 @@ const handleSubmit = async () => {
                     <div class="min-w-0 flex-1">
                       <div class="text-xs font-bold text-foreground flex items-center gap-2">
                         <span>{{ role.name }}</span>
-                        <span class="text-[9px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">Assigned</span>
+                        <span v-if="isNewlyAddedRole(role.id)" class="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">Pending Addition</span>
+                        <span v-else class="text-[9px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">Assigned</span>
                       </div>
                       <div class="text-[10px] text-muted-foreground mt-0.5">
                         {{ role.permissions ? `${role.permissions.length} permissions assigned` : 'Custom group scope' }}
                       </div>
                     </div>
                     <button
+                      v-if="canEditRoles"
                       type="button"
                       @click="removeRole(role.id)"
                       class="px-3 py-1.5 rounded-lg border border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive/10 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
@@ -543,23 +557,33 @@ const handleSubmit = async () => {
                   <div 
                     v-for="role in availableRoles" 
                     :key="role.id"
-                    class="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between gap-3 hover:border-border/80 transition-all"
+                    :class="[
+                      'p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all',
+                      isPendingRemovalRole(role.id) ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-card hover:border-border/80'
+                    ]"
                   >
                     <div class="min-w-0 flex-1">
-                      <div class="text-xs font-bold text-foreground">
-                        {{ role.name }}
+                      <div class="text-xs font-bold text-foreground flex items-center gap-2">
+                        <span>{{ role.name }}</span>
+                        <span v-if="isPendingRemovalRole(role.id)" class="text-[9px] bg-destructive/15 text-destructive px-2 py-0.5 rounded-full font-semibold">Pending Removal</span>
                       </div>
                       <div class="text-[10px] text-muted-foreground mt-0.5">
                         {{ role.permissions ? `${role.permissions.length} permissions assigned` : 'Custom group scope' }}
                       </div>
                     </div>
                     <button
+                      v-if="canEditRoles"
                       type="button"
                       @click="addRole(role.id)"
-                      class="px-3 py-1.5 rounded-lg border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                      :class="[
+                        'px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0',
+                        isPendingRemovalRole(role.id)
+                          ? 'border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
+                          : 'border-primary/30 text-primary bg-primary/5 hover:bg-primary/10'
+                      ]"
                     >
-                      <Plus class="w-3.5 h-3.5" />
-                      <span>Add</span>
+                      <Plus v-if="!isPendingRemovalRole(role.id)" class="w-3.5 h-3.5" />
+                      <span>{{ isPendingRemovalRole(role.id) ? 'Restore' : 'Add' }}</span>
                     </button>
                   </div>
                 </div>
