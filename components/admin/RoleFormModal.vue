@@ -99,7 +99,9 @@ watch(
         formError.value = '';
         searchQuery.value = '';
         activeCategory.value = 'all';
-        fetchFirstPage();
+        if (!props.isView) {
+          fetchFirstPage();
+        }
       }
 
       if (role) {
@@ -134,7 +136,11 @@ const getPermissionCategory = (codename: string): string => {
 
 const availableCategories = computed(() => {
   const cats = new Set<string>();
-  permissionsList.value.forEach(p => {
+  const list = isReadOnly.value 
+    ? permissionsList.value.filter(p => isPermissionSelected(p.id))
+    : permissionsList.value;
+
+  list.forEach(p => {
     cats.add(getPermissionCategory(p.codename));
   });
   return ['all', ...Array.from(cats)];
@@ -142,6 +148,10 @@ const availableCategories = computed(() => {
 
 const filteredPermissions = computed(() => {
   return permissionsList.value.filter(p => {
+    if (isReadOnly.value && !isPermissionSelected(p.id)) {
+      return false;
+    }
+
     const matchesSearch = searchQuery.value === '' || 
       p.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
       p.codename.toLowerCase().includes(searchQuery.value.toLowerCase());
@@ -350,7 +360,12 @@ const handleSubmit = async () => {
               </div>
 
               <div v-else-if="filteredPermissions.length === 0" class="p-8 text-center text-muted-foreground text-xs">
-                No permissions found matching "{{ searchQuery }}".
+                <template v-if="isReadOnly">
+                  {{ searchQuery ? `No assigned permissions matching "${searchQuery}".` : 'No permissions assigned to this role.' }}
+                </template>
+                <template v-else>
+                  No permissions found matching "{{ searchQuery }}".
+                </template>
               </div>
 
               <template v-else>
@@ -382,6 +397,7 @@ const handleSubmit = async () => {
 
                 <!-- Reusable Infinite Scroll Sentinel Component -->
                 <UiInfiniteScroll 
+                  v-if="!isReadOnly"
                   :has-more="hasMore" 
                   :is-loading="isFetchingNextPage" 
                   :error="paginationError" 
