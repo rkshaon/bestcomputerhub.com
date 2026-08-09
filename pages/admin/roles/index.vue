@@ -8,6 +8,7 @@ import {
   Plus, 
   Search, 
   Edit, 
+  Eye,
   Trash2, 
   Loader2, 
   AlertCircle, 
@@ -286,15 +287,25 @@ const filteredRoles = computed(() => {
         </div>
 
         <!-- Action Controls -->
-        <div v-if="canEditRole || canDeleteRole" class="pt-6 mt-6 border-t border-border/60 flex items-center justify-end gap-2">
+        <div class="pt-6 mt-6 border-t border-border/60 flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            @click="modalState.openView(role.id)"
+            class="px-3.5 py-2 rounded-xl border border-border text-xs font-bold hover:bg-muted text-foreground transition-all flex items-center gap-1.5"
+            title="View Role Details"
+          >
+            <Eye class="w-3.5 h-3.5 text-muted-foreground" />
+            <span>View</span>
+          </button>
+
           <button 
             v-if="canEditRole"
             type="button" 
             @click="modalState.openEdit(role.id)"
-            class="px-4 py-2 rounded-xl border border-border text-xs font-bold hover:bg-muted text-foreground transition-all flex items-center gap-1.5"
+            class="px-3.5 py-2 rounded-xl border border-border text-xs font-bold hover:bg-muted text-foreground transition-all flex items-center gap-1.5"
           >
             <Edit class="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Edit Role</span>
+            <span>Edit</span>
           </button>
 
           <button 
@@ -311,12 +322,13 @@ const filteredRoles = computed(() => {
       </div>
     </div>
 
-    <!-- Role Form Modal (Create / Edit) -->
+    <!-- Role Form Modal (Create / Edit / View) -->
     <RoleFormModal 
-      :is-open="modalState.isCreate.value || modalState.isEdit.value"
+      :is-open="modalState.isCreate.value || modalState.isEdit.value || modalState.isView.value"
       :is-edit="modalState.isEdit.value"
+      :is-view="modalState.isView.value"
       :is-resolving="modalState.isResolving.value"
-      :role="modalState.isEdit.value ? modalState.activeEntity.value : null"
+      :role="(modalState.isEdit.value || modalState.isView.value) ? modalState.activeEntity.value : null"
       @close="modalState.closeModal()"
       @saved="handleRoleSaved"
     />

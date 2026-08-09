@@ -1,7 +1,7 @@
 <!-- File: /components/admin/RoleFormModal.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import { X, Search, Check, Shield, Loader2, CheckSquare, Square, AlertCircle } from 'lucide-vue-next';
+import { X, Search, Check, Shield, Loader2, CheckSquare, Square, AlertCircle, Eye } from 'lucide-vue-next';
 import { usePermissionService } from '@/composables/usePermissionService';
 import { useRoleService } from '@/composables/useRoleService';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
@@ -13,6 +13,7 @@ import type { Role, Permission } from '@/types';
 interface Props {
   isOpen: boolean;
   isEdit?: boolean;
+  isView?: boolean;
   isResolving?: boolean;
   role?: Role | null;
 }
@@ -20,6 +21,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   isOpen: false,
   isEdit: false,
+  isView: false,
   isResolving: false,
   role: null
 });
@@ -39,7 +41,9 @@ const searchQuery = ref('');
 const activeCategory = ref('all');
 const formError = ref('');
 
-const isEditMode = computed(() => props.isEdit || !!props.role);
+const isEditMode = computed(() => (props.isEdit || !!props.role) && !props.isView);
+const isViewMode = computed(() => props.isView);
+const isReadOnly = computed(() => props.isView);
 
 // Reusable infinite pagination composable
 const {
@@ -150,6 +154,7 @@ const filteredPermissions = computed(() => {
 });
 
 const togglePermission = (id: number) => {
+  if (isReadOnly.value) return;
   const index = selectedPermissionIds.value.indexOf(id);
   if (index === -1) {
     selectedPermissionIds.value.push(id);
@@ -163,6 +168,7 @@ const isPermissionSelected = (id: number) => {
 };
 
 const toggleSelectAllFiltered = () => {
+  if (isReadOnly.value) return;
   const filteredIds = filteredPermissions.value.map(p => p.id);
   const allFilteredSelected = filteredIds.every(id => selectedPermissionIds.value.includes(id));
 
@@ -180,6 +186,7 @@ const isAllFilteredSelected = computed(() => {
 });
 
 const handleSubmit = async () => {
+  if (isReadOnly.value) return;
   formError.value = '';
   
   if (!formName.value.trim()) {
@@ -229,10 +236,10 @@ const handleSubmit = async () => {
           </div>
           <div>
             <h2 class="text-lg font-display font-extrabold text-foreground">
-              {{ isEditMode ? 'Edit Role Authority' : 'Create New Role' }}
+              {{ isViewMode ? 'Role Details' : (isEditMode ? 'Edit Role Authority' : 'Create New Role') }}
             </h2>
             <p class="text-xs text-muted-foreground font-medium">
-              {{ isEditMode ? 'Update role title and permission matrix' : 'Define access scope and assign functional permissions' }}
+              {{ isViewMode ? 'View role details and assigned permissions matrix' : (isEditMode ? 'Update role title and permission matrix' : 'Define access scope and assign functional permissions') }}
             </p>
           </div>
         </div>
@@ -250,126 +257,142 @@ const handleSubmit = async () => {
       <!-- Modal Body -->
       <div class="p-6 overflow-y-auto space-y-6 flex-1">
         
-        <!-- Error Banner -->
-        <div v-if="formError" class="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-start gap-3 text-destructive text-xs font-semibold">
-          <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{{ formError }}</span>
+        <!-- Resolving Loading State -->
+        <div v-if="isResolving" class="py-12 text-center text-muted-foreground text-xs flex flex-col items-center justify-center gap-3">
+          <Loader2 class="w-8 h-8 animate-spin text-primary" />
+          <span class="font-bold">Loading role details...</span>
         </div>
 
-        <!-- Role Name Input -->
-        <div class="space-y-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-            <span>Role Name <span class="text-destructive">*</span></span>
-            <span class="text-[10px] font-normal lowercase text-muted-foreground">Unique authority identifier</span>
-          </label>
-          <input 
-            v-model="formName" 
-            type="text" 
-            placeholder="e.g. Catalog Editor, Support Lead, Inventory Auditor"
-            class="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
-        </div>
-
-        <!-- Permissions Section -->
-        <div class="space-y-3 pt-2">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-              <span>Permissions Matrix</span>
-              <span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-black">
-                {{ selectedPermissionIds.length }} Selected
-              </span>
-            </label>
-
-            <button 
-              type="button" 
-              @click="toggleSelectAllFiltered"
-              class="text-xs font-bold text-primary hover:underline flex items-center gap-1.5 self-start sm:self-auto"
-            >
-              <CheckSquare v-if="!isAllFilteredSelected" class="w-3.5 h-3.5" />
-              <Square v-else class="w-3.5 h-3.5" />
-              <span>{{ isAllFilteredSelected ? 'Deselect Visible' : 'Select All Visible' }}</span>
-            </button>
+        <template v-else>
+          <!-- Error Banner -->
+          <div v-if="formError" class="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-start gap-3 text-destructive text-xs font-semibold">
+            <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{{ formError }}</span>
           </div>
 
-          <!-- Search & Filter Controls -->
-          <div class="flex flex-col sm:flex-row items-center gap-3">
-            <div class="relative w-full sm:flex-1">
-              <Search class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input 
-                v-model="searchQuery" 
-                type="text" 
-                placeholder="Search permissions by name or codename..." 
-                class="w-full h-9 pl-9 pr-4 rounded-xl border border-border bg-background text-foreground text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              />
-            </div>
+          <!-- Role Name Input -->
+          <div class="space-y-2">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <span>Role Name <span v-if="!isReadOnly" class="text-destructive">*</span></span>
+              <span class="text-[10px] font-normal lowercase text-muted-foreground">Unique authority identifier</span>
+            </label>
+            <input 
+              v-model="formName" 
+              type="text" 
+              :readonly="isReadOnly"
+              :disabled="isReadOnly || roleService.isSubmitting.value"
+              placeholder="e.g. Catalog Editor, Support Lead, Inventory Auditor"
+              :class="[
+                'w-full h-11 px-4 rounded-xl border border-border text-foreground font-medium text-sm focus:outline-none transition-all',
+                isReadOnly ? 'bg-muted/40 cursor-not-allowed' : 'bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary'
+              ]"
+            />
+          </div>
 
-            <!-- Category Pills -->
-            <div class="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+          <!-- Permissions Section -->
+          <div class="space-y-3 pt-2">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <span>Permissions Matrix</span>
+                <span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-black">
+                  {{ selectedPermissionIds.length }} Selected
+                </span>
+              </label>
+
               <button 
-                v-for="cat in availableCategories" 
-                :key="cat"
-                type="button"
-                @click="activeCategory = cat"
-                :class="[
-                  'px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all',
-                  activeCategory === cat 
-                    ? 'bg-primary text-primary-foreground shadow-sm' 
-                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-                ]"
+                v-if="!isReadOnly"
+                type="button" 
+                @click="toggleSelectAllFiltered"
+                class="text-xs font-bold text-primary hover:underline flex items-center gap-1.5 self-start sm:self-auto"
               >
-                {{ cat }}
+                <CheckSquare v-if="!isAllFilteredSelected" class="w-3.5 h-3.5" />
+                <Square v-else class="w-3.5 h-3.5" />
+                <span>{{ isAllFilteredSelected ? 'Deselect Visible' : 'Select All Visible' }}</span>
               </button>
             </div>
-          </div>
 
-          <!-- Permissions Checklist Grid -->
-          <div class="border border-border rounded-2xl p-3 bg-muted/10 max-h-64 overflow-y-auto space-y-2">
-            <div v-if="isLoadingPermissions && permissionsList.length === 0" class="p-8 text-center text-muted-foreground text-xs flex flex-col items-center justify-center gap-2">
-              <Loader2 class="w-5 h-5 animate-spin text-primary" />
-              <span>Loading permission catalog...</span>
-            </div>
-
-            <div v-else-if="filteredPermissions.length === 0" class="p-8 text-center text-muted-foreground text-xs">
-              No permissions found matching "{{ searchQuery }}".
-            </div>
-
-            <template v-else>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <label 
-                  v-for="perm in filteredPermissions" 
-                  :key="perm.id"
-                  :class="[
-                    'flex items-start gap-3 p-2.5 rounded-xl border transition-all cursor-pointer select-none',
-                    isPermissionSelected(perm.id) 
-                      ? 'bg-primary/5 border-primary/40 text-foreground' 
-                      : 'bg-card border-border/60 hover:border-border text-muted-foreground hover:text-foreground'
-                  ]"
-                >
-                  <input 
-                    type="checkbox" 
-                    :checked="isPermissionSelected(perm.id)"
-                    @change="togglePermission(perm.id)"
-                    class="mt-0.5 rounded border-border text-primary focus:ring-primary/20"
-                  />
-                  <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold leading-tight truncate text-foreground">{{ perm.name }}</p>
-                    <p class="text-[10px] font-mono text-muted-foreground truncate mt-0.5">{{ perm.codename }}</p>
-                  </div>
-                </label>
+            <!-- Search & Filter Controls -->
+            <div class="flex flex-col sm:flex-row items-center gap-3">
+              <div class="relative w-full sm:flex-1">
+                <Search class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input 
+                  v-model="searchQuery" 
+                  type="text" 
+                  placeholder="Search permissions by name or codename..." 
+                  class="w-full h-9 pl-9 pr-4 rounded-xl border border-border bg-background text-foreground text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
               </div>
 
-              <!-- Reusable Infinite Scroll Sentinel Component -->
-              <UiInfiniteScroll 
-                :has-more="hasMore" 
-                :is-loading="isFetchingNextPage" 
-                :error="paginationError" 
-                @load-more="loadNextPage"
-                @retry="loadNextPage"
-              />
-            </template>
-          </div>
+              <!-- Category Pills -->
+              <div class="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+                <button 
+                  v-for="cat in availableCategories" 
+                  :key="cat"
+                  type="button"
+                  @click="activeCategory = cat"
+                  :class="[
+                    'px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all',
+                    activeCategory === cat 
+                      ? 'bg-primary text-primary-foreground shadow-sm' 
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ]"
+                >
+                  {{ cat }}
+                </button>
+              </div>
+            </div>
 
-        </div>
+            <!-- Permissions Checklist Grid -->
+            <div class="border border-border rounded-2xl p-3 bg-muted/10 max-h-64 overflow-y-auto space-y-2">
+              <div v-if="isLoadingPermissions && permissionsList.length === 0" class="p-8 text-center text-muted-foreground text-xs flex flex-col items-center justify-center gap-2">
+                <Loader2 class="w-5 h-5 animate-spin text-primary" />
+                <span>Loading permission catalog...</span>
+              </div>
+
+              <div v-else-if="filteredPermissions.length === 0" class="p-8 text-center text-muted-foreground text-xs">
+                No permissions found matching "{{ searchQuery }}".
+              </div>
+
+              <template v-else>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <label 
+                    v-for="perm in filteredPermissions" 
+                    :key="perm.id"
+                    :class="[
+                      'flex items-start gap-3 p-2.5 rounded-xl border transition-all select-none',
+                      isReadOnly ? 'cursor-default' : 'cursor-pointer',
+                      isPermissionSelected(perm.id) 
+                        ? 'bg-primary/5 border-primary/40 text-foreground' 
+                        : 'bg-card border-border/60 hover:border-border text-muted-foreground hover:text-foreground'
+                    ]"
+                  >
+                    <input 
+                      type="checkbox" 
+                      :checked="isPermissionSelected(perm.id)"
+                      :disabled="isReadOnly"
+                      @change="togglePermission(perm.id)"
+                      class="mt-0.5 rounded border-border text-primary focus:ring-primary/20 disabled:opacity-70 disabled:cursor-default"
+                    />
+                    <div class="flex-1 min-w-0">
+                      <p class="text-xs font-bold leading-tight truncate text-foreground">{{ perm.name }}</p>
+                      <p class="text-[10px] font-mono text-muted-foreground truncate mt-0.5">{{ perm.codename }}</p>
+                    </div>
+                  </label>
+                </div>
+
+                <!-- Reusable Infinite Scroll Sentinel Component -->
+                <UiInfiniteScroll 
+                  :has-more="hasMore" 
+                  :is-loading="isFetchingNextPage" 
+                  :error="paginationError" 
+                  @load-more="loadNextPage"
+                  @retry="loadNextPage"
+                />
+              </template>
+            </div>
+
+          </div>
+        </template>
       </div>
 
       <!-- Modal Footer -->
@@ -381,10 +404,11 @@ const handleSubmit = async () => {
           @click="emit('close')"
           :disabled="roleService.isSubmitting.value"
         >
-          Cancel
+          {{ isReadOnly ? 'Close' : 'Cancel' }}
         </UiButton>
 
         <UiButton 
+          v-if="!isReadOnly"
           type="button" 
           class="rounded-xl h-10 px-6 text-xs font-bold gap-2"
           @click="handleSubmit"
