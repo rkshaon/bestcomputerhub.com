@@ -206,6 +206,42 @@ export const useUserService = () => {
     }
   };
 
+  // 6. Assign Role to User (POST /api/v1/users/{id}/assign-role/)
+  const assignRole = async (userId: number | string, roleId: number): Promise<void> => {
+    isSubmitting.value = true;
+    errorMsg.value = null;
+    try {
+      await apiClient.request(`/api/v1/users/${userId}/assign-role/`, {
+        method: 'POST',
+        body: { role_id: roleId }
+      });
+    } catch (err: any) {
+      const msg = err.data?.detail || err.data?.message || err.message || 'Failed to assign role to user.';
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isSubmitting.value = false;
+    }
+  };
+
+  // 7. Remove Role from User (POST /api/v1/users/{id}/remove-role/)
+  const removeRole = async (userId: number | string, roleId: number): Promise<void> => {
+    isSubmitting.value = true;
+    errorMsg.value = null;
+    try {
+      await apiClient.request(`/api/v1/users/${userId}/remove-role/`, {
+        method: 'POST',
+        body: { role_id: roleId }
+      });
+    } catch (err: any) {
+      const msg = err.data?.detail || err.data?.message || err.message || 'Failed to remove role from user.';
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isSubmitting.value = false;
+    }
+  };
+
   return {
     users: usersCache,
     totalCount,
@@ -216,7 +252,9 @@ export const useUserService = () => {
     getUserById,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    assignRole,
+    removeRole
   };
 };
 

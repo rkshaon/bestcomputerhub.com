@@ -54,6 +54,7 @@ const username = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const selectedGroupIds = ref<number[]>([]);
+const initialGroupIds = ref<number[]>([]);
 
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
@@ -94,11 +95,14 @@ watch(
         confirmPassword.value = '';
 
         if (props.user.groups && Array.isArray(props.user.groups)) {
-          selectedGroupIds.value = props.user.groups.map(g => 
+          const gIds = props.user.groups.map(g => 
             typeof g === 'object' && g !== null ? (g as any).id : Number(g)
           ).filter(id => !isNaN(id));
+          selectedGroupIds.value = [...gIds];
+          initialGroupIds.value = [...gIds];
         } else {
           selectedGroupIds.value = [];
+          initialGroupIds.value = [];
         }
       } else {
         firstName.value = '';
@@ -109,6 +113,7 @@ watch(
         password.value = '';
         confirmPassword.value = '';
         selectedGroupIds.value = [];
+        initialGroupIds.value = [];
       }
 
       loadAvailableRoles();
@@ -168,8 +173,21 @@ const handleSubmit = async () => {
 
     try {
       const updatedUser = await userService.updateUser(props.user.id, payload);
-      const displayName = updatedUser.full_name || updatedUser.username || updatedUser.email;
-      toastSuccess(`User account "${displayName}" updated successfully.`);
+
+      // Explicitly call assignRole for newly added roles and removeRole for unselected roles
+      const addedRoleIds = selectedGroupIds.value.filter(id => !initialGroupIds.value.includes(id));
+      const removedRoleIds = initialGroupIds.value.filter(id => !selectedGroupIds.value.includes(id));
+
+      for (const roleId of addedRoleIds) {
+        await userService.assignRole(props.user.id, roleId);
+      }
+      for (const roleId of removedRoleIds) {
+        await userService.removeRole(props.user.id, roleId);
+      }
+
+      const freshUser = await userService.getUserById(props.user.id);
+      const displayName = freshUser.full_name || freshUser.username || freshUser.email;
+      toastSuccess(`User account "${displayName}" and role assignments updated successfully.`);
       emit('saved');
       emit('close');
     } catch (err: any) {
