@@ -330,4 +330,9 @@ Pure helper
 
 Prefer the simplest layer that correctly owns the responsibility.
 
-Do not introduce new architectural layers unless the project has a concrete need for them.
+## 11. Search & Filter Debouncing Principle
+
+All user-input-driven search and filter interactions must be debounced by default (e.g. using `@vueuse/core`'s `refDebounced` with 300ms delay).
+- **Separation**: Local input state remains immediately responsive on every keystroke, while the downstream API query state is debounced.
+- **Responsibility**: Debounce belongs at the query/composable/component layer (e.g. `useInfinitePagination`, storefront listings, admin tables). The central HTTP client (`useApiClient`) must never own debounce behavior.
+- **Exemptions**: Explicit actions (clicking 'Apply Filters', 'Save', pagination buttons, page initial loads, mutations) remain immediate.

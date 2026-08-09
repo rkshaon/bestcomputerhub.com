@@ -172,11 +172,11 @@ All admin CRUD dialogs (Create/Edit/View/Delete) must synchronize their state di
 - **Unified Dismissal Flow**: All close triggers (Cancel button, Close 'X' button, clicking backdrop/outside area, and Escape key) must call the same canonical `closeModal()` method to clear query parameters and restore URL state.
 - **UI Container Requirement**: All admin modals must wrap their markup in `<UiAdminModal>` to enforce consistent z-indexing, backdrop blur, mousedown-outside tracking, and keyboard accessibility.
 
-### 3. Centralized Permission-Based Authorization (`useAdminPermissions`)
-All admin navigation, route access, module visibility, page-level data fetching, and action controls (Create/Edit/Delete buttons) must consume the centralized Admin Permission Registry via `useAdminPermissions()` from `/composables/useAdminPermissions.ts`.
-- **Single Source of Truth**: Backend permissions returned in `GET /api/v1/users/me/` drive frontend authorization decisions.
-- **Route & Sidebar Integration**: Navigation items in `/layouts/admin.vue` and global route guards in `/middleware/auth.global.ts` enforce module-level permission rules using `canViewModule(route)`. Unauthorized direct access routes to `/admin/forbidden` (403) rather than redirecting to login.
-- **Action-Level Gating**: Buttons and CRUD controls must check module create/edit/delete permissions (`canCreateInModule`, `canEditInModule`, `canDeleteInModule`) or specific codenames via `hasPermission()`. Unprivileged users must not trigger unauthorized API calls.
+### 4. Global Search & Filter Debouncing
+All user-input-driven API searches and filters must be debounced by default using `@vueuse/core`'s `refDebounced` (standard 300ms delay).
+- **Separation of Concerns**: Immediate local input state must remain responsive on every keystroke, while the API query state must be debounced.
+- **Architectural Placement**: Debounce belongs at the query/composable/component layer (e.g. `useInfinitePagination`, storefront listings, admin tables), never inside the central `useApiClient` HTTP client or via global request interceptors.
+- **Exemptions**: Explicit actions (e.g. clicking 'Apply Filters', 'Save', pagination buttons, page initial loads, mutations) must remain immediate.
 
 ## Structural Changes
 

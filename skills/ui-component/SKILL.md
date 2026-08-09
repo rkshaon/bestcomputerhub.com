@@ -65,6 +65,8 @@ Examples:
 * Do not put backend commerce business rules inside presentation components.
 * Do not fabricate commerce data to complete a component's appearance.
 * Admin UI components and action controls (Create, Edit, Delete buttons) must respect user permissions via `useAdminPermissions()` and hide or disable unauthorized operations.
+* For search inputs and filter controls driving API requests, maintain immediate local input responsiveness while debouncing the downstream API query state (e.g. using `refDebounced` with 300ms delay) to prevent requests on every keystroke.
+* Do not blindly debounce generic `v-model` updates on all input components unless they are specifically designed for debounced search queries.
 * Do not create premature generic abstractions for hypothetical future use.
 
 ## Component Placement

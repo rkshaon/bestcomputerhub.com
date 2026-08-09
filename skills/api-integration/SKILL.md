@@ -35,3 +35,5 @@ Always preserve DRF trailing slashes.
 
 Always verify user permissions via `useAdminPermissions()` before invoking protected admin endpoints to prevent unauthorized request execution and unnecessary 403 API errors.
 
+Always debounce user-input-driven search and filter requests at the query/composable/component layer (e.g., using `refDebounced` with 300ms delay) rather than making requests on every keystroke. The central HTTP client (`useApiClient`) must never own debounce behavior.
+

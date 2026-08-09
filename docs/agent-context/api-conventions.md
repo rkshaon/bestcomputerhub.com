@@ -46,3 +46,10 @@ Authenticated requests utilize JWT Bearer tokens attached via `useApiClient`.
 Backend permissions returned from `GET /api/v1/users/me/` represent the authoritative authorization source for admin operations.
 The frontend MUST verify permission via `useAdminPermissions()` before dispatching protected API requests to prevent unauthorized API calls and unexpected 403 errors.
 
+## Search and Filter Debouncing
+
+All user-input-driven search and filter requests must be debounced by default at the query or component layer (using `@vueuse/core`'s `refDebounced` with a 300ms delay).
+- Local input state updates immediately on every keystroke.
+- Downstream API query state and requests are debounced.
+- The central HTTP client (`useApiClient`) must never own debounce logic.
+

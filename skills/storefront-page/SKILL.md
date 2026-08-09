@@ -56,6 +56,7 @@ Examples:
 * Use existing design-system components and semantic tokens where appropriate.
 * Important actions must remain usable on mobile and by keyboard.
 * Do not change established public URLs without considering the WordPress-to-Nuxt SEO migration.
+* Storefront search and filter interactions must not issue API requests per keystroke; use shared debouncing mechanisms (e.g. `refDebounced` with 300ms delay) to keep typing responsive while optimizing server request frequency.
 * Do not introduce large unrelated architectural refactors while implementing a page.
 
 ## Relevant Context
