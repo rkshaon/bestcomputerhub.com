@@ -330,6 +330,8 @@ Pure helper
 
 Prefer the simplest layer that correctly owns the responsibility.
 
+Do not introduce new architectural layers unless the project has a concrete need for them.
+
 ## 11. Search & Filter Debouncing Principle
 
 All user-input-driven search and filter interactions must be debounced by default (e.g. using `@vueuse/core`'s `refDebounced` with 300ms delay).
