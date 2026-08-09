@@ -27,6 +27,7 @@ import type { Role, UserItem, CreateUserPayload, UpdateUserPayload } from '@/typ
 interface Props {
   isOpen: boolean;
   isEdit?: boolean;
+  isView?: boolean;
   isResolving?: boolean;
   user?: UserItem | null;
 }
@@ -34,6 +35,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   isOpen: false,
   isEdit: false,
+  isView: false,
   isResolving: false,
   user: null
 });
@@ -83,14 +85,14 @@ const loadAvailableRoles = async () => {
 };
 
 watch(
-  [() => props.isOpen, () => props.user, () => props.isEdit],
+  [() => props.isOpen, () => props.user, () => props.isEdit, () => props.isView],
   () => {
     if (props.isOpen) {
       formError.value = '';
       showPassword.value = false;
       showConfirmPassword.value = false;
 
-      if (props.isEdit && props.user) {
+      if ((props.isEdit || props.isView) && props.user) {
         firstName.value = props.user.first_name || '';
         middleName.value = props.user.middle_name || '';
         lastName.value = props.user.last_name || '';
@@ -154,7 +156,7 @@ const availableRoles = computed(() => {
 const loadingRoleId = ref<number | null>(null);
 
 const addRole = async (roleId: number) => {
-  if (selectedGroupIds.value.includes(roleId) || loadingRoleId.value === roleId) return;
+  if (props.isView || selectedGroupIds.value.includes(roleId) || loadingRoleId.value === roleId) return;
 
   if (props.isEdit && props.user?.id) {
     loadingRoleId.value = roleId;
@@ -181,7 +183,7 @@ const addRole = async (roleId: number) => {
 };
 
 const removeRole = async (roleId: number) => {
-  if (!selectedGroupIds.value.includes(roleId) || loadingRoleId.value === roleId) return;
+  if (props.isView || !selectedGroupIds.value.includes(roleId) || loadingRoleId.value === roleId) return;
 
   if (props.isEdit && props.user?.id) {
     loadingRoleId.value = roleId;
@@ -202,6 +204,10 @@ const removeRole = async (roleId: number) => {
 };
 
 const handleSubmit = async () => {
+  if (props.isView) {
+    emit('close');
+    return;
+  }
   formError.value = '';
 
   // Common Validations
@@ -303,15 +309,16 @@ const handleSubmit = async () => {
       <div class="px-6 py-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
         <div class="flex items-center gap-3">
           <div class="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
-            <EditIcon v-if="isEdit" class="w-5 h-5" />
+            <Eye v-if="isView" class="w-5 h-5" />
+            <EditIcon v-else-if="isEdit" class="w-5 h-5" />
             <UserPlus v-else class="w-5 h-5" />
           </div>
           <div>
             <h2 class="text-lg font-display font-extrabold text-foreground">
-              {{ isEdit ? 'Edit User Account' : 'Provision New User Account' }}
+              {{ isView ? 'User Account Details' : isEdit ? 'Edit User Account' : 'Provision New User Account' }}
             </h2>
             <p class="text-xs text-muted-foreground font-medium">
-              {{ isEdit ? 'Modify personnel credentials, account details, and group assignments.' : 'Create a new user account, define credentials, and assign security groups.' }}
+              {{ isView ? 'View complete personnel details, credentials, and role assignments in read-only mode.' : isEdit ? 'Modify personnel credentials, account details, and group assignments.' : 'Create a new user account, define credentials, and assign security groups.' }}
             </p>
           </div>
         </div>
@@ -360,8 +367,9 @@ const handleSubmit = async () => {
                 <input 
                   v-model="firstName"
                   type="text"
+                  :disabled="isView"
                   placeholder="e.g. Sarah"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-75 disabled:bg-muted/30"
                 />
               </div>
 
@@ -373,8 +381,9 @@ const handleSubmit = async () => {
                 <input 
                   v-model="middleName"
                   type="text"
+                  :disabled="isView"
                   placeholder="e.g. Jane"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-75 disabled:bg-muted/30"
                 />
               </div>
 
@@ -386,8 +395,9 @@ const handleSubmit = async () => {
                 <input 
                   v-model="lastName"
                   type="text"
+                  :disabled="isView"
                   placeholder="e.g. Anderson"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-75 disabled:bg-muted/30"
                 />
               </div>
             </div>
@@ -403,15 +413,16 @@ const handleSubmit = async () => {
               <!-- Email -->
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">
-                  Email Address <span class="text-destructive">*</span>
+                  Email Address <span v-if="!isView" class="text-destructive">*</span>
                 </label>
                 <div class="relative">
                   <input 
                     v-model="email"
                     type="email"
-                    required
+                    :required="!isView"
+                    :disabled="isView"
                     placeholder="user@techcore.io"
-                    class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-75 disabled:bg-muted/30"
                   />
                   <Mail class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                 </div>
@@ -420,22 +431,23 @@ const handleSubmit = async () => {
               <!-- Username -->
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">
-                  Username <span class="text-destructive">*</span>
+                  Username <span v-if="!isView" class="text-destructive">*</span>
                 </label>
                 <div class="relative">
                   <input 
                     v-model="username"
                     type="text"
-                    required
+                    :required="!isView"
+                    :disabled="isView"
                     placeholder="sarah.anderson"
-                    class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-75 disabled:bg-muted/30"
                   />
                   <User class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div v-if="!isView" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <!-- Password -->
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">
@@ -501,7 +513,7 @@ const handleSubmit = async () => {
                   <ShieldCheck class="w-3.5 h-3.5 text-primary" /> Role & Group Assignment
                 </h3>
                 <p class="text-[11px] text-muted-foreground mt-0.5">
-                  Manage security roles and permissions for this user account.
+                  {{ isView ? 'Security roles and permissions assigned to this user account.' : 'Manage security roles and permissions for this user account.' }}
                 </p>
               </div>
               <span class="text-[10px] font-bold text-primary bg-primary/15 px-2.5 py-1 rounded-full border border-primary/20">
@@ -540,7 +552,7 @@ const handleSubmit = async () => {
                       </div>
                     </div>
                     <button
-                      v-if="canEditRoles"
+                      v-if="canEditRoles && !isView"
                       type="button"
                       :disabled="loadingRoleId === role.id"
                       @click="removeRole(role.id)"
@@ -554,12 +566,12 @@ const handleSubmit = async () => {
                 </div>
 
                 <div v-else class="text-xs text-muted-foreground py-4 px-4 text-center border border-dashed border-border rounded-xl bg-muted/10">
-                  No roles currently assigned. Add a role below to grant permissions.
+                  {{ isView ? 'No security roles currently assigned.' : 'No roles currently assigned. Add a role below to grant permissions.' }}
                 </div>
               </div>
 
               <!-- Available Roles -->
-              <div class="space-y-3 pt-2">
+              <div v-if="!isView" class="space-y-3 pt-2">
                 <div class="flex items-center justify-between text-xs font-bold text-foreground">
                   <span class="uppercase tracking-wider text-[11px] text-muted-foreground">
                     Available Roles ({{ availableRoles.length }})
@@ -610,31 +622,42 @@ const handleSubmit = async () => {
 
       <!-- Modal Footer -->
       <div class="px-6 py-4 border-t border-border flex items-center justify-end gap-3 shrink-0 bg-muted/20">
-        <Button 
-          type="button" 
-          variant="outline" 
-          @click="emit('close')"
-          :disabled="userService.isSubmitting.value"
-        >
-          Cancel
-        </Button>
+        <template v-if="isView">
+          <Button 
+            type="button" 
+            variant="outline" 
+            @click="emit('close')"
+          >
+            Close
+          </Button>
+        </template>
+        <template v-else>
+          <Button 
+            type="button" 
+            variant="outline" 
+            @click="emit('close')"
+            :disabled="userService.isSubmitting.value"
+          >
+            Cancel
+          </Button>
 
-        <Button 
-          type="submit" 
-          form="user-form"
-          variant="primary" 
-          :disabled="userService.isSubmitting.value || isResolving"
-        >
-          <Loader2 v-if="userService.isSubmitting.value" class="w-4 h-4 animate-spin" />
-          <span>
-            <template v-if="userService.isSubmitting.value">
-              {{ isEdit ? 'Saving Changes...' : 'Provisioning...' }}
-            </template>
-            <template v-else>
-              {{ isEdit ? 'Save Changes' : 'Provision User Account' }}
-            </template>
-          </span>
-        </Button>
+          <Button 
+            type="submit" 
+            form="user-form"
+            variant="primary" 
+            :disabled="userService.isSubmitting.value || isResolving"
+          >
+            <Loader2 v-if="userService.isSubmitting.value" class="w-4 h-4 animate-spin" />
+            <span>
+              <template v-if="userService.isSubmitting.value">
+                {{ isEdit ? 'Saving Changes...' : 'Provisioning...' }}
+              </template>
+              <template v-else>
+                {{ isEdit ? 'Save Changes' : 'Provision User Account' }}
+              </template>
+            </span>
+          </Button>
+        </template>
       </div>
 
     </div>

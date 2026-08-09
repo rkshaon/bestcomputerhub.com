@@ -15,7 +15,8 @@ import {
   User as UserIcon,
   CheckCircle2,
   Edit,
-  Trash2
+  Trash2,
+  Eye
 } from 'lucide-vue-next';
 import { useUserService } from '@/composables/useUserService';
 import { useRoleService } from '@/composables/useRoleService';
@@ -333,8 +334,17 @@ const getUserGroupNames = (user: UserItem): string[] => {
         <div class="mt-5 pt-3 border-t border-border/40 text-[10px] font-semibold text-muted-foreground flex items-center justify-between">
           <span>Account ID: #{{ user.id }}</span>
 
-          <!-- Action Controls (Edit & Delete) -->
+          <!-- Action Controls (View, Edit & Delete) -->
           <div class="flex items-center gap-1">
+            <button 
+              type="button" 
+              @click="modalState.openView(user.id)"
+              class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+              title="View User Details"
+            >
+              <Eye class="w-4 h-4" />
+            </button>
+
             <button 
               v-if="canEditUser"
               type="button" 
@@ -368,12 +378,13 @@ const getUserGroupNames = (user: UserItem): string[] => {
       @retry="loadNextPage"
     />
 
-    <!-- User Form Modal (Create / Edit) -->
+    <!-- User Form Modal (Create / Edit / View) -->
     <UserFormModal 
-      :is-open="modalState.isCreate.value || modalState.isEdit.value"
+      :is-open="modalState.isCreate.value || modalState.isEdit.value || modalState.isView.value"
       :is-edit="modalState.isEdit.value"
+      :is-view="modalState.isView.value"
       :is-resolving="modalState.isResolving.value"
-      :user="modalState.isEdit.value ? modalState.activeEntity.value : null"
+      :user="(modalState.isEdit.value || modalState.isView.value) ? modalState.activeEntity.value : null"
       @close="modalState.closeModal()"
       @saved="handleUserSaved"
     />
