@@ -71,6 +71,64 @@ const formError = ref('');
 const rolesList = ref<Role[]>([]);
 const isLoadingRoles = ref(false);
 
+// Dedicated Email Edit Modal State
+const isEmailModalOpen = ref(false);
+const newEmail = ref('');
+const emailModalError = ref('');
+const isSubmittingEmail = ref(false);
+
+const openEmailModal = () => {
+  newEmail.value = email.value;
+  emailModalError.value = '';
+  isEmailModalOpen.value = true;
+};
+
+const closeEmailModal = () => {
+  isEmailModalOpen.value = false;
+  emailModalError.value = '';
+};
+
+const handleEmailSubmit = async () => {
+  emailModalError.value = '';
+  const trimmedEmail = newEmail.value.trim();
+
+  if (!trimmedEmail) {
+    emailModalError.value = 'Email address is required.';
+    return;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmedEmail)) {
+    emailModalError.value = 'Please enter a valid email address.';
+    return;
+  }
+
+  if (trimmedEmail === email.value) {
+    emailModalError.value = 'New email address must be different from current email.';
+    return;
+  }
+
+  if (!props.user?.id) {
+    emailModalError.value = 'Target user record could not be resolved.';
+    return;
+  }
+
+  isSubmittingEmail.value = true;
+  try {
+    await userService.updateUser(props.user.id, { email: trimmedEmail });
+    email.value = trimmedEmail;
+    toastSuccess(`Email address updated to "${trimmedEmail}" successfully.`);
+    emit('saved');
+    closeEmailModal();
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to update email address.');
+    emailModalError.value = msg;
+    handleApiError(err, 'Failed to update email address.');
+  } finally {
+    isSubmittingEmail.value = false;
+  }
+};
+
 const loadAvailableRoles = async () => {
   isLoadingRoles.value = true;
   try {
@@ -238,7 +296,6 @@ const handleSubmit = async () => {
       first_name: firstName.value.trim(),
       middle_name: middleName.value.trim(),
       last_name: lastName.value.trim(),
-      email: email.value.trim(),
       username: username.value.trim()
     };
 
@@ -413,18 +470,29 @@ const handleSubmit = async () => {
               <!-- Email -->
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">
-                  Email Address <span v-if="!isView" class="text-destructive">*</span>
+                  Email Address <span v-if="!isView && !isEdit" class="text-destructive">*</span>
                 </label>
-                <div class="relative">
-                  <input 
-                    v-model="email"
-                    type="email"
-                    :required="!isView"
-                    :disabled="isView"
-                    placeholder="user@techcore.io"
-                    class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-75 disabled:bg-muted/30"
-                  />
-                  <Mail class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <div class="flex gap-2">
+                  <div class="relative flex-1">
+                    <input 
+                      v-model="email"
+                      type="email"
+                      :required="!isView && !isEdit"
+                      :disabled="isView || isEdit"
+                      placeholder="user@techcore.io"
+                      class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-75 disabled:bg-muted/30"
+                    />
+                    <Mail class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                  </div>
+                  <button
+                    v-if="isEdit"
+                    type="button"
+                    @click="openEmailModal"
+                    class="px-3.5 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                  >
+                    <EditIcon class="w-3.5 h-3.5" />
+                    <span>Edit Email</span>
+                  </button>
                 </div>
               </div>
 
@@ -660,6 +728,101 @@ const handleSubmit = async () => {
         </template>
       </div>
 
+    </div>
+  </UiAdminModal>
+
+  <!-- Dedicated Edit Email Modal -->
+  <UiAdminModal
+    :is-open="isEmailModalOpen"
+    max-width="max-w-md"
+    :show-close-button="false"
+    @close="closeEmailModal"
+  >
+    <div class="flex flex-col h-full">
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20 shrink-0">
+            <Mail class="w-4 h-4" />
+          </div>
+          <div>
+            <h3 class="text-sm font-display font-extrabold text-foreground">
+              Update Email Address
+            </h3>
+            <p class="text-[10px] text-muted-foreground font-medium">
+              Change the primary email for this user account.
+            </p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          @click="closeEmailModal"
+          class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4">
+        <!-- Error Banner -->
+        <div 
+          v-if="emailModalError" 
+          class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium flex items-start gap-2 animate-in fade-in"
+        >
+          <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{{ emailModalError }}</span>
+        </div>
+
+        <div class="space-y-3">
+          <!-- Current Email -->
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Current Email</span>
+            <div class="px-3.5 py-2.5 bg-muted/40 border border-border rounded-xl text-xs font-medium text-muted-foreground select-all break-all">
+              {{ email }}
+            </div>
+          </div>
+
+          <!-- New Email Input -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-foreground">
+              New Email Address <span class="text-destructive">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                v-model="newEmail"
+                type="email"
+                required
+                placeholder="new-email@techcore.io"
+                @keyup.enter="handleEmailSubmit"
+                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+              <Mail class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-border flex items-center justify-end gap-2.5 bg-muted/20">
+        <Button 
+          type="button" 
+          variant="outline" 
+          @click="closeEmailModal"
+          :disabled="isSubmittingEmail"
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="button" 
+          variant="primary" 
+          :disabled="isSubmittingEmail"
+          @click="handleEmailSubmit"
+        >
+          <Loader2 v-if="isSubmittingEmail" class="w-3.5 h-3.5 animate-spin" />
+          <span>{{ isSubmittingEmail ? 'Updating...' : 'Update Email' }}</span>
+        </Button>
+      </div>
     </div>
   </UiAdminModal>
 </template>
