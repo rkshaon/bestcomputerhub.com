@@ -23,6 +23,7 @@ import {
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
 import { cn } from '@/utils';
+import { refDebounced } from '@vueuse/core';
 import type { Category } from '@/types';
 import { toastSuccess, toastError, toastInfo } from '@/composables/useToast';
 
@@ -38,6 +39,7 @@ const router = useRouter();
 
 // State managers initialized from URL query parameters
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const parentFilter = ref(route.query.parent ? String(route.query.parent) : 'all'); // 'all', 'none' (main level only), or specific category ID
 const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'order'); // 'order', '-order', 'name', '-name', 'slug', '-slug'
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
@@ -277,12 +279,12 @@ onMounted(async () => {
 });
 
 // If searching or filtering, reset page index to 1
-watch([searchQuery, parentFilter, ordering, itemsPerPage], () => {
+watch([debouncedSearchQuery, parentFilter, ordering, itemsPerPage], () => {
   currentPage.value = 1;
 });
 
 // Update URL parameters and fetch active page when parameters change
-watch([searchQuery, parentFilter, ordering, currentPage, itemsPerPage], async () => {
+watch([debouncedSearchQuery, parentFilter, ordering, currentPage, itemsPerPage], async () => {
   const query: Record<string, any> = { ...route.query };
 
   if (searchQuery.value) query.search = searchQuery.value;

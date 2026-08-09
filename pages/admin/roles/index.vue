@@ -1,6 +1,7 @@
 <!-- File: /pages/admin/roles/index.vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { refDebounced } from '@vueuse/core';
 import { 
   Shield, 
   ShieldCheck, 
@@ -38,6 +39,11 @@ const { canViewModule, canCreateInModule, canEditInModule, canDeleteInModule } =
 const { toastSuccess, toastError } = useToast();
 
 const searchQuery = ref('');
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
+
+watch(debouncedSearchQuery, (newVal) => {
+  roleService.getRoles({ search: newVal });
+});
 
 const canViewRoles = computed(() => canViewModule('/admin/roles'));
 const canCreateRole = computed(() => canCreateInModule('/admin/roles'));
@@ -157,13 +163,12 @@ const filteredRoles = computed(() => {
         <input 
           v-model="searchQuery" 
           type="text"
-          @input="handleSearch"
           placeholder="Search roles by title or permission..."
           class="w-full h-11 pl-10 pr-4 rounded-2xl border border-border bg-background text-foreground text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
         />
         <button 
           v-if="searchQuery"
-          @click="searchQuery = ''; handleSearch()"
+          @click="searchQuery = ''"
           class="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
         >
           <X class="w-4 h-4" />

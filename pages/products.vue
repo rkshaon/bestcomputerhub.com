@@ -10,6 +10,7 @@ import {
   X,
   ChevronDown
 } from 'lucide-vue-next';
+import { refDebounced } from '@vueuse/core';
 import { useProductService } from '@/composables/useProductService';
 import { cn } from '@/utils';
 import type { Product } from '@/types';
@@ -107,6 +108,8 @@ const products = computed(() => loadedProducts.value);
 const allCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
 const allBrands = Array.from(new Set(productService.getProducts().map(p => p.brand)));
 
+const debouncedSearchQuery = refDebounced(computed(() => filters.value.query), 300);
+
 const updateRoute = () => {
   router.push({
     query: {
@@ -120,11 +123,21 @@ const updateRoute = () => {
   });
 };
 
-watch(filters, () => {
-  currentPage.value = 1;
-  updateRoute();
-  fetchProducts();
-}, { deep: true });
+watch(
+  [
+    debouncedSearchQuery,
+    () => filters.value.category,
+    () => filters.value.brand,
+    () => filters.value.minPrice,
+    () => filters.value.maxPrice,
+    () => filters.value.sort
+  ],
+  () => {
+    currentPage.value = 1;
+    updateRoute();
+    fetchProducts();
+  }
+);
 
 onMounted(() => {
   fetchProducts();

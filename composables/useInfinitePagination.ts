@@ -1,5 +1,6 @@
 // File: /composables/useInfinitePagination.ts
-import { ref, watch, unref, type Ref, type MaybeRef, onMounted } from 'vue';
+import { ref, watch, unref, isRef, computed, type Ref, type MaybeRef, onMounted } from 'vue';
+import { refDebounced } from '@vueuse/core';
 
 export interface PaginatedResponse<T> {
   count: number;
@@ -52,6 +53,11 @@ export interface UseInfinitePaginationOptions<T> {
    * Optional initial items list.
    */
   initialData?: T[];
+
+  /**
+   * Debounce delay in milliseconds for user search input (defaults to 300ms).
+   */
+  debounceMs?: number;
 }
 
 export function useInfinitePagination<T>(options: UseInfinitePaginationOptions<T>) {
@@ -62,7 +68,8 @@ export function useInfinitePagination<T>(options: UseInfinitePaginationOptions<T
     pageSize = 10,
     dedupeKey = (item: any) => item?.id ?? item?.slug ?? JSON.stringify(item),
     autoFetch = true,
-    initialData = []
+    initialData = [],
+    debounceMs = 300
   } = options;
 
   const items = ref<T[]>(initialData) as Ref<T[]>;
@@ -207,10 +214,12 @@ export function useInfinitePagination<T>(options: UseInfinitePaginationOptions<T
     error.value = null;
   };
 
-  // Watch search query if provided
+  // Watch search query if provided (debounced to prevent API requests on every keystroke)
   if (search !== undefined) {
+    const searchRef = isRef(search) ? (search as Ref<string>) : computed(() => unref(search));
+    const debouncedSearch = refDebounced(searchRef, debounceMs);
     watch(
-      () => unref(search),
+      debouncedSearch,
       () => {
         fetchFirstPage();
       }

@@ -1,6 +1,7 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { refDebounced } from '@vueuse/core';
 import { Handbag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, ArrowRight, Tag, Sparkles, Zap, Clock } from 'lucide-vue-next';
 import { cn } from '@/utils';
 import { useUIStore } from '@/stores/ui';
@@ -67,11 +68,18 @@ const handleSearchSubmit = () => {
   }
 };
 
-let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
 
 watch(searchQuery, (newQuery) => {
-  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
-  
+  if (!newQuery.trim()) {
+    searchResults.value = [];
+    isSearching.value = false;
+  } else {
+    isSearching.value = true;
+  }
+});
+
+watch(debouncedSearchQuery, async (newQuery) => {
   if (!newQuery.trim()) {
     searchResults.value = [];
     isSearching.value = false;
@@ -79,20 +87,18 @@ watch(searchQuery, (newQuery) => {
   }
 
   isSearching.value = true;
-  searchDebounceTimer = setTimeout(async () => {
-    try {
-      const res = await productService.getProductsList({
-        search: newQuery.trim(),
-        page_size: 6
-      });
-      searchResults.value = res.results || [];
-    } catch (err) {
-      console.error('Header search error:', err);
-      searchResults.value = [];
-    } finally {
-      isSearching.value = false;
-    }
-  }, 250);
+  try {
+    const res = await productService.getProductsList({
+      search: newQuery.trim(),
+      page_size: 6
+    });
+    searchResults.value = res.results || [];
+  } catch (err) {
+    console.error('Header search error:', err);
+    searchResults.value = [];
+  } finally {
+    isSearching.value = false;
+  }
 });
 
 const handleCompareClick = () => {
