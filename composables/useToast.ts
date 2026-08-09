@@ -36,6 +36,11 @@ export function extractErrorMessage(err: any, fallbackMessage = 'An unexpected e
 
   const status = err.status || err.statusCode || err.response?.status || err.data?.statusCode || err.data?.status;
 
+  // For HTTP 500 responses, do NOT expose backend error messages or tracebacks to end users
+  if (status && status >= 500) {
+    return 'An unexpected server error occurred. Please try again.';
+  }
+
   // Inspect actual backend response payload if present
   const data = err.data || err.response?.data;
 

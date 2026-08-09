@@ -46,7 +46,7 @@ const emit = defineEmits<{
 const userService = useUserService();
 const roleService = useRoleService();
 const { canEditInModule } = useAdminPermissions();
-const { toastSuccess, toastError } = useToast();
+const { toastSuccess, toastError, handleApiError } = useToast();
 
 const canEditRoles = computed(() => canEditInModule('users'));
 
