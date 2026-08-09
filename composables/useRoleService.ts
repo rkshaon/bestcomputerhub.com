@@ -101,16 +101,14 @@ export const useRoleService = () => {
       const msg = err.data?.detail || err.data?.message || err.message || 'Failed to retrieve roles repository.';
       errorMsg.value = msg;
 
-      // Fallback mock roles in case DRF backend endpoint is not reachable in dev sandbox
-      const mockList = getMockRoles();
-      rolesCache.value = mockList;
-      totalCount.value = mockList.length;
+      rolesCache.value = [];
+      totalCount.value = 0;
 
       return {
-        count: mockList.length,
+        count: 0,
         next: null,
         previous: null,
-        results: mockList
+        results: []
       };
     } finally {
       isLoading.value = false;
@@ -155,24 +153,7 @@ export const useRoleService = () => {
     } catch (err: any) {
       const msg = err.data?.detail || err.data?.name?.[0] || err.data?.message || err.message || 'Failed to create role.';
       errorMsg.value = msg;
-
-      // If backend call fails, handle mock fallback seamlessly
-      const permissionService = usePermissionService();
-      const allPerms = await permissionService.getPermissions();
-      const selectedPerms = allPerms.filter(p => payload.permission_ids.includes(p.id));
-
-      const newRole: Role = {
-        id: Date.now(),
-        name: payload.name.trim(),
-        permissions: selectedPerms
-      };
-
-      const current = getMockRoles();
-      const updated = [newRole, ...current];
-      saveMockRoles(updated);
-      rolesCache.value = updated;
-      totalCount.value = updated.length;
-      return newRole;
+      throw new Error(msg);
     } finally {
       isSubmitting.value = false;
     }
@@ -227,30 +208,6 @@ export const useRoleService = () => {
     } catch (err: any) {
       const msg = err.data?.detail || err.data?.name?.[0] || err.data?.message || err.message || 'Failed to update role.';
       errorMsg.value = msg;
-
-      // Fallback update in mock cache
-      const permissionService = usePermissionService();
-      const allPerms = await permissionService.getPermissions();
-
-      const current = getMockRoles();
-      const index = current.findIndex(r => r.id === id);
-      if (index !== -1 && current[index]) {
-        const existingRole = current[index]!;
-        const updatedPerms = payload.permission_ids !== undefined
-          ? allPerms.filter(p => payload.permission_ids!.includes(p.id))
-          : existingRole.permissions;
-
-        const updatedRole: Role = {
-          id: existingRole.id,
-          name: payload.name ? payload.name.trim() : existingRole.name,
-          permissions: updatedPerms
-        };
-        current[index] = updatedRole;
-        saveMockRoles(current);
-        rolesCache.value = [...current];
-        return updatedRole;
-      }
-
       throw new Error(msg);
     } finally {
       isSubmitting.value = false;
@@ -283,13 +240,7 @@ export const useRoleService = () => {
     } catch (err: any) {
       const msg = err.data?.detail || err.data?.message || err.message || 'Failed to delete role.';
       errorMsg.value = msg;
-
-      // Fallback mock deletion
-      const current = getMockRoles();
-      const updated = current.filter(r => r.id !== id);
-      saveMockRoles(updated);
-      rolesCache.value = updated;
-      totalCount.value = updated.length;
+      throw new Error(msg);
     } finally {
       isSubmitting.value = false;
     }
@@ -311,8 +262,7 @@ export const useRoleService = () => {
       });
       return data;
     } catch {
-      const list = getMockRoles();
-      return list.find(r => r.id === id) || null;
+      return null;
     }
   };
 

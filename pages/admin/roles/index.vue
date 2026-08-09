@@ -214,9 +214,11 @@ const filteredRoles = computed(() => {
       <div class="w-16 h-16 rounded-3xl bg-muted text-muted-foreground flex items-center justify-center mx-auto mb-4">
         <Shield class="w-8 h-8" />
       </div>
-      <h3 class="text-lg font-bold text-foreground mb-1">No roles matched</h3>
+      <h3 class="text-lg font-bold text-foreground mb-1">
+        {{ searchQuery ? 'No roles matched' : 'No roles found' }}
+      </h3>
       <p class="text-xs text-muted-foreground mb-6">
-        {{ searchQuery ? `No role found matching "${searchQuery}".` : 'No security roles have been created yet.' }}
+        {{ searchQuery ? `No role found matching "${searchQuery}".` : 'Create your first role to get started.' }}
       </p>
       <UiButton v-if="searchQuery" variant="outline" @click="searchQuery = ''; handleSearch()" class="rounded-2xl h-10 px-5 text-xs font-bold">
         Clear Filter
