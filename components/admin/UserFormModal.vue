@@ -1,11 +1,12 @@
 <!-- File: /components/admin/UserFormModal.vue -->
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { 
   UserPlus, 
   Edit as EditIcon, 
   X, 
   Check, 
+  Plus,
   Loader2, 
   AlertCircle, 
   ShieldCheck, 
@@ -122,12 +123,22 @@ watch(
   { immediate: true }
 );
 
-const toggleRoleSelection = (roleId: number) => {
-  if (selectedGroupIds.value.includes(roleId)) {
-    selectedGroupIds.value = selectedGroupIds.value.filter(id => id !== roleId);
-  } else {
+const assignedRoles = computed(() => {
+  return rolesList.value.filter(role => selectedGroupIds.value.includes(role.id));
+});
+
+const availableRoles = computed(() => {
+  return rolesList.value.filter(role => !selectedGroupIds.value.includes(role.id));
+});
+
+const addRole = (roleId: number) => {
+  if (!selectedGroupIds.value.includes(roleId)) {
     selectedGroupIds.value = [...selectedGroupIds.value, roleId];
   }
+};
+
+const removeRole = (roleId: number) => {
+  selectedGroupIds.value = selectedGroupIds.value.filter(id => id !== roleId);
 };
 
 const handleSubmit = async () => {
@@ -162,8 +173,7 @@ const handleSubmit = async () => {
       middle_name: middleName.value.trim(),
       last_name: lastName.value.trim(),
       email: email.value.trim(),
-      username: username.value.trim(),
-      groups: selectedGroupIds.value
+      username: username.value.trim()
     };
 
     if (password.value) {
@@ -172,9 +182,9 @@ const handleSubmit = async () => {
     }
 
     try {
-      const updatedUser = await userService.updateUser(props.user.id, payload);
+      await userService.updateUser(props.user.id, payload);
 
-      // Explicitly call assignRole for newly added roles and removeRole for unselected roles
+      // Explicitly call assignRole for newly added roles and removeRole for removed roles
       const addedRoleIds = selectedGroupIds.value.filter(id => !initialGroupIds.value.includes(id));
       const removedRoleIds = initialGroupIds.value.filter(id => !selectedGroupIds.value.includes(id));
 
@@ -460,18 +470,18 @@ const handleSubmit = async () => {
           </div>
 
           <!-- Group / Role Assignment -->
-          <div class="space-y-4 pt-2 border-t border-border">
+          <div class="space-y-6 pt-2 border-t border-border">
             <div class="flex items-center justify-between">
               <div>
                 <h3 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                   <ShieldCheck class="w-3.5 h-3.5 text-primary" /> Role & Group Assignment
                 </h3>
                 <p class="text-[11px] text-muted-foreground mt-0.5">
-                  Assign one or multiple security groups to grant functional permissions.
+                  Manage security roles and permissions for this user account.
                 </p>
               </div>
-              <span class="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
-                {{ selectedGroupIds.length }} Selected
+              <span class="text-[10px] font-bold text-primary bg-primary/15 px-2.5 py-1 rounded-full border border-primary/20">
+                {{ selectedGroupIds.length }} {{ selectedGroupIds.length === 1 ? 'Role Assigned' : 'Roles Assigned' }}
               </span>
             </div>
 
@@ -481,39 +491,84 @@ const handleSubmit = async () => {
               <span>Loading available roles...</span>
             </div>
 
-            <!-- Roles Grid -->
-            <div v-else-if="rolesList.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div 
-                v-for="role in rolesList" 
-                :key="role.id"
-                @click="toggleRoleSelection(role.id)"
-                :class="[
-                  'p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3 select-none',
-                  selectedGroupIds.includes(role.id)
-                    ? 'bg-primary/5 border-primary/40 ring-2 ring-primary/20'
-                    : 'bg-card border-border hover:border-border/80 hover:bg-muted/30'
-                ]"
-              >
-                <div 
-                  :class="[
-                    'w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-colors',
-                    selectedGroupIds.includes(role.id)
-                      ? 'bg-primary border-primary text-white'
-                      : 'border-input bg-background'
-                  ]"
-                >
-                  <Check v-if="selectedGroupIds.includes(role.id)" class="w-3.5 h-3.5 stroke-[3]" />
+            <template v-else-if="rolesList.length > 0">
+              <!-- Currently Assigned Roles -->
+              <div class="space-y-3">
+                <div class="flex items-center justify-between text-xs font-bold text-foreground">
+                  <span class="uppercase tracking-wider text-[11px] text-muted-foreground">
+                    Currently Assigned Roles ({{ assignedRoles.length }})
+                  </span>
                 </div>
-                <div class="min-w-0 flex-1">
-                  <div class="text-xs font-bold text-foreground truncate">
-                    {{ role.name }}
+
+                <div v-if="assignedRoles.length > 0" class="grid grid-cols-1 gap-2.5">
+                  <div 
+                    v-for="role in assignedRoles" 
+                    :key="role.id"
+                    class="p-3.5 rounded-xl border border-primary/30 bg-primary/5 flex items-center justify-between gap-3 shadow-sm transition-all"
+                  >
+                    <div class="min-w-0 flex-1">
+                      <div class="text-xs font-bold text-foreground flex items-center gap-2">
+                        <span>{{ role.name }}</span>
+                        <span class="text-[9px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">Assigned</span>
+                      </div>
+                      <div class="text-[10px] text-muted-foreground mt-0.5">
+                        {{ role.permissions ? `${role.permissions.length} permissions assigned` : 'Custom group scope' }}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      @click="removeRole(role.id)"
+                      class="px-3 py-1.5 rounded-lg border border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive/10 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                    >
+                      <X class="w-3.5 h-3.5" />
+                      <span>Remove</span>
+                    </button>
                   </div>
-                  <div class="text-[10px] text-muted-foreground mt-0.5 truncate">
-                    {{ role.permissions ? `${role.permissions.length} permissions assigned` : 'Custom group scope' }}
-                  </div>
+                </div>
+
+                <div v-else class="text-xs text-muted-foreground py-4 px-4 text-center border border-dashed border-border rounded-xl bg-muted/10">
+                  No roles currently assigned. Add a role below to grant permissions.
                 </div>
               </div>
-            </div>
+
+              <!-- Available Roles -->
+              <div class="space-y-3 pt-2">
+                <div class="flex items-center justify-between text-xs font-bold text-foreground">
+                  <span class="uppercase tracking-wider text-[11px] text-muted-foreground">
+                    Available Roles ({{ availableRoles.length }})
+                  </span>
+                </div>
+
+                <div v-if="availableRoles.length > 0" class="grid grid-cols-1 gap-2.5">
+                  <div 
+                    v-for="role in availableRoles" 
+                    :key="role.id"
+                    class="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between gap-3 hover:border-border/80 transition-all"
+                  >
+                    <div class="min-w-0 flex-1">
+                      <div class="text-xs font-bold text-foreground">
+                        {{ role.name }}
+                      </div>
+                      <div class="text-[10px] text-muted-foreground mt-0.5">
+                        {{ role.permissions ? `${role.permissions.length} permissions assigned` : 'Custom group scope' }}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      @click="addRole(role.id)"
+                      class="px-3 py-1.5 rounded-lg border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                    >
+                      <Plus class="w-3.5 h-3.5" />
+                      <span>Add</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div v-else class="text-xs text-muted-foreground py-4 px-4 text-center border border-dashed border-border rounded-xl bg-muted/10">
+                  All available security roles are already assigned.
+                </div>
+              </div>
+            </template>
 
             <div v-else class="text-xs text-muted-foreground py-4 text-center border border-dashed border-border rounded-xl">
               No security roles available in catalog.
