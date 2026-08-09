@@ -27,7 +27,7 @@ import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import Button from '@/components/ui/Button.vue';
 import UserFormModal from '@/components/admin/UserFormModal.vue';
-import type { UserItem, Role } from '@/types';
+import type { UserItem, UserGroup, Role } from '@/types';
 
 definePageMeta({
   layout: 'admin'
@@ -158,7 +158,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
 
   return user.groups.map(g => {
     if (typeof g === 'object' && g !== null && 'name' in g) {
-      return (g as any).name;
+      return (g as UserGroup).name || `Role #${(g as UserGroup).id}`;
     }
     const groupId = Number(g);
     return rolesMap.value.get(groupId) || `Role #${groupId}`;

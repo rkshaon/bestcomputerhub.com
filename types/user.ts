@@ -1,5 +1,10 @@
 // File: /types/user.ts
 
+export interface UserGroup {
+  id: number;
+  name: string;
+}
+
 export interface UserItem {
   id: number;
   full_name?: string;
@@ -8,7 +13,7 @@ export interface UserItem {
   last_name?: string;
   email: string;
   username: string;
-  groups?: (number | { id: number; name: string })[];
+  groups?: (UserGroup | number)[];
   permissions?: string[];
   is_superuser?: boolean;
 }
