@@ -37,3 +37,5 @@ Always verify user permissions via `useAdminPermissions()` before invoking prote
 
 Always debounce user-input-driven search and filter requests at the query/composable/component layer (e.g., using `refDebounced` with 300ms delay) rather than making requests on every keystroke. The central HTTP client (`useApiClient`) must never own debounce behavior.
 
+Always enforce demand-driven API calling: never dispatch API requests on component mount, watcher triggers, or route initialization unless the data is immediately required by the current view. Reuse available state/props/store data before issuing new requests, and fetch auxiliary workflow data (such as option lists or detailed entity records) only when the specific user workflow demands it.
+

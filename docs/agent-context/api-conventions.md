@@ -53,3 +53,11 @@ All user-input-driven search and filter requests must be debounced by default at
 - Downstream API query state and requests are debounced.
 - The central HTTP client (`useApiClient`) must never own debounce logic.
 
+## Demand-Driven API Calling
+
+The application must not make API requests unless the data is required by the current user action, page, component, or workflow.
+- **Verify Data Requirement**: Before adding or dispatching an API call, verify if the data is actually needed at this moment.
+- **Reuse Existing Data**: If the data is already available in props, component state, stores, or service state, reuse it instead of re-fetching.
+- **Defer Workflow Data**: Auxiliary dataset queries (such as modal dropdown options or full entity details) must be fetched when the user triggers that specific workflow (e.g. opening a modal), not on component mount or page load.
+- **Avoid Side-Effects**: Prevent unintended API calls caused prematurely by component mounting, watchers, reactive state updates, or dialog setup.
+

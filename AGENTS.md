@@ -184,6 +184,12 @@ All user-input-driven API searches and filters must be debounced by default usin
 - **Architectural Placement**: Debounce belongs at the query/composable/component layer (e.g. `useInfinitePagination`, storefront listings, admin tables), never inside the central `useApiClient` HTTP client or via global request interceptors.
 - **Exemptions**: Explicit actions (e.g. clicking 'Apply Filters', 'Save', pagination buttons, page initial loads, mutations) must remain immediate.
 
+### 5. Efficient & Demand-Driven API Calling
+API requests must be driven by actual data requirements, not merely by component mounting, watchers, reactive state changes, or anticipated future actions.
+- **Demand-Driven Principle**: Before dispatching an API call, verify if the data is required for the current view or user action. If data is already available in props, state, or stores, reuse it.
+- **Lazy Workflow Fetching**: Fetch workflow-specific or auxiliary data (such as form selection lists or modal entity details) only when the user actively opens or triggers that specific workflow, never on page or parent component mount.
+- **No Duplicate Requests**: Avoid redundant API calls when usable data has already been fetched or is currently being processed.
+
 ## Structural Changes
 
 Agents may autonomously perform small, task-local,

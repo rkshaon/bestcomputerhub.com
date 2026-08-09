@@ -89,6 +89,13 @@ To prevent state desynchronization between the Vue component state and the URL q
 
 ---
 
+## Modal Data Hydration & Demand-Driven Fetching
+
+1. **Lazy Fetching on Modal Activation**: Modal-specific API requests (such as detailed entity lookups or form options/permissions selection lists) must be executed ONLY when the modal transitions to an active state (`isEdit`, `isCreate`, `isView`), never on parent page load or component setup.
+2. **Reuse Existing Data**: If complete entity data is already present in parent props or stores, reuse it rather than dispatching duplicate API calls. If list endpoints return partial fields, fetch full entity details when opening the Edit/View modal.
+
+---
+
 ## Implementation Example for New CRUD Modules
 
 When creating a new CRUD module (e.g., Users, Products, Categories, Orders):

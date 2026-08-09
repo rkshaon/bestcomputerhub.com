@@ -338,3 +338,11 @@ All user-input-driven search and filter interactions must be debounced by defaul
 - **Separation**: Local input state remains immediately responsive on every keystroke, while the downstream API query state is debounced.
 - **Responsibility**: Debounce belongs at the query/composable/component layer (e.g. `useInfinitePagination`, storefront listings, admin tables). The central HTTP client (`useApiClient`) must never own debounce behavior.
 - **Exemptions**: Explicit actions (clicking 'Apply Filters', 'Save', pagination buttons, page initial loads, mutations) remain immediate.
+
+## 12. Demand-Driven API Calling Principle
+
+API requests must be driven by actual data requirements, not merely by component or page mounting or anticipated future actions.
+- **Check Availability First**: Before making an API request, verify if the data is already available in existing state, props, stores, or services.
+- **Defer Auxiliary Workflows**: Fetch auxiliary datasets (such as modal dropdown options or full entity details) only when the corresponding workflow is actively initiated.
+- **Prevent Mounting Side-Effects**: Do not call secondary or unrelated APIs in `onMounted()` or top-level setup scripts simply because a component or composable is mounted.
+
