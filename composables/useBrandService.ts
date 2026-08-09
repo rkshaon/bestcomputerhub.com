@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
+import { extractErrorMessage } from './useToast';
 import type { Brand, PaginatedResponse } from '@/types';
 
 const BRANDS_STORAGE_KEY = 'techcore_mock_brands_registry';
@@ -90,7 +91,7 @@ export const useBrandService = () => {
       }
       return sortByDisplayOrder(list);
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to retrieve brands registry.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve brands registry.');
       isLoading.value = false;
       // Fallback to mock brands if API fails so the system doesn't visually crash
       return sortByDisplayOrder(getMockBrands());
@@ -206,7 +207,7 @@ export const useBrandService = () => {
         pages: totalPages
       };
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to retrieve brands paginated taxonomy.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve brands paginated taxonomy.');
       isLoading.value = false;
 
       // Fallback
@@ -307,7 +308,7 @@ export const useBrandService = () => {
       isLoading.value = false;
       return data;
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to register brand partner.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to register brand partner.');
       isLoading.value = false;
       throw err;
     }
@@ -374,7 +375,7 @@ export const useBrandService = () => {
       isLoading.value = false;
       return data;
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to patch brand profile.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to patch brand profile.');
       isLoading.value = false;
       throw err;
     }
@@ -402,7 +403,7 @@ export const useBrandService = () => {
       isLoading.value = false;
       return true;
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to delete partner registry.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to delete partner registry.');
       isLoading.value = false;
       throw err;
     }

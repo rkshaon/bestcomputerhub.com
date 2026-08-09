@@ -169,10 +169,7 @@ const addRole = async (roleId: number) => {
       const roleObj = rolesList.value.find(r => r.id === roleId);
       toastSuccess(`Role "${roleObj?.name || 'Role'}" assigned successfully.`);
     } catch (err: any) {
-      let msg = 'Failed to assign role.';
-      if (err?.data?.detail) msg = err.data.detail;
-      else if (err?.message) msg = err.message;
-      toastError(msg);
+      handleApiError(err, 'Failed to assign role.');
     } finally {
       loadingRoleId.value = null;
     }
@@ -195,10 +192,7 @@ const removeRole = async (roleId: number) => {
       const roleObj = rolesList.value.find(r => r.id === roleId);
       toastSuccess(`Role "${roleObj?.name || 'Role'}" removed successfully.`);
     } catch (err: any) {
-      let msg = 'Failed to remove role.';
-      if (err?.data?.detail) msg = err.data.detail;
-      else if (err?.message) msg = err.message;
-      toastError(msg);
+      handleApiError(err, 'Failed to remove role.');
     } finally {
       loadingRoleId.value = null;
     }
@@ -255,21 +249,9 @@ const handleSubmit = async () => {
       emit('saved');
       emit('close');
     } catch (err: any) {
-      let msg = 'Failed to update user account.';
-      if (err?.data) {
-        if (typeof err.data === 'string') msg = err.data;
-        else if (err.data.detail) msg = err.data.detail;
-        else if (typeof err.data === 'object') {
-          const errors = Object.entries(err.data)
-            .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${Array.isArray(v) ? v.join(', ') : v}`)
-            .join(' | ');
-          if (errors) msg = errors;
-        }
-      } else if (err?.message) {
-        msg = err.message;
-      }
+      const msg = extractErrorMessage(err, 'Failed to update user account.');
       formError.value = msg;
-      toastError('Please resolve errors in the form.');
+      toastError(msg);
     }
   } else {
     // Create Mode
@@ -300,21 +282,9 @@ const handleSubmit = async () => {
       emit('saved');
       emit('close');
     } catch (err: any) {
-      let msg = 'Failed to create user account.';
-      if (err?.data) {
-        if (typeof err.data === 'string') msg = err.data;
-        else if (err.data.detail) msg = err.data.detail;
-        else if (typeof err.data === 'object') {
-          const errors = Object.entries(err.data)
-            .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${Array.isArray(v) ? v.join(', ') : v}`)
-            .join(' | ');
-          if (errors) msg = errors;
-        }
-      } else if (err?.message) {
-        msg = err.message;
-      }
+      const msg = extractErrorMessage(err, 'Failed to create user account.');
       formError.value = msg;
-      toastError('Please resolve errors in the form.');
+      toastError(msg);
     }
   }
 };

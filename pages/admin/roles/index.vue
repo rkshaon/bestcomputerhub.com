@@ -96,7 +96,7 @@ const executeDeleteRole = async () => {
     await modalState.closeModal();
     await roleService.getRoles({ search: searchQuery.value });
   } catch (err: any) {
-    toastError(err.message || 'Failed to delete role.');
+    handleApiError(err, 'Failed to delete role.');
   } finally {
     isDeleting.value = false;
   }

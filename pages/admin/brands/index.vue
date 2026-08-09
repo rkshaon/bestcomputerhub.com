@@ -24,7 +24,7 @@ import {
 import { useBrandService } from '@/composables/useBrandService';
 import { cn } from '@/utils';
 import type { Brand } from '@/types';
-import { toastSuccess, toastError, toastInfo } from '@/composables/useToast';
+import { toastSuccess, toastError, toastInfo, extractErrorMessage } from '@/composables/useToast';
 
 definePageMeta({
   layout: 'admin'
@@ -243,8 +243,9 @@ const handleCreateBrand = async () => {
     triggerToast(`Partner [${formPayload.value.name}] initialized successfully.`);
     await fetchRegistry();
   } catch (err: any) {
-    formError.value = err.data?.message || err.message || 'Operation failed on brand registration.';
-    triggerToast(formError.value!, 'error');
+    const msg = extractErrorMessage(err, 'Operation failed on brand registration.');
+    formError.value = msg;
+    triggerToast(msg, 'error');
   } finally {
     isSubmitPending.value = false;
   }
@@ -281,8 +282,9 @@ const handleUpdateBrand = async () => {
     triggerToast(`Partner [${formPayload.value.name}] profiles successfully updated.`);
     await fetchRegistry();
   } catch (err: any) {
-    formError.value = err.data?.message || err.message || 'Operation failed on brand modification.';
-    triggerToast(formError.value!, 'error');
+    const msg = extractErrorMessage(err, 'Operation failed on brand modification.');
+    formError.value = msg;
+    triggerToast(msg, 'error');
   } finally {
     isSubmitPending.value = false;
   }
@@ -299,7 +301,8 @@ const handleDeleteBrand = async (brand: Brand) => {
         currentPage.value = Math.max(1, totalPages.value);
       }
     } catch (err: any) {
-      triggerToast(err.message || 'Deregister action aborted.', 'error');
+      const msg = extractErrorMessage(err, 'Deregister action aborted.');
+      triggerToast(msg, 'error');
     }
   }
 };

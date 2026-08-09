@@ -1,6 +1,7 @@
 // File: /composables/useRoleService.ts
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
+import { extractErrorMessage } from './useToast';
 import type { Role, PaginatedRoles, CreateRolePayload, UpdateRolePayload } from '@/types';
 
 const ROLES_STORAGE_KEY = 'techcore_mock_roles_registry';
@@ -98,7 +99,7 @@ export const useRoleService = () => {
         results
       };
     } catch (err: any) {
-      const msg = err.data?.detail || err.data?.message || err.message || 'Failed to retrieve roles repository.';
+      const msg = extractErrorMessage(err, 'Failed to retrieve roles repository.');
       errorMsg.value = msg;
 
       rolesCache.value = [];
@@ -151,9 +152,9 @@ export const useRoleService = () => {
       totalCount.value += 1;
       return created;
     } catch (err: any) {
-      const msg = err.data?.detail || err.data?.name?.[0] || err.data?.message || err.message || 'Failed to create role.';
+      const msg = extractErrorMessage(err, 'Failed to create role.');
       errorMsg.value = msg;
-      throw new Error(msg);
+      throw err;
     } finally {
       isSubmitting.value = false;
     }
@@ -206,9 +207,9 @@ export const useRoleService = () => {
       }
       return updated;
     } catch (err: any) {
-      const msg = err.data?.detail || err.data?.name?.[0] || err.data?.message || err.message || 'Failed to update role.';
+      const msg = extractErrorMessage(err, 'Failed to update role.');
       errorMsg.value = msg;
-      throw new Error(msg);
+      throw err;
     } finally {
       isSubmitting.value = false;
     }
@@ -238,9 +239,9 @@ export const useRoleService = () => {
       rolesCache.value = rolesCache.value.filter(r => r.id !== id);
       totalCount.value = Math.max(0, totalCount.value - 1);
     } catch (err: any) {
-      const msg = err.data?.detail || err.data?.message || err.message || 'Failed to delete role.';
+      const msg = extractErrorMessage(err, 'Failed to delete role.');
       errorMsg.value = msg;
-      throw new Error(msg);
+      throw err;
     } finally {
       isSubmitting.value = false;
     }

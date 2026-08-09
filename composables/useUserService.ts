@@ -1,6 +1,7 @@
 // File: /composables/useUserService.ts
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
+import { extractErrorMessage } from './useToast';
 import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload } from '@/types';
 
 const usersCache = ref<UserItem[]>([]);
@@ -53,7 +54,7 @@ export const useUserService = () => {
         results
       };
     } catch (err: any) {
-      const msg = err.data?.detail || err.data?.message || err.message || 'Failed to retrieve users repository.';
+      const msg = extractErrorMessage(err, 'Failed to retrieve users repository.');
       errorMsg.value = msg;
       usersCache.value = [];
       totalCount.value = 0;
@@ -78,7 +79,7 @@ export const useUserService = () => {
       const cached = usersCache.value.find(u => u.id == id);
       if (cached) return cached;
 
-      const msg = err.data?.detail || err.data?.message || err.message || `Failed to retrieve user #${id}.`;
+      const msg = extractErrorMessage(err, `Failed to retrieve user #${id}.`);
       errorMsg.value = msg;
       throw err;
     } finally {
@@ -101,27 +102,7 @@ export const useUserService = () => {
       totalCount.value += 1;
       return created;
     } catch (err: any) {
-      // Parse validation errors from DRF response
-      let msg = 'Failed to create user account.';
-      if (err.data) {
-        if (typeof err.data === 'string') {
-          msg = err.data;
-        } else if (err.data.detail) {
-          msg = err.data.detail;
-        } else if (typeof err.data === 'object') {
-          const fieldErrors = Object.entries(err.data)
-            .map(([field, errs]) => {
-              const formattedField = field.replace(/_/g, ' ');
-              const errStr = Array.isArray(errs) ? errs.join(', ') : String(errs);
-              return `${formattedField}: ${errStr}`;
-            })
-            .join(' | ');
-          if (fieldErrors) msg = fieldErrors;
-        }
-      } else if (err.message) {
-        msg = err.message;
-      }
-
+      const msg = extractErrorMessage(err, 'Failed to create user account.');
       errorMsg.value = msg;
       throw err;
     } finally {
@@ -146,26 +127,7 @@ export const useUserService = () => {
       }
       return updated;
     } catch (err: any) {
-      let msg = 'Failed to update user account.';
-      if (err.data) {
-        if (typeof err.data === 'string') {
-          msg = err.data;
-        } else if (err.data.detail) {
-          msg = err.data.detail;
-        } else if (typeof err.data === 'object') {
-          const fieldErrors = Object.entries(err.data)
-            .map(([field, errs]) => {
-              const formattedField = field.replace(/_/g, ' ');
-              const errStr = Array.isArray(errs) ? errs.join(', ') : String(errs);
-              return `${formattedField}: ${errStr}`;
-            })
-            .join(' | ');
-          if (fieldErrors) msg = fieldErrors;
-        }
-      } else if (err.message) {
-        msg = err.message;
-      }
-
+      const msg = extractErrorMessage(err, 'Failed to update user account.');
       errorMsg.value = msg;
       throw err;
     } finally {
@@ -188,17 +150,7 @@ export const useUserService = () => {
         totalCount.value -= 1;
       }
     } catch (err: any) {
-      let msg = 'Failed to delete user account.';
-      if (err.data) {
-        if (typeof err.data === 'string') {
-          msg = err.data;
-        } else if (err.data.detail) {
-          msg = err.data.detail;
-        }
-      } else if (err.message) {
-        msg = err.message;
-      }
-
+      const msg = extractErrorMessage(err, 'Failed to delete user account.');
       errorMsg.value = msg;
       throw err;
     } finally {
@@ -216,7 +168,7 @@ export const useUserService = () => {
         body: { role_id: roleId }
       });
     } catch (err: any) {
-      const msg = err.data?.detail || err.data?.message || err.message || 'Failed to assign role to user.';
+      const msg = extractErrorMessage(err, 'Failed to assign role to user.');
       errorMsg.value = msg;
       throw err;
     } finally {
@@ -234,7 +186,7 @@ export const useUserService = () => {
         body: { role_id: roleId }
       });
     } catch (err: any) {
-      const msg = err.data?.detail || err.data?.message || err.message || 'Failed to remove role from user.';
+      const msg = extractErrorMessage(err, 'Failed to remove role from user.');
       errorMsg.value = msg;
       throw err;
     } finally {

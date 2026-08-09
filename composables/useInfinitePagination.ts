@@ -1,6 +1,7 @@
 // File: /composables/useInfinitePagination.ts
 import { ref, watch, unref, isRef, computed, type Ref, type MaybeRef, onMounted } from 'vue';
 import { refDebounced } from '@vueuse/core';
+import { extractErrorMessage } from './useToast';
 
 export interface PaginatedResponse<T> {
   count: number;
@@ -144,7 +145,7 @@ export function useInfinitePagination<T>(options: UseInfinitePaginationOptions<T
         hasMore.value = parsed.results.length >= pageSize && parsed.results.length < parsed.count;
       }
     } catch (err: any) {
-      error.value = err?.data?.detail || err?.message || 'Failed to fetch paginated data.';
+      error.value = extractErrorMessage(err, 'Failed to fetch paginated data.');
       hasMore.value = false;
     } finally {
       isLoading.value = false;
@@ -188,7 +189,7 @@ export function useInfinitePagination<T>(options: UseInfinitePaginationOptions<T
         }
       }
     } catch (err: any) {
-      error.value = err?.data?.detail || err?.message || 'Failed to load additional items.';
+      error.value = extractErrorMessage(err, 'Failed to load additional items.');
     } finally {
       isFetchingNextPage.value = false;
     }

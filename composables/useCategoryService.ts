@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
+import { extractErrorMessage } from './useToast';
 import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse } from '@/types';
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
@@ -193,7 +194,7 @@ export const useCategoryService = () => {
         pages: totalPages
       };
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to retrieve categories taxonomy.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve categories taxonomy.');
       isLoading.value = false;
       
       // Fallback in case of API failure to prevent visual app breakage
@@ -229,7 +230,7 @@ export const useCategoryService = () => {
       isLoading.value = false;
       return mapCategoryResponse(data);
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to retrieve category details.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve category details.');
       isLoading.value = false;
       return getMockCategories().find(c => c.id === id) || null;
     }
@@ -302,7 +303,7 @@ export const useCategoryService = () => {
       isLoading.value = false;
       return mapCategoryResponse(data);
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to create category node.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to create category node.');
       isLoading.value = false;
       throw err;
     }
@@ -398,7 +399,7 @@ export const useCategoryService = () => {
       isLoading.value = false;
       return mapCategoryResponse(data);
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to update category node.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to update category node.');
       isLoading.value = false;
       throw err;
     }
@@ -442,7 +443,7 @@ export const useCategoryService = () => {
       isLoading.value = false;
       return true;
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to delete category node.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to delete category node.');
       isLoading.value = false;
       throw err;
     }

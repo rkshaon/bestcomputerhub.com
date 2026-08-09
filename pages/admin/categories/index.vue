@@ -25,7 +25,7 @@ import { useProductService } from '@/composables/useProductService';
 import { cn } from '@/utils';
 import { refDebounced } from '@vueuse/core';
 import type { Category } from '@/types';
-import { toastSuccess, toastError, toastInfo } from '@/composables/useToast';
+import { toastSuccess, toastError, toastInfo, handleApiError, extractErrorMessage } from '@/composables/useToast';
 
 definePageMeta({
   layout: 'admin'
@@ -422,8 +422,9 @@ const submitCreateCategory = async () => {
     toastSuccess(`Category [${formPayload.value.name}] generated successfully.`);
     await fetchAllCategoriesRawList();
   } catch (err: any) {
-    formError.value = err.data?.message || err.message || 'Operation failed on category create.';
-    toastError(formError.value!);
+    const msg = extractErrorMessage(err, 'Operation failed on category create.');
+    formError.value = msg;
+    toastError(msg);
   } finally {
     isSubmitPending.value = false;
   }
@@ -457,8 +458,9 @@ const submitUpdateCategory = async () => {
     toastSuccess(`Category [${formPayload.value.name}] updated successfully.`);
     await fetchAllCategoriesRawList();
   } catch (err: any) {
-    formError.value = err.data?.message || err.message || 'Operation failed on category edit.';
-    toastError(formError.value!);
+    const msg = extractErrorMessage(err, 'Operation failed on category edit.');
+    formError.value = msg;
+    toastError(msg);
   } finally {
     isSubmitPending.value = false;
   }
@@ -476,7 +478,7 @@ const deleteCategoryNode = async (cat: Category) => {
         currentPage.value = Math.max(1, totalPages.value);
       }
     } catch (err: any) {
-      toastError(err.message || 'Deregister action aborted.');
+      handleApiError(err, 'Deregister action aborted.');
     }
   }
 };

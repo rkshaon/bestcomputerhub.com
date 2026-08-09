@@ -225,8 +225,9 @@ const handleSubmit = async () => {
     emit('saved', savedRole);
     emit('close');
   } catch (err: any) {
-    formError.value = err.message || 'Failed to save role.';
-    toastError(formError.value);
+    const msg = extractErrorMessage(err, 'Failed to save role.');
+    formError.value = msg;
+    toastError(msg);
   }
 };
 </script>

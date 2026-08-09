@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useCookie, useRuntimeConfig, navigateTo } from '#app';
 import { useAuthStore } from '@/stores/auth';
-import { toastError } from '@/composables/useToast';
+import { toastError, extractErrorMessage } from '@/composables/useToast';
 import type {
   UserEntity,
   CustomerProfileEntity,
@@ -280,7 +280,7 @@ export const useApiClient = () => {
       }
 
       isLoading.value = false;
-      errorMsg.value = err.data?.message || err.message || 'An error occurred during the API request';
+      errorMsg.value = extractErrorMessage(err, 'An error occurred during the API request');
       // Pass the error upwards for visual form handling
       throw err;
     }

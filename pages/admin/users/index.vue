@@ -132,8 +132,7 @@ const executeDeleteUser = async () => {
     await modalState.closeModal();
     await refreshPagination();
   } catch (err: any) {
-    const msg = err?.data?.detail || err?.message || 'Failed to delete user account.';
-    toastError(msg);
+    handleApiError(err, 'Failed to delete user account.');
   } finally {
     isDeleting.value = false;
   }

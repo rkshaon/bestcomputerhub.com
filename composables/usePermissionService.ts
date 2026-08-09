@@ -1,6 +1,7 @@
 // File: /composables/usePermissionService.ts
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
+import { extractErrorMessage } from './useToast';
 import type { Permission, PaginatedPermissions } from '@/types';
 
 // Shared module-scoped cache
@@ -61,7 +62,7 @@ export const usePermissionService = () => {
         }
         return permissionsCache.value;
       } catch (err: any) {
-        const msg = err.data?.detail || err.data?.message || err.message || 'Failed to fetch permissions registry.';
+        const msg = extractErrorMessage(err, 'Failed to fetch permissions registry.');
         errorMsg.value = msg;
         if (!permissionsCache.value || permissionsCache.value.length === 0) {
           permissionsCache.value = getFallbackPermissions();
