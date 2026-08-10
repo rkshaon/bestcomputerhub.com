@@ -140,6 +140,7 @@ const passwordModalError = ref('');
 const isSubmittingPassword = ref(false);
 
 const openPasswordModal = () => {
+  if (!canChangeUserPassword.value) return;
   newPasswordVal.value = '';
   confirmPasswordVal.value = '';
   showNewPasswordVal.value = false;
@@ -573,20 +574,22 @@ const handleSubmit = async () => {
             </div>
 
             <div v-if="!isView" class="pt-2">
-              <!-- For Edit mode, show dedicated Update Password action button -->
-              <div v-if="isEdit && canChangeUserPassword" class="space-y-1.5">
-                <label class="text-xs font-semibold text-foreground">Account Password</label>
-                <div>
-                  <button
-                    type="button"
-                    @click="openPasswordModal"
-                    class="px-4 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-2"
-                  >
-                    <Lock class="w-3.5 h-3.5" />
-                    <span>Change Password</span>
-                  </button>
+              <!-- For Edit mode, show dedicated Change Password action button if permitted -->
+              <template v-if="isEdit">
+                <div v-if="canChangeUserPassword" class="space-y-1.5">
+                  <label class="text-xs font-semibold text-foreground">Account Password</label>
+                  <div>
+                    <button
+                      type="button"
+                      @click="openPasswordModal"
+                      class="px-4 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-2"
+                    >
+                      <Lock class="w-3.5 h-3.5" />
+                      <span>Change Password</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </template>
 
               <!-- For Create mode, show inline password inputs -->
               <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
