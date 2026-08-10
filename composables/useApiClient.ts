@@ -1,6 +1,6 @@
 // File: /composables/useApiClient.ts
 import { ref } from 'vue';
-import { useCookie, useRuntimeConfig, navigateTo } from '#app';
+import { useCookie, useRuntimeConfig, navigateTo, callWithNuxt, useNuxtApp } from '#app';
 import { useAuthStore } from '@/stores/auth';
 import { toastError, extractErrorMessage } from '@/composables/useToast';
 import type {
@@ -98,60 +98,65 @@ let refreshPromise: Promise<string> | null = null;
 
 export const useApiClient = () => {
   const config = useRuntimeConfig();
-  const apiBase = config.public.apiBase || '';
-  const route = useRoute();
+  const apiBase = config.public?.apiBase || '';
   
   const accessTokenCookie = useCookie<string | null>('access_token', { maxAge: 60 * 60 * 24 * 7, path: '/' });
   const refreshTokenCookie = useCookie<string | null>('refresh_token', { maxAge: 60 * 60 * 24 * 30, path: '/' });
   const authUserCookie = useCookie<any>('auth_user', { path: '/' });
 
   const getLoginRedirectUrl = () => {
-    if (route && route.path && route.path !== '/login' && route.path !== '/signup') {
-      return `/login?redirect=${encodeURIComponent(route.fullPath)}`;
+    try {
+      const nuxtApp = useNuxtApp();
+      const currentRoute = nuxtApp.$router?.currentRoute?.value;
+      if (currentRoute && currentRoute.path && currentRoute.path !== '/login' && currentRoute.path !== '/signup') {
+        return `/login?redirect=${encodeURIComponent(currentRoute.fullPath)}`;
+      }
+    } catch {
+      // Fallback
     }
     return '/login';
   };
 
-  // Centralized Loading and Success/Error States
-  const isLoading = ref(false);
-  const errorMsg = ref<string | null>(null);
-  const isSuccess = ref(false);
+    // Centralized Loading and Success/Error States
+    const isLoading = ref(false);
+    const errorMsg = ref<string | null>(null);
+    const isSuccess = ref(false);
 
-  // Reusable request helper that automatically attaches Bearer access token and handles 401 Refresh
-  const request = async <T>(url: string, options: any = {}): Promise<T> => {
-    isLoading.value = true;
-    errorMsg.value = null;
-    isSuccess.value = false;
+    // Reusable request helper that automatically attaches Bearer access token and handles 401 Refresh
+    const request = async <T>(url: string, options: any = {}): Promise<T> => {
+      isLoading.value = true;
+      errorMsg.value = null;
+      isSuccess.value = false;
 
-    // By default, make real API calls relative to the same origin.
-    // Run in mock mode only if mock query param is present or mock mode is stored in localStorage.
-    let isMockMode = false;
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      isMockMode = urlParams.has('mock') || localStorage.getItem('techcore_mock_mode') === 'true';
-    }
-
-    // If simulating, mock response data appropriately to prevent visual breakage
-    if (isMockMode) {
-      return simulateApiCall<T>(url, options);
-    }
-
-    const fullUrl = url.startsWith('http') ? url : `${apiBase}${url}`;
-
-    // Ensure headers exist
-    const headers: Record<string, string> = {};
-    if (options.headers) {
-      if (typeof options.headers.forEach === 'function') {
-        options.headers.forEach((value: string, key: string) => {
-          headers[key] = value;
-        });
-      } else {
-        Object.assign(headers, options.headers);
+      // By default, make real API calls relative to the same origin.
+      // Run in mock mode only if mock query param is present or mock mode is stored in localStorage.
+      let isMockMode = false;
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        isMockMode = urlParams.has('mock') || localStorage.getItem('techcore_mock_mode') === 'true';
       }
-    }
-    
-    // Auto-attach Bearer token dynamically at request execution time
-    const currentAccessToken = headers['Authorization'] || headers['authorization'] || useCookie<string | null>('access_token', { maxAge: 60 * 60 * 24 * 7, path: '/' }).value;
+
+      // If simulating, mock response data appropriately to prevent visual breakage
+      if (isMockMode) {
+        return simulateApiCall<T>(url, options);
+      }
+
+      const fullUrl = url.startsWith('http') ? url : `${apiBase}${url}`;
+
+      // Ensure headers exist
+      const headers: Record<string, string> = {};
+      if (options.headers) {
+        if (typeof options.headers.forEach === 'function') {
+          options.headers.forEach((value: string, key: string) => {
+            headers[key] = value;
+          });
+        } else {
+          Object.assign(headers, options.headers);
+        }
+      }
+      
+      // Auto-attach Bearer token dynamically at request execution time
+      const currentAccessToken = headers['Authorization'] || headers['authorization'] || accessTokenCookie.value;
     if (currentAccessToken) {
       const bearerVal = currentAccessToken.startsWith('Bearer ') ? currentAccessToken : `Bearer ${currentAccessToken}`;
       headers['Authorization'] = bearerVal;

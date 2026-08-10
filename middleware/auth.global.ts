@@ -1,13 +1,15 @@
 // File: /middleware/auth.global.ts
+import { callWithNuxt, useNuxtApp } from '#app';
 import { useAuthStore } from '@/stores/auth';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
+  const nuxtApp = useNuxtApp();
   const authStore = useAuthStore();
   
   if (!authStore.isInitialized) {
-    await authStore.initialize();
+    await callWithNuxt(nuxtApp, () => authStore.initialize());
   }
   
   if (to.path.startsWith('/admin')) {
