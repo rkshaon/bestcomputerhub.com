@@ -404,8 +404,8 @@ const resetFilters = () => {
             
             <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
               <div class="flex items-center border rounded-lg overflow-hidden">
-                <button class="p-2.5 bg-muted text-foreground transition-all shrink-0"><Grid class="w-4 h-4" /></button>
-                <button class="p-2.5 hover:bg-muted text-muted-foreground transition-all shrink-0"><List class="w-4 h-4" /></button>
+                <button class="p-2.5 bg-muted text-foreground transition-all shrink-0" title="Grid view" aria-label="Grid view"><Grid class="w-4 h-4" /></button>
+                <button class="p-2.5 hover:bg-muted text-muted-foreground transition-all shrink-0" title="List view" aria-label="List view"><List class="w-4 h-4" /></button>
               </div>
               <select 
                 v-model="filters.sort"

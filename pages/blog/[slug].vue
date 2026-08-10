@@ -90,7 +90,7 @@ onUnmounted(() => {
         <!-- Sidebar Navigation (Desktop) -->
         <aside class="hidden lg:block lg:col-span-1 sticky top-32 h-fit">
           <div class="flex flex-col gap-6 items-center">
-            <button class="w-12 h-12 rounded-full border border-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all group">
+            <button class="w-12 h-12 rounded-full border border-muted flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all group" title="Share article" aria-label="Share article">
               <Share2 class="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
             <div class="w-px h-12 bg-muted/50"></div>

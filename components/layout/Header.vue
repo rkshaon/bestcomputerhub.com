@@ -717,7 +717,7 @@ if (process.client) {
             </span>
           </button>
 
-          <button @click="uiStore.toggleMobileMenu()" class="md:hidden p-2 hover:bg-accent rounded-full transition-colors">
+          <button @click="uiStore.toggleMobileMenu()" class="md:hidden p-2 hover:bg-accent rounded-full transition-colors" title="Toggle navigation menu" aria-label="Toggle navigation menu">
             <Menu v-if="!uiStore.isMobileMenuOpen" class="w-6 h-6" />
             <X v-else class="w-6 h-6" />
           </button>

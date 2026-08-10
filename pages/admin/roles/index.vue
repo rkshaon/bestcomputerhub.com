@@ -166,6 +166,8 @@ const filteredRoles = computed(() => {
           v-if="searchQuery"
           @click="searchQuery = ''"
           class="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          title="Clear search"
+          aria-label="Clear search"
         >
           <X class="w-4 h-4" />
         </button>

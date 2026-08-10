@@ -56,7 +56,7 @@ const cartStore = useCartStore();
           </span>
         </div>
         
-        <UiButton size="icon" variant="primary" @click="cartStore.addToCart(product)" class="rounded-xl h-8 w-8 sm:h-10 sm:w-10 shrink-0">
+        <UiButton size="icon" variant="primary" @click="cartStore.addToCart(product)" class="rounded-xl h-8 w-8 sm:h-10 sm:w-10 shrink-0" title="Add to cart" aria-label="Add to cart">
           <ShoppingCart class="w-4 h-4 sm:w-5 sm:h-5" />
         </UiButton>
       </div>

@@ -141,10 +141,10 @@ const filteredCustomers = computed(() => {
               </td>
               <td class="px-8 py-5 text-right font-medium">
                 <div class="flex items-center justify-end gap-1">
-                  <button class="p-2 text-slate-400 hover:text-primary transition-colors hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg">
+                  <button class="p-2 text-slate-400 hover:text-primary transition-colors hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg" title="Send email" aria-label="Send email">
                     <Mail class="w-4 h-4" />
                   </button>
-                  <button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg">
+                  <button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg" title="More options" aria-label="More options">
                     <MoreVertical class="w-4 h-4" />
                   </button>
                 </div>
@@ -158,11 +158,11 @@ const filteredCustomers = computed(() => {
       <div class="px-8 py-6 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between font-medium">
         <p class="text-xs text-slate-400">Total Records: <span class="text-slate-900 dark:text-slate-100 font-bold">{{ filteredCustomers.length }}</span></p>
         <div class="flex items-center gap-2">
-          <button class="w-9 h-9 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 disabled:opacity-50" disabled>
+          <button class="w-9 h-9 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 disabled:opacity-50" disabled title="Previous page" aria-label="Previous page">
             <ChevronLeft class="w-4 h-4" />
           </button>
           <button class="w-9 h-9 flex items-center justify-center bg-primary text-white font-bold text-xs rounded-xl shadow-lg shadow-primary/10">1</button>
-          <button class="w-9 h-9 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900">
+          <button class="w-9 h-9 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900" title="Next page" aria-label="Next page">
             <ChevronRight class="w-4 h-4" />
           </button>
         </div>

@@ -212,12 +212,16 @@ const activeFiltersCount = computed(() => {
               <button 
                 @click="viewMode = 'grid'"
                 :class="cn('px-3 rounded-lg flex items-center transition-all', viewMode === 'grid' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground')"
+                title="Grid view"
+                aria-label="Grid view"
               >
                 <Grid2X2 class="w-4 h-4" />
               </button>
               <button 
                 @click="viewMode = 'list'"
                 :class="cn('px-3 rounded-lg flex items-center transition-all', viewMode === 'list' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground')"
+                title="List view"
+                aria-label="List view"
               >
                 <List class="w-4 h-4" />
               </button>
@@ -332,7 +336,7 @@ const activeFiltersCount = computed(() => {
             <h2 class="text-xl font-display font-bold flex items-center gap-2">
               <SlidersHorizontal class="w-5 h-5" /> Filter Components
             </h2>
-            <button @click="isFilterSidebarOpen = false" class="p-2 hover:bg-muted rounded-full transition-colors">
+            <button @click="isFilterSidebarOpen = false" class="p-2 hover:bg-muted rounded-full transition-colors" title="Close filters" aria-label="Close filters">
               <X class="w-5 h-5" />
             </button>
           </div>

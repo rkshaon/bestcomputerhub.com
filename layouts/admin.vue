@@ -187,6 +187,8 @@ const breadcrumbs = computed(() => {
       <button 
         @click="toggleSidebar"
         class="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-card border border-border rounded-full flex items-center justify-center shadow-md text-muted-foreground hover:text-primary transition-all z-50 hidden md:flex"
+        :title="isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+        :aria-label="isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
       >
         <ChevronLeft :class="cn('w-4 h-4 transition-transform duration-300', !isSidebarOpen && 'rotate-180')" />
       </button>
@@ -203,7 +205,7 @@ const breadcrumbs = computed(() => {
       <header class="h-16 sticky top-0 z-30 bg-card/80 backdrop-blur-md border-b border-border px-6 flex items-center justify-between">
         <div class="flex items-center gap-4">
           <!-- Mobile Menu Toggle -->
-          <button @click="isMobileMenuOpen = true" class="md:hidden p-2 text-muted-foreground">
+          <button @click="isMobileMenuOpen = true" class="md:hidden p-2 text-muted-foreground" title="Open admin menu" aria-label="Open admin menu">
             <Menu class="w-6 h-6" />
           </button>
 
@@ -231,6 +233,7 @@ const breadcrumbs = computed(() => {
             to="/" 
             class="sm:hidden p-2 hover:bg-accent border border-border text-muted-foreground hover:text-foreground rounded-xl transition-all shrink-0"
             title="Return to Main Marketplace"
+            aria-label="Return to Main Marketplace"
           >
             <ExternalLink class="w-4 h-4" />
           </NuxtLink>
@@ -240,6 +243,8 @@ const breadcrumbs = computed(() => {
             <button 
               @click="isThemeMenuOpen = !isThemeMenuOpen"
               class="p-2 text-muted-foreground hover:bg-accent hover:text-foreground rounded-xl transition-colors flex items-center justify-center h-9 w-9"
+              title="Change theme"
+              aria-label="Change theme"
             >
               <Sun v-if="uiStore.themeMode === 'light'" class="w-5 h-5" />
               <Moon v-else-if="uiStore.themeMode === 'dark'" class="w-5 h-5" />
@@ -328,7 +333,7 @@ const breadcrumbs = computed(() => {
         <div class="flex flex-col h-full">
           <div class="h-16 flex items-center px-6 border-b border-border">
             <span class="font-display font-bold text-lg tracking-tight">Admin<span class="text-primary">Core</span></span>
-            <button @click="isMobileMenuOpen = false" class="ml-auto p-2 text-muted-foreground">
+            <button @click="isMobileMenuOpen = false" class="ml-auto p-2 text-muted-foreground" title="Close admin menu" aria-label="Close admin menu">
               <ChevronLeft class="w-6 h-6" />
             </button>
           </div>

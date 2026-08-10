@@ -87,7 +87,7 @@ const orders = computed(() => {
           </option>
         </select>
 
-        <button class="h-12 w-12 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 hover:text-primary transition-all">
+        <button class="h-12 w-12 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 hover:text-primary transition-all" title="Filter orders" aria-label="Filter orders">
           <Filter class="w-5 h-5" />
         </button>
       </div>
@@ -164,14 +164,14 @@ const orders = computed(() => {
               </td>
               <td class="px-8 py-5 text-right">
                 <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <NuxtLink :to="`/admin/orders/${order.id}`" class="p-2 text-slate-400 hover:text-primary transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm">
+                  <NuxtLink :to="`/admin/orders/${order.id}`" class="p-2 text-slate-400 hover:text-primary transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm" title="View order details" aria-label="View order details">
                     <Eye class="w-3.5 h-3.5" />
                   </NuxtLink>
-                  <button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm">
+                  <button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm" title="More options" aria-label="More options">
                     <MoreVertical class="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <button class="p-2 text-slate-400 group-hover:hidden">
+                <button class="p-2 text-slate-400 group-hover:hidden" title="More options" aria-label="More options">
                   <MoreVertical class="w-4 h-4" />
                 </button>
               </td>
@@ -184,11 +184,11 @@ const orders = computed(() => {
       <div class="px-8 py-6 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between">
         <p class="text-xs text-slate-400 font-medium">Showing <span class="font-bold text-slate-900 dark:text-slate-100">1</span> to <span class="font-bold text-slate-900 dark:text-slate-100">3</span> of <span class="font-bold text-slate-900 dark:text-slate-100">{{ orders.length }}</span> orders</p>
         <div class="flex items-center gap-2">
-          <button class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50" disabled>
+          <button class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50" disabled title="Previous page" aria-label="Previous page">
             <ChevronLeft class="w-5 h-5" />
           </button>
           <button class="w-10 h-10 flex items-center justify-center bg-primary text-white font-bold text-xs rounded-xl shadow-lg shadow-primary/20">1</button>
-          <button class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
+          <button class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100" title="Next page" aria-label="Next page">
             <ChevronRight class="w-5 h-5" />
           </button>
         </div>

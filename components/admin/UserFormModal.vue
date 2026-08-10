@@ -437,6 +437,8 @@ const handleSubmit = async () => {
           type="button" 
           @click="emit('close')"
           class="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          title="Close modal"
+          aria-label="Close modal"
         >
           <X class="w-5 h-5" />
         </button>
@@ -692,11 +694,12 @@ const handleSubmit = async () => {
                       type="button"
                       :disabled="loadingRoleId === role.id"
                       @click="removeRole(role.id)"
-                      class="px-3 py-1.5 rounded-lg border border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive/10 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-50"
+                      class="p-1.5 rounded-lg border border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive/10 text-xs font-semibold flex items-center justify-center transition-colors shrink-0 disabled:opacity-50"
+                      title="Remove role"
+                      aria-label="Remove role"
                     >
                       <Loader2 v-if="loadingRoleId === role.id" class="w-3.5 h-3.5 animate-spin" />
                       <X v-else class="w-3.5 h-3.5" />
-                      <span>Remove</span>
                     </button>
                   </div>
                 </div>
@@ -733,11 +736,12 @@ const handleSubmit = async () => {
                       type="button"
                       :disabled="loadingRoleId === role.id"
                       @click="addRole(role.id)"
-                      class="px-3 py-1.5 rounded-lg border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-50"
+                      class="p-1.5 rounded-lg border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 text-xs font-semibold flex items-center justify-center transition-colors shrink-0 disabled:opacity-50"
+                      title="Add role"
+                      aria-label="Add role"
                     >
                       <Loader2 v-if="loadingRoleId === role.id" class="w-3.5 h-3.5 animate-spin" />
                       <Plus v-else class="w-3.5 h-3.5" />
-                      <span>Add</span>
                     </button>
                   </div>
                 </div>
@@ -826,6 +830,8 @@ const handleSubmit = async () => {
           type="button" 
           @click="closeEmailModal"
           class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          title="Close modal"
+          aria-label="Close modal"
         >
           <X class="w-4 h-4" />
         </button>
@@ -921,6 +927,8 @@ const handleSubmit = async () => {
           type="button" 
           @click="closePasswordModal"
           class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          title="Close modal"
+          aria-label="Close modal"
         >
           <X class="w-4 h-4" />
         </button>

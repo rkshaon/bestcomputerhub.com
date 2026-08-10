@@ -241,7 +241,7 @@ function adjustStock(amount: number) {
                 <td class="px-8 py-6">
                   <div v-if="editingId === product.id" class="flex items-center gap-3 animate-in zoom-in-95">
                     <div class="flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2 h-10 shadow-inner">
-                      <button @click="adjustStock(-1)" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-colors">
+                      <button @click="adjustStock(-1)" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-colors" title="Decrease stock" aria-label="Decrease stock">
                         <Minus class="w-4 h-4" />
                       </button>
                       <input 
@@ -249,7 +249,7 @@ function adjustStock(amount: number) {
                         type="number" 
                         class="w-14 text-center bg-transparent border-none outline-none font-black text-sm"
                       />
-                      <button @click="adjustStock(1)" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-colors">
+                      <button @click="adjustStock(1)" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-colors" title="Increase stock" aria-label="Increase stock">
                         <Plus class="w-4 h-4" />
                       </button>
                     </div>
@@ -258,6 +258,8 @@ function adjustStock(amount: number) {
                         @click="updateStock(product)" 
                         class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
                         :disabled="isUpdating"
+                        title="Save stock level"
+                        aria-label="Save stock level"
                       >
                         <Save v-if="!isUpdating" class="w-4 h-4" />
                         <Loader2 v-else class="w-4 h-4 animate-spin" />
@@ -266,6 +268,8 @@ function adjustStock(amount: number) {
                         @click="cancelEditing" 
                         class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-all"
                         :disabled="isUpdating"
+                        title="Cancel stock editing"
+                        aria-label="Cancel stock editing"
                       >
                         <RotateCcw class="w-4 h-4" />
                       </button>
@@ -321,7 +325,7 @@ function adjustStock(amount: number) {
                     >
                       <Plus class="w-3 h-3" /> Update Stock
                     </UiButton>
-                    <button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                    <button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" title="More options" aria-label="More options">
                       <MoreHorizontal class="w-4 h-4" />
                     </button>
                   </div>

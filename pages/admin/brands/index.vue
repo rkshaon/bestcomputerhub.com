@@ -380,6 +380,7 @@ const statsRegistry = computed(() => {
           @click="fetchRegistry" 
           class="p-2.5 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-primary transition-colors cursor-pointer"
           title="Force Sync Protocols"
+          aria-label="Sync registry"
         >
           <RotateCcw class="w-4 h-4" />
         </button>
@@ -479,6 +480,7 @@ const statsRegistry = computed(() => {
                     @click="openViewModal(brand)" 
                     class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                     title="Audit Technical Profile"
+                    aria-label="View brand profile"
                   >
                     <Eye class="w-4 h-4" />
                   </button>
@@ -486,6 +488,7 @@ const statsRegistry = computed(() => {
                     @click="openEditModal(brand)" 
                     class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                     title="Patch Registry Record"
+                    aria-label="Edit brand record"
                   >
                     <Edit2 class="w-4 h-4" />
                   </button>
@@ -493,6 +496,7 @@ const statsRegistry = computed(() => {
                     @click="handleDeleteBrand(brand)" 
                     class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                     title="Force Decommission Protocol"
+                    aria-label="Delete brand"
                   >
                     <Trash2 class="w-4 h-4" />
                   </button>

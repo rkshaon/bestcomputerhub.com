@@ -341,6 +341,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
               @click="modalState.openView(user.id)"
               class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
               title="View User Details"
+              aria-label="View user details"
             >
               <Eye class="w-4 h-4" />
             </button>
@@ -351,6 +352,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
               @click="modalState.openEdit(user.id)"
               class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
               title="Edit User Account"
+              aria-label="Edit user account"
             >
               <Edit class="w-4 h-4" />
             </button>
@@ -361,6 +363,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
               @click="modalState.openDelete(user.id)"
               class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
               title="Delete User Account"
+              aria-label="Delete user account"
             >
               <Trash2 class="w-4 h-4" />
             </button>

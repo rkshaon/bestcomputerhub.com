@@ -118,7 +118,7 @@ onMounted(() => {
             </div>
 
             <div class="absolute top-6 right-6">
-              <button class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border flex items-center justify-center hover:bg-white transition-colors shadow-sm">
+              <button class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border flex items-center justify-center hover:bg-white transition-colors shadow-sm" title="View deal details" aria-label="View deal details">
                 <Tag class="w-4 h-4 text-muted-foreground" />
               </button>
             </div>

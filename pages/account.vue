@@ -85,7 +85,7 @@ const handleLogout = async () => {
             <div class="w-32 h-32 rounded-[2.5rem] overflow-hidden border-4 border-white/10 ring-4 ring-primary/20">
               <img :src="authStore.user?.avatar" :alt="authStore.user?.name" class="w-full h-full object-cover" />
             </div>
-            <button class="absolute -bottom-2 -right-2 bg-primary text-white p-2.5 rounded-2xl shadow-xl hover:scale-110 transition-transform">
+            <button class="absolute -bottom-2 -right-2 bg-primary text-white p-2.5 rounded-2xl shadow-xl hover:scale-110 transition-transform" title="Account settings" aria-label="Account settings">
               <Settings class="w-4 h-4" />
             </button>
           </div>

@@ -589,6 +589,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
           @click="loadCategoriesGrid" 
           class="p-2.5 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-primary transition-colors cursor-pointer"
           title="Force Sync Protocols"
+          aria-label="Refresh categories"
         >
           <RotateCcw class="w-4 h-4" />
         </button>
@@ -683,6 +684,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
                     @click="triggerViewModal(cat)" 
                     class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                     title="Inspect Node Properties"
+                    aria-label="Inspect category properties"
                   >
                     <Info class="w-4 h-4" />
                   </button>
@@ -690,6 +692,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
                     @click="triggerEditModal(cat)" 
                     class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                     title="Modify Class Configurations"
+                    aria-label="Modify category configurations"
                   >
                     <Edit2 class="w-4 h-4" />
                   </button>
@@ -697,6 +700,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
                     @click="deleteCategoryNode(cat)" 
                     class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                     title="Deregister Node"
+                    aria-label="Delete category node"
                   >
                     <Trash2 class="w-4 h-4" />
                   </button>
@@ -777,7 +781,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-primary">Administration Node Generator</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Define New Category</h3>
           </div>
-          <button type="button" @click="isCreateModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button type="button" @click="isCreateModalOpen = false" aria-label="Close modal" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -898,7 +902,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-amber-500">Authorized Admin Override</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Modify Class Properties</h3>
           </div>
-          <button type="button" @click="isEditModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button type="button" @click="isEditModalOpen = false" aria-label="Close modal" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -1014,7 +1018,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Taxonomy Inspector Viewer</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Classification Audit Node</h3>
           </div>
-          <button @click="isViewModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button @click="isViewModalOpen = false" aria-label="Close modal" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -1080,7 +1084,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Bulk Load & Sync Engine</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Category Bulk Import</h3>
           </div>
-          <button type="button" @click="isImportModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button type="button" @click="isImportModalOpen = false" aria-label="Close modal" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>

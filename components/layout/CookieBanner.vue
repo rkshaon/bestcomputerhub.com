@@ -30,7 +30,7 @@ const showBanner = computed(() => {
             </div>
             <h3 class="text-lg sm:text-xl font-display font-bold">Cookie Policy</h3>
           </div>
-          <button @click="cookieStore.isBannerVisible = false" class="p-1.5 hover:bg-white/10 rounded-full transition-colors opacity-50 hover:opacity-100">
+          <button @click="cookieStore.isBannerVisible = false" class="p-1.5 hover:bg-white/10 rounded-full transition-colors opacity-50 hover:opacity-100" title="Close cookie policy banner" aria-label="Close cookie policy banner">
             <X class="w-4 h-4" />
           </button>
         </div>

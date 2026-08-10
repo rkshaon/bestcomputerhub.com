@@ -76,6 +76,8 @@ const updateQty = (id: string, delta: number) => {
                   type="button"
                   class="w-8 h-8 flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                   @click="updateQty(item.product.id, -1)"
+                  title="Decrease quantity"
+                  aria-label="Decrease quantity"
                 >
                   <Minus class="w-3.5 h-3.5" />
                 </button>
@@ -84,6 +86,8 @@ const updateQty = (id: string, delta: number) => {
                   type="button"
                   class="w-8 h-8 flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                   @click="updateQty(item.product.id, 1)"
+                  title="Increase quantity"
+                  aria-label="Increase quantity"
                 >
                   <Plus class="w-3.5 h-3.5" />
                 </button>
@@ -93,6 +97,7 @@ const updateQty = (id: string, delta: number) => {
                 type="button" 
                 class="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-destructive/10"
                 title="Remove item"
+                aria-label="Remove item"
                 @click="cartStore.removeFromCart(item.product.id)"
               >
                 <Trash2 class="w-4 h-4" />

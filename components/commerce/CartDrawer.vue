@@ -46,6 +46,8 @@ const handleCheckout = () => {
         <button 
           @click="uiStore.isCartOpen = false"
           class="p-2 hover:bg-accent rounded-full transition-colors"
+          title="Close cart"
+          aria-label="Close cart"
         >
           <X class="w-5 h-5" />
         </button>
@@ -79,6 +81,8 @@ const handleCheckout = () => {
               <button 
                 @click="cartStore.removeFromCart(item.productId)"
                 class="text-muted-foreground hover:text-destructive transition-colors"
+                title="Remove item"
+                aria-label="Remove item"
               >
                 <Trash2 class="w-4 h-4" />
               </button>
@@ -90,6 +94,8 @@ const handleCheckout = () => {
                   @click="cartStore.updateQuantity(item.productId, item.quantity - 1)"
                   class="p-1 hover:bg-background rounded transition-colors disabled:opacity-30"
                   :disabled="item.quantity <= 1"
+                  title="Decrease quantity"
+                  aria-label="Decrease quantity"
                 >
                   <Minus class="w-3 h-3" />
                 </button>
@@ -97,6 +103,8 @@ const handleCheckout = () => {
                 <button 
                   @click="cartStore.updateQuantity(item.productId, item.quantity + 1)"
                   class="p-1 hover:bg-background rounded transition-colors"
+                  title="Increase quantity"
+                  aria-label="Increase quantity"
                 >
                   <Plus class="w-3 h-3" />
                 </button>
