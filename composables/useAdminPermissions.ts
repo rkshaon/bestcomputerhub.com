@@ -19,7 +19,7 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     route: '/admin',
     name: 'Dashboard',
     iconKey: 'LayoutDashboard',
-    viewPermission: null
+    viewPermission: ['dashboard.view_dashboard', 'view_dashboard', 'analytics.view_dashboard', 'admin.view_dashboard']
   },
   products: {
     key: 'products',
@@ -74,7 +74,7 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     route: '/admin/customers',
     name: 'Customers',
     iconKey: 'Users',
-    viewPermission: ['store.view_customer', 'view_customer', 'user_api.view_user', 'view_user']
+    viewPermission: ['store.view_customer', 'view_customer', 'customers.view_customer', 'user_api.view_customer']
   },
   users: {
     key: 'users',
