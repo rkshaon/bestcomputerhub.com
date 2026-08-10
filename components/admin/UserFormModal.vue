@@ -53,6 +53,7 @@ const { toastSuccess, toastError, handleApiError } = useToast();
 const canEditRoles = computed(() => canEditInModule('users'));
 const canChangeUserPassword = computed(() => hasPermission('user_api.change_user_password'));
 const canChangeUserEmail = computed(() => hasPermission('user_api.change_user_email'));
+const canChangeUserUsername = computed(() => hasPermission('user_api.change_user_username'));
 
 // Form Fields
 const firstName = ref('');
@@ -143,7 +144,7 @@ const usernameModalError = ref('');
 const isSubmittingUsername = ref(false);
 
 const openUsernameModal = () => {
-  if (!canChangeUserPassword.value) return;
+  if (!canChangeUserUsername.value) return;
   newUsernameVal.value = props.user?.username || username.value || '';
   usernameModalError.value = '';
   isUsernameModalOpen.value = true;
@@ -157,7 +158,7 @@ const closeUsernameModal = () => {
 const handleUsernameSubmit = async () => {
   usernameModalError.value = '';
 
-  if (!canChangeUserPassword.value) {
+  if (!canChangeUserUsername.value) {
     usernameModalError.value = 'You do not have permission to change usernames.';
     return;
   }
@@ -637,7 +638,7 @@ const handleSubmit = async () => {
             <div v-if="!isView" class="pt-2">
               <!-- For Edit mode, show dedicated action buttons if permitted -->
               <template v-if="isEdit">
-                <div v-if="canChangeUserPassword || canChangeUserEmail" class="space-y-1.5">
+                <div v-if="canChangeUserPassword || canChangeUserEmail || canChangeUserUsername" class="space-y-1.5">
                   <label class="text-xs font-semibold text-foreground">Security Credentials</label>
                   <div class="flex flex-wrap items-center gap-2">
                     <button
@@ -650,7 +651,7 @@ const handleSubmit = async () => {
                       <span>Change Email</span>
                     </button>
                     <button
-                      v-if="canChangeUserPassword"
+                      v-if="canChangeUserUsername"
                       type="button"
                       @click="openUsernameModal"
                       class="px-4 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-2"
