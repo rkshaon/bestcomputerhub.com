@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload, ChangePasswordPayload, ChangeUserPasswordPayload } from '@/types';
+import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload, ChangePasswordPayload, ChangeUserPasswordPayload, ChangeUsernamePayload } from '@/types';
 
 const usersCache = ref<UserItem[]>([]);
 const totalCount = ref<number>(0);
@@ -253,6 +253,32 @@ export const useUserService = () => {
     }
   };
 
+  // 11. Change Admin User Username (POST /api/v1/users/{id}/change-username/)
+  const changeUsername = async (
+    userId: number | string,
+    payload: ChangeUsernamePayload
+  ): Promise<{ message?: string } | any> => {
+    isSubmitting.value = true;
+    errorMsg.value = null;
+    try {
+      const data = await apiClient.request<{ message?: string }>(`/api/v1/users/${userId}/change-username/`, {
+        method: 'POST',
+        body: payload
+      });
+      const index = usersCache.value.findIndex(u => u.id == userId);
+      if (index !== -1 && usersCache.value[index]) {
+        usersCache.value[index].username = payload.username;
+      }
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to change username.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isSubmitting.value = false;
+    }
+  };
+
   return {
     users: usersCache,
     totalCount,
@@ -268,6 +294,7 @@ export const useUserService = () => {
     removeRole,
     changePassword,
     changeUserPassword,
+    changeUsername,
     updateSelfProfile
   };
 };

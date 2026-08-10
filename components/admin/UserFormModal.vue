@@ -130,6 +130,61 @@ const handleEmailSubmit = async () => {
   }
 };
 
+// Dedicated Username Edit Modal State
+const isUsernameModalOpen = ref(false);
+const newUsernameVal = ref('');
+const usernameModalError = ref('');
+const isSubmittingUsername = ref(false);
+
+const openUsernameModal = () => {
+  if (!canChangeUserPassword.value) return;
+  newUsernameVal.value = props.user?.username || username.value || '';
+  usernameModalError.value = '';
+  isUsernameModalOpen.value = true;
+};
+
+const closeUsernameModal = () => {
+  isUsernameModalOpen.value = false;
+  usernameModalError.value = '';
+};
+
+const handleUsernameSubmit = async () => {
+  usernameModalError.value = '';
+
+  if (!canChangeUserPassword.value) {
+    usernameModalError.value = 'You do not have permission to change usernames.';
+    return;
+  }
+
+  const uVal = newUsernameVal.value.trim();
+  if (!uVal) {
+    usernameModalError.value = 'Username is required.';
+    return;
+  }
+
+  if (!props.user?.id) {
+    usernameModalError.value = 'Target user record could not be resolved.';
+    return;
+  }
+
+  isSubmittingUsername.value = true;
+  try {
+    const res = await userService.changeUsername(props.user.id, {
+      username: uVal
+    });
+    username.value = uVal;
+    const successMsg = (res && typeof res === 'object' && res.message) ? res.message : 'Username changed successfully.';
+    toastSuccess(successMsg);
+    closeUsernameModal();
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to change username.');
+    usernameModalError.value = msg;
+    handleApiError(err, 'Failed to change username.');
+  } finally {
+    isSubmittingUsername.value = false;
+  }
+};
+
 // Dedicated Password Edit Modal State
 const isPasswordModalOpen = ref(false);
 const newPasswordVal = ref('');
@@ -574,11 +629,19 @@ const handleSubmit = async () => {
             </div>
 
             <div v-if="!isView" class="pt-2">
-              <!-- For Edit mode, show dedicated Change Password action button if permitted -->
+              <!-- For Edit mode, show dedicated Change Username and Change Password action buttons if permitted -->
               <template v-if="isEdit">
                 <div v-if="canChangeUserPassword" class="space-y-1.5">
-                  <label class="text-xs font-semibold text-foreground">Account Password</label>
-                  <div>
+                  <label class="text-xs font-semibold text-foreground">Security Credentials</label>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      @click="openUsernameModal"
+                      class="px-4 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-2"
+                    >
+                      <User class="w-3.5 h-3.5" />
+                      <span>Change Username</span>
+                    </button>
                     <button
                       type="button"
                       @click="openPasswordModal"
@@ -1025,6 +1088,95 @@ const handleSubmit = async () => {
         >
           <Loader2 v-if="isSubmittingPassword" class="w-3.5 h-3.5 animate-spin" />
           <span>{{ isSubmittingPassword ? 'Changing Password...' : 'Change Password' }}</span>
+        </Button>
+      </div>
+    </div>
+  </UiAdminModal>
+
+  <!-- Dedicated Change Username Action Modal -->
+  <UiAdminModal
+    :is-open="isUsernameModalOpen"
+    max-width="max-w-md"
+    :show-close-button="false"
+    @close="closeUsernameModal"
+  >
+    <div class="bg-card text-card-foreground rounded-2xl shadow-xl overflow-hidden border border-border">
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-border flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+            <User class="w-4 h-4" />
+          </div>
+          <div>
+            <h3 class="text-sm font-display font-extrabold text-foreground">
+              Update Username
+            </h3>
+            <p class="text-[10px] text-muted-foreground font-medium">
+              Change system handle for this user account.
+            </p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          @click="closeUsernameModal"
+          class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          title="Close modal"
+          aria-label="Close modal"
+        >
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4">
+        <!-- Error Banner -->
+        <div 
+          v-if="usernameModalError" 
+          class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium flex items-start gap-2 animate-in fade-in"
+        >
+          <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{{ usernameModalError }}</span>
+        </div>
+
+        <div class="space-y-4">
+          <!-- Username Input -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-foreground">
+              New Username <span class="text-destructive">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                v-model="newUsernameVal"
+                type="text"
+                required
+                placeholder="username"
+                @keyup.enter="handleUsernameSubmit"
+                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+              <User class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-border flex items-center justify-end gap-2.5 bg-muted/20">
+        <Button 
+          type="button" 
+          variant="outline" 
+          @click="closeUsernameModal"
+          :disabled="isSubmittingUsername"
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="button" 
+          variant="primary" 
+          :disabled="isSubmittingUsername"
+          @click="handleUsernameSubmit"
+        >
+          <Loader2 v-if="isSubmittingUsername" class="w-3.5 h-3.5 animate-spin" />
+          <span>{{ isSubmittingUsername ? 'Changing Username...' : 'Change Username' }}</span>
         </Button>
       </div>
     </div>

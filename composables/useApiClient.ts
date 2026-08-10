@@ -449,6 +449,16 @@ export const useApiClient = () => {
       return { message: 'Password changed successfully.' } as unknown as T;
     }
 
+    if (url.match(/\/api\/v1\/users\/\w+\/change-username/)) {
+      const body = options.body || {};
+      if (!body.username) {
+        throwSimulatedError('Username is required.');
+      }
+      isSuccess.value = true;
+      isLoading.value = false;
+      return { message: 'Username changed successfully.' } as unknown as T;
+    }
+
     if (url.includes('/api/v1/users/me') || url.includes('/users/me')) {
       const body = (options.body || {}) as Record<string, any>;
       const firstNameVal = body.first_name !== undefined ? body.first_name : 'System';

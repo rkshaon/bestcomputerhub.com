@@ -57,3 +57,7 @@ export interface ChangeUserPasswordPayload {
   password: string;
   confirm_password: string;
 }
+
+export interface ChangeUsernamePayload {
+  username: string;
+}
