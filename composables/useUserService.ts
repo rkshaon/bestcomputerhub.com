@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload, ChangePasswordPayload } from '@/types';
+import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload, ChangePasswordPayload, ChangeUserPasswordPayload } from '@/types';
 
 const usersCache = ref<UserItem[]>([]);
 const totalCount = ref<number>(0);
@@ -231,6 +231,28 @@ export const useUserService = () => {
     }
   };
 
+  // 10. Change Admin User Password (POST /api/v1/users/{id}/change-password/)
+  const changeUserPassword = async (
+    userId: number | string, 
+    payload: ChangeUserPasswordPayload
+  ): Promise<{ message?: string } | any> => {
+    isSubmitting.value = true;
+    errorMsg.value = null;
+    try {
+      const data = await apiClient.request<{ message?: string }>(`/api/v1/users/${userId}/change-password/`, {
+        method: 'POST',
+        body: payload
+      });
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to change user password.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isSubmitting.value = false;
+    }
+  };
+
   return {
     users: usersCache,
     totalCount,
@@ -245,6 +267,7 @@ export const useUserService = () => {
     assignRole,
     removeRole,
     changePassword,
+    changeUserPassword,
     updateSelfProfile
   };
 };

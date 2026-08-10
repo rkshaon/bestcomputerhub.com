@@ -436,6 +436,19 @@ export const useApiClient = () => {
       return undefined as unknown as T;
     }
 
+    if (url.match(/\/api\/v1\/users\/\w+\/change-password/)) {
+      const body = options.body || {};
+      if (!body.password) {
+        throwSimulatedError('New password is required.');
+      }
+      if (body.password !== body.confirm_password) {
+        throwSimulatedError('Passwords do not match.');
+      }
+      isSuccess.value = true;
+      isLoading.value = false;
+      return { message: 'Password changed successfully.' } as unknown as T;
+    }
+
     if (url.includes('/api/v1/users/me') || url.includes('/users/me')) {
       const body = (options.body || {}) as Record<string, any>;
       const firstNameVal = body.first_name !== undefined ? body.first_name : 'System';

@@ -52,3 +52,8 @@ export interface ChangePasswordPayload {
   new_password: string;
   confirm_new_password: string;
 }
+
+export interface ChangeUserPasswordPayload {
+  password: string;
+  confirm_password: string;
+}

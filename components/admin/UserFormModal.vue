@@ -47,10 +47,11 @@ const emit = defineEmits<{
 
 const userService = useUserService();
 const roleService = useRoleService();
-const { canEditInModule } = useAdminPermissions();
+const { canEditInModule, hasPermission } = useAdminPermissions();
 const { toastSuccess, toastError, handleApiError } = useToast();
 
 const canEditRoles = computed(() => canEditInModule('users'));
+const canChangeUserPassword = computed(() => hasPermission('user_api.change_user_password'));
 
 // Form Fields
 const firstName = ref('');
@@ -154,17 +155,17 @@ const closePasswordModal = () => {
 
 const handlePasswordSubmit = async () => {
   passwordModalError.value = '';
+
+  if (!canChangeUserPassword.value) {
+    passwordModalError.value = 'You do not have permission to change user passwords.';
+    return;
+  }
   
   const pwd = newPasswordVal.value;
   const cpwd = confirmPasswordVal.value;
 
   if (!pwd) {
     passwordModalError.value = 'New password is required.';
-    return;
-  }
-
-  if (pwd.length < 8) {
-    passwordModalError.value = 'Password must be at least 8 characters long.';
     return;
   }
 
@@ -180,16 +181,17 @@ const handlePasswordSubmit = async () => {
 
   isSubmittingPassword.value = true;
   try {
-    await userService.updateUser(props.user.id, {
+    const res = await userService.changeUserPassword(props.user.id, {
       password: pwd,
       confirm_password: cpwd
     });
-    toastSuccess('Password updated successfully.');
+    const successMsg = (res && typeof res === 'object' && res.message) ? res.message : 'Password changed successfully.';
+    toastSuccess(successMsg);
     closePasswordModal();
   } catch (err: any) {
-    const msg = extractErrorMessage(err, 'Failed to update password.');
+    const msg = extractErrorMessage(err, 'Failed to change password.');
     passwordModalError.value = msg;
-    handleApiError(err, 'Failed to update password.');
+    handleApiError(err, 'Failed to change password.');
   } finally {
     isSubmittingPassword.value = false;
   }
@@ -572,7 +574,7 @@ const handleSubmit = async () => {
 
             <div v-if="!isView" class="pt-2">
               <!-- For Edit mode, show dedicated Update Password action button -->
-              <div v-if="isEdit" class="space-y-1.5">
+              <div v-if="isEdit && canChangeUserPassword" class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">Account Password</label>
                 <div>
                   <button
@@ -976,7 +978,7 @@ const handleSubmit = async () => {
           <!-- Confirm Password Input -->
           <div class="space-y-1.5">
             <label class="text-xs font-semibold text-foreground">
-              Confirm New Password <span class="text-destructive">*</span>
+              Confirm Password <span class="text-destructive">*</span>
             </label>
             <div class="relative">
               <input 
@@ -1019,7 +1021,7 @@ const handleSubmit = async () => {
           @click="handlePasswordSubmit"
         >
           <Loader2 v-if="isSubmittingPassword" class="w-3.5 h-3.5 animate-spin" />
-          <span>{{ isSubmittingPassword ? 'Updating...' : 'Update Password' }}</span>
+          <span>{{ isSubmittingPassword ? 'Changing Password...' : 'Change Password' }}</span>
         </Button>
       </div>
     </div>
