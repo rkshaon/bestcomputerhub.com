@@ -431,21 +431,35 @@ for form submission.
 
 ---
 
-## 13. Icon Buttons
+## 13. Icon Buttons & Action Controls
 
-Icon-only buttons must have an accessible name.
+### Icon-Only Action Buttons
 
-For example, wishlist controls should provide an `aria-label` describing the action.
+For common, visually recognizable actions such as:
 
-Examples:
+- View
+- Edit
+- Delete
+- Add
+- Remove
 
-```text
-Add product to wishlist
-Remove product from wishlist
-Add product to cart
-Close dialog
-Open menu
-```
+prefer compact icon-only action buttons when they are used as secondary actions on cards, tables, list items, or similar dense admin interfaces.
+
+Use visible text when:
+
+- the action is not immediately recognizable from its icon
+- the action is a primary/important CTA
+- additional context is needed to prevent ambiguity
+- the surrounding UI does not provide enough context
+
+Icon-only buttons MUST:
+
+- use the project's existing icon library (`lucide-vue-next`)
+- have an accessible `aria-label`
+- use an appropriate tooltip/title when useful for sighted users
+- remain visually consistent with similar actions
+
+Do not treat this as an absolute rule. Use judgment based on context and clarity.
 
 Do not rely on the icon alone to communicate meaning to assistive technologies.
 

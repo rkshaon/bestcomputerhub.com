@@ -53,7 +53,7 @@ Examples:
 * Use semantic colors such as `bg-primary`, `text-primary-foreground`, `bg-card`, and `border-border`.
 * Never assume `text-white` is correct for `bg-primary`.
 * Use native `<button>` elements for actions and `NuxtLink` for internal navigation.
-* Icon-only buttons must have accessible names.
+* Icon-only buttons must have accessible names (`aria-label`, `title`/tooltip). For common secondary actions (View, Edit, Delete, Add, Remove) on cards, tables, or list items, prefer compact icon-only buttons. Retain text labels for primary CTAs or non-obvious actions.
 * Essential actions must not depend exclusively on hover.
 * Maintain visible keyboard focus states.
 * Forms must use semantic `<form>` behavior where applicable.

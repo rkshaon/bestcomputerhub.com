@@ -197,6 +197,11 @@ All API errors (`400`, `401`, `403`, `404`, `409`, `422`, `429`, `500`, etc.) mu
 - **User-Friendly Fallbacks**: When no backend error message is provided, fall back to a clear, generic user-facing message (e.g. "An unexpected error occurred.").
 - **No Raw Technical Strings**: Never expose raw HTTP request signatures, URLs, HTTP methods, status code headers (e.g. `[POST] "...": 403 Forbidden`), or internal error objects to end users in toasts or UI error states.
 
+### 7. Icon-Only Action Buttons
+For common, visually recognizable secondary actions (such as View, Edit, Delete, Add, Remove) on cards, tables, list items, or dense admin interfaces, prefer compact icon-only action buttons.
+- **When to Use Visible Text**: Retain text labels for primary CTAs, non-obvious actions, or when additional context is needed to prevent ambiguity.
+- **Accessibility Requirements**: All icon-only action buttons MUST include an accessible `aria-label` and an appropriate `title`/tooltip for sighted users while using the project's standard icon library (`lucide-vue-next`).
+
 ## Structural Changes
 
 Agents may autonomously perform small, task-local,
