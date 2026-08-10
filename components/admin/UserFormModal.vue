@@ -129,6 +129,72 @@ const handleEmailSubmit = async () => {
   }
 };
 
+// Dedicated Password Edit Modal State
+const isPasswordModalOpen = ref(false);
+const newPasswordVal = ref('');
+const confirmPasswordVal = ref('');
+const showNewPasswordVal = ref(false);
+const showConfirmPasswordVal = ref(false);
+const passwordModalError = ref('');
+const isSubmittingPassword = ref(false);
+
+const openPasswordModal = () => {
+  newPasswordVal.value = '';
+  confirmPasswordVal.value = '';
+  showNewPasswordVal.value = false;
+  showConfirmPasswordVal.value = false;
+  passwordModalError.value = '';
+  isPasswordModalOpen.value = true;
+};
+
+const closePasswordModal = () => {
+  isPasswordModalOpen.value = false;
+  passwordModalError.value = '';
+};
+
+const handlePasswordSubmit = async () => {
+  passwordModalError.value = '';
+  
+  const pwd = newPasswordVal.value;
+  const cpwd = confirmPasswordVal.value;
+
+  if (!pwd) {
+    passwordModalError.value = 'New password is required.';
+    return;
+  }
+
+  if (pwd.length < 8) {
+    passwordModalError.value = 'Password must be at least 8 characters long.';
+    return;
+  }
+
+  if (pwd !== cpwd) {
+    passwordModalError.value = 'Passwords do not match.';
+    return;
+  }
+
+  if (!props.user?.id) {
+    passwordModalError.value = 'Target user record could not be resolved.';
+    return;
+  }
+
+  isSubmittingPassword.value = true;
+  try {
+    await userService.updateUser(props.user.id, {
+      password: pwd,
+      confirm_password: cpwd
+    });
+    toastSuccess('Password updated successfully.');
+    closePasswordModal();
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to update password.');
+    passwordModalError.value = msg;
+    handleApiError(err, 'Failed to update password.');
+  } finally {
+    isSubmittingPassword.value = false;
+  }
+};
+
 const loadAvailableRoles = async () => {
   isLoadingRoles.value = true;
   try {
@@ -284,25 +350,12 @@ const handleSubmit = async () => {
       return;
     }
 
-    // Password validation for edit (only validate if user typed a new password)
-    if (password.value) {
-      if (password.value !== confirmPassword.value) {
-        formError.value = 'Passwords do not match.';
-        return;
-      }
-    }
-
     const payload: UpdateUserPayload = {
       first_name: firstName.value.trim(),
       middle_name: middleName.value.trim(),
       last_name: lastName.value.trim(),
       username: username.value.trim()
     };
-
-    if (password.value) {
-      payload.password = password.value;
-      payload.confirm_password = confirmPassword.value;
-    }
 
     try {
       await userService.updateUser(props.user.id, payload);
@@ -515,59 +568,74 @@ const handleSubmit = async () => {
               </div>
             </div>
 
-            <div v-if="!isView" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- Password -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-semibold text-foreground">
-                  {{ isEdit ? 'New Password' : 'Password' }} 
-                  <span v-if="!isEdit" class="text-destructive">*</span>
-                  <span v-else class="text-[10px] text-muted-foreground font-normal">(Leave blank to keep existing)</span>
-                </label>
-                <div class="relative">
-                  <input 
-                    v-model="password"
-                    :type="showPassword ? 'text' : 'password'"
-                    :required="!isEdit"
-                    placeholder="••••••••••••"
-                    class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                  <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <button 
-                    type="button" 
-                    @click.stop="showPassword = !showPassword"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label="Toggle password visibility"
+            <div v-if="!isView" class="pt-2">
+              <!-- For Edit mode, show dedicated Update Password action button -->
+              <div v-if="isEdit" class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">Account Password</label>
+                <div>
+                  <button
+                    type="button"
+                    @click="openPasswordModal"
+                    class="px-4 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-2"
                   >
-                    <EyeOff v-if="showPassword" class="w-4 h-4" />
-                    <Eye v-else class="w-4 h-4" />
+                    <Lock class="w-3.5 h-3.5" />
+                    <span>Change Password</span>
                   </button>
                 </div>
               </div>
 
-              <!-- Confirm Password -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-semibold text-foreground">
-                  {{ isEdit ? 'Confirm New Password' : 'Confirm Password' }}
-                  <span v-if="!isEdit" class="text-destructive">*</span>
-                </label>
-                <div class="relative">
-                  <input 
-                    v-model="confirmPassword"
-                    :type="showConfirmPassword ? 'text' : 'password'"
-                    :required="!isEdit && !!password"
-                    placeholder="••••••••••••"
-                    class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                  <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <button 
-                    type="button" 
-                    @click.stop="showConfirmPassword = !showConfirmPassword"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label="Toggle confirm password visibility"
-                  >
-                    <EyeOff v-if="showConfirmPassword" class="w-4 h-4" />
-                    <Eye v-else class="w-4 h-4" />
-                  </button>
+              <!-- For Create mode, show inline password inputs -->
+              <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Password -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-semibold text-foreground">
+                    Password <span class="text-destructive">*</span>
+                  </label>
+                  <div class="relative">
+                    <input 
+                      v-model="password"
+                      :type="showPassword ? 'text' : 'password'"
+                      required
+                      placeholder="••••••••••••"
+                      class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                    <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                    <button 
+                      type="button" 
+                      @click.stop="showPassword = !showPassword"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label="Toggle password visibility"
+                    >
+                      <EyeOff v-if="showPassword" class="w-4 h-4" />
+                      <Eye v-else class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-semibold text-foreground">
+                    Confirm Password <span class="text-destructive">*</span>
+                  </label>
+                  <div class="relative">
+                    <input 
+                      v-model="confirmPassword"
+                      :type="showConfirmPassword ? 'text' : 'password'"
+                      :required="!!password"
+                      placeholder="••••••••••••"
+                      class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                    <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                    <button 
+                      type="button" 
+                      @click.stop="showConfirmPassword = !showConfirmPassword"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label="Toggle confirm password visibility"
+                    >
+                      <EyeOff v-if="showConfirmPassword" class="w-4 h-4" />
+                      <Eye v-else class="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -821,6 +889,129 @@ const handleSubmit = async () => {
         >
           <Loader2 v-if="isSubmittingEmail" class="w-3.5 h-3.5 animate-spin" />
           <span>{{ isSubmittingEmail ? 'Updating...' : 'Update Email' }}</span>
+        </Button>
+      </div>
+    </div>
+  </UiAdminModal>
+
+  <!-- Dedicated Change Password Modal -->
+  <UiAdminModal
+    :is-open="isPasswordModalOpen"
+    max-width="max-w-md"
+    :show-close-button="false"
+    @close="closePasswordModal"
+  >
+    <div class="flex flex-col h-full">
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20 shrink-0">
+            <Lock class="w-4 h-4" />
+          </div>
+          <div>
+            <h3 class="text-sm font-display font-extrabold text-foreground">
+              Update Password
+            </h3>
+            <p class="text-[10px] text-muted-foreground font-medium">
+              Change the access password for this user account.
+            </p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          @click="closePasswordModal"
+          class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4">
+        <!-- Error Banner -->
+        <div 
+          v-if="passwordModalError" 
+          class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium flex items-start gap-2 animate-in fade-in"
+        >
+          <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{{ passwordModalError }}</span>
+        </div>
+
+        <div class="space-y-4">
+          <!-- New Password Input -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-foreground">
+              New Password <span class="text-destructive">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                v-model="newPasswordVal"
+                :type="showNewPasswordVal ? 'text' : 'password'"
+                required
+                placeholder="••••••••••••"
+                @keyup.enter="handlePasswordSubmit"
+                class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+              <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <button 
+                type="button" 
+                @click.stop="showNewPasswordVal = !showNewPasswordVal"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Toggle password visibility"
+              >
+                <EyeOff v-if="showNewPasswordVal" class="w-4 h-4" />
+                <Eye v-else class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Confirm Password Input -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-foreground">
+              Confirm New Password <span class="text-destructive">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                v-model="confirmPasswordVal"
+                :type="showConfirmPasswordVal ? 'text' : 'password'"
+                required
+                placeholder="••••••••••••"
+                @keyup.enter="handlePasswordSubmit"
+                class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+              <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <button 
+                type="button" 
+                @click.stop="showConfirmPasswordVal = !showConfirmPasswordVal"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Toggle confirm password visibility"
+              >
+                <EyeOff v-if="showConfirmPasswordVal" class="w-4 h-4" />
+                <Eye v-else class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-border flex items-center justify-end gap-2.5 bg-muted/20">
+        <Button 
+          type="button" 
+          variant="outline" 
+          @click="closePasswordModal"
+          :disabled="isSubmittingPassword"
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="button" 
+          variant="primary" 
+          :disabled="isSubmittingPassword"
+          @click="handlePasswordSubmit"
+        >
+          <Loader2 v-if="isSubmittingPassword" class="w-3.5 h-3.5 animate-spin" />
+          <span>{{ isSubmittingPassword ? 'Updating...' : 'Update Password' }}</span>
         </Button>
       </div>
     </div>

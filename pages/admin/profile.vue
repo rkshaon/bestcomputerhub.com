@@ -13,13 +13,16 @@ import {
   Calendar, 
   Users, 
   Loader2,
-  LockKeyhole
+  LockKeyhole,
+  X,
+  AlertCircle
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useUserService } from '@/composables/useUserService';
-import { useToast } from '@/composables/useToast';
+import { useToast, extractErrorMessage } from '@/composables/useToast';
 import UiCard from '@/components/ui/UiCard.vue';
 import Button from '@/components/ui/Button.vue';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -138,24 +141,42 @@ const handleProfileSubmit = async () => {
   }
 };
 
+const isPasswordModalOpen = ref(false);
+const passwordModalError = ref('');
+
+const openPasswordModal = () => {
+  newPassword.value = '';
+  confirmPassword.value = '';
+  showNewPassword.value = false;
+  showConfirmPassword.value = false;
+  passwordModalError.value = '';
+  isPasswordModalOpen.value = true;
+};
+
+const closePasswordModal = () => {
+  isPasswordModalOpen.value = false;
+  passwordModalError.value = '';
+};
+
 const handlePasswordSubmit = async () => {
   if (!authStore.user?.id) return;
+  passwordModalError.value = '';
   
   const trimmedPassword = newPassword.value;
   const trimmedConfirm = confirmPassword.value;
   
   if (!trimmedPassword) {
-    toastError('New password is required.');
+    passwordModalError.value = 'New password is required.';
     return;
   }
   
   if (trimmedPassword.length < 8) {
-    toastError('Password must be at least 8 characters long.');
+    passwordModalError.value = 'Password must be at least 8 characters long.';
     return;
   }
   
   if (trimmedPassword !== trimmedConfirm) {
-    toastError('Passwords do not match.');
+    passwordModalError.value = 'Passwords do not match.';
     return;
   }
   
@@ -169,7 +190,10 @@ const handlePasswordSubmit = async () => {
     toastSuccess('Account password changed successfully.');
     newPassword.value = '';
     confirmPassword.value = '';
-  } catch (err) {
+    closePasswordModal();
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to update password.');
+    passwordModalError.value = msg;
     handleApiError(err, 'Failed to update password.');
   } finally {
     isSubmittingPassword.value = false;
@@ -420,74 +444,147 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- Form -->
-            <form @submit.prevent="handlePasswordSubmit" class="space-y-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- New Password -->
-                <div class="space-y-1.5">
-                  <label class="text-xs font-semibold text-foreground">New Password <span class="text-destructive">*</span></label>
-                  <div class="relative">
-                    <input 
-                      v-model="newPassword" 
-                      :type="showNewPassword ? 'text' : 'password'"
-                      required
-                      placeholder="••••••••••••"
-                      class="w-full pl-9 pr-10 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    />
-                    <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                    <button 
-                      type="button"
-                      @click="showNewPassword = !showNewPassword"
-                      class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
-                      aria-label="Toggle password visibility"
-                    >
-                      <EyeOff v-if="showNewPassword" class="w-3.5 h-3.5" />
-                      <Eye v-else class="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Confirm Password -->
-                <div class="space-y-1.5">
-                  <label class="text-xs font-semibold text-foreground">Confirm Password <span class="text-destructive">*</span></label>
-                  <div class="relative">
-                    <input 
-                      v-model="confirmPassword" 
-                      :type="showConfirmPassword ? 'text' : 'password'"
-                      required
-                      placeholder="••••••••••••"
-                      class="w-full pl-9 pr-10 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    />
-                    <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                    <button 
-                      type="button"
-                      @click="showConfirmPassword = !showConfirmPassword"
-                      class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
-                      aria-label="Toggle password visibility"
-                    >
-                      <EyeOff v-if="showConfirmPassword" class="w-3.5 h-3.5" />
-                      <Eye v-else class="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div class="space-y-1">
+                <p class="text-xs font-semibold text-foreground">Account Password</p>
+                <p class="text-xs text-muted-foreground">Keep your account secure by updating your password regularly.</p>
               </div>
-
-              <div class="flex items-center justify-end pt-2">
-                <Button 
-                  type="submit" 
-                  variant="primary"
-                  :disabled="isSubmittingPassword"
-                  class="flex items-center gap-2 text-xs font-semibold px-4 py-2"
-                >
-                  <Loader2 v-if="isSubmittingPassword" class="w-3.5 h-3.5 animate-spin" />
-                  <Key v-else class="w-3.5 h-3.5" />
-                  <span>{{ isSubmittingPassword ? 'Updating Password...' : 'Update Password' }}</span>
-                </Button>
-              </div>
-            </form>
+              <Button 
+                type="button" 
+                variant="primary"
+                @click="openPasswordModal"
+                class="flex items-center gap-2 text-xs font-semibold px-4 py-2.5 self-start sm:self-auto"
+              >
+                <Lock class="w-3.5 h-3.5" />
+                <span>Change Password</span>
+              </Button>
+            </div>
           </div>
         </UiCard>
       </div>
     </div>
   </div>
+
+  <!-- Dedicated Change Password Modal -->
+  <UiAdminModal
+    :is-open="isPasswordModalOpen"
+    max-width="max-w-md"
+    :show-close-button="false"
+    @close="closePasswordModal"
+  >
+    <div class="flex flex-col h-full">
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20 shrink-0">
+            <Lock class="w-4 h-4" />
+          </div>
+          <div>
+            <h3 class="text-sm font-display font-extrabold text-foreground">
+              Update Password
+            </h3>
+            <p class="text-[10px] text-muted-foreground font-medium">
+              Change your personal access password.
+            </p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          @click="closePasswordModal"
+          class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4">
+        <!-- Error Banner -->
+        <div 
+          v-if="passwordModalError" 
+          class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium flex items-start gap-2 animate-in fade-in"
+        >
+          <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{{ passwordModalError }}</span>
+        </div>
+
+        <div class="space-y-4">
+          <!-- New Password Input -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-foreground">
+              New Password <span class="text-destructive">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                v-model="newPassword"
+                :type="showNewPassword ? 'text' : 'password'"
+                required
+                placeholder="••••••••••••"
+                @keyup.enter="handlePasswordSubmit"
+                class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+              <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <button 
+                type="button" 
+                @click.stop="showNewPassword = !showNewPassword"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Toggle password visibility"
+              >
+                <EyeOff v-if="showNewPassword" class="w-4 h-4" />
+                <Eye v-else class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Confirm Password Input -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-foreground">
+              Confirm Password <span class="text-destructive">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                v-model="confirmPassword"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                required
+                placeholder="••••••••••••"
+                @keyup.enter="handlePasswordSubmit"
+                class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+              <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <button 
+                type="button" 
+                @click.stop="showConfirmPassword = !showConfirmPassword"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Toggle confirm password visibility"
+              >
+                <EyeOff v-if="showConfirmPassword" class="w-4 h-4" />
+                <Eye v-else class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-border flex items-center justify-end gap-2.5 bg-muted/20">
+        <Button 
+          type="button" 
+          variant="outline" 
+          @click="closePasswordModal"
+          :disabled="isSubmittingPassword"
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="button" 
+          variant="primary" 
+          :disabled="isSubmittingPassword"
+          @click="handlePasswordSubmit"
+        >
+          <Loader2 v-if="isSubmittingPassword" class="w-3.5 h-3.5 animate-spin" />
+          <span>{{ isSubmittingPassword ? 'Updating...' : 'Update Password' }}</span>
+        </Button>
+      </div>
+    </div>
+  </UiAdminModal>
 </template>
