@@ -592,27 +592,16 @@ const handleSubmit = async () => {
                 <label class="text-xs font-semibold text-foreground">
                   Email Address <span v-if="!isView && !isEdit" class="text-destructive">*</span>
                 </label>
-                <div class="flex gap-2">
-                  <div class="relative flex-1">
-                    <input 
-                      v-model="email"
-                      type="email"
-                      :required="!isView && !isEdit"
-                      :disabled="isView || isEdit"
-                      placeholder="user@techcore.io"
-                      class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-75 disabled:bg-muted/30"
-                    />
-                    <Mail class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  </div>
-                  <button
-                    v-if="isEdit && canChangeUserEmail"
-                    type="button"
-                    @click="openEmailModal"
-                    class="px-3.5 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0"
-                  >
-                    <Mail class="w-3.5 h-3.5" />
-                    <span>Change Email</span>
-                  </button>
+                <div class="relative">
+                  <input 
+                    v-model="email"
+                    type="email"
+                    :required="!isView && !isEdit"
+                    :disabled="isView || isEdit"
+                    placeholder="user@techcore.io"
+                    class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-75 disabled:bg-muted/30"
+                  />
+                  <Mail class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
 
