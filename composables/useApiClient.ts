@@ -432,14 +432,25 @@ export const useApiClient = () => {
     }
 
     if (url.includes('/api/v1/users/me') || url.includes('/users/me')) {
+      const body = (options.body || {}) as Record<string, any>;
+      const firstNameVal = body.first_name !== undefined ? body.first_name : 'System';
+      const middleNameVal = body.middle_name !== undefined ? body.middle_name : '';
+      const lastNameVal = body.last_name !== undefined ? body.last_name : 'Administrator';
+      const fullNameVal = [firstNameVal, middleNameVal, lastNameVal].filter(Boolean).join(' ') || 'System Administrator';
+
       const mockUser = {
         id: 1,
         user_id: 1,
-        username: 'admin',
-        full_name: 'System Administrator',
+        username: body.username || 'admin',
+        first_name: firstNameVal,
+        middle_name: middleNameVal,
+        last_name: lastNameVal,
+        full_name: fullNameVal,
         email: 'admin@admin.com',
-        role: 'admin' as const,
-        roles: [{ id: 1, name: 'admin' }],
+        role: 'OWNER' as const,
+        roles: [{ id: 1, name: 'OWNER' }],
+        groups: body.groups || [1],
+        permissions: ['*'],
         is_staff: true,
         is_superuser: true,
         is_superadmin: true,

@@ -129,7 +129,7 @@ const handleProfileSubmit = async () => {
       username: username.value.trim()
     };
     
-    await userService.updateUser(authStore.user.id, payload);
+    await userService.updateSelfProfile(payload);
     
     // Fetch user profile again to update authStore state across the interface
     await authStore.fetchUserProfile();

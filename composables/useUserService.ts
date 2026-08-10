@@ -212,6 +212,25 @@ export const useUserService = () => {
     }
   };
 
+  // 9. Update Self Profile (PATCH /api/v1/users/me/)
+  const updateSelfProfile = async (payload: Partial<UpdateUserPayload>): Promise<UserItem> => {
+    isSubmitting.value = true;
+    errorMsg.value = null;
+    try {
+      const updated = await apiClient.request<UserItem>('/api/v1/users/me/', {
+        method: 'PATCH',
+        body: payload
+      });
+      return updated;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to update self profile.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isSubmitting.value = false;
+    }
+  };
+
   return {
     users: usersCache,
     totalCount,
@@ -225,7 +244,8 @@ export const useUserService = () => {
     deleteUser,
     assignRole,
     removeRole,
-    changePassword
+    changePassword,
+    updateSelfProfile
   };
 };
 
