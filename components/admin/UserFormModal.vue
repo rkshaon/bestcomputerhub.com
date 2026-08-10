@@ -54,6 +54,8 @@ const canEditRoles = computed(() => canEditInModule('users'));
 const canChangeUserPassword = computed(() => hasPermission('user_api.change_user_password'));
 const canChangeUserEmail = computed(() => hasPermission('user_api.change_user_email'));
 const canChangeUserUsername = computed(() => hasPermission('user_api.change_user_username'));
+const canAssignUserRole = computed(() => hasPermission('user_api.assign_user_role'));
+const canRemoveUserRole = computed(() => hasPermission('user_api.remove_user_role'));
 
 // Form Fields
 const firstName = ref('');
@@ -347,6 +349,11 @@ const loadingRoleId = ref<number | null>(null);
 const addRole = async (roleId: number) => {
   if (props.isView || selectedGroupIds.value.includes(roleId) || loadingRoleId.value === roleId) return;
 
+  if (!canAssignUserRole.value) {
+    toastError('You do not have permission to assign roles.');
+    return;
+  }
+
   if (props.isEdit && props.user?.id) {
     loadingRoleId.value = roleId;
     try {
@@ -373,6 +380,11 @@ const addRole = async (roleId: number) => {
 
 const removeRole = async (roleId: number) => {
   if (props.isView || !selectedGroupIds.value.includes(roleId) || loadingRoleId.value === roleId) return;
+
+  if (!canRemoveUserRole.value) {
+    toastError('You do not have permission to remove roles.');
+    return;
+  }
 
   if (props.isEdit && props.user?.id) {
     loadingRoleId.value = roleId;
@@ -765,7 +777,7 @@ const handleSubmit = async () => {
                       </div>
                     </div>
                     <button
-                      v-if="canEditRoles && !isView"
+                      v-if="canRemoveUserRole && !isView"
                       type="button"
                       :disabled="loadingRoleId === role.id"
                       @click="removeRole(role.id)"
@@ -807,7 +819,7 @@ const handleSubmit = async () => {
                       </div>
                     </div>
                     <button
-                      v-if="canEditRoles"
+                      v-if="canAssignUserRole"
                       type="button"
                       :disabled="loadingRoleId === role.id"
                       @click="addRole(role.id)"
