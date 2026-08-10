@@ -415,6 +415,22 @@ export const useApiClient = () => {
       return mockResponse as unknown as T;
     }
 
+    if (url.includes('/api/v1/users/me/change-password') || url.includes('/users/me/change-password')) {
+      const body = options.body || {};
+      if (!body.old_password) {
+        throwSimulatedError('Old password is required.');
+      }
+      if (!body.new_password) {
+        throwSimulatedError('New password is required.');
+      }
+      if (body.new_password !== body.confirm_new_password) {
+        throwSimulatedError('Passwords do not match.');
+      }
+      isSuccess.value = true;
+      isLoading.value = false;
+      return undefined as unknown as T;
+    }
+
     if (url.includes('/api/v1/users/me') || url.includes('/users/me')) {
       const mockUser = {
         id: 1,

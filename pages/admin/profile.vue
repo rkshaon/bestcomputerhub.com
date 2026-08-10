@@ -44,8 +44,10 @@ const username = ref('');
 const email = ref('');
 
 // Password Fields
+const oldPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
+const showOldPassword = ref(false);
 const showNewPassword = ref(false);
 const showConfirmPassword = ref(false);
 
@@ -145,8 +147,10 @@ const isPasswordModalOpen = ref(false);
 const passwordModalError = ref('');
 
 const openPasswordModal = () => {
+  oldPassword.value = '';
   newPassword.value = '';
   confirmPassword.value = '';
+  showOldPassword.value = false;
   showNewPassword.value = false;
   showConfirmPassword.value = false;
   passwordModalError.value = '';
@@ -156,40 +160,50 @@ const openPasswordModal = () => {
 const closePasswordModal = () => {
   isPasswordModalOpen.value = false;
   passwordModalError.value = '';
+  oldPassword.value = '';
+  newPassword.value = '';
+  confirmPassword.value = '';
+  showOldPassword.value = false;
+  showNewPassword.value = false;
+  showConfirmPassword.value = false;
 };
 
 const handlePasswordSubmit = async () => {
-  if (!authStore.user?.id) return;
   passwordModalError.value = '';
   
-  const trimmedPassword = newPassword.value;
+  const trimmedOld = oldPassword.value;
+  const trimmedNew = newPassword.value;
   const trimmedConfirm = confirmPassword.value;
   
-  if (!trimmedPassword) {
+  if (!trimmedOld) {
+    passwordModalError.value = 'Old password is required.';
+    return;
+  }
+
+  if (!trimmedNew) {
     passwordModalError.value = 'New password is required.';
     return;
   }
   
-  if (trimmedPassword.length < 8) {
+  if (trimmedNew.length < 8) {
     passwordModalError.value = 'Password must be at least 8 characters long.';
     return;
   }
   
-  if (trimmedPassword !== trimmedConfirm) {
-    passwordModalError.value = 'Passwords do not match.';
+  if (trimmedNew !== trimmedConfirm) {
+    passwordModalError.value = 'New password and confirm password do not match.';
     return;
   }
   
   isSubmittingPassword.value = true;
   try {
-    await userService.updateUser(authStore.user.id, {
-      password: trimmedPassword,
-      confirm_password: trimmedConfirm
+    await userService.changePassword({
+      old_password: trimmedOld,
+      new_password: trimmedNew,
+      confirm_new_password: trimmedConfirm
     });
     
     toastSuccess('Account password changed successfully.');
-    newPassword.value = '';
-    confirmPassword.value = '';
     closePasswordModal();
   } catch (err: any) {
     const msg = extractErrorMessage(err, 'Failed to update password.');
@@ -492,6 +506,8 @@ onMounted(async () => {
           type="button" 
           @click="closePasswordModal"
           class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          title="Close modal"
+          aria-label="Close modal"
         >
           <X class="w-4 h-4" />
         </button>
@@ -509,6 +525,34 @@ onMounted(async () => {
         </div>
 
         <div class="space-y-4">
+          <!-- Old Password Input -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-foreground">
+              Old Password <span class="text-destructive">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                v-model="oldPassword"
+                :type="showOldPassword ? 'text' : 'password'"
+                required
+                placeholder="••••••••••••"
+                @keyup.enter="handlePasswordSubmit"
+                class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+              <Lock class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <button 
+                type="button" 
+                @click.stop="showOldPassword = !showOldPassword"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                title="Toggle old password visibility"
+                aria-label="Toggle old password visibility"
+              >
+                <EyeOff v-if="showOldPassword" class="w-4 h-4" />
+                <Eye v-else class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
           <!-- New Password Input -->
           <div class="space-y-1.5">
             <label class="text-xs font-semibold text-foreground">
@@ -528,7 +572,8 @@ onMounted(async () => {
                 type="button" 
                 @click.stop="showNewPassword = !showNewPassword"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label="Toggle password visibility"
+                title="Toggle new password visibility"
+                aria-label="Toggle new password visibility"
               >
                 <EyeOff v-if="showNewPassword" class="w-4 h-4" />
                 <Eye v-else class="w-4 h-4" />
@@ -536,10 +581,10 @@ onMounted(async () => {
             </div>
           </div>
 
-          <!-- Confirm Password Input -->
+          <!-- Confirm New Password Input -->
           <div class="space-y-1.5">
             <label class="text-xs font-semibold text-foreground">
-              Confirm Password <span class="text-destructive">*</span>
+              Confirm New Password <span class="text-destructive">*</span>
             </label>
             <div class="relative">
               <input 
@@ -555,7 +600,8 @@ onMounted(async () => {
                 type="button" 
                 @click.stop="showConfirmPassword = !showConfirmPassword"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label="Toggle confirm password visibility"
+                title="Toggle confirm new password visibility"
+                aria-label="Toggle confirm new password visibility"
               >
                 <EyeOff v-if="showConfirmPassword" class="w-4 h-4" />
                 <Eye v-else class="w-4 h-4" />

@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload } from '@/types';
+import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload, ChangePasswordPayload } from '@/types';
 
 const usersCache = ref<UserItem[]>([]);
 const totalCount = ref<number>(0);
@@ -194,6 +194,24 @@ export const useUserService = () => {
     }
   };
 
+  // 8. Change Self Password (PATCH /api/v1/users/me/change-password/)
+  const changePassword = async (payload: ChangePasswordPayload): Promise<void> => {
+    isSubmitting.value = true;
+    errorMsg.value = null;
+    try {
+      await apiClient.request('/api/v1/users/me/change-password/', {
+        method: 'PATCH',
+        body: payload
+      });
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to change password.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isSubmitting.value = false;
+    }
+  };
+
   return {
     users: usersCache,
     totalCount,
@@ -206,7 +224,8 @@ export const useUserService = () => {
     updateUser,
     deleteUser,
     assignRole,
-    removeRole
+    removeRole,
+    changePassword
   };
 };
 

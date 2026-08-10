@@ -46,3 +46,9 @@ export interface UpdateUserPayload {
   confirm_password?: string;
   groups?: number[];
 }
+
+export interface ChangePasswordPayload {
+  old_password: string;
+  new_password: string;
+  confirm_new_password: string;
+}
