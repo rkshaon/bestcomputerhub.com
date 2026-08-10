@@ -61,3 +61,7 @@ export interface ChangeUserPasswordPayload {
 export interface ChangeUsernamePayload {
   username: string;
 }
+
+export interface ChangeEmailPayload {
+  email: string;
+}

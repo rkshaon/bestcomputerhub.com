@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload, ChangePasswordPayload, ChangeUserPasswordPayload, ChangeUsernamePayload } from '@/types';
+import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload, ChangePasswordPayload, ChangeUserPasswordPayload, ChangeUsernamePayload, ChangeEmailPayload } from '@/types';
 
 const usersCache = ref<UserItem[]>([]);
 const totalCount = ref<number>(0);
@@ -279,6 +279,32 @@ export const useUserService = () => {
     }
   };
 
+  // 12. Change Admin User Email (POST /api/v1/users/{id}/change-email/)
+  const changeEmail = async (
+    userId: number | string,
+    payload: ChangeEmailPayload
+  ): Promise<{ message?: string } | any> => {
+    isSubmitting.value = true;
+    errorMsg.value = null;
+    try {
+      const data = await apiClient.request<{ message?: string }>(`/api/v1/users/${userId}/change-email/`, {
+        method: 'POST',
+        body: payload
+      });
+      const index = usersCache.value.findIndex(u => u.id == userId);
+      if (index !== -1 && usersCache.value[index]) {
+        usersCache.value[index].email = payload.email;
+      }
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to change email.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isSubmitting.value = false;
+    }
+  };
+
   return {
     users: usersCache,
     totalCount,
@@ -295,6 +321,7 @@ export const useUserService = () => {
     changePassword,
     changeUserPassword,
     changeUsername,
+    changeEmail,
     updateSelfProfile
   };
 };

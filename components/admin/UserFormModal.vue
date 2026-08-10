@@ -52,6 +52,7 @@ const { toastSuccess, toastError, handleApiError } = useToast();
 
 const canEditRoles = computed(() => canEditInModule('users'));
 const canChangeUserPassword = computed(() => hasPermission('user_api.change_user_password'));
+const canChangeUserEmail = computed(() => hasPermission('user_api.change_user_email'));
 
 // Form Fields
 const firstName = ref('');
@@ -79,7 +80,8 @@ const emailModalError = ref('');
 const isSubmittingEmail = ref(false);
 
 const openEmailModal = () => {
-  newEmail.value = email.value;
+  if (!canChangeUserEmail.value) return;
+  newEmail.value = props.user?.email || email.value || '';
   emailModalError.value = '';
   isEmailModalOpen.value = true;
 };
@@ -91,6 +93,12 @@ const closeEmailModal = () => {
 
 const handleEmailSubmit = async () => {
   emailModalError.value = '';
+
+  if (!canChangeUserEmail.value) {
+    emailModalError.value = 'You do not have permission to change user email addresses.';
+    return;
+  }
+
   const trimmedEmail = newEmail.value.trim();
 
   if (!trimmedEmail) {
@@ -104,11 +112,6 @@ const handleEmailSubmit = async () => {
     return;
   }
 
-  if (trimmedEmail === email.value) {
-    emailModalError.value = 'New email address must be different from current email.';
-    return;
-  }
-
   if (!props.user?.id) {
     emailModalError.value = 'Target user record could not be resolved.';
     return;
@@ -116,15 +119,18 @@ const handleEmailSubmit = async () => {
 
   isSubmittingEmail.value = true;
   try {
-    await userService.updateUser(props.user.id, { email: trimmedEmail });
+    const res = await userService.changeEmail(props.user.id, {
+      email: trimmedEmail
+    });
     email.value = trimmedEmail;
-    toastSuccess(`Email address updated to "${trimmedEmail}" successfully.`);
+    const successMsg = (res && typeof res === 'object' && res.message) ? res.message : 'Email changed successfully.';
+    toastSuccess(successMsg);
     emit('saved');
     closeEmailModal();
   } catch (err: any) {
-    const msg = extractErrorMessage(err, 'Failed to update email address.');
+    const msg = extractErrorMessage(err, 'Failed to change email address.');
     emailModalError.value = msg;
-    handleApiError(err, 'Failed to update email address.');
+    handleApiError(err, 'Failed to change email address.');
   } finally {
     isSubmittingEmail.value = false;
   }
@@ -598,13 +604,13 @@ const handleSubmit = async () => {
                     <Mail class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                   </div>
                   <button
-                    v-if="isEdit"
+                    v-if="isEdit && canChangeUserEmail"
                     type="button"
                     @click="openEmailModal"
                     class="px-3.5 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0"
                   >
-                    <EditIcon class="w-3.5 h-3.5" />
-                    <span>Edit Email</span>
+                    <Mail class="w-3.5 h-3.5" />
+                    <span>Change Email</span>
                   </button>
                 </div>
               </div>
@@ -629,12 +635,22 @@ const handleSubmit = async () => {
             </div>
 
             <div v-if="!isView" class="pt-2">
-              <!-- For Edit mode, show dedicated Change Username and Change Password action buttons if permitted -->
+              <!-- For Edit mode, show dedicated action buttons if permitted -->
               <template v-if="isEdit">
-                <div v-if="canChangeUserPassword" class="space-y-1.5">
+                <div v-if="canChangeUserPassword || canChangeUserEmail" class="space-y-1.5">
                   <label class="text-xs font-semibold text-foreground">Security Credentials</label>
                   <div class="flex flex-wrap items-center gap-2">
                     <button
+                      v-if="canChangeUserEmail"
+                      type="button"
+                      @click="openEmailModal"
+                      class="px-4 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-2"
+                    >
+                      <Mail class="w-3.5 h-3.5" />
+                      <span>Change Email</span>
+                    </button>
+                    <button
+                      v-if="canChangeUserPassword"
                       type="button"
                       @click="openUsernameModal"
                       class="px-4 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-2"
@@ -643,6 +659,7 @@ const handleSubmit = async () => {
                       <span>Change Username</span>
                     </button>
                     <button
+                      v-if="canChangeUserPassword"
                       type="button"
                       @click="openPasswordModal"
                       class="px-4 py-2.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-xl transition-all flex items-center gap-2"
@@ -887,7 +904,7 @@ const handleSubmit = async () => {
           </div>
           <div>
             <h3 class="text-sm font-display font-extrabold text-foreground">
-              Update Email Address
+              Change Email
             </h3>
             <p class="text-[10px] text-muted-foreground font-medium">
               Change the primary email for this user account.
@@ -962,7 +979,7 @@ const handleSubmit = async () => {
           @click="handleEmailSubmit"
         >
           <Loader2 v-if="isSubmittingEmail" class="w-3.5 h-3.5 animate-spin" />
-          <span>{{ isSubmittingEmail ? 'Updating...' : 'Update Email' }}</span>
+          <span>{{ isSubmittingEmail ? 'Changing Email...' : 'Change Email' }}</span>
         </Button>
       </div>
     </div>
