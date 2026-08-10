@@ -289,25 +289,26 @@ const filteredRoles = computed(() => {
         </div>
 
         <!-- Action Controls -->
-        <div class="pt-6 mt-6 border-t border-border/60 flex items-center justify-end gap-2">
+        <div class="pt-6 mt-6 border-t border-border/60 flex items-center justify-end gap-1">
           <button 
             type="button" 
             @click="modalState.openView(role.id)"
-            class="px-3.5 py-2 rounded-xl border border-border text-xs font-bold hover:bg-muted text-foreground transition-all flex items-center gap-1.5"
+            class="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             title="View Role Details"
+            aria-label="View role details"
           >
-            <Eye class="w-3.5 h-3.5 text-muted-foreground" />
-            <span>View</span>
+            <Eye class="w-4 h-4" />
           </button>
 
           <button 
             v-if="canEditRole"
             type="button" 
             @click="modalState.openEdit(role.id)"
-            class="px-3.5 py-2 rounded-xl border border-border text-xs font-bold hover:bg-muted text-foreground transition-all flex items-center gap-1.5"
+            class="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Edit Role"
+            aria-label="Edit role"
           >
-            <Edit class="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Edit</span>
+            <Edit class="w-4 h-4" />
           </button>
 
           <button 
@@ -316,6 +317,7 @@ const filteredRoles = computed(() => {
             @click="modalState.openDelete(role.id)"
             class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             title="Delete Role"
+            aria-label="Delete role"
           >
             <Trash2 class="w-4 h-4" />
           </button>
