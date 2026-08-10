@@ -55,6 +55,10 @@ export default defineNuxtConfig({
     server: false
   },
   vite: {
+    server: {
+      hmr: process.env.DISABLE_HMR !== 'true',
+      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
     optimizeDeps: {
       include: [
         'clsx',
