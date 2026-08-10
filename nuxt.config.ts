@@ -63,7 +63,8 @@ export default defineNuxtConfig({
       include: [
         'clsx',
         'lucide-vue-next',
-        'tailwind-merge'
+        'tailwind-merge',
+        'vue-sonner'
       ]
     }
   },
