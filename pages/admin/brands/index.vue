@@ -983,11 +983,12 @@ const handleDeleteBrand = async (brand: Brand) => {
             </div>
 
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Brand Slug</label>
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Brand Slug (Read-only)</label>
               <input 
                 v-model="formPayload.slug" 
                 type="text" 
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-semibold text-slate-950 dark:text-slate-50 font-mono"
+                readonly
+                class="w-full h-14 px-5 bg-slate-100 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none text-sm font-semibold text-slate-400 dark:text-slate-500 font-mono cursor-not-allowed"
               />
             </div>
 

@@ -412,9 +412,6 @@ export const useBrandService = () => {
       const formData = new FormData();
       formData.append('name', payload.name.trim());
 
-      if (payload.slug?.trim()) {
-        formData.append('slug', payload.slug.trim());
-      }
       if (payload.description !== undefined && payload.description !== null) {
         formData.append('description', payload.description.trim());
       }
