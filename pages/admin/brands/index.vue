@@ -20,7 +20,9 @@ import {
   Clock,
   RotateCcw,
   Flag,
-  RefreshCw
+  RefreshCw,
+  LayoutGrid,
+  List
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useBrandService } from '@/composables/useBrandService';
@@ -46,6 +48,7 @@ const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref<'all' | 'active' | 'inactive'>((route.query.status as 'all' | 'active' | 'inactive') || 'all');
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 5 : 5);
+const viewMode = ref<'grid' | 'list'>('list');
 const selectedBrand = ref<Brand | null>(null);
 
 // Overlay controls
@@ -384,6 +387,38 @@ const statsRegistry = computed(() => {
       </div>
       
       <div class="flex items-center gap-3">
+        <!-- View Toggle Buttons -->
+        <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+          <button
+            type="button"
+            @click="viewMode = 'grid'"
+            :class="[
+              'p-2 rounded-lg transition-all flex items-center justify-center cursor-pointer',
+              viewMode === 'grid'
+                ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
+                : 'text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            ]"
+            title="Grid View"
+            aria-label="Grid view"
+          >
+            <LayoutGrid class="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            @click="viewMode = 'list'"
+            :class="[
+              'p-2 rounded-lg transition-all flex items-center justify-center cursor-pointer',
+              viewMode === 'list'
+                ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
+                : 'text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            ]"
+            title="List View"
+            aria-label="List view"
+          >
+            <List class="w-4 h-4" />
+          </button>
+        </div>
+
         <div class="flex items-center gap-2 pr-2 border-l border-slate-100 dark:border-slate-900 pl-4">
           <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Node Filter:</span>
           <select 
@@ -426,7 +461,163 @@ const statsRegistry = computed(() => {
       </button>
     </div>
 
-    <!-- Paginated partner table -->
+    <!-- Grid View Mode -->
+    <div v-else-if="viewMode === 'grid'" class="space-y-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div 
+          v-for="brand in paginatedBrands" 
+          :key="brand.id"
+          class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+        >
+          <div class="space-y-4">
+            <!-- Brand Logo & Operational Status -->
+            <div class="flex items-start justify-between gap-4">
+              <div class="w-14 h-14 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-center p-2 shadow-sm overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300">
+                <img 
+                  :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
+                  :alt="brand.name" 
+                  class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
+                />
+              </div>
+
+              <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-800">
+                <span :class="cn(
+                  'w-2 h-2 rounded-full ring-4',
+                  brand.is_active !== false 
+                    ? 'bg-emerald-500 ring-emerald-500/10' 
+                    : 'bg-slate-300 dark:bg-slate-700 ring-slate-300/10 dark:ring-slate-700/10'
+                )"></span>
+                <span class="text-[10px] uppercase font-bold tracking-widest" :class="brand.is_active !== false ? 'text-emerald-500' : 'text-slate-400'">
+                  {{ brand.is_active !== false ? 'Operational' : 'Suspended' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Name and Slug -->
+            <div>
+              <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors leading-tight">
+                {{ brand.name }}
+              </h3>
+              <div class="mt-1 flex items-center gap-2">
+                <span class="font-mono text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-800 uppercase tracking-wider font-semibold">
+                  {{ brand.slug }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <p class="text-xs text-slate-400 line-clamp-2 italic leading-relaxed">
+              "{{ brand.description || 'No database memo recorded.' }}"
+            </p>
+
+            <!-- Order & Item count stats -->
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-900/50 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                <Tag class="w-3.5 h-3.5 text-slate-300" />
+                <span class="font-bold text-slate-900 dark:text-slate-100">{{ brand.productCount || 0 }} Items</span>
+              </div>
+              <span class="font-mono text-[11px] font-bold text-slate-400">
+                #{{ brand.display_order || 'Unassigned' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Card Actions Footer -->
+          <div class="mt-5 pt-3 border-t border-slate-100 dark:border-slate-900/50 flex items-center justify-between">
+            <span class="text-[10px] font-semibold text-slate-400">
+              ID: #{{ brand.id }}
+            </span>
+
+            <div class="flex items-center gap-1">
+              <button 
+                @click="openViewModal(brand)" 
+                class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+                title="Audit Technical Profile"
+                aria-label="View brand profile"
+              >
+                <Eye class="w-4 h-4" />
+              </button>
+              <button 
+                @click="openEditModal(brand)" 
+                class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+                title="Patch Registry Record"
+                aria-label="Edit brand record"
+              >
+                <Edit2 class="w-4 h-4" />
+              </button>
+              <button 
+                @click="handleDeleteBrand(brand)" 
+                class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+                title="Force Decommission Protocol"
+                aria-label="Delete brand"
+              >
+                <Trash2 class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state in grid mode -->
+        <div v-if="filteredBrands.length === 0" class="col-span-1 md:col-span-2 lg:col-span-3 py-16 text-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem]">
+          <div class="flex flex-col items-center justify-center gap-4 text-slate-400">
+            <div class="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+              <Search class="w-7 h-7 text-slate-300" />
+            </div>
+            <div>
+              <p class="font-display font-medium text-lg text-slate-900 dark:text-slate-100">Zero Registries Found</p>
+              <p class="text-xs max-w-sm mx-auto mt-1">No hardware partners matched the filter [{{ searchQuery || 'None' }}]. Extend the taxonomy index or verify parameters.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shared Pagination Footer for Grid Mode -->
+      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">
+            Showing <span class="text-slate-800 dark:text-slate-200 font-black">{{ Math.min(filteredBrands.length, (currentPage - 1) * itemsPerPage + 1) }} - {{ Math.min(filteredBrands.length, currentPage * itemsPerPage) }}</span> 
+            of <span class="text-slate-800 dark:text-slate-200 font-black">{{ filteredBrands.length }}</span> registries.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button 
+            @click="currentPage--" 
+            :disabled="currentPage === 1"
+            class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+          >
+            <ChevronLeft class="w-5 h-5" />
+          </button>
+          
+          <div class="flex items-center gap-1 font-mono text-xs font-bold">
+            <button 
+              v-for="p in totalPages" 
+              :key="p" 
+              @click="currentPage = p"
+              :class="cn(
+                'w-10 h-10 rounded-xl font-bold transition-all cursor-pointer text-xs',
+                currentPage === p 
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
+                  : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500'
+              )"
+            >
+              {{ p }}
+            </button>
+          </div>
+
+          <button 
+            @click="currentPage++" 
+            :disabled="currentPage === totalPages"
+            class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+          >
+            <ChevronRight class="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paginated partner table (List View Mode) -->
     <div v-else class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left">
