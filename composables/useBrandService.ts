@@ -53,9 +53,11 @@ export const useBrandService = () => {
   };
 
   // 1. Get All Brands (Paginated / Filtered or simple list)
-  const getBrandsList = async (): Promise<Brand[]> => {
+  const getBrandsList = async (filters: { search?: string } = {}): Promise<Brand[]> => {
     isLoading.value = true;
     errorMsg.value = null;
+
+    const search = filters.search?.trim();
 
     const sortByDisplayOrder = (list: Brand[]) => {
       return list.sort((a, b) => {
@@ -69,11 +71,26 @@ export const useBrandService = () => {
       // Simulate artificial latency
       await new Promise(resolve => setTimeout(resolve, 600));
       isLoading.value = false;
-      return sortByDisplayOrder(getMockBrands());
+      let mockList = getMockBrands();
+      if (search) {
+        const q = search.toLowerCase();
+        mockList = mockList.filter(b =>
+          b.name.toLowerCase().includes(q) ||
+          b.slug.toLowerCase().includes(q) ||
+          (b.description || '').toLowerCase().includes(q)
+        );
+      }
+      return sortByDisplayOrder(mockList);
     }
 
     try {
-      const data = await apiClient.request<any>('/api/v1/brands/', {
+      const params = new URLSearchParams();
+      if (search) {
+        params.append('search', search);
+      }
+      const endpoint = params.toString() ? `/api/v1/brands/?${params.toString()}` : '/api/v1/brands/';
+
+      const data = await apiClient.request<any>(endpoint, {
         method: 'GET'
       });
       isLoading.value = false;
@@ -94,7 +111,16 @@ export const useBrandService = () => {
       errorMsg.value = extractErrorMessage(err, 'Failed to retrieve brands registry.');
       isLoading.value = false;
       // Fallback to mock brands if API fails so the system doesn't visually crash
-      return sortByDisplayOrder(getMockBrands());
+      let fallbackList = getMockBrands();
+      if (search) {
+        const q = search.toLowerCase();
+        fallbackList = fallbackList.filter(b =>
+          b.name.toLowerCase().includes(q) ||
+          b.slug.toLowerCase().includes(q) ||
+          (b.description || '').toLowerCase().includes(q)
+        );
+      }
+      return sortByDisplayOrder(fallbackList);
     }
   };
 

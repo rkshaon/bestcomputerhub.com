@@ -22,6 +22,7 @@ import {
   Flag,
   RefreshCw
 } from 'lucide-vue-next';
+import { refDebounced } from '@vueuse/core';
 import { useBrandService } from '@/composables/useBrandService';
 import { cn } from '@/utils';
 import type { Brand } from '@/types';
@@ -41,6 +42,7 @@ const router = useRouter();
 const brandsList = ref<Brand[]>([]);
 const isLoading = ref(false);
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref<'all' | 'active' | 'inactive'>((route.query.status as 'all' | 'active' | 'inactive') || 'all');
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 5 : 5);
@@ -98,7 +100,7 @@ const triggerToast = (message: string, type: 'success' | 'error' | 'info' = 'suc
 const fetchRegistry = async () => {
   isLoading.value = true;
   try {
-    const list = await brandService.getBrandsList();
+    const list = await brandService.getBrandsList({ search: debouncedSearchQuery.value });
     // Default the is_active if undefined
     brandsList.value = list.map(b => ({
       ...b,
@@ -115,18 +117,20 @@ onMounted(async () => {
   await fetchRegistry();
 });
 
+// Refetch when debounced search query changes
+watch(debouncedSearchQuery, async () => {
+  currentPage.value = 1;
+  await fetchRegistry();
+});
+
 // Reactivity filters
 const filteredBrands = computed(() => {
   return brandsList.value.filter(b => {
-    const matchesSearch = b.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                          b.slug.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                          (b.description || '').toLowerCase().includes(searchQuery.value.toLowerCase());
-    
     const matchesStatus = statusFilter.value === 'all' || 
                           (statusFilter.value === 'active' && b.is_active) ||
                           (statusFilter.value === 'inactive' && !b.is_active);
     
-    return matchesSearch && matchesStatus;
+    return matchesStatus;
   });
 });
 
