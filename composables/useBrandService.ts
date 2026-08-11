@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
 import { extractErrorMessage } from './useToast';
-import type { Brand, CreateBrandPayload, PaginatedResponse } from '@/types';
+import type { Brand, CreateBrandPayload, UpdateBrandPayload, PaginatedResponse } from '@/types';
 
 const BRANDS_STORAGE_KEY = 'techcore_mock_brands_registry';
 
@@ -356,18 +356,12 @@ export const useBrandService = () => {
   };
 
   // 4. Edit Brand
-  const updateBrand = async (id: string | number, payload: { name: string; slug: string; description: string; is_active: boolean; display_order?: number }): Promise<Brand> => {
+  const updateBrand = async (id: string | number, payload: UpdateBrandPayload): Promise<Brand> => {
     isLoading.value = true;
     errorMsg.value = null;
 
     if (!payload.name?.trim()) {
       const err = new Error('Brand name is required');
-      errorMsg.value = err.message;
-      isLoading.value = false;
-      throw err;
-    }
-    if (!payload.slug?.trim()) {
-      const err = new Error('Brand slug identifier is required');
       errorMsg.value = err.message;
       isLoading.value = false;
       throw err;
@@ -385,20 +379,27 @@ export const useBrandService = () => {
       }
 
       // Check unique slug on other brands
-      if (brandsList.some((b, i) => i !== idx && b.slug.toLowerCase() === payload.slug.toLowerCase())) {
+      if (payload.slug && brandsList.some((b, i) => i !== idx && b.slug.toLowerCase() === payload.slug!.toLowerCase())) {
         const err = new Error(`Protocol Violation: Brand slug "${payload.slug}" is already registered.`);
         errorMsg.value = err.message;
         throw err;
       }
 
+      let logoUrl = existingBrand.logo;
+      if (payload.logo instanceof File && typeof window !== 'undefined') {
+        logoUrl = URL.createObjectURL(payload.logo);
+      } else if (payload.logo === null) {
+        logoUrl = '';
+      }
+
       const updatedBrand: Brand = {
         id: existingBrand.id,
         name: payload.name.trim(),
-        slug: payload.slug.trim().toLowerCase(),
+        slug: payload.slug?.trim().toLowerCase() || existingBrand.slug,
         description: payload.description?.trim() || '',
-        logo: existingBrand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80',
+        logo: logoUrl,
         productCount: existingBrand.productCount || 0,
-        is_active: payload.is_active,
+        is_active: existingBrand.is_active,
         display_order: payload.display_order
       };
 
@@ -408,10 +409,25 @@ export const useBrandService = () => {
     }
 
     try {
-      const { slug, ...bodyWithoutSlug } = payload;
+      const formData = new FormData();
+      formData.append('name', payload.name.trim());
+
+      if (payload.slug?.trim()) {
+        formData.append('slug', payload.slug.trim());
+      }
+      if (payload.description !== undefined && payload.description !== null) {
+        formData.append('description', payload.description.trim());
+      }
+      if (payload.display_order !== undefined && payload.display_order !== null) {
+        formData.append('display_order', payload.display_order.toString());
+      }
+      if (payload.logo instanceof File) {
+        formData.append('logo', payload.logo);
+      }
+
       const data = await apiClient.request<Brand>(`/api/v1/brands/${id}/`, {
-        method: 'PUT',
-        body: bodyWithoutSlug
+        method: 'PATCH',
+        body: formData
       });
       isLoading.value = false;
       return data;

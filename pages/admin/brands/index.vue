@@ -94,6 +94,7 @@ const selectedLogoFile = ref<File | null>(null);
 const logoPreviewUrl = ref<string | null>(null);
 const isLogoDragActive = ref(false);
 const logoFileInput = ref<HTMLInputElement | null>(null);
+const editLogoFileInput = ref<HTMLInputElement | null>(null);
 
 const setLogoFile = (file: File) => {
   if (!file.type.startsWith('image/')) {
@@ -266,6 +267,8 @@ const openEditModal = (brand: Brand) => {
     display_order: brand.display_order !== undefined ? brand.display_order : 1
   };
   formError.value = null;
+  selectedLogoFile.value = null;
+  logoPreviewUrl.value = brand.logo || null;
   isEditModalOpen.value = true;
 };
 
@@ -318,11 +321,11 @@ const handleCreateBrand = async () => {
 const handleUpdateBrand = async () => {
   formError.value = null;
   if (!formPayload.value.name.trim()) {
-    formError.value = 'Brand Designation Name is required.';
+    formError.value = 'Brand Name is required.';
     return;
   }
   if (!formPayload.value.slug.trim()) {
-    formError.value = 'Technical identity Slug is required.';
+    formError.value = 'Brand Slug is required.';
     return;
   }
 
@@ -338,12 +341,13 @@ const handleUpdateBrand = async () => {
       name: formPayload.value.name,
       slug: formPayload.value.slug,
       description: formPayload.value.description,
-      is_active: formPayload.value.is_active,
-      display_order: parsedOrder
+      display_order: parsedOrder,
+      logo: selectedLogoFile.value === null && logoPreviewUrl.value === null ? null : selectedLogoFile.value
     });
 
     isEditModalOpen.value = false;
-    triggerToast(`Partner [${formPayload.value.name}] profiles successfully updated.`);
+    removeSelectedLogo();
+    triggerToast(`Brand [${formPayload.value.name}] updated successfully.`);
     await fetchRegistry();
   } catch (err: any) {
     const msg = extractErrorMessage(err, 'Operation failed on brand modification.');
@@ -987,6 +991,62 @@ const handleDeleteBrand = async (brand: Brand) => {
               />
             </div>
 
+            <!-- Logo Upload Field -->
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Brand Logo (Optional Image)</label>
+              <div 
+                @dragover.prevent="isLogoDragActive = true"
+                @dragleave.prevent="isLogoDragActive = false"
+                @drop.prevent="handleLogoDrop"
+                :class="cn(
+                  'border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center transition-all cursor-pointer text-center space-y-2 min-h-[120px]',
+                  isLogoDragActive ? 'border-primary bg-primary/5' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
+                )"
+                @click="editLogoFileInput?.click()"
+              >
+                <input 
+                  ref="editLogoFileInput"
+                  type="file" 
+                  accept="image/*"
+                  class="hidden" 
+                  @change="handleLogoFileSelect" 
+                />
+
+                <div v-if="logoPreviewUrl" class="flex items-center gap-4 w-full p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div class="w-12 h-12 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50 dark:bg-slate-950 flex items-center justify-center shrink-0">
+                    <img :src="logoPreviewUrl" alt="Logo Preview" class="w-full h-full object-contain p-1" />
+                  </div>
+                  <div class="flex-1 text-left min-w-0">
+                    <p class="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                      {{ selectedLogoFile ? selectedLogoFile.name : 'Current Brand Logo' }}
+                    </p>
+                    <p v-if="selectedLogoFile" class="text-[10px] text-slate-400 font-mono">{{ (selectedLogoFile.size / 1024).toFixed(1) }} KB</p>
+                    <p v-else class="text-[10px] text-slate-400 font-mono">Active Logo URL</p>
+                  </div>
+                  <button 
+                    type="button" 
+                    @click.stop="removeSelectedLogo" 
+                    class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    title="Remove logo"
+                  >
+                    <X class="w-4 h-4" />
+                  </button>
+                </div>
+
+                <template v-else>
+                  <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                    <Upload class="w-5 h-5" />
+                  </div>
+                  <div class="space-y-0.5">
+                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Drag & drop logo image, or <span class="text-primary hover:underline">browse files</span>
+                    </p>
+                    <p class="text-[10px] text-slate-400 font-mono">PNG, JPG, WEBP, SVG up to 5MB</p>
+                  </div>
+                </template>
+              </div>
+            </div>
+
             <div class="space-y-2">
               <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Description</label>
               <textarea 
@@ -1007,28 +1067,6 @@ const handleDeleteBrand = async (brand: Brand) => {
                 class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
               />
               <p class="text-[10px] text-slate-400 ml-1 font-medium">A positive integer determining the visual sequencing order of brands.</p>
-            </div>
-
-            <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
-              <div>
-                <p class="text-xs font-bold font-display">Status (Active)</p>
-                <p class="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">Determine if this brand is visible in the catalog</p>
-              </div>
-              <button 
-                type="button" 
-                @click="formPayload.is_active = !formPayload.is_active"
-                :class="cn(
-                  'w-14 h-8 rounded-full p-1 transition-colors duration-300 pointer-events-auto',
-                  formPayload.is_active ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'
-                )"
-              >
-                <div :class="cn(
-                  'w-6 h-6 rounded-full bg-white transition-transform duration-300 shadow-sm flex items-center justify-center',
-                  formPayload.is_active ? 'translate-x-6' : 'translate-x-0'
-                )">
-                  <span class="text-[8px] font-black text-slate-900">{{ formPayload.is_active ? 'ON' : 'OFF' }}</span>
-                </div>
-              </button>
             </div>
           </div>
         </div>

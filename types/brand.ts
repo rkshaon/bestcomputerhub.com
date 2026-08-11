@@ -23,7 +23,7 @@ export interface UpdateBrandPayload {
   name: string;
   slug?: string;
   description?: string;
-  is_active?: boolean;
   display_order?: number;
+  logo?: File | null;
 }
 
