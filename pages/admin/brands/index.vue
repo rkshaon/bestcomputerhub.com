@@ -354,35 +354,23 @@ const handleUpdateBrand = async () => {
   }
 };
 
+// File: /pages/admin/brands/index.vue
 const handleDeleteBrand = async (brand: Brand) => {
-  const confirmMsg = `Verify Deletion: Are you sure you want to decommission [${brand.name}] from Best Computer Hub registries? All mapped inventory counts will stay, but mapping nodes will be unlinked.`;
+  const confirmMsg = `Are you sure you want to delete the brand [${brand.name}]? All mapped products will remain, but their brand link will be removed.`;
   if (confirm(confirmMsg)) {
     try {
       await brandService.deleteBrand(brand.id);
-      triggerToast(`Partner [${brand.name}] has been successfully deregistered.`, 'info');
+      triggerToast(`Brand [${brand.name}] has been successfully deleted.`, 'info');
       await fetchRegistry();
       if (currentPage.value > totalPages.value) {
         currentPage.value = Math.max(1, totalPages.value);
       }
     } catch (err: any) {
-      const msg = extractErrorMessage(err, 'Deregister action aborted.');
+      const msg = extractErrorMessage(err, 'Delete action failed.');
       triggerToast(msg, 'error');
     }
   }
 };
-
-// Stats aggregates computed (safe fallbacks)
-const statsRegistry = computed(() => {
-  const total = brandsList.value.length;
-  const activeCount = brandsList.value.filter(b => b.is_active !== false).length;
-  const highPriority = brandsList.value.filter(b => (b.productCount ?? 0) > 80).length;
-
-  return [
-    { label: 'Registered Brands', value: total, icon: Flag, color: 'bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400' },
-    { label: 'Active Domains', value: activeCount, icon: Globe, color: 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400' },
-    { label: 'High Priority Nodes', value: highPriority, icon: Award, color: 'bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400' },
-  ];
-});
 </script>
 
 <template>
@@ -391,8 +379,8 @@ const statsRegistry = computed(() => {
     <!-- Top Action bar block -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
-        <h1 class="text-4xl font-display font-extrabold tracking-tight">Partnership Registry</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium">Configure corporate hardware suppliers and technical entities.</p>
+        <h1 class="text-4xl font-display font-extrabold tracking-tight">Brands</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium">Manage product brands and their catalog display details.</p>
       </div>
       <div class="flex items-center gap-3">
         <Button 
@@ -409,22 +397,9 @@ const statsRegistry = computed(() => {
           @click="openCreateModal"
           class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
         >
-          <Plus class="w-4 h-4" /> Register New Partner
+          <Plus class="w-4 h-4" /> Add Brand
         </button>
       </div>
-    </div>
-
-    <!-- Interactive Stats row -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <UiCard v-for="stat in statsRegistry" :key="stat.label" class="flex items-center gap-6 p-8">
-        <div :class="cn('w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner', stat.color)">
-          <component :is="stat.icon" class="w-7 h-7" />
-        </div>
-        <div>
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">{{ stat.label }}</p>
-          <p class="text-3xl font-display font-black tracking-tight">{{ stat.value }}</p>
-        </div>
-      </UiCard>
     </div>
 
     <!-- Filters framework -->
@@ -432,7 +407,7 @@ const statsRegistry = computed(() => {
       <div class="flex-1 min-w-[280px]">
         <UiSearchInput 
           v-model="searchQuery" 
-          placeholder="Search partners database by name, description or slug..." 
+          placeholder="Search brands..." 
           class="border-none bg-transparent"
         />
       </div>
@@ -471,25 +446,16 @@ const statsRegistry = computed(() => {
         </div>
 
         <div class="flex items-center gap-2 pr-2 border-l border-slate-100 dark:border-slate-900 pl-4">
-          <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Node Filter:</span>
+          <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Status:</span>
           <select 
             v-model="statusFilter"
             class="h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer"
           >
-            <option value="all">All Registries</option>
-            <option value="active">Active Nodes Only</option>
-            <option value="inactive">Deactivated Only</option>
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
           </select>
         </div>
-        
-        <button 
-          @click="fetchRegistry" 
-          class="p-2.5 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-primary transition-colors cursor-pointer"
-          title="Force Sync Protocols"
-          aria-label="Sync registry"
-        >
-          <RotateCcw class="w-4 h-4" />
-        </button>
       </div>
     </div>
 
@@ -521,7 +487,7 @@ const statsRegistry = computed(() => {
           class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
         >
           <div class="space-y-4">
-            <!-- Brand Logo & Operational Status -->
+            <!-- Brand Logo & Status -->
             <div class="flex items-start justify-between gap-4">
               <div class="w-14 h-14 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-center p-2 shadow-sm overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300">
                 <img 
@@ -539,7 +505,7 @@ const statsRegistry = computed(() => {
                     : 'bg-slate-300 dark:bg-slate-700 ring-slate-300/10 dark:ring-slate-700/10'
                 )"></span>
                 <span class="text-[10px] uppercase font-bold tracking-widest" :class="brand.is_active !== false ? 'text-emerald-500' : 'text-slate-400'">
-                  {{ brand.is_active !== false ? 'Operational' : 'Suspended' }}
+                  {{ brand.is_active !== false ? 'Active' : 'Inactive' }}
                 </span>
               </div>
             </div>
@@ -557,8 +523,8 @@ const statsRegistry = computed(() => {
             </div>
 
             <!-- Description -->
-            <p class="text-xs text-slate-400 line-clamp-2 italic leading-relaxed">
-              "{{ brand.description || 'No database memo recorded.' }}"
+            <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+              {{ brand.description || 'No description recorded.' }}
             </p>
 
             <!-- Order & Item count stats -->
@@ -568,7 +534,7 @@ const statsRegistry = computed(() => {
                 <span class="font-bold text-slate-900 dark:text-slate-100">{{ brand.productCount || 0 }} Items</span>
               </div>
               <span class="font-mono text-[11px] font-bold text-slate-400">
-                #{{ brand.display_order || 'Unassigned' }}
+                Order: #{{ brand.display_order || 'Unassigned' }}
               </span>
             </div>
           </div>
@@ -583,15 +549,15 @@ const statsRegistry = computed(() => {
               <button 
                 @click="openViewModal(brand)" 
                 class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                title="Audit Technical Profile"
-                aria-label="View brand profile"
+                title="View Brand Details"
+                aria-label="View brand details"
               >
                 <Eye class="w-4 h-4" />
               </button>
               <button 
                 @click="openEditModal(brand)" 
                 class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                title="Patch Registry Record"
+                title="Edit Brand"
                 aria-label="Edit brand record"
               >
                 <Edit2 class="w-4 h-4" />
@@ -599,7 +565,7 @@ const statsRegistry = computed(() => {
               <button 
                 @click="handleDeleteBrand(brand)" 
                 class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                title="Force Decommission Protocol"
+                title="Delete Brand"
                 aria-label="Delete brand"
               >
                 <Trash2 class="w-4 h-4" />
@@ -615,8 +581,8 @@ const statsRegistry = computed(() => {
               <Search class="w-7 h-7 text-slate-300" />
             </div>
             <div>
-              <p class="font-display font-medium text-lg text-slate-900 dark:text-slate-100">Zero Registries Found</p>
-              <p class="text-xs max-w-sm mx-auto mt-1">No hardware partners matched the filter [{{ searchQuery || 'None' }}]. Extend the taxonomy index or verify parameters.</p>
+              <p class="font-display font-medium text-lg text-slate-900 dark:text-slate-100">No Brands Found</p>
+              <p class="text-xs max-w-sm mx-auto mt-1">No brands matched the filter criteria.</p>
             </div>
           </div>
         </div>
@@ -628,7 +594,7 @@ const statsRegistry = computed(() => {
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">
             Showing <span class="text-slate-800 dark:text-slate-200 font-black">{{ Math.min(filteredBrands.length, (currentPage - 1) * itemsPerPage + 1) }} - {{ Math.min(filteredBrands.length, currentPage * itemsPerPage) }}</span> 
-            of <span class="text-slate-800 dark:text-slate-200 font-black">{{ filteredBrands.length }}</span> registries.
+            of <span class="text-slate-800 dark:text-slate-200 font-black">{{ filteredBrands.length }}</span> brands.
           </p>
         </div>
 
@@ -668,17 +634,17 @@ const statsRegistry = computed(() => {
       </div>
     </div>
 
-    <!-- Paginated partner table (List View Mode) -->
+    <!-- Paginated brand table (List View Mode) -->
     <div v-else class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left">
           <thead>
             <tr class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 dark:border-slate-900">
-              <th class="px-8 py-5">Corporate Entity</th>
-              <th class="px-6 py-5">Registry Identification</th>
-              <th class="px-6 py-5">System status</th>
-              <th class="px-6 py-5">Order</th>
-              <th class="px-6 py-5">Production Mapped</th>
+              <th class="px-8 py-5">Brand</th>
+              <th class="px-6 py-5">Slug</th>
+              <th class="px-6 py-5">Status</th>
+              <th class="px-6 py-5">Display Order</th>
+              <th class="px-6 py-5">Products</th>
               <th class="px-8 py-5 text-right">Actions</th>
             </tr>
           </thead>
@@ -693,12 +659,12 @@ const statsRegistry = computed(() => {
                   </div>
                   <div>
                     <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors leading-tight">{{ brand.name }}</h4>
-                    <p class="text-xs text-slate-400 line-clamp-1 max-w-[280px] mt-0.5 italic leading-relaxed">"{{ brand.description || 'No database memo recorded.' }}"</p>
+                    <p class="text-xs text-slate-400 line-clamp-1 max-w-[280px] mt-0.5 leading-relaxed">{{ brand.description || 'No description recorded.' }}</p>
                   </div>
                 </div>
               </td>
 
-              <!-- Registry identification ID/Slug Column -->
+              <!-- Slug Column -->
               <td class="px-6 py-5">
                 <span class="font-mono text-xs text-slate-400 bg-slate-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 uppercase tracking-wider font-semibold">
                   {{ brand.slug }}
@@ -715,7 +681,7 @@ const statsRegistry = computed(() => {
                       : 'bg-slate-300 dark:bg-slate-700 ring-slate-300/10 dark:ring-slate-700/10'
                   )"></span>
                   <span class="text-[10px] uppercase font-bold tracking-widest" :class="brand.is_active !== false ? 'text-emerald-500' : 'text-slate-400'">
-                    {{ brand.is_active !== false ? 'Operational' : 'Suspended' }}
+                    {{ brand.is_active !== false ? 'Active' : 'Inactive' }}
                   </span>
                 </div>
               </td>
@@ -727,7 +693,7 @@ const statsRegistry = computed(() => {
                 </span>
               </td>
 
-              <!-- Production counts statistics Column -->
+              <!-- Products Column -->
               <td class="px-6 py-5">
                 <div class="flex items-center gap-2">
                   <Tag class="w-3.5 h-3.5 text-slate-300" />
@@ -741,15 +707,15 @@ const statsRegistry = computed(() => {
                   <button 
                     @click="openViewModal(brand)" 
                     class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                    title="Audit Technical Profile"
-                    aria-label="View brand profile"
+                    title="View Brand Details"
+                    aria-label="View brand details"
                   >
                     <Eye class="w-4 h-4" />
                   </button>
                   <button 
                     @click="openEditModal(brand)" 
                     class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                    title="Patch Registry Record"
+                    title="Edit Brand"
                     aria-label="Edit brand record"
                   >
                     <Edit2 class="w-4 h-4" />
@@ -757,7 +723,7 @@ const statsRegistry = computed(() => {
                   <button 
                     @click="handleDeleteBrand(brand)" 
                     class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                    title="Force Decommission Protocol"
+                    title="Delete Brand"
                     aria-label="Delete brand"
                   >
                     <Trash2 class="w-4 h-4" />
@@ -766,7 +732,7 @@ const statsRegistry = computed(() => {
               </td>
             </tr>
 
-            <!-- Empty vector list layout -->
+            <!-- Empty list layout -->
             <tr v-if="filteredBrands.length === 0">
               <td colspan="6" class="px-8 py-16 text-center h-64">
                 <div class="flex flex-col items-center justify-center gap-4 text-slate-400">
@@ -774,8 +740,8 @@ const statsRegistry = computed(() => {
                     <Search class="w-7 h-7 text-slate-300" />
                   </div>
                   <div>
-                    <p class="font-display font-medium text-lg text-slate-900 dark:text-slate-100">Zero Registries Found</p>
-                    <p class="text-xs max-w-sm mx-auto mt-1">No hardware partners matched the filter [{{ searchQuery || 'None' }}]. Extend the taxonomy index or verify parameters.</p>
+                    <p class="font-display font-medium text-lg text-slate-900 dark:text-slate-100">No Brands Found</p>
+                    <p class="text-xs max-w-sm mx-auto mt-1">No brands matched the filter criteria.</p>
                   </div>
                 </div>
               </td>
@@ -790,7 +756,7 @@ const statsRegistry = computed(() => {
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">
             Showing <span class="text-slate-800 dark:text-slate-200 font-black">{{ Math.min(filteredBrands.length, (currentPage - 1) * itemsPerPage + 1) }} - {{ Math.min(filteredBrands.length, currentPage * itemsPerPage) }}</span> 
-            of <span class="text-slate-800 dark:text-slate-200 font-black">{{ filteredBrands.length }}</span> registries.
+            of <span class="text-slate-800 dark:text-slate-200 font-black">{{ filteredBrands.length }}</span> brands.
           </p>
         </div>
 
@@ -984,8 +950,8 @@ const statsRegistry = computed(() => {
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
           <div>
-            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-amber-500">Authorized Admin Override</span>
-            <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Modify Partner Profile</h3>
+            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-amber-500">Admin Controls</span>
+            <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Edit Brand</h3>
           </div>
           <button type="button" @click="isEditModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
@@ -1003,7 +969,7 @@ const statsRegistry = computed(() => {
           <!-- Fields -->
           <div class="space-y-4">
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Partner Long Name</label>
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Brand Name</label>
               <input 
                 ref="editPartnerNameInput"
                 v-model="formPayload.name" 
@@ -1013,17 +979,16 @@ const statsRegistry = computed(() => {
             </div>
 
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Registry Code identifier (Slug/DNS)</label>
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Brand Slug</label>
               <input 
                 v-model="formPayload.slug" 
                 type="text" 
                 class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-semibold text-slate-950 dark:text-slate-50 font-mono"
               />
-              <p class="text-[10px] text-slate-400 ml-1 font-medium">Caution: Modifying DNS codes might interrupt visual product routers temporarily.</p>
             </div>
 
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Partner Operational Profile / Memo</label>
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Description</label>
               <textarea 
                 v-model="formPayload.description" 
                 rows="4" 
@@ -1032,7 +997,7 @@ const statsRegistry = computed(() => {
             </div>
 
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Display Sort Order Priority</label>
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Display Order</label>
               <input 
                 v-model="formPayload.display_order" 
                 type="number" 
@@ -1041,13 +1006,13 @@ const statsRegistry = computed(() => {
                 placeholder="e.g. 1" 
                 class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
               />
-              <p class="text-[10px] text-slate-400 ml-1">A positive integer determining the visual sequencing order of brands.</p>
+              <p class="text-[10px] text-slate-400 ml-1 font-medium">A positive integer determining the visual sequencing order of brands.</p>
             </div>
 
             <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
               <div>
-                <p class="text-xs font-bold font-display">Operational Priority Status</p>
-                <p class="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">Toggle catalog routing compliance</p>
+                <p class="text-xs font-bold font-display">Status (Active)</p>
+                <p class="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">Determine if this brand is visible in the catalog</p>
               </div>
               <button 
                 type="button" 
@@ -1083,7 +1048,7 @@ const statsRegistry = computed(() => {
             class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
           >
             <span v-if="isSubmitPending" class="animate-spin border-2 border-white/35 border-t-white rounded-full w-4 h-4 mr-1"></span>
-            {{ isSubmitPending ? 'Applying Overrides...' : 'Patch Partner Profile' }}
+            {{ isSubmitPending ? 'Saving...' : 'Save Changes' }}
           </button>
         </div>
       </form>
@@ -1096,8 +1061,8 @@ const statsRegistry = computed(() => {
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
           <div>
-            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Institutional Registry Viewer</span>
-            <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Partner Audit Card</h3>
+            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Brand Details</span>
+            <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">View Brand</h3>
           </div>
           <button @click="isViewModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
@@ -1120,7 +1085,7 @@ const statsRegistry = computed(() => {
                   selectedBrand.is_active !== false ? 'bg-emerald-500' : 'bg-slate-400'
                 )"></span>
                 <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400">
-                  {{ selectedBrand.is_active !== false ? 'Active Operational status' : 'Suspended' }}
+                  {{ selectedBrand.is_active !== false ? 'Active' : 'Inactive' }}
                 </span>
               </div>
             </div>
@@ -1128,28 +1093,22 @@ const statsRegistry = computed(() => {
 
           <!-- Technical Specs -->
           <div class="space-y-4">
-            <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Database Record Memo</p>
+            <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Description</p>
             <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium bg-slate-50/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-900 italic">
-              "{{ selectedBrand.description || 'No database memo recorded for this hardware partner.' }}"
+              {{ selectedBrand.description || 'No description available.' }}
             </p>
 
             <div class="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-900">
               <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Internal UUID</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Brand ID</span>
                 <span class="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">{{ selectedBrand.id }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Active Inventory Units</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Mapped Products</span>
                 <span class="text-xs font-mono font-extrabold text-slate-900 dark:text-white">{{ selectedBrand.productCount || 0 }} products</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Database Compliance Level</span>
-                <span class="text-xs font-mono font-bold text-emerald-500 flex items-center gap-1">
-                  <ShieldCheck class="w-3.5 h-3.5" /> SECURE MATCH
-                </span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Display Sequencer Order</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Display Order</span>
                 <span class="text-xs font-mono font-bold text-slate-900 dark:text-white">{{ selectedBrand.display_order || 'Unassigned' }}</span>
               </div>
             </div>
@@ -1162,7 +1121,7 @@ const statsRegistry = computed(() => {
             @click="isViewModalOpen = false" 
             class="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 px-6 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer"
           >
-            Acknowledge & Close
+            Close
           </button>
         </div>
       </div>
