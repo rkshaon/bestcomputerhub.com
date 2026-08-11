@@ -298,7 +298,6 @@ const handleCreateBrand = async () => {
       name: formPayload.value.name,
       slug: formPayload.value.slug,
       description: formPayload.value.description,
-      is_active: formPayload.value.is_active,
       display_order: parsedOrder,
       logo: selectedLogoFile.value
     });
@@ -838,8 +837,8 @@ const statsRegistry = computed(() => {
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
           <div>
-            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-primary">System Authentication Protocol</span>
-            <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Integrate Hardware Partner</h3>
+            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-primary">New Brand Partnership</span>
+            <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Add New Brand</h3>
           </div>
           <button type="button" @click="isCreateModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
@@ -857,26 +856,26 @@ const statsRegistry = computed(() => {
           <!-- Fields -->
           <div class="space-y-4">
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Partner Long Name</label>
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Brand Name</label>
               <input 
                 ref="partnerNameInput"
                 v-model="formPayload.name" 
                 @input="autoSlugify"
                 type="text" 
-                placeholder="e.g. NVIDIA Corporation" 
+                placeholder="e.g. Corsair" 
                 class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
               />
             </div>
 
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Registry Code identifier (Slug/DNS)</label>
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Brand Slug</label>
               <input 
                 v-model="formPayload.slug" 
                 type="text" 
-                placeholder="e.g. nvidia" 
+                placeholder="e.g. corsair" 
                 class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-semibold text-slate-950 dark:text-slate-50 font-mono"
               />
-              <p class="text-[10px] text-slate-400 ml-1">Unique alphanumeric router label. Hyphens allowed.</p>
+              <p class="text-[10px] text-slate-400 ml-1">Unique identifier. Alphanumeric characters and hyphens allowed.</p>
             </div>
 
             <!-- Logo Upload Field -->
@@ -933,17 +932,17 @@ const statsRegistry = computed(() => {
             </div>
 
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Partner Operational Profile / Memo</label>
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Description</label>
               <textarea 
                 v-model="formPayload.description" 
                 rows="4" 
-                placeholder="Detailed technical layout and partnership scope notes..." 
+                placeholder="e.g. High-performance gaming gear, PC components, and enthusiast equipment..." 
                 class="w-full p-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-medium leading-relaxed"
               ></textarea>
             </div>
 
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Display Sort Order Priority</label>
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Display Order</label>
               <input 
                 v-model="formPayload.display_order" 
                 type="number" 
@@ -953,28 +952,6 @@ const statsRegistry = computed(() => {
                 class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
               />
               <p class="text-[10px] text-slate-400 ml-1">A positive integer determining the visual sequencing order of brands.</p>
-            </div>
-
-            <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
-              <div>
-                <p class="text-xs font-bold">Operational Priority Status</p>
-                <p class="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">Toggle catalog routing compliance</p>
-              </div>
-              <button 
-                type="button" 
-                @click="formPayload.is_active = !formPayload.is_active"
-                :class="cn(
-                  'w-14 h-8 rounded-full p-1 transition-colors duration-300 pointer-events-auto',
-                  formPayload.is_active ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'
-                )"
-              >
-                <div :class="cn(
-                  'w-6 h-6 rounded-full bg-white transition-transform duration-300 shadow-sm flex items-center justify-center',
-                  formPayload.is_active ? 'translate-x-6' : 'translate-x-0'
-                )">
-                  <span class="text-[8px] font-black text-slate-900">{{ formPayload.is_active ? 'ON' : 'OFF' }}</span>
-                </div>
-              </button>
             </div>
           </div>
         </div>
@@ -994,7 +971,7 @@ const statsRegistry = computed(() => {
             class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
           >
             <span v-if="isSubmitPending" class="animate-spin border-2 border-white/35 border-t-white rounded-full w-4 h-4 mr-1"></span>
-            {{ isSubmitPending ? 'Saving Record...' : 'Publish Partner Profile' }}
+            {{ isSubmitPending ? 'Saving Record...' : 'Create Brand' }}
           </button>
         </div>
       </form>

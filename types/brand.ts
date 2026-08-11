@@ -17,7 +17,6 @@ export interface CreateBrandPayload {
   slug?: string;
   description?: string;
   display_order?: number;
-  is_active?: boolean;
 }
 
 export interface UpdateBrandPayload {

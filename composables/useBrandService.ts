@@ -316,7 +316,7 @@ export const useBrandService = () => {
         description: payload.description?.trim() || '',
         logo: logoUrl,
         productCount: 0,
-        is_active: payload.is_active !== undefined ? payload.is_active : true,
+        is_active: true,
         display_order: payload.display_order
       };
 
@@ -340,9 +340,6 @@ export const useBrandService = () => {
       }
       if (payload.logo instanceof File) {
         formData.append('logo', payload.logo);
-      }
-      if (payload.is_active !== undefined) {
-        formData.append('is_active', payload.is_active ? 'true' : 'false');
       }
 
       const data = await apiClient.request<Brand>('/api/v1/brands/', {
