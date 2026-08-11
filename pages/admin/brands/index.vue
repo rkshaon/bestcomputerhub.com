@@ -19,12 +19,14 @@ import {
   AlertCircle,
   Clock,
   RotateCcw,
-  Flag
+  Flag,
+  RefreshCw
 } from 'lucide-vue-next';
 import { useBrandService } from '@/composables/useBrandService';
 import { cn } from '@/utils';
 import type { Brand } from '@/types';
 import { toastSuccess, toastError, toastInfo, extractErrorMessage } from '@/composables/useToast';
+import Button from '@/components/ui/Button.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -37,6 +39,7 @@ const router = useRouter();
 
 // State vectors initialized from URL query parameters
 const brandsList = ref<Brand[]>([]);
+const isLoading = ref(false);
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const statusFilter = ref<'all' | 'active' | 'inactive'>((route.query.status as 'all' | 'active' | 'inactive') || 'all');
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
@@ -93,6 +96,7 @@ const triggerToast = (message: string, type: 'success' | 'error' | 'info' = 'suc
 
 // Data integration lifecycles
 const fetchRegistry = async () => {
+  isLoading.value = true;
   try {
     const list = await brandService.getBrandsList();
     // Default the is_active if undefined
@@ -102,6 +106,8 @@ const fetchRegistry = async () => {
     }));
   } catch (error: any) {
     triggerToast(error.message || 'System error on catalog polling.', 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -331,6 +337,16 @@ const statsRegistry = computed(() => {
         <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium">Configure corporate hardware suppliers and technical entities.</p>
       </div>
       <div class="flex items-center gap-3">
+        <Button 
+          variant="outline" 
+          class="rounded-2xl h-11 px-5 gap-2 border-border font-bold text-xs"
+          @click="fetchRegistry"
+          :disabled="isLoading"
+        >
+          <RefreshCw :class="['w-4 h-4', isLoading && 'animate-spin']" />
+          <span>Refresh</span>
+        </Button>
+
         <button 
           @click="openCreateModal"
           class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
