@@ -33,6 +33,7 @@ import { toastSuccess, toastError, toastInfo, extractErrorMessage } from '@/comp
 import Button from '@/components/ui/Button.vue';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
+import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -414,26 +415,24 @@ const executeDeleteBrand = async () => {
     </div>
 
     <!-- Filters framework -->
-    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-4 flex flex-wrap items-center gap-4 shadow-sm">
-      <div class="flex-1 min-w-[280px]">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border p-4 rounded-2xl shadow-sm">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
         <UiSearchInput 
           v-model="searchQuery" 
           placeholder="Search brands..." 
-          class="border-none bg-transparent"
+          class="w-full sm:w-80"
         />
-      </div>
-      
-      <div class="flex items-center gap-3">
+        
         <!-- View Toggle Buttons -->
-        <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-xl border border-border/80">
           <button
             type="button"
             @click="viewMode = 'grid'"
             :class="[
-              'p-2 rounded-lg transition-all flex items-center justify-center cursor-pointer',
+              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'grid'
-                ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
-                : 'text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-background text-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             ]"
             title="Grid View"
             aria-label="Grid view"
@@ -444,10 +443,10 @@ const executeDeleteBrand = async () => {
             type="button"
             @click="viewMode = 'list'"
             :class="[
-              'p-2 rounded-lg transition-all flex items-center justify-center cursor-pointer',
+              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'list'
-                ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
-                : 'text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-background text-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             ]"
             title="List View"
             aria-label="List view"
@@ -455,18 +454,18 @@ const executeDeleteBrand = async () => {
             <List class="w-4 h-4" />
           </button>
         </div>
+      </div>
 
-        <div class="flex items-center gap-2 pr-2 border-l border-slate-100 dark:border-slate-900 pl-4">
-          <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Status:</span>
-          <select 
-            v-model="statusFilter"
-            class="h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer"
-          >
-            <option value="all">All</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
+      <div class="flex items-center gap-2 self-end sm:self-center border-l border-border pl-4">
+        <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Status:</span>
+        <select 
+          v-model="statusFilter"
+          class="h-10 px-3 bg-background border border-input rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
+        >
+          <option value="all">All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
       </div>
     </div>
 

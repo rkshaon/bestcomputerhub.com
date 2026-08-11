@@ -23,6 +23,7 @@ import { useAdminModalState } from '@/composables/useAdminModalState';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
+import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 import RoleFormModal from '@/components/admin/RoleFormModal.vue';
 import type { Role } from '@/types';
 
@@ -156,26 +157,13 @@ const filteredRoles = computed(() => {
     </div>
 
     <!-- Search & Metric Bar -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border p-4 rounded-3xl shadow-sm">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border p-4 rounded-2xl shadow-sm">
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-        <div class="relative w-full sm:w-80">
-          <Search class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input 
-            v-model="searchQuery" 
-            type="text"
-            placeholder="Search roles by title or permission..."
-            class="w-full h-11 pl-10 pr-4 rounded-2xl border border-border bg-background text-foreground text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
-          <button 
-            v-if="searchQuery"
-            @click="searchQuery = ''"
-            class="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            title="Clear search"
-            aria-label="Clear search"
-          >
-            <X class="w-4 h-4" />
-          </button>
-        </div>
+        <UiSearchInput 
+          v-model="searchQuery" 
+          placeholder="Search roles by title or permission..."
+          class="w-full sm:w-80"
+        />
 
         <!-- View Toggle Buttons -->
         <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-xl border border-border/80">
@@ -183,9 +171,9 @@ const filteredRoles = computed(() => {
             type="button"
             @click="viewMode = 'grid'"
             :class="[
-              'p-1.5 rounded-lg transition-all flex items-center justify-center',
+              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'grid'
-                ? 'bg-background text-primary shadow-sm border border-border/10'
+                ? 'bg-background text-primary shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             ]"
             title="Grid View"
@@ -197,9 +185,9 @@ const filteredRoles = computed(() => {
             type="button"
             @click="viewMode = 'list'"
             :class="[
-              'p-1.5 rounded-lg transition-all flex items-center justify-center',
+              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'list'
-                ? 'bg-background text-primary shadow-sm border border-border/10'
+                ? 'bg-background text-primary shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             ]"
             title="List View"

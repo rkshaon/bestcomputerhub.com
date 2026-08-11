@@ -28,6 +28,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
+import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 import Button from '@/components/ui/Button.vue';
 import UserFormModal from '@/components/admin/UserFormModal.vue';
 import type { UserItem, UserGroup, Role } from '@/types';
@@ -213,16 +214,11 @@ const getUserGroupNames = (user: UserItem): string[] => {
     <!-- Search & Filter Bar -->
     <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border p-4 rounded-2xl shadow-sm">
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-        <div class="relative w-full sm:w-80">
-          <Search class="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input 
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search by name, email, or username..."
-            @keyup.enter="handleSearch"
-            class="w-full pl-10 pr-4 py-2 rounded-xl bg-background border border-input text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
-        </div>
+        <UiSearchInput 
+          v-model="searchQuery"
+          placeholder="Search by name, email, or username..."
+          class="w-full sm:w-80"
+        />
         
         <!-- View Toggle Buttons -->
         <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-xl border border-border/80">
@@ -230,7 +226,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
             type="button"
             @click="viewMode = 'grid'"
             :class="[
-              'p-1.5 rounded-lg transition-all flex items-center justify-center',
+              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'grid'
                 ? 'bg-background text-primary shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -244,7 +240,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
             type="button"
             @click="viewMode = 'list'"
             :class="[
-              'p-1.5 rounded-lg transition-all flex items-center justify-center',
+              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'list'
                 ? 'bg-background text-primary shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
