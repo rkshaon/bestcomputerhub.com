@@ -31,6 +31,8 @@ import { cn } from '@/utils';
 import type { Brand } from '@/types';
 import { toastSuccess, toastError, toastInfo, extractErrorMessage } from '@/composables/useToast';
 import Button from '@/components/ui/Button.vue';
+import { useAdminModalState } from '@/composables/useAdminModalState';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -50,19 +52,26 @@ const statusFilter = ref<'all' | 'active' | 'inactive'>((route.query.status as '
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 5 : 5);
 const viewMode = ref<'grid' | 'list'>('list');
-const selectedBrand = ref<Brand | null>(null);
-
-// Overlay controls
-const isCreateModalOpen = ref(false);
-const isEditModalOpen = ref(false);
-const isViewModalOpen = ref(false);
 const isSubmitPending = ref(false);
+
+// Reusable URL-driven modal state infrastructure
+const modalState = useAdminModalState<Brand>({
+  getItems: async (id) => {
+    return await brandService.getBrandDetails(id);
+  },
+  onResolveError: (id) => {
+    toastError(`Brand #${id} could not be resolved.`);
+    modalState.closeModal({ replace: true });
+  }
+});
+
+const selectedBrand = computed(() => modalState.activeEntity.value);
 
 // Focus input references
 const partnerNameInput = ref<HTMLInputElement | null>(null);
 const editPartnerNameInput = ref<HTMLInputElement | null>(null);
 
-watch(isCreateModalOpen, (newValue) => {
+watch(() => modalState.isCreate.value, (newValue) => {
   if (newValue) {
     nextTick(() => {
       partnerNameInput.value?.focus();
@@ -70,7 +79,7 @@ watch(isCreateModalOpen, (newValue) => {
   }
 });
 
-watch(isEditModalOpen, (newValue) => {
+watch(() => modalState.isEdit.value, (newValue) => {
   if (newValue) {
     nextTick(() => {
       editPartnerNameInput.value?.focus();
@@ -87,6 +96,30 @@ const formPayload = ref({
   description: '',
   is_active: true,
   display_order: 1
+});
+
+watch(() => modalState.activeEntity.value, (newBrand) => {
+  if (newBrand && modalState.isEdit.value) {
+    formPayload.value = {
+      id: String(newBrand.id),
+      name: newBrand.name,
+      slug: newBrand.slug,
+      description: newBrand.description || '',
+      is_active: newBrand.is_active !== false,
+      display_order: newBrand.display_order !== undefined ? newBrand.display_order : 1
+    };
+    formError.value = null;
+    selectedLogoFile.value = null;
+    logoPreviewUrl.value = newBrand.logo || null;
+  }
+}, { immediate: true });
+
+watch(() => modalState.isCreate.value, (isCr) => {
+  if (isCr) {
+    formPayload.value = { id: '', name: '', slug: '', description: '', is_active: true, display_order: 1 };
+    formError.value = null;
+    removeSelectedLogo();
+  }
 });
 
 // Logo file state for creation
@@ -239,7 +272,7 @@ watch(() => route.query, (newQuery) => {
 
 // Form Helpers: Auto slug generator
 const autoSlugify = () => {
-  if (isCreateModalOpen.value) {
+  if (modalState.isCreate.value) {
     formPayload.value.slug = formPayload.value.name
       .toLowerCase()
       .trim()
@@ -247,34 +280,6 @@ const autoSlugify = () => {
       .replace(/[\s_]+/g, '-') // Replace spaces/underscores with hyphen
       .replace(/^-+|-+$/g, ''); // Trim leading/trailing hyphens
   }
-};
-
-// Modal trigger utilities
-const openCreateModal = () => {
-  formPayload.value = { id: '', name: '', slug: '', description: '', is_active: true, display_order: 1 };
-  formError.value = null;
-  removeSelectedLogo();
-  isCreateModalOpen.value = true;
-};
-
-const openEditModal = (brand: Brand) => {
-  formPayload.value = {
-    id: String(brand.id),
-    name: brand.name,
-    slug: brand.slug,
-    description: brand.description || '',
-    is_active: brand.is_active !== false,
-    display_order: brand.display_order !== undefined ? brand.display_order : 1
-  };
-  formError.value = null;
-  selectedLogoFile.value = null;
-  logoPreviewUrl.value = brand.logo || null;
-  isEditModalOpen.value = true;
-};
-
-const openViewModal = (brand: Brand) => {
-  selectedBrand.value = brand;
-  isViewModalOpen.value = true;
 };
 
 // Save operations
@@ -306,7 +311,7 @@ const handleCreateBrand = async () => {
     });
     
     removeSelectedLogo();
-    isCreateModalOpen.value = false;
+    modalState.closeModal();
     triggerToast(`Partner [${formPayload.value.name}] initialized successfully.`);
     await fetchRegistry();
   } catch (err: any) {
@@ -345,7 +350,7 @@ const handleUpdateBrand = async () => {
       logo: selectedLogoFile.value === null && logoPreviewUrl.value === null ? null : selectedLogoFile.value
     });
 
-    isEditModalOpen.value = false;
+    modalState.closeModal();
     removeSelectedLogo();
     triggerToast(`Brand [${formPayload.value.name}] updated successfully.`);
     await fetchRegistry();
@@ -358,21 +363,23 @@ const handleUpdateBrand = async () => {
   }
 };
 
-// File: /pages/admin/brands/index.vue
-const handleDeleteBrand = async (brand: Brand) => {
-  const confirmMsg = `Are you sure you want to delete the brand [${brand.name}]? All mapped products will remain, but their brand link will be removed.`;
-  if (confirm(confirmMsg)) {
-    try {
-      await brandService.deleteBrand(brand.id);
-      triggerToast(`Brand [${brand.name}] has been successfully deleted.`, 'info');
-      await fetchRegistry();
-      if (currentPage.value > totalPages.value) {
-        currentPage.value = Math.max(1, totalPages.value);
-      }
-    } catch (err: any) {
-      const msg = extractErrorMessage(err, 'Delete action failed.');
-      triggerToast(msg, 'error');
+const executeDeleteBrand = async () => {
+  const brand = modalState.activeEntity.value;
+  if (!brand) return;
+  isSubmitPending.value = true;
+  try {
+    await brandService.deleteBrand(brand.id);
+    triggerToast(`Brand [${brand.name}] has been successfully deleted.`, 'info');
+    await fetchRegistry();
+    if (currentPage.value > totalPages.value) {
+      currentPage.value = Math.max(1, totalPages.value);
     }
+    modalState.closeModal();
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Delete action failed.');
+    triggerToast(msg, 'error');
+  } finally {
+    isSubmitPending.value = false;
   }
 };
 </script>
@@ -398,7 +405,7 @@ const handleDeleteBrand = async (brand: Brand) => {
         </Button>
 
         <button 
-          @click="openCreateModal"
+          @click="modalState.openCreate()"
           class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
         >
           <Plus class="w-4 h-4" /> Add Brand
@@ -551,7 +558,7 @@ const handleDeleteBrand = async (brand: Brand) => {
 
             <div class="flex items-center gap-1">
               <button 
-                @click="openViewModal(brand)" 
+                @click="modalState.openView(brand.id)" 
                 class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                 title="View Brand Details"
                 aria-label="View brand details"
@@ -559,7 +566,7 @@ const handleDeleteBrand = async (brand: Brand) => {
                 <Eye class="w-4 h-4" />
               </button>
               <button 
-                @click="openEditModal(brand)" 
+                @click="modalState.openEdit(brand.id)" 
                 class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                 title="Edit Brand"
                 aria-label="Edit brand record"
@@ -567,7 +574,7 @@ const handleDeleteBrand = async (brand: Brand) => {
                 <Edit2 class="w-4 h-4" />
               </button>
               <button 
-                @click="handleDeleteBrand(brand)" 
+                @click="modalState.openDelete(brand.id)" 
                 class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                 title="Delete Brand"
                 aria-label="Delete brand"
@@ -709,7 +716,7 @@ const handleDeleteBrand = async (brand: Brand) => {
               <td class="px-8 py-5 text-right">
                 <div class="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                   <button 
-                    @click="openViewModal(brand)" 
+                    @click="modalState.openView(brand.id)" 
                     class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                     title="View Brand Details"
                     aria-label="View brand details"
@@ -717,7 +724,7 @@ const handleDeleteBrand = async (brand: Brand) => {
                     <Eye class="w-4 h-4" />
                   </button>
                   <button 
-                    @click="openEditModal(brand)" 
+                    @click="modalState.openEdit(brand.id)" 
                     class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                     title="Edit Brand"
                     aria-label="Edit brand record"
@@ -725,7 +732,7 @@ const handleDeleteBrand = async (brand: Brand) => {
                     <Edit2 class="w-4 h-4" />
                   </button>
                   <button 
-                    @click="handleDeleteBrand(brand)" 
+                    @click="modalState.openDelete(brand.id)" 
                     class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
                     title="Delete Brand"
                     aria-label="Delete brand"
@@ -801,8 +808,8 @@ const handleDeleteBrand = async (brand: Brand) => {
     </div>
 
     <!-- MODAL 1: Create New Partner -->
-    <div v-if="isCreateModalOpen" @click.self="isCreateModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
-      <form @submit.prevent="handleCreateBrand" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
+    <UiAdminModal :is-open="modalState.isCreate.value" max-width="max-w-xl" :show-close-button="false" @close="modalState.closeModal">
+      <form @submit.prevent="handleCreateBrand" class="w-full relative overflow-hidden flex flex-col cursor-default">
         
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
@@ -810,7 +817,7 @@ const handleDeleteBrand = async (brand: Brand) => {
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-primary">New Brand Partnership</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Add New Brand</h3>
           </div>
-          <button type="button" @click="isCreateModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button type="button" @click="modalState.closeModal()" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -930,7 +937,7 @@ const handleDeleteBrand = async (brand: Brand) => {
         <div class="p-8 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50">
           <button 
             type="button"
-            @click="isCreateModalOpen = false" 
+            @click="modalState.closeModal()" 
             class="px-5 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
             Cancel
@@ -945,11 +952,11 @@ const handleDeleteBrand = async (brand: Brand) => {
           </button>
         </div>
       </form>
-    </div>
+    </UiAdminModal>
 
     <!-- MODAL 2: Edit Brand Details -->
-    <div v-if="isEditModalOpen" @click.self="isEditModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
-      <form @submit.prevent="handleUpdateBrand" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
+    <UiAdminModal :is-open="modalState.isEdit.value" max-width="max-w-xl" :show-close-button="false" @close="modalState.closeModal">
+      <form @submit.prevent="handleUpdateBrand" class="w-full relative overflow-hidden flex flex-col cursor-default">
         
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
@@ -957,7 +964,7 @@ const handleDeleteBrand = async (brand: Brand) => {
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-amber-500">Admin Controls</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Edit Brand</h3>
           </div>
-          <button type="button" @click="isEditModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button type="button" @click="modalState.closeModal()" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -988,7 +995,7 @@ const handleDeleteBrand = async (brand: Brand) => {
                 v-model="formPayload.slug" 
                 type="text" 
                 readonly
-                class="w-full h-14 px-5 bg-slate-100 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none text-sm font-semibold text-slate-400 dark:text-slate-500 font-mono cursor-not-allowed"
+                class="w-full h-14 px-5 bg-slate-100 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none text-sm font-semibold text-slate-400 dark:text-slate-505 font-mono cursor-not-allowed"
               />
             </div>
 
@@ -1003,10 +1010,10 @@ const handleDeleteBrand = async (brand: Brand) => {
                   'border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center transition-all cursor-pointer text-center space-y-2 min-h-[120px]',
                   isLogoDragActive ? 'border-primary bg-primary/5' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
                 )"
-                @click="editLogoFileInput?.click()"
+                @click="logoFileInput?.click()"
               >
                 <input 
-                  ref="editLogoFileInput"
+                  ref="logoFileInput"
                   type="file" 
                   accept="image/*"
                   class="hidden" 
@@ -1076,7 +1083,7 @@ const handleDeleteBrand = async (brand: Brand) => {
         <div class="p-8 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50">
           <button 
             type="button"
-            @click="isEditModalOpen = false" 
+            @click="modalState.closeModal()" 
             class="px-5 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
             Cancel
@@ -1091,11 +1098,11 @@ const handleDeleteBrand = async (brand: Brand) => {
           </button>
         </div>
       </form>
-    </div>
+    </UiAdminModal>
 
     <!-- MODAL 3: Read-Only Audit Profile (Details View) -->
-    <div v-if="isViewModalOpen && selectedBrand" @click.self="isViewModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
-      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-lg shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
+    <UiAdminModal :is-open="modalState.isView.value && !!selectedBrand" max-width="max-w-lg" :show-close-button="false" @close="modalState.closeModal">
+      <div v-if="selectedBrand" class="w-full relative overflow-hidden flex flex-col cursor-default">
         
         <!-- Header Banner -->
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
@@ -1103,7 +1110,7 @@ const handleDeleteBrand = async (brand: Brand) => {
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Brand Details</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">View Brand</h3>
           </div>
-          <button @click="isViewModalOpen = false" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button @click="modalState.closeModal()" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -1157,14 +1164,56 @@ const handleDeleteBrand = async (brand: Brand) => {
         <!-- Footer Control -->
         <div class="p-8 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end bg-slate-50/50 dark:bg-slate-900/50">
           <button 
-            @click="isViewModalOpen = false" 
+            @click="modalState.closeModal()" 
             class="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 px-6 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer"
           >
             Close
           </button>
         </div>
       </div>
-    </div>
+    </UiAdminModal>
+
+    <!-- Delete Confirmation Modal -->
+    <UiAdminModal 
+      :is-open="modalState.isDelete.value && !!modalState.activeEntity.value"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="modalState.closeModal()"
+    >
+      <div class="p-6 space-y-6">
+        <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold text-foreground">Confirm Brand Deletion</h3>
+          <p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            Are you sure you want to delete the brand <span class="font-bold text-foreground">"{{ modalState.activeEntity.value?.name }}"</span>? All mapped products will remain, but their brand link will be removed.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button 
+            type="button"
+            class="px-5 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            @click="modalState.closeModal()"
+            :disabled="isSubmitPending"
+          >
+            Cancel
+          </button>
+
+          <button 
+            type="button"
+            class="px-6 py-3 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-500 hover:bg-rose-600/90 gap-2 transition-all cursor-pointer flex items-center"
+            @click="executeDeleteBrand"
+            :disabled="isSubmitPending"
+          >
+            <span v-if="isSubmitPending" class="animate-spin border-2 border-white/35 border-t-white rounded-full w-4 h-4 mr-1"></span>
+            <span>Delete Brand</span>
+          </button>
+        </div>
+      </div>
+    </UiAdminModal>
 
   </div>
 </template>
