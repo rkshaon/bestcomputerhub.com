@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
 import { extractErrorMessage } from './useToast';
-import type { Brand, PaginatedResponse } from '@/types';
+import type { Brand, CreateBrandPayload, PaginatedResponse } from '@/types';
 
 const BRANDS_STORAGE_KEY = 'techcore_mock_brands_registry';
 
@@ -253,7 +253,7 @@ export const useBrandService = () => {
   };
 
   // 2. Fetch Brand Details
-  const getBrandDetails = async (id: string): Promise<Brand | null> => {
+  const getBrandDetails = async (id: string | number): Promise<Brand | null> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -261,7 +261,7 @@ export const useBrandService = () => {
       await new Promise(resolve => setTimeout(resolve, 400));
       isLoading.value = false;
       const brandsList = getMockBrands();
-      return brandsList.find(b => b.id === id) || null;
+      return brandsList.find(b => String(b.id) === String(id)) || null;
     }
 
     try {
@@ -274,24 +274,18 @@ export const useBrandService = () => {
       errorMsg.value = err.data?.message || err.message || 'Failed to retrieve brand audit.';
       isLoading.value = false;
       // Fallback
-      return getMockBrands().find(b => b.id === id) || null;
+      return getMockBrands().find(b => String(b.id) === String(id)) || null;
     }
   };
 
   // 3. Create Brand
-  const createBrand = async (payload: { name: string; slug: string; description: string; is_active: boolean; display_order?: number }): Promise<Brand> => {
+  const createBrand = async (payload: CreateBrandPayload): Promise<Brand> => {
     isLoading.value = true;
     errorMsg.value = null;
 
     // Standard business validations
     if (!payload.name?.trim()) {
       const err = new Error('Brand name is required');
-      errorMsg.value = err.message;
-      isLoading.value = false;
-      throw err;
-    }
-    if (!payload.slug?.trim()) {
-      const err = new Error('Brand slug identifier is required');
       errorMsg.value = err.message;
       isLoading.value = false;
       throw err;
@@ -304,20 +298,25 @@ export const useBrandService = () => {
       const brandsList = getMockBrands();
       
       // Slug uniqueness checker
-      if (brandsList.some(b => b.slug.toLowerCase() === payload.slug.toLowerCase())) {
+      if (payload.slug?.trim() && brandsList.some(b => b.slug.toLowerCase() === payload.slug!.trim().toLowerCase())) {
         const err = new Error(`Protocol Violation: Brand slug "${payload.slug}" is already registered.`);
         errorMsg.value = err.message;
         throw err;
       }
 
+      let logoUrl = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80';
+      if (payload.logo && payload.logo instanceof File && typeof window !== 'undefined') {
+        logoUrl = URL.createObjectURL(payload.logo);
+      }
+
       const newBrand: Brand = {
         id: 'brand_' + Math.floor(Math.random() * 1000000),
         name: payload.name.trim(),
-        slug: payload.slug.trim().toLowerCase(),
+        slug: payload.slug?.trim().toLowerCase() || payload.name.trim().toLowerCase().replace(/\s+/g, '-'),
         description: payload.description?.trim() || '',
-        logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80', // Default modern container placeholder logo
+        logo: logoUrl,
         productCount: 0,
-        is_active: payload.is_active,
+        is_active: payload.is_active !== undefined ? payload.is_active : true,
         display_order: payload.display_order
       };
 
@@ -327,9 +326,28 @@ export const useBrandService = () => {
     }
 
     try {
+      const formData = new FormData();
+      formData.append('name', payload.name.trim());
+
+      if (payload.slug?.trim()) {
+        formData.append('slug', payload.slug.trim());
+      }
+      if (payload.description?.trim()) {
+        formData.append('description', payload.description.trim());
+      }
+      if (payload.display_order !== undefined && payload.display_order !== null) {
+        formData.append('display_order', payload.display_order.toString());
+      }
+      if (payload.logo instanceof File) {
+        formData.append('logo', payload.logo);
+      }
+      if (payload.is_active !== undefined) {
+        formData.append('is_active', payload.is_active ? 'true' : 'false');
+      }
+
       const data = await apiClient.request<Brand>('/api/v1/brands/', {
         method: 'POST',
-        body: payload
+        body: formData
       });
       isLoading.value = false;
       return data;
@@ -341,7 +359,7 @@ export const useBrandService = () => {
   };
 
   // 4. Edit Brand
-  const updateBrand = async (id: string, payload: { name: string; slug: string; description: string; is_active: boolean; display_order?: number }): Promise<Brand> => {
+  const updateBrand = async (id: string | number, payload: { name: string; slug: string; description: string; is_active: boolean; display_order?: number }): Promise<Brand> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -408,7 +426,7 @@ export const useBrandService = () => {
   };
 
   // 5. Delete Brand
-  const deleteBrand = async (id: string): Promise<boolean> => {
+  const deleteBrand = async (id: string | number): Promise<boolean> => {
     isLoading.value = true;
     errorMsg.value = null;
 

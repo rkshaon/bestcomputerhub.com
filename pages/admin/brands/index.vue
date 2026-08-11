@@ -22,7 +22,8 @@ import {
   Flag,
   RefreshCw,
   LayoutGrid,
-  List
+  List,
+  Upload
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useBrandService } from '@/composables/useBrandService';
@@ -87,6 +88,54 @@ const formPayload = ref({
   is_active: true,
   display_order: 1
 });
+
+// Logo file state for creation
+const selectedLogoFile = ref<File | null>(null);
+const logoPreviewUrl = ref<string | null>(null);
+const isLogoDragActive = ref(false);
+const logoFileInput = ref<HTMLInputElement | null>(null);
+
+const setLogoFile = (file: File) => {
+  if (!file.type.startsWith('image/')) {
+    formError.value = 'Selected file must be an image (PNG, JPG, WEBP, SVG, etc.).';
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    formError.value = 'Logo image file size must not exceed 5MB.';
+    return;
+  }
+  formError.value = null;
+  selectedLogoFile.value = file;
+  if (logoPreviewUrl.value && logoPreviewUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(logoPreviewUrl.value);
+  }
+  logoPreviewUrl.value = URL.createObjectURL(file);
+};
+
+const handleLogoFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files[0]) {
+    setLogoFile(target.files[0]);
+  }
+};
+
+const handleLogoDrop = (event: DragEvent) => {
+  isLogoDragActive.value = false;
+  if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
+    setLogoFile(event.dataTransfer.files[0]);
+  }
+};
+
+const removeSelectedLogo = () => {
+  selectedLogoFile.value = null;
+  if (logoPreviewUrl.value && logoPreviewUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(logoPreviewUrl.value);
+  }
+  logoPreviewUrl.value = null;
+  if (logoFileInput.value) {
+    logoFileInput.value.value = '';
+  }
+};
 
 // Toast notification broker using global vue-sonner
 const triggerToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -203,12 +252,13 @@ const autoSlugify = () => {
 const openCreateModal = () => {
   formPayload.value = { id: '', name: '', slug: '', description: '', is_active: true, display_order: 1 };
   formError.value = null;
+  removeSelectedLogo();
   isCreateModalOpen.value = true;
 };
 
 const openEditModal = (brand: Brand) => {
   formPayload.value = {
-    id: brand.id,
+    id: String(brand.id),
     name: brand.name,
     slug: brand.slug,
     description: brand.description || '',
@@ -249,9 +299,11 @@ const handleCreateBrand = async () => {
       slug: formPayload.value.slug,
       description: formPayload.value.description,
       is_active: formPayload.value.is_active,
-      display_order: parsedOrder
+      display_order: parsedOrder,
+      logo: selectedLogoFile.value
     });
     
+    removeSelectedLogo();
     isCreateModalOpen.value = false;
     triggerToast(`Partner [${formPayload.value.name}] initialized successfully.`);
     await fetchRegistry();
@@ -324,7 +376,7 @@ const handleDeleteBrand = async (brand: Brand) => {
 const statsRegistry = computed(() => {
   const total = brandsList.value.length;
   const activeCount = brandsList.value.filter(b => b.is_active !== false).length;
-  const highPriority = brandsList.value.filter(b => b.productCount > 80).length;
+  const highPriority = brandsList.value.filter(b => (b.productCount ?? 0) > 80).length;
 
   return [
     { label: 'Registered Brands', value: total, icon: Flag, color: 'bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400' },
@@ -825,6 +877,59 @@ const statsRegistry = computed(() => {
                 class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-semibold text-slate-950 dark:text-slate-50 font-mono"
               />
               <p class="text-[10px] text-slate-400 ml-1">Unique alphanumeric router label. Hyphens allowed.</p>
+            </div>
+
+            <!-- Logo Upload Field -->
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Brand Logo (Optional Image)</label>
+              <div 
+                @dragover.prevent="isLogoDragActive = true"
+                @dragleave.prevent="isLogoDragActive = false"
+                @drop.prevent="handleLogoDrop"
+                :class="cn(
+                  'border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center transition-all cursor-pointer text-center space-y-2 min-h-[120px]',
+                  isLogoDragActive ? 'border-primary bg-primary/5' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
+                )"
+                @click="logoFileInput?.click()"
+              >
+                <input 
+                  ref="logoFileInput"
+                  type="file" 
+                  accept="image/*"
+                  class="hidden" 
+                  @change="handleLogoFileSelect" 
+                />
+
+                <div v-if="selectedLogoFile && logoPreviewUrl" class="flex items-center gap-4 w-full p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div class="w-12 h-12 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50 dark:bg-slate-950 flex items-center justify-center shrink-0">
+                    <img :src="logoPreviewUrl" alt="Logo Preview" class="w-full h-full object-contain p-1" />
+                  </div>
+                  <div class="flex-1 text-left min-w-0">
+                    <p class="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{{ selectedLogoFile.name }}</p>
+                    <p class="text-[10px] text-slate-400 font-mono">{{ (selectedLogoFile.size / 1024).toFixed(1) }} KB</p>
+                  </div>
+                  <button 
+                    type="button" 
+                    @click.stop="removeSelectedLogo" 
+                    class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    title="Remove logo"
+                  >
+                    <X class="w-4 h-4" />
+                  </button>
+                </div>
+
+                <template v-else>
+                  <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                    <Upload class="w-5 h-5" />
+                  </div>
+                  <div class="space-y-0.5">
+                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Drag & drop logo image, or <span class="text-primary hover:underline">browse files</span>
+                    </p>
+                    <p class="text-[10px] text-slate-400 font-mono">PNG, JPG, WEBP, SVG up to 5MB</p>
+                  </div>
+                </template>
+              </div>
             </div>
 
             <div class="space-y-2">
