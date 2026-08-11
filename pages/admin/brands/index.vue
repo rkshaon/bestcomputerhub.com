@@ -470,20 +470,20 @@ const executeDeleteBrand = async () => {
     </div>
 
     <!-- Loading, Empty, Error status layout handlers -->
-    <div v-if="brandService.isLoading.value" class="h-64 flex flex-col items-center justify-center gap-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem]">
+    <div v-if="brandService.isLoading.value" class="h-64 flex flex-col items-center justify-center gap-3 bg-card border border-border rounded-2xl">
       <span class="animate-spin border-4 border-primary/20 border-t-primary rounded-full w-10 h-10"></span>
-      <p class="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Querying Database Registry...</p>
+      <p class="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Querying Database Registry...</p>
     </div>
 
-    <div v-else-if="brandService.errorMsg.value" class="h-64 flex flex-col items-center justify-center gap-4 p-6 text-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem]">
-      <div class="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-950/30 text-rose-600 flex items-center justify-center">
+    <div v-else-if="brandService.errorMsg.value" class="h-64 flex flex-col items-center justify-center gap-4 p-6 text-center bg-card border border-border rounded-2xl">
+      <div class="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center">
         <AlertCircle class="w-6 h-6" />
       </div>
       <div>
-        <p class="text-lg font-bold">Network Integration Malfunction</p>
-        <p class="text-xs text-slate-400 max-w-md mx-auto mt-1">{{ brandService.errorMsg.value }}</p>
+        <p class="text-lg font-bold text-foreground">Network Integration Malfunction</p>
+        <p class="text-xs text-muted-foreground max-w-md mx-auto mt-1">{{ brandService.errorMsg.value }}</p>
       </div>
-      <button @click="fetchRegistry" class="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 text-xs px-4 py-2 rounded-xl font-bold hover:opacity-90">
+      <button @click="fetchRegistry" class="bg-primary text-primary-foreground text-xs px-4 py-2 rounded-xl font-bold hover:opacity-90">
         Re-verify Connection
       </button>
     </div>
@@ -494,12 +494,12 @@ const executeDeleteBrand = async () => {
         <div 
           v-for="brand in paginatedBrands" 
           :key="brand.id"
-          class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+          class="bg-card text-card-foreground border border-border rounded-2xl p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
         >
           <div class="space-y-4">
             <!-- Brand Logo & Status -->
             <div class="flex items-start justify-between gap-4">
-              <div class="w-14 h-14 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-center p-2 shadow-sm overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300">
+              <div class="w-14 h-14 bg-background border border-border rounded-xl flex items-center justify-center p-2 shadow-sm overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300">
                 <img 
                   :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
                   :alt="brand.name" 
@@ -507,14 +507,14 @@ const executeDeleteBrand = async () => {
                 />
               </div>
 
-              <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-800">
+              <div class="flex items-center gap-2 bg-muted/50 px-3 py-1 rounded-full border border-border/60">
                 <span :class="cn(
                   'w-2 h-2 rounded-full ring-4',
                   brand.is_active !== false 
                     ? 'bg-emerald-500 ring-emerald-500/10' 
-                    : 'bg-slate-300 dark:bg-slate-700 ring-slate-300/10 dark:ring-slate-700/10'
+                    : 'bg-muted-foreground/30 ring-muted-foreground/10'
                 )"></span>
-                <span class="text-[10px] uppercase font-bold tracking-widest" :class="brand.is_active !== false ? 'text-emerald-500' : 'text-slate-400'">
+                <span class="text-[10px] uppercase font-bold tracking-widest" :class="brand.is_active !== false ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'">
                   {{ brand.is_active !== false ? 'Active' : 'Inactive' }}
                 </span>
               </div>
@@ -522,43 +522,43 @@ const executeDeleteBrand = async () => {
 
             <!-- Name and Slug -->
             <div>
-              <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors leading-tight">
+              <h3 class="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
                 {{ brand.name }}
               </h3>
               <div class="mt-1 flex items-center gap-2">
-                <span class="font-mono text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-800 uppercase tracking-wider font-semibold">
+                <span class="font-mono text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border/60 uppercase tracking-wider font-semibold">
                   {{ brand.slug }}
                 </span>
               </div>
             </div>
 
             <!-- Description -->
-            <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+            <p class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
               {{ brand.description || 'No description recorded.' }}
             </p>
 
             <!-- Order & Item count stats -->
-            <div class="pt-3 border-t border-slate-100 dark:border-slate-900/50 flex items-center justify-between text-xs">
-              <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                <Tag class="w-3.5 h-3.5 text-slate-300" />
-                <span class="font-bold text-slate-900 dark:text-slate-100">{{ brand.productCount || 0 }} Items</span>
+            <div class="pt-3 border-t border-border/60 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Tag class="w-3.5 h-3.5 text-muted-foreground/60" />
+                <span class="font-bold text-foreground">{{ brand.productCount || 0 }} Items</span>
               </div>
-              <span class="font-mono text-[11px] font-bold text-slate-400">
+              <span class="font-mono text-[11px] font-bold text-muted-foreground">
                 Order: #{{ brand.display_order || 'Unassigned' }}
               </span>
             </div>
           </div>
 
           <!-- Card Actions Footer -->
-          <div class="mt-5 pt-3 border-t border-slate-100 dark:border-slate-900/50 flex items-center justify-between">
-            <span class="text-[10px] font-semibold text-slate-400">
+          <div class="mt-5 pt-3 border-t border-border/60 flex items-center justify-between">
+            <span class="text-[10px] font-semibold text-muted-foreground">
               ID: #{{ brand.id }}
             </span>
 
             <div class="flex items-center gap-1">
               <button 
                 @click="modalState.openView(brand.id)" 
-                class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+                class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all cursor-pointer"
                 title="View Brand Details"
                 aria-label="View brand details"
               >
@@ -566,7 +566,7 @@ const executeDeleteBrand = async () => {
               </button>
               <button 
                 @click="modalState.openEdit(brand.id)" 
-                class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+                class="p-2 text-muted-foreground hover:text-amber-500 hover:bg-muted rounded-lg transition-all cursor-pointer"
                 title="Edit Brand"
                 aria-label="Edit brand record"
               >
@@ -574,7 +574,7 @@ const executeDeleteBrand = async () => {
               </button>
               <button 
                 @click="modalState.openDelete(brand.id)" 
-                class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+                class="p-2 text-muted-foreground hover:text-destructive hover:bg-muted rounded-lg transition-all cursor-pointer"
                 title="Delete Brand"
                 aria-label="Delete brand"
               >
@@ -585,13 +585,13 @@ const executeDeleteBrand = async () => {
         </div>
 
         <!-- Empty state in grid mode -->
-        <div v-if="filteredBrands.length === 0" class="col-span-1 md:col-span-2 lg:col-span-3 py-16 text-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem]">
-          <div class="flex flex-col items-center justify-center gap-4 text-slate-400">
-            <div class="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
-              <Search class="w-7 h-7 text-slate-300" />
+        <div v-if="filteredBrands.length === 0" class="col-span-1 md:col-span-2 lg:col-span-3 py-16 text-center bg-card border border-border rounded-2xl">
+          <div class="flex flex-col items-center justify-center gap-4 text-muted-foreground">
+            <div class="w-16 h-16 rounded-2xl bg-muted/50 border border-border flex items-center justify-center">
+              <Search class="w-7 h-7 text-muted-foreground" />
             </div>
             <div>
-              <p class="font-display font-medium text-lg text-slate-900 dark:text-slate-100">No Brands Found</p>
+              <p class="font-display font-medium text-lg text-foreground">No Brands Found</p>
               <p class="text-xs max-w-sm mx-auto mt-1">No brands matched the filter criteria.</p>
             </div>
           </div>
@@ -599,12 +599,12 @@ const executeDeleteBrand = async () => {
       </div>
 
       <!-- Shared Pagination Footer for Grid Mode -->
-      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="bg-card border border-border rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">
-            Showing <span class="text-slate-800 dark:text-slate-200 font-black">{{ Math.min(filteredBrands.length, (currentPage - 1) * itemsPerPage + 1) }} - {{ Math.min(filteredBrands.length, currentPage * itemsPerPage) }}</span> 
-            of <span class="text-slate-800 dark:text-slate-200 font-black">{{ filteredBrands.length }}</span> brands.
+          <p class="text-xs text-muted-foreground font-bold uppercase tracking-widest">
+            Showing <span class="text-foreground font-black">{{ Math.min(filteredBrands.length, (currentPage - 1) * itemsPerPage + 1) }} - {{ Math.min(filteredBrands.length, currentPage * itemsPerPage) }}</span> 
+            of <span class="text-foreground font-black">{{ filteredBrands.length }}</span> brands.
           </p>
         </div>
 
@@ -612,7 +612,7 @@ const executeDeleteBrand = async () => {
           <button 
             @click="currentPage--" 
             :disabled="currentPage === 1"
-            class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+            class="w-10 h-10 flex items-center justify-center border border-border rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
           >
             <ChevronLeft class="w-5 h-5" />
           </button>
@@ -625,8 +625,8 @@ const executeDeleteBrand = async () => {
               :class="cn(
                 'w-10 h-10 rounded-xl font-bold transition-all cursor-pointer text-xs',
                 currentPage === p 
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
-                  : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500'
+                  ? 'bg-primary text-primary-foreground shadow-sm' 
+                  : 'border border-border/60 hover:bg-muted text-muted-foreground'
               )"
             >
               {{ p }}
@@ -636,7 +636,7 @@ const executeDeleteBrand = async () => {
           <button 
             @click="currentPage++" 
             :disabled="currentPage === totalPages"
-            class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+            class="w-10 h-10 flex items-center justify-center border border-border rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
           >
             <ChevronRight class="w-5 h-5" />
           </button>
