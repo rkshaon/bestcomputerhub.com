@@ -182,27 +182,24 @@ const getUserGroupNames = (user: UserItem): string[] => {
       </div>
 
       <div class="flex items-center gap-3">
-        <Button 
+        <UiButton 
           variant="outline" 
-          size="sm"
+          class="rounded-2xl h-11 px-5 gap-2 border-border font-bold text-xs"
           @click="refreshPagination"
           :disabled="isLoading"
-          class="gap-1.5"
         >
-          <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': isLoading }" />
+          <RefreshCw :class="['w-4 h-4', isLoading && 'animate-spin']" />
           <span>Refresh</span>
-        </Button>
+        </UiButton>
 
-        <Button 
+        <UiButton 
           v-if="canCreateUser"
-          variant="primary"
-          size="md"
+          class="rounded-2xl h-11 px-6 gap-2 shadow-xl shadow-primary/20 bg-primary text-primary-foreground font-bold text-xs"
           @click="modalState.openModal('create')"
-          class="gap-2 shadow-lg shadow-primary/20"
         >
           <UserPlus class="w-4 h-4" />
           <span>Provision User Account</span>
-        </Button>
+        </UiButton>
       </div>
     </div>
 
@@ -246,10 +243,6 @@ const getUserGroupNames = (user: UserItem): string[] => {
             <List class="w-4 h-4" />
           </button>
         </div>
-      </div>
-
-      <div class="text-xs font-semibold text-muted-foreground self-end sm:self-center">
-        Total Accounts: <span class="text-foreground font-bold">{{ totalCount }}</span>
       </div>
     </div>
 

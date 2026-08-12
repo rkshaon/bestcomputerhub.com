@@ -386,16 +386,16 @@ const executeDeleteBrand = async () => {
 </script>
 
 <template>
-  <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+  <div class="space-y-8 animate-in fade-in duration-500">
     
     <!-- Top Action bar block -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div>
-        <h1 class="text-4xl font-display font-extrabold tracking-tight">Brands</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium">Manage product brands and their catalog display details.</p>
+        <h1 class="text-3xl font-display font-extrabold tracking-tight text-foreground">Brands</h1>
+        <p class="text-muted-foreground text-sm mt-1">Manage product brands and their catalog display details.</p>
       </div>
       <div class="flex items-center gap-3">
-        <Button 
+        <UiButton 
           variant="outline" 
           class="rounded-2xl h-11 px-5 gap-2 border-border font-bold text-xs"
           @click="fetchRegistry"
@@ -403,14 +403,15 @@ const executeDeleteBrand = async () => {
         >
           <RefreshCw :class="['w-4 h-4', isLoading && 'animate-spin']" />
           <span>Refresh</span>
-        </Button>
+        </UiButton>
 
-        <button 
+        <UiButton 
+          class="rounded-2xl h-11 px-6 gap-2 shadow-xl shadow-primary/20 bg-primary text-primary-foreground font-bold text-xs"
           @click="modalState.openCreate()"
-          class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
         >
-          <Plus class="w-4 h-4" /> Add Brand
-        </button>
+          <Plus class="w-4 h-4" />
+          <span>Add Brand</span>
+        </UiButton>
       </div>
     </div>
 
