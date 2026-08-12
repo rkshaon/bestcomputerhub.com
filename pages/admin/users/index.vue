@@ -49,7 +49,7 @@ const { toastSuccess, toastError } = useToast();
 
 const searchQuery = ref('');
 const isDeleting = ref(false);
-const viewMode = ref<'grid' | 'list'>('grid');
+const viewMode = ref<'grid' | 'list'>('list');
 
 const canViewUsers = computed(() => canViewModule('/admin/users'));
 const canCreateUser = computed(() => canCreateInModule('/admin/users'));

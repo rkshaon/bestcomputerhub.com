@@ -42,7 +42,7 @@ const { toastSuccess, toastError } = useToast();
 
 const searchQuery = ref('');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
-const viewMode = ref<'grid' | 'list'>('grid');
+const viewMode = ref<'grid' | 'list'>('list');
 
 watch(debouncedSearchQuery, (newVal) => {
   roleService.getRoles({ search: newVal });
