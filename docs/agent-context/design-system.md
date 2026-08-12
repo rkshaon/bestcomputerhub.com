@@ -1050,3 +1050,14 @@ Reuse of existing primitives
 Not every component requires every state, but each applicable state should be considered.
 
 The goal is a consistent, accessible, customer-oriented interface rather than visual complexity.
+
+---
+
+## 38. Grid/List View Toggle Standard
+
+Whenever a page provides both Grid View and List View options:
+- **Button Order**: The Grid View icon must appear first (left), and the List View icon must appear second (right).
+- **Default State**: The initial view must always default to **List View**.
+- **Visual Indicator**: The List View toggle button must be visually active by default.
+- **Scope**: This applies consistently across all Admin pages and any future pages offering dual view layouts.
+
