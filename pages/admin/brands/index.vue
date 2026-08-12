@@ -23,7 +23,8 @@ import {
   RefreshCw,
   LayoutGrid,
   List,
-  Upload
+  Upload,
+  GripVertical
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useBrandService } from '@/composables/useBrandService';
@@ -383,6 +384,109 @@ const executeDeleteBrand = async () => {
     isSubmitPending.value = false;
   }
 };
+
+// --- DRAG-AND-DROP REORDERING LOGIC ---
+const draggedBrandId = ref<string | number | null>(null);
+const dragOverBrandId = ref<string | number | null>(null);
+
+const onDragStart = (event: DragEvent, id: string | number) => {
+  draggedBrandId.value = id;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(id));
+  }
+};
+
+const onDragOver = (event: DragEvent, id: string | number) => {
+  if (draggedBrandId.value !== id) {
+    dragOverBrandId.value = id;
+  }
+};
+
+const onDragLeave = (event: DragEvent, id: string | number) => {
+  if (dragOverBrandId.value === id) {
+    dragOverBrandId.value = null;
+  }
+};
+
+const onDragEnd = (event: DragEvent) => {
+  draggedBrandId.value = null;
+  dragOverBrandId.value = null;
+};
+
+const onDrop = async (event: DragEvent, id: string | number) => {
+  dragOverBrandId.value = null;
+  const draggedId = draggedBrandId.value;
+  draggedBrandId.value = null;
+  if (draggedId !== null && draggedId !== id) {
+    await handleReorder(draggedId, id);
+  }
+};
+
+const handleReorder = async (draggedId: string | number, targetId: string | number) => {
+  if (draggedId === targetId) return;
+
+  const draggedIdx = brandsList.value.findIndex(b => b.id === draggedId);
+  const targetIdx = brandsList.value.findIndex(b => b.id === targetId);
+
+  if (draggedIdx === -1 || targetIdx === -1) return;
+
+  // Permute array locally first for zero-latency UI response
+  const updatedList = [...brandsList.value];
+  const movedItems = updatedList.splice(draggedIdx, 1);
+  const movedItem = movedItems[0];
+  if (!movedItem) return;
+  updatedList.splice(targetIdx, 0, movedItem);
+
+  // Extract and sort current display_order values
+  const sortedOrders = brandsList.value
+    .map((b, idx) => b.display_order !== undefined ? b.display_order : idx + 1)
+    .sort((a, b) => a - b);
+
+  // Match the new visual layout with the display order list
+  const updates: { id: string | number; display_order: number; name: string; slug: string; description: string }[] = [];
+
+  for (let i = 0; i < updatedList.length; i++) {
+    const newOrder = sortedOrders[i];
+    const brand = updatedList[i];
+    if (!brand || newOrder === undefined) continue;
+    if (brand.display_order !== newOrder) {
+      brand.display_order = newOrder;
+      updates.push({
+        id: brand.id,
+        display_order: newOrder,
+        name: brand.name,
+        slug: brand.slug,
+        description: brand.description || ''
+      });
+    }
+  }
+
+  // Update local reactive list immediately
+  brandsList.value = updatedList;
+
+  // Persist modifications to backend service
+  if (updates.length > 0) {
+    isLoading.value = true;
+    try {
+      await Promise.all(updates.map(item => 
+        brandService.updateBrand(item.id, {
+          name: item.name,
+          slug: item.slug,
+          description: item.description,
+          display_order: item.display_order
+        })
+      ));
+      triggerToast('Brand hierarchy reordered successfully.');
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to save updated brand order.');
+      triggerToast(msg, 'error');
+      await fetchRegistry(); // Revert to database truth on failure
+    } finally {
+      isLoading.value = false;
+    }
+  }
+};
 </script>
 
 <template>
@@ -495,17 +599,30 @@ const executeDeleteBrand = async () => {
         <div 
           v-for="brand in paginatedBrands" 
           :key="brand.id"
-          class="bg-card text-card-foreground border border-border rounded-2xl p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+          draggable="true"
+          @dragstart="onDragStart($event, brand.id)"
+          @dragover.prevent="onDragOver($event, brand.id)"
+          @dragleave="onDragLeave($event, brand.id)"
+          @drop="onDrop($event, brand.id)"
+          @dragend="onDragEnd($event)"
+          :class="[
+            'bg-card text-card-foreground border rounded-2xl p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group cursor-grab active:cursor-grabbing',
+            draggedBrandId === brand.id ? 'opacity-40 scale-[0.98]' : '',
+            dragOverBrandId === brand.id ? 'border-primary/60 border-dashed bg-primary/5' : 'border-border'
+          ]"
         >
           <div class="space-y-4">
             <!-- Brand Logo & Status -->
             <div class="flex items-start justify-between gap-4">
-              <div class="w-14 h-14 bg-background border border-border rounded-xl flex items-center justify-center p-2 shadow-sm overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300">
-                <img 
-                  :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
-                  :alt="brand.name" 
-                  class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
-                />
+              <div class="flex items-center gap-2 shrink-0">
+                <GripVertical class="w-4 h-4 text-slate-300 dark:text-slate-700 cursor-grab active:cursor-grabbing hover:text-slate-400 dark:hover:text-slate-500 transition-colors" />
+                <div class="w-14 h-14 bg-background border border-border rounded-xl flex items-center justify-center p-2 shadow-sm overflow-hidden group-hover:scale-105 transition-transform duration-300">
+                  <img 
+                    :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
+                    :alt="brand.name" 
+                    class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
+                  />
+                </div>
               </div>
 
               <div class="flex items-center gap-2 bg-muted/50 px-3 py-1 rounded-full border border-border/60">
@@ -660,11 +777,26 @@ const executeDeleteBrand = async () => {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 dark:divide-slate-900/50">
-            <tr v-for="brand in paginatedBrands" :key="brand.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+            <tr 
+              v-for="brand in paginatedBrands" 
+              :key="brand.id" 
+              draggable="true"
+              @dragstart="onDragStart($event, brand.id)"
+              @dragover.prevent="onDragOver($event, brand.id)"
+              @dragleave="onDragLeave($event, brand.id)"
+              @drop="onDrop($event, brand.id)"
+              @dragend="onDragEnd($event)"
+              :class="[
+                'group hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors cursor-grab active:cursor-grabbing',
+                draggedBrandId === brand.id ? 'opacity-40' : '',
+                dragOverBrandId === brand.id ? 'bg-primary/5 border-y-2 border-dashed border-primary/40' : ''
+              ]"
+            >
               
               <!-- Brand Identity Column -->
               <td class="px-8 py-5">
                 <div class="flex items-center gap-4">
+                  <GripVertical class="w-4 h-4 text-slate-300 dark:text-slate-700 cursor-grab active:cursor-grabbing hover:text-slate-400 dark:hover:text-slate-500 transition-colors shrink-0" />
                   <div class="w-12 h-12 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center p-2 shadow-sm overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300">
                     <img :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" :alt="brand.name" class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" />
                   </div>
