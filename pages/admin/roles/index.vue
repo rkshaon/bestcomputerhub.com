@@ -4,7 +4,6 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { refDebounced } from '@vueuse/core';
 import { 
   Shield, 
-  ShieldCheck, 
   Plus, 
   Search, 
   Edit, 
@@ -122,10 +121,6 @@ const filteredRoles = computed(() => {
     <!-- Page Header -->
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div>
-        <div class="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-[0.2em] mb-2">
-          <ShieldCheck class="w-3.5 h-3.5" />
-          Access Control Infrastructure
-        </div>
         <h1 class="text-3xl font-display font-extrabold tracking-tight text-foreground">
           Roles & Permissions
         </h1>
