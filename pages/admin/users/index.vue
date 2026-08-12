@@ -198,7 +198,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
           @click="modalState.openModal('create')"
         >
           <UserPlus class="w-4 h-4" />
-          <span>Provision User Account</span>
+          <span>Add User</span>
         </UiButton>
       </div>
     </div>

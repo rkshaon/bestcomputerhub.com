@@ -146,7 +146,7 @@ const filteredRoles = computed(() => {
           @click="modalState.openCreate()"
         >
           <Plus class="w-4 h-4" />
-          <span>Create New Role</span>
+          <span>Add Role</span>
         </UiButton>
       </div>
     </div>
