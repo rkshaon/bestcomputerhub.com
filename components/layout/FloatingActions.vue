@@ -7,7 +7,7 @@ import { STORE_CONTACT } from '@/constants/contact';
 const route = useRoute();
 
 const showActions = computed(() => {
-  return !route.path.startsWith('/admin');
+  return !route.path.startsWith('/admin') && route.path !== '/login';
 });
 </script>
 
