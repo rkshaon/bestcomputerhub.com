@@ -300,7 +300,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
         <div 
           v-for="user in userList" 
           :key="user.id"
-          class="bg-card border border-border rounded-[2.5rem] p-6 shadow-sm hover:border-primary/30 transition-all duration-300 flex flex-col justify-between group"
+          class="bg-card border border-border rounded-2xl p-6 shadow-sm hover:border-primary/30 transition-all duration-300 flex flex-col justify-between group"
         >
           <div class="space-y-5">
             
@@ -366,9 +366,7 @@ const getUserGroupNames = (user: UserItem): string[] => {
 
           </div>
 
-          <div class="mt-5 pt-3 border-t border-border/40 text-[10px] font-semibold text-muted-foreground flex items-center justify-between">
-            <span>Account ID: #{{ user.id }}</span>
-
+          <div class="mt-5 pt-3 border-t border-border/40 text-[10px] font-semibold text-muted-foreground flex items-center justify-end">
             <!-- Action Controls (View, Edit & Delete) -->
             <div class="flex items-center gap-1">
               <button 

@@ -262,7 +262,7 @@ const filteredRoles = computed(() => {
         <div 
           v-for="role in filteredRoles" 
           :key="role.id"
-          class="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between group hover:border-primary/40 hover:shadow-md transition-all duration-300"
+          class="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between group hover:border-primary/40 hover:shadow-md transition-all duration-300"
         >
           <div class="space-y-6">
             <!-- Role Header -->
@@ -282,9 +282,6 @@ const filteredRoles = computed(() => {
               <h3 class="text-xl font-display font-extrabold text-foreground group-hover:text-primary transition-colors">
                 {{ role.name }}
               </h3>
-              <p class="text-xs text-muted-foreground mt-1 font-medium">
-                System access authority token #{{ role.id }}
-              </p>
             </div>
 
             <!-- Permission Preview List -->
