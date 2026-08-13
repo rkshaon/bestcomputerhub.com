@@ -492,7 +492,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
   <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
     
     <!-- Header Block -->
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
         <h1 class="text-3xl font-display font-extrabold tracking-tight text-foreground">
           Category Taxonomy
