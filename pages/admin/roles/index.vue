@@ -113,6 +113,11 @@ const filteredRoles = computed(() => {
     r.permissions.some(p => p.name.toLowerCase().includes(q) || p.codename.toLowerCase().includes(q))
   );
 });
+
+// --- STATS COMPUTED AGGREGATES ---
+const totalRolesCount = computed(() => roles.value.length);
+const totalPermissionsCount = computed(() => roles.value.reduce((acc, r) => acc + (r.permissions?.length || 0), 0));
+const avgPermissionsCount = computed(() => roles.value.length > 0 ? Math.round(totalPermissionsCount.value / roles.value.length) : 0);
 </script>
 
 <template>
@@ -149,6 +154,37 @@ const filteredRoles = computed(() => {
           <span>Add Role</span>
         </UiButton>
       </div>
+    </div>
+
+    <!-- Active Analytics row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <UiCard class="flex items-center gap-6 p-8">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Shield class="w-7 h-7" />
+        </div>
+        <div>
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Total Roles</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ totalRolesCount }}</p>
+        </div>
+      </UiCard>
+      <UiCard class="flex items-center gap-6 p-8">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Key class="w-7 h-7" />
+        </div>
+        <div>
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Active Permissions</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ totalPermissionsCount }}</p>
+        </div>
+      </UiCard>
+      <UiCard class="flex items-center gap-6 p-8">
+        <div class="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Shield class="w-7 h-7" />
+        </div>
+        <div>
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Avg Permissions / Role</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ avgPermissionsCount }}</p>
+        </div>
+      </UiCard>
     </div>
 
     <!-- Search & Metric Bar -->

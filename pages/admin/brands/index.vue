@@ -487,6 +487,11 @@ const handleReorder = async (draggedId: string | number, targetId: string | numb
     }
   }
 };
+
+// --- STATS COMPUTED AGGREGATES ---
+const totalBrandsCount = computed(() => brandsList.value.length);
+const activeBrandsCount = computed(() => brandsList.value.filter(b => b.is_active !== false).length);
+const inactiveBrandsCount = computed(() => brandsList.value.filter(b => b.is_active === false).length);
 </script>
 
 <template>
@@ -517,6 +522,37 @@ const handleReorder = async (draggedId: string | number, targetId: string | numb
           <span>Add Brand</span>
         </UiButton>
       </div>
+    </div>
+
+    <!-- Active Analytics row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <UiCard class="flex items-center gap-6 p-8">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Tag class="w-7 h-7" />
+        </div>
+        <div>
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Total Brands</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ totalBrandsCount }}</p>
+        </div>
+      </UiCard>
+      <UiCard class="flex items-center gap-6 p-8">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+          <ShieldCheck class="w-7 h-7" />
+        </div>
+        <div>
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Active Brands</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ activeBrandsCount }}</p>
+        </div>
+      </UiCard>
+      <UiCard class="flex items-center gap-6 p-8">
+        <div class="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+          <AlertCircle class="w-7 h-7" />
+        </div>
+        <div>
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Inactive Brands</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ inactiveBrandsCount }}</p>
+        </div>
+      </UiCard>
     </div>
 
     <!-- Filters framework -->

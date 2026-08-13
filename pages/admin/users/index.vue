@@ -165,6 +165,10 @@ const getUserGroupNames = (user: UserItem): string[] => {
     return rolesMap.value.get(groupId) || `Role #${groupId}`;
   });
 };
+
+// --- STATS COMPUTED AGGREGATES ---
+const superadminsCount = computed(() => userList.value.filter(u => u.is_superuser).length);
+const staffAccountsCount = computed(() => userList.value.filter(u => !u.is_superuser).length);
 </script>
 
 <template>
@@ -201,6 +205,37 @@ const getUserGroupNames = (user: UserItem): string[] => {
           <span>Add User</span>
         </UiButton>
       </div>
+    </div>
+
+    <!-- Active Analytics row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <UiCard class="flex items-center gap-6 p-8">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Users class="w-7 h-7" />
+        </div>
+        <div>
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Total Personnel</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ totalCount }}</p>
+        </div>
+      </UiCard>
+      <UiCard class="flex items-center gap-6 p-8">
+        <div class="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Crown class="w-7 h-7" />
+        </div>
+        <div>
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Superadmins</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ superadminsCount }}</p>
+        </div>
+      </UiCard>
+      <UiCard class="flex items-center gap-6 p-8">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Shield class="w-7 h-7" />
+        </div>
+        <div>
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Staff Accounts</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ staffAccountsCount }}</p>
+        </div>
+      </UiCard>
     </div>
 
     <!-- Search & Filter Bar -->
