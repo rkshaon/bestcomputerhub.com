@@ -42,7 +42,7 @@ const setPage = (page: number) => {
 };
 
 interface PaginationSlot {
-  type: 'page' | 'ellipsis' | 'placeholder';
+  type: 'page' | 'ellipsis';
   page?: number;
   key: string;
 }
@@ -53,7 +53,7 @@ const paginationSlots = computed<PaginationSlot[]>(() => {
 
   if (total <= 0) return [];
 
-  if (total <= 9) {
+  if (total <= 11) {
     const slots: PaginationSlot[] = [];
     for (let i = 1; i <= total; i++) {
       slots.push({
@@ -65,45 +65,41 @@ const paginationSlots = computed<PaginationSlot[]>(() => {
     return slots;
   }
 
-  const leftPages = [1, 2, 3];
-  const rightPages = [total - 2, total - 1, total];
-
-  let midCenter = current;
-  if (current < 5) {
-    midCenter = 5;
-  } else if (current > total - 4) {
-    midCenter = total - 4;
-  }
-
-  const midPages = [midCenter - 1, midCenter, midCenter + 1];
-
   const slots: PaginationSlot[] = [];
 
-  leftPages.forEach((p) => {
-    slots.push({ type: 'page', page: p, key: `left-${p}` });
-  });
-
-  const firstMidPage = midPages[0] ?? 4;
-  if (firstMidPage > 4) {
-    slots.push({ type: 'ellipsis', key: 'ellipsis-left' });
-  } else {
-    slots.push({ type: 'placeholder', key: 'placeholder-left' });
-  }
-
-  midPages.forEach((p) => {
-    slots.push({ type: 'page', page: p, key: `mid-${p}` });
-  });
-
-  const lastMidPage = midPages[2] ?? (total - 3);
-  if (lastMidPage < total - 3) {
+  if (current <= 5) {
+    for (let i = 1; i <= 7; i++) {
+      slots.push({ type: 'page', page: i, key: `start-page-${i}` });
+    }
     slots.push({ type: 'ellipsis', key: 'ellipsis-right' });
-  } else {
-    slots.push({ type: 'placeholder', key: 'placeholder-right' });
+    for (let i = total - 2; i <= total; i++) {
+      slots.push({ type: 'page', page: i, key: `end-page-${i}` });
+    }
+    return slots;
   }
 
-  rightPages.forEach((p) => {
-    slots.push({ type: 'page', page: p, key: `right-${p}` });
-  });
+  if (current >= total - 4) {
+    for (let i = 1; i <= 3; i++) {
+      slots.push({ type: 'page', page: i, key: `start-page-${i}` });
+    }
+    slots.push({ type: 'ellipsis', key: 'ellipsis-left' });
+    for (let i = total - 6; i <= total; i++) {
+      slots.push({ type: 'page', page: i, key: `end-page-${i}` });
+    }
+    return slots;
+  }
+
+  for (let i = 1; i <= 3; i++) {
+    slots.push({ type: 'page', page: i, key: `start-page-${i}` });
+  }
+  slots.push({ type: 'ellipsis', key: 'ellipsis-left' });
+  for (let i = current - 1; i <= current + 1; i++) {
+    slots.push({ type: 'page', page: i, key: `mid-page-${i}` });
+  }
+  slots.push({ type: 'ellipsis', key: 'ellipsis-right' });
+  for (let i = total - 2; i <= total; i++) {
+    slots.push({ type: 'page', page: i, key: `end-page-${i}` });
+  }
 
   return slots;
 });
@@ -140,12 +136,7 @@ const paginationSlots = computed<PaginationSlot[]>(() => {
       <div class="flex items-center gap-1 font-mono text-xs font-bold">
         <template v-for="slot in paginationSlots" :key="slot.key">
           <span 
-            v-if="slot.type === 'placeholder'"
-            class="w-10 h-10 invisible select-none pointer-events-none"
-            aria-hidden="true"
-          />
-          <span 
-            v-else-if="slot.type === 'ellipsis'"
+            v-if="slot.type === 'ellipsis'"
             class="w-10 h-10 flex items-center justify-center text-slate-400 dark:text-slate-600 select-none"
           >
             ...
