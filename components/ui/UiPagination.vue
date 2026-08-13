@@ -46,19 +46,24 @@ const visiblePages = computed(() => {
   const total = props.totalPages;
   const current = props.currentPage;
 
-  if (total <= 7) {
+  if (total <= 9) {
     for (let i = 1; i <= total; i++) {
       range.push(i);
     }
   } else {
-    // Always include page 1
+    let start = Math.max(2, current - 2);
+    let end = Math.min(total - 1, current + 2);
+
+    if (current <= 4) {
+      start = 2;
+      end = 5;
+    } else if (current >= total - 3) {
+      start = total - 4;
+      end = total - 1;
+    }
+
     range.push(1);
 
-    // Calculate start and end range around current page
-    const start = Math.max(2, current - 1);
-    const end = Math.min(total - 1, current + 1);
-
-    // Left ellipsis
     if (start > 2) {
       if (start === 3) {
         range.push(2);
@@ -67,12 +72,10 @@ const visiblePages = computed(() => {
       }
     }
 
-    // Neighbors
     for (let i = start; i <= end; i++) {
       range.push(i);
     }
 
-    // Right ellipsis
     if (end < total - 1) {
       if (end === total - 2) {
         range.push(total - 1);
@@ -81,7 +84,6 @@ const visiblePages = computed(() => {
       }
     }
 
-    // Always include last page
     range.push(total);
   }
 
