@@ -545,22 +545,22 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
     </div>
 
     <!-- Filter row -->
-    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-4 flex flex-wrap items-center gap-4 shadow-sm">
-      <div class="flex-1 min-w-[280px]">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border p-4 rounded-2xl shadow-sm">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
         <UiSearchInput 
           v-model="searchQuery" 
           placeholder="Search taxonomies by name, slug or description..." 
-          class="border-none bg-transparent"
+          class="w-full sm:w-80"
         />
       </div>
       
-      <div class="flex items-center gap-3">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto justify-end">
         <!-- Parent grouping filter dropdown -->
-        <div class="flex items-center gap-2 pr-2 border-l border-slate-100 dark:border-slate-900 pl-4">
-          <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Structural Level:</span>
+        <div class="flex items-center gap-2 border-l border-border pl-4">
+          <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Structural Level:</span>
           <select 
             v-model="parentFilter"
-            class="h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer"
+            class="h-10 px-3 bg-background border border-input rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
           >
             <option value="all">All Levels</option>
             <option value="none">Main Categories Only</option>
@@ -570,11 +570,11 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
           </select>
         </div>
 
-         <div class="flex items-center gap-2 pr-2 border-l border-slate-100 dark:border-slate-900 pl-4">
-          <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Order By:</span>
+        <div class="flex items-center gap-2 border-l border-border pl-4">
+          <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Order By:</span>
           <select 
             v-model="ordering"
-            class="h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer"
+            class="h-10 px-3 bg-background border border-input rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
           >
             <option value="order">Display Priority (Asc)</option>
             <option value="-order">Display Priority (Desc)</option>
@@ -587,7 +587,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
         
         <button 
           @click="loadCategoriesGrid" 
-          class="p-2.5 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-primary transition-colors cursor-pointer"
+          class="p-2.5 bg-background hover:bg-muted border border-input rounded-xl text-muted-foreground hover:text-primary transition-colors cursor-pointer"
           title="Force Sync Protocols"
           aria-label="Refresh categories"
         >
