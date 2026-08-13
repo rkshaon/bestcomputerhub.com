@@ -1,12 +1,21 @@
 <!-- File: /components/layout/BackToTop.vue -->
 <script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { ArrowUp } from 'lucide-vue-next';
 import { cn } from '@/utils';
 
-const isVisible = ref(false);
+const route = useRoute();
+const isScrolled = ref(false);
+
+const isVisible = computed(() => {
+  if (route.path.startsWith('/admin')) {
+    return false;
+  }
+  return isScrolled.value;
+});
 
 const checkScroll = () => {
-  isVisible.value = window.scrollY > 400;
+  isScrolled.value = window.scrollY > 400;
 };
 
 const scrollToTop = () => {
