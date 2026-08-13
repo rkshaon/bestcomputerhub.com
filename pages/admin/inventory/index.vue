@@ -356,8 +356,9 @@ function adjustStock(amount: number) {
         <UiPagination
           v-model:current-page="currentPage"
           :total-pages="totalPages"
-          :total-items="filteredProducts.length"
+          :total-count="filteredProducts.length"
           :items-per-page="itemsPerPage"
+          item-label="products"
         />
       </div>
     </div>

@@ -175,8 +175,9 @@ const paginatedCustomers = computed(() => {
       <UiPagination
         v-model:current-page="currentPage"
         :total-pages="totalPages"
-        :total-items="filteredCustomers.length"
+        :total-count="filteredCustomers.length"
         :items-per-page="itemsPerPage"
+        item-label="customers"
       />
     </div>
   </div>

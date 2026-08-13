@@ -201,8 +201,9 @@ const paginatedOrders = computed(() => {
       <UiPagination
         v-model:current-page="currentPage"
         :total-pages="totalPages"
-        :total-items="filteredOrders.length"
+        :total-count="filteredOrders.length"
         :items-per-page="itemsPerPage"
+        item-label="orders"
       />
     </div>
   </div>

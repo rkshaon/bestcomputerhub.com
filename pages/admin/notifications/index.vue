@@ -331,8 +331,9 @@ const toggleReadStatus = (notification: Notification) => {
       <UiPagination
         v-model:current-page="currentPage"
         :total-pages="totalPages"
-        :total-items="filteredNotifications.length"
+        :total-count="filteredNotifications.length"
         :items-per-page="itemsPerPage"
+        item-label="notifications"
       />
     </div>
 
