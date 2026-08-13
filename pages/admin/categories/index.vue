@@ -18,7 +18,8 @@ import {
   X,
   FolderOpen,
   Info,
-  Upload
+  Upload,
+  RefreshCw
 } from 'lucide-vue-next';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
@@ -52,6 +53,7 @@ const allCategoriesList = ref<Category[]>([]); // Broad list copy for parent loo
 const categoriesList = ref<Category[]>([]);
 const totalCount = ref(0);
 const systemTotalCount = ref(0);
+const isLoading = ref(false);
 const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
 
 // Overlay control triggers
@@ -227,6 +229,7 @@ const getParentName = (parentId?: string): string => {
 
 // Fetch categories with server-side pagination, filters and queries
 const fetchCategoriesPage = async () => {
+  isLoading.value = true;
   try {
     const filters: any = {
       page: currentPage.value,
@@ -247,11 +250,14 @@ const fetchCategoriesPage = async () => {
     totalCount.value = response.count;
   } catch (error: any) {
     console.warn('Categories retrieval pagination error:', error.message);
+  } finally {
+    isLoading.value = false;
   }
 };
 
 // Fetch broader category hierarchy list for dropdowns
 const fetchAllCategoriesRawList = async () => {
+  isLoading.value = true;
   try {
     // Queries root categories for dropdown selectors/hierarchical lookup
     const rootRes = await categoryService.getCategoriesList({ is_parent: true, page_size: 10 });
@@ -265,6 +271,8 @@ const fetchAllCategoriesRawList = async () => {
     await fetchCategoriesPage();
   } catch (error: any) {
     console.warn('Parent categories indexing latency:', error.message);
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -495,7 +503,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
         <h1 class="text-3xl font-display font-extrabold tracking-tight text-foreground">
-          Category Taxonomy
+          Categories
         </h1>
         <p class="text-muted-foreground text-sm mt-1">
           Organize hardware components, computing nodes and server equipment classes.
@@ -503,6 +511,16 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
       </div>
 
       <div class="flex items-center gap-3">
+        <UiButton 
+          variant="outline" 
+          class="rounded-2xl h-11 px-5 gap-2 border-border font-bold text-xs"
+          @click="loadCategoriesGrid"
+          :disabled="isLoading"
+        >
+          <RefreshCw :class="['w-4 h-4', isLoading && 'animate-spin']" />
+          <span>Refresh</span>
+        </UiButton>
+
         <UiButton 
           variant="outline" 
           class="rounded-2xl h-11 px-5 gap-2 border-border font-bold text-xs"
@@ -517,7 +535,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
           @click="triggerCreateModal"
         >
           <Plus class="w-4 h-4" />
-          <span>Define New Class</span>
+          <span>Add Category</span>
         </UiButton>
       </div>
     </div>
