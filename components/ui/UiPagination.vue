@@ -100,9 +100,9 @@ const visiblePages = computed(() => {
   >
     <div class="flex items-center gap-3">
       <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-      <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">
-        {{ prefixLabel }} <span class="text-slate-800 dark:text-slate-200 font-black">{{ startItem }} - {{ endItem }}</span> 
-        of <span class="text-slate-800 dark:text-slate-200 font-black">{{ totalCount }}</span> {{ itemLabel }}.
+      <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        Showing <span class="text-slate-800 dark:text-slate-200 font-bold">{{ startItem.toLocaleString() }}–{{ endItem.toLocaleString() }}</span> 
+        of <span class="text-slate-800 dark:text-slate-200 font-bold">{{ totalCount.toLocaleString() }}</span>
       </p>
     </div>
 
