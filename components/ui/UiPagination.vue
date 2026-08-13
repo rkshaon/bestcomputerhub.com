@@ -40,6 +40,53 @@ const setPage = (page: number) => {
     emit('update:current-page', page);
   }
 };
+
+const visiblePages = computed(() => {
+  const range: (number | 'ellipsis')[] = [];
+  const total = props.totalPages;
+  const current = props.currentPage;
+
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) {
+      range.push(i);
+    }
+  } else {
+    // Always include page 1
+    range.push(1);
+
+    // Calculate start and end range around current page
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+
+    // Left ellipsis
+    if (start > 2) {
+      if (start === 3) {
+        range.push(2);
+      } else {
+        range.push('ellipsis');
+      }
+    }
+
+    // Neighbors
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+
+    // Right ellipsis
+    if (end < total - 1) {
+      if (end === total - 2) {
+        range.push(total - 1);
+      } else {
+        range.push('ellipsis');
+      }
+    }
+
+    // Always include last page
+    range.push(total);
+  }
+
+  return range;
+});
 </script>
 
 <template>
@@ -71,20 +118,27 @@ const setPage = (page: number) => {
       </button>
       
       <div class="flex items-center gap-1 font-mono text-xs font-bold">
-        <button 
-          v-for="p in totalPages" 
-          :key="p" 
-          type="button"
-          @click="setPage(p)"
-          :class="cn(
-            'w-10 h-10 rounded-xl font-bold transition-all cursor-pointer text-xs',
-            currentPage === p 
-              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
-              : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500'
-          )"
-        >
-          {{ p }}
-        </button>
+        <template v-for="(p, index) in visiblePages" :key="index">
+          <span 
+            v-if="p === 'ellipsis'"
+            class="w-10 h-10 flex items-center justify-center text-slate-400 dark:text-slate-600 select-none"
+          >
+            ...
+          </span>
+          <button 
+            v-else
+            type="button"
+            @click="setPage(p)"
+            :class="cn(
+              'w-10 h-10 rounded-xl font-bold transition-all cursor-pointer text-xs',
+              currentPage === p 
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
+                : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500'
+            )"
+          >
+            {{ p }}
+          </button>
+        </template>
       </div>
 
       <button 
