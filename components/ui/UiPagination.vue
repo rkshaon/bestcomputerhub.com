@@ -41,65 +41,71 @@ const setPage = (page: number) => {
   }
 };
 
-const visiblePages = computed(() => {
+interface PaginationSlot {
+  type: 'page' | 'ellipsis' | 'placeholder';
+  page?: number;
+  key: string;
+}
+
+const paginationSlots = computed<PaginationSlot[]>(() => {
   const total = props.totalPages;
   const current = props.currentPage;
 
   if (total <= 0) return [];
-  if (total <= 12) {
-    const range: number[] = [];
+
+  if (total <= 9) {
+    const slots: PaginationSlot[] = [];
     for (let i = 1; i <= total; i++) {
-      range.push(i);
+      slots.push({
+        type: 'page',
+        page: i,
+        key: `page-${i}`,
+      });
     }
-    return range;
+    return slots;
   }
 
-  const pageSet = new Set<number>();
+  const leftPages = [1, 2, 3];
+  const rightPages = [total - 2, total - 1, total];
 
-  // Start boundary pages
-  const startCount = current <= 5 ? 5 : 3;
-  for (let i = 1; i <= startCount && i <= total; i++) {
-    pageSet.add(i);
+  let midCenter = current;
+  if (current < 5) {
+    midCenter = 5;
+  } else if (current > total - 4) {
+    midCenter = total - 4;
   }
 
-  // End boundary pages
-  const endCount = current >= total - 4 ? 5 : 3;
-  for (let i = total - endCount + 1; i <= total; i++) {
-    if (i >= 1) pageSet.add(i);
+  const midPages = [midCenter - 1, midCenter, midCenter + 1];
+
+  const slots: PaginationSlot[] = [];
+
+  leftPages.forEach((p) => {
+    slots.push({ type: 'page', page: p, key: `left-${p}` });
+  });
+
+  const firstMidPage = midPages[0] ?? 4;
+  if (firstMidPage > 4) {
+    slots.push({ type: 'ellipsis', key: 'ellipsis-left' });
+  } else {
+    slots.push({ type: 'placeholder', key: 'placeholder-left' });
   }
 
-  // Middle neighborhood pages around current
-  for (let i = current - 2; i <= current + 2; i++) {
-    if (i >= 1 && i <= total) {
-      pageSet.add(i);
-    }
+  midPages.forEach((p) => {
+    slots.push({ type: 'page', page: p, key: `mid-${p}` });
+  });
+
+  const lastMidPage = midPages[2] ?? (total - 3);
+  if (lastMidPage < total - 3) {
+    slots.push({ type: 'ellipsis', key: 'ellipsis-right' });
+  } else {
+    slots.push({ type: 'placeholder', key: 'placeholder-right' });
   }
 
-  const sortedPages = Array.from(pageSet).sort((a, b) => a - b);
-  const result: (number | 'ellipsis')[] = [];
+  rightPages.forEach((p) => {
+    slots.push({ type: 'page', page: p, key: `right-${p}` });
+  });
 
-  if (sortedPages.length > 0) {
-    const firstPage = sortedPages[0];
-    if (firstPage !== undefined) {
-      result.push(firstPage);
-    }
-    for (let i = 1; i < sortedPages.length; i++) {
-      const prev = sortedPages[i - 1];
-      const curr = sortedPages[i];
-      if (prev !== undefined && curr !== undefined) {
-        const diff = curr - prev;
-
-        if (diff === 2) {
-          result.push(prev + 1);
-        } else if (diff > 2) {
-          result.push('ellipsis');
-        }
-        result.push(curr);
-      }
-    }
-  }
-
-  return result;
+  return slots;
 });
 </script>
 
@@ -132,25 +138,30 @@ const visiblePages = computed(() => {
       </button>
       
       <div class="flex items-center gap-1 font-mono text-xs font-bold">
-        <template v-for="(p, index) in visiblePages" :key="index">
+        <template v-for="slot in paginationSlots" :key="slot.key">
           <span 
-            v-if="p === 'ellipsis'"
+            v-if="slot.type === 'placeholder'"
+            class="w-10 h-10 invisible select-none pointer-events-none"
+            aria-hidden="true"
+          />
+          <span 
+            v-else-if="slot.type === 'ellipsis'"
             class="w-10 h-10 flex items-center justify-center text-slate-400 dark:text-slate-600 select-none"
           >
             ...
           </span>
           <button 
-            v-else
+            v-else-if="slot.type === 'page' && slot.page !== undefined"
             type="button"
-            @click="setPage(p)"
+            @click="setPage(slot.page)"
             :class="cn(
               'w-10 h-10 rounded-xl font-bold transition-all cursor-pointer text-xs',
-              currentPage === p 
+              currentPage === slot.page 
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
                 : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500'
             )"
           >
-            {{ p }}
+            {{ slot.page }}
           </button>
         </template>
       </div>
