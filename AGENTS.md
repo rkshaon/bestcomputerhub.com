@@ -161,9 +161,26 @@ SEO migration and redirects.
 
 ## Reusable Admin Infrastructure & State Patterns
 
-### 1. Reusable Infinite Pagination (`useInfinitePagination`)
-All paginated selectors and infinite-scroll collections must use `useInfinitePagination<T>()` from `/composables/useInfinitePagination.ts` and `<UiInfiniteScroll />` from `/components/ui/UiInfiniteScroll.vue`.
-- Features built-in deduplication, DRF pagination handling, loading states, search resets, and IntersectionObserver scroll triggering.
+### 1. Reusable Admin Pagination Standards (`<UiPagination />` & `<UiInfiniteScroll />`)
+All admin list views and paginated collections must use the established, reusable pagination primitives rather than creating custom or page-specific pagination UI.
+
+- **Standard Admin Numbered Pagination (`<UiPagination />` from `/components/ui/UiPagination.vue`)**:
+  - **Mandatory Standard**: `<UiPagination />` is the single required standard for all admin list and table views that require numbered page navigation.
+  - **No Duplication**: Admin pages must never create local page-specific pagination UI or duplicate page calculation/navigation logic.
+  - **Preserved Design & Behavior**: All instances must maintain the standardized behavior:
+    - Previous/Next navigation controls.
+    - Multiple visible page numbers with balanced end-range visibility (showing multiple pages near both start and end bounds).
+    - Ellipsis (`...`) strictly for skipped page ranges.
+    - Stable, fixed-slot pagination layout and width across page transitions (preventing layout shift).
+    - Concise `Showing X–Y of Z` summary format (e.g., `Showing 1–10 of 1,572`).
+  - **Extensibility Rule**: If a page requires pagination functionality not currently supported, extend the reusable `<UiPagination />` component directly rather than creating a bespoke local implementation.
+
+- **Infinite Scroll (`useInfinitePagination<T>` & `<UiInfiniteScroll />`)**:
+  - Use `useInfinitePagination<T>()` from `/composables/useInfinitePagination.ts` and `<UiInfiniteScroll />` from `/components/ui/UiInfiniteScroll.vue` for continuous infinite-scroll feeds, dropdown selectors, or compact modal list views where streaming items continuously is preferred over discrete page numbers.
+
+- **Pattern Selection Guideline**:
+  - Use **`<UiPagination />`** when users need explicit page jumping, total record count visibility, or standard tabular admin dataset navigation.
+  - Use **`<UiInfiniteScroll />`** when users stream through items continuously (e.g., dropdown search pickers, live audit logs, or infinite catalog feeds) without needing discrete page jumps.
 
 ### 2. URL-Driven Admin Modal State (`useAdminModalState` & `<UiAdminModal />`)
 All admin CRUD dialogs (Create/Edit/View/Delete) must synchronize their state directly with route query parameters using `useAdminModalState<T>()` from `/composables/useAdminModalState.ts` and `<UiAdminModal />` from `/components/ui/UiAdminModal.vue`.

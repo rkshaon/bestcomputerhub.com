@@ -1061,3 +1061,21 @@ Whenever a page provides both Grid View and List View options:
 - **Visual Indicator**: The List View toggle button must be visually active by default.
 - **Scope**: This applies consistently across all Admin pages and any future pages offering dual view layouts.
 
+---
+
+## 39. Admin Numbered Pagination Standard
+
+All administrative list and table interfaces that require numbered pagination must use `<UiPagination />` from `/components/ui/UiPagination.vue`.
+
+- **Mandatory Single Standard**: `<UiPagination />` is the sole standard component for admin numbered page navigation. Do not build bespoke or page-local pagination controls or duplicate pagination logic.
+- **Standardized Features & Layout**:
+  - Concise item summary format on the left: `Showing X–Y of Z` (e.g. `Showing 1–10 of 1,572`).
+  - Balanced page navigation controls on the right, displaying multiple page buttons near both the start and end boundaries.
+  - Ellipsis (`...`) used strictly for skipped page ranges without introducing artificial layout gaps.
+  - Stable, fixed slot count layout to prevent layout shift during page navigation.
+  - Previous and Next page controls.
+- **Extensibility**: If an admin page requires additional pagination behavior not currently supported, extend `<UiPagination />` directly rather than creating a separate pagination implementation.
+- **Infinite Scroll vs. Numbered Pagination**:
+  - Use **`<UiPagination />`** for admin tables, list views, and records management where users benefit from page jumping, explicit page numbers, and total count awareness.
+  - Use **`<UiInfiniteScroll />`** (`useInfinitePagination`) for continuous streaming lists, dropdown selectors, and compact modal feeds where discrete page numbers are unnecessary.
+
