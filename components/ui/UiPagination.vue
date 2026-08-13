@@ -42,52 +42,64 @@ const setPage = (page: number) => {
 };
 
 const visiblePages = computed(() => {
-  const range: (number | 'ellipsis')[] = [];
   const total = props.totalPages;
   const current = props.currentPage;
 
-  if (total <= 9) {
+  if (total <= 0) return [];
+  if (total <= 12) {
+    const range: number[] = [];
     for (let i = 1; i <= total; i++) {
       range.push(i);
     }
-  } else {
-    let start = Math.max(2, current - 2);
-    let end = Math.min(total - 1, current + 2);
-
-    if (current <= 4) {
-      start = 2;
-      end = 5;
-    } else if (current >= total - 3) {
-      start = total - 4;
-      end = total - 1;
-    }
-
-    range.push(1);
-
-    if (start > 2) {
-      if (start === 3) {
-        range.push(2);
-      } else {
-        range.push('ellipsis');
-      }
-    }
-
-    for (let i = start; i <= end; i++) {
-      range.push(i);
-    }
-
-    if (end < total - 1) {
-      if (end === total - 2) {
-        range.push(total - 1);
-      } else {
-        range.push('ellipsis');
-      }
-    }
-
-    range.push(total);
+    return range;
   }
 
-  return range;
+  const pageSet = new Set<number>();
+
+  // Start boundary pages
+  const startCount = current <= 5 ? 5 : 3;
+  for (let i = 1; i <= startCount && i <= total; i++) {
+    pageSet.add(i);
+  }
+
+  // End boundary pages
+  const endCount = current >= total - 4 ? 5 : 3;
+  for (let i = total - endCount + 1; i <= total; i++) {
+    if (i >= 1) pageSet.add(i);
+  }
+
+  // Middle neighborhood pages around current
+  for (let i = current - 2; i <= current + 2; i++) {
+    if (i >= 1 && i <= total) {
+      pageSet.add(i);
+    }
+  }
+
+  const sortedPages = Array.from(pageSet).sort((a, b) => a - b);
+  const result: (number | 'ellipsis')[] = [];
+
+  if (sortedPages.length > 0) {
+    const firstPage = sortedPages[0];
+    if (firstPage !== undefined) {
+      result.push(firstPage);
+    }
+    for (let i = 1; i < sortedPages.length; i++) {
+      const prev = sortedPages[i - 1];
+      const curr = sortedPages[i];
+      if (prev !== undefined && curr !== undefined) {
+        const diff = curr - prev;
+
+        if (diff === 2) {
+          result.push(prev + 1);
+        } else if (diff > 2) {
+          result.push('ellipsis');
+        }
+        result.push(curr);
+      }
+    }
+  }
+
+  return result;
 });
 </script>
 
