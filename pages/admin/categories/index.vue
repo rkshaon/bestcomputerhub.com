@@ -753,50 +753,15 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
         </table>
       </div>
 
-      <!-- Classic pagination panel -->
-      <div class="bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-900/50 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">
-            Displaying <span class="text-slate-800 dark:text-slate-200 font-black">{{ Math.min(totalCount, (currentPage - 1) * itemsPerPage + 1) }} - {{ Math.min(totalCount, currentPage * itemsPerPage) }}</span> 
-            of <span class="text-slate-800 dark:text-slate-200 font-black">{{ totalCount }}</span> classes.
-          </p>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button 
-            @click="currentPage--" 
-            :disabled="currentPage === 1"
-            class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-          >
-            <ChevronLeft class="w-5 h-5" />
-          </button>
-          
-          <div class="flex items-center gap-1 font-mono text-xs font-bold">
-            <button 
-              v-for="p in totalPages" 
-              :key="p" 
-              @click="currentPage = p"
-              :class="cn(
-                'w-10 h-10 rounded-xl font-bold transition-all cursor-pointer text-xs',
-                currentPage === p 
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
-                  : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500'
-              )"
-            >
-              {{ p }}
-            </button>
-          </div>
-
-          <button 
-            @click="currentPage++" 
-            :disabled="currentPage === totalPages"
-            class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-          >
-            <ChevronRight class="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      <!-- Reusable pagination panel -->
+      <UiPagination
+        v-model:current-page="currentPage"
+        :total-pages="totalPages"
+        :total-count="totalCount"
+        :items-per-page="itemsPerPage"
+        item-label="classes"
+        prefix-label="Displaying"
+      />
     </div>
 
     <!-- MODAL 1: Create New Category Class -->

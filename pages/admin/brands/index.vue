@@ -753,49 +753,15 @@ const inactiveBrandsCount = computed(() => brandsList.value.filter(b => b.is_act
       </div>
 
       <!-- Shared Pagination Footer for Grid Mode -->
-      <div class="bg-card border border-border rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <p class="text-xs text-muted-foreground font-bold uppercase tracking-widest">
-            Showing <span class="text-foreground font-black">{{ Math.min(filteredBrands.length, (currentPage - 1) * itemsPerPage + 1) }} - {{ Math.min(filteredBrands.length, currentPage * itemsPerPage) }}</span> 
-            of <span class="text-foreground font-black">{{ filteredBrands.length }}</span> brands.
-          </p>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button 
-            @click="currentPage--" 
-            :disabled="currentPage === 1"
-            class="w-10 h-10 flex items-center justify-center border border-border rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-          >
-            <ChevronLeft class="w-5 h-5" />
-          </button>
-          
-          <div class="flex items-center gap-1 font-mono text-xs font-bold">
-            <button 
-              v-for="p in totalPages" 
-              :key="p" 
-              @click="currentPage = p"
-              :class="cn(
-                'w-10 h-10 rounded-xl font-bold transition-all cursor-pointer text-xs',
-                currentPage === p 
-                  ? 'bg-primary text-primary-foreground shadow-sm' 
-                  : 'border border-border/60 hover:bg-muted text-muted-foreground'
-              )"
-            >
-              {{ p }}
-            </button>
-          </div>
-
-          <button 
-            @click="currentPage++" 
-            :disabled="currentPage === totalPages"
-            class="w-10 h-10 flex items-center justify-center border border-border rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-          >
-            <ChevronRight class="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      <UiPagination
+        v-model:current-page="currentPage"
+        :total-pages="totalPages"
+        :total-count="filteredBrands.length"
+        :items-per-page="itemsPerPage"
+        item-label="brands"
+        prefix-label="Showing"
+        variant="card"
+      />
     </div>
 
     <!-- Paginated brand table (List View Mode) -->
@@ -930,49 +896,15 @@ const inactiveBrandsCount = computed(() => brandsList.value.filter(b => b.is_act
       </div>
 
       <!-- Pagination Footer System -->
-      <div class="bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-900/50 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">
-            Showing <span class="text-slate-800 dark:text-slate-200 font-black">{{ Math.min(filteredBrands.length, (currentPage - 1) * itemsPerPage + 1) }} - {{ Math.min(filteredBrands.length, currentPage * itemsPerPage) }}</span> 
-            of <span class="text-slate-800 dark:text-slate-200 font-black">{{ filteredBrands.length }}</span> brands.
-          </p>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button 
-            @click="currentPage--" 
-            :disabled="currentPage === 1"
-            class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-          >
-            <ChevronLeft class="w-5 h-5" />
-          </button>
-          
-          <div class="flex items-center gap-1 font-mono text-xs font-bold">
-            <button 
-              v-for="p in totalPages" 
-              :key="p" 
-              @click="currentPage = p"
-              :class="cn(
-                'w-10 h-10 rounded-xl font-bold transition-all cursor-pointer text-xs',
-                currentPage === p 
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
-                  : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500'
-              )"
-            >
-              {{ p }}
-            </button>
-          </div>
-
-          <button 
-            @click="currentPage++" 
-            :disabled="currentPage === totalPages"
-            class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-          >
-            <ChevronRight class="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      <UiPagination
+        v-model:current-page="currentPage"
+        :total-pages="totalPages"
+        :total-count="filteredBrands.length"
+        :items-per-page="itemsPerPage"
+        item-label="brands"
+        prefix-label="Showing"
+        variant="footer"
+      />
     </div>
 
     <!-- MODAL 1: Create New Partner -->
