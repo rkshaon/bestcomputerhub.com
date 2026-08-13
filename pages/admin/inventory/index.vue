@@ -1,5 +1,7 @@
 <!-- File: /pages/admin/inventory/index.vue -->
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { refDebounced } from '@vueuse/core';
 import { 
   Package, 
   AlertTriangle, 
@@ -14,8 +16,6 @@ import {
   RotateCcw,
   History,
   TrendingDown,
-  ChevronLeft,
-  ChevronRight,
   MoreHorizontal,
   Loader2
 } from 'lucide-vue-next';
@@ -23,6 +23,7 @@ import { useAdminStore } from '@/stores/admin';
 import { useProductService } from '@/composables/useProductService';
 import { formatCurrency, cn } from '@/utils';
 import type { Product, InventoryAlert } from '@/types';
+import UiPagination from '@/components/ui/UiPagination.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -43,7 +44,11 @@ const iconMap = {
 
 const allProducts = ref<Product[]>(productService.getProducts());
 const searchQuery = ref('');
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const stockStatusFilter = ref('all');
+
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
 
 // UI State
 const editingId = ref<string | null>(null);
@@ -52,14 +57,26 @@ const isUpdating = ref(false);
 
 const filteredProducts = computed(() => {
   return allProducts.value.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                         product.sku.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const query = debouncedSearchQuery.value.toLowerCase().trim();
+    const matchesSearch = !query || product.name.toLowerCase().includes(query) || 
+                         product.sku.toLowerCase().includes(query);
     
     const status = getStockStatus(product.stock);
     const matchesStatus = stockStatusFilter.value === 'all' || status === stockStatusFilter.value;
     
     return matchesSearch && matchesStatus;
   });
+});
+
+watch([debouncedSearchQuery, stockStatusFilter], () => {
+  currentPage.value = 1;
+});
+
+const totalPages = computed(() => Math.ceil(filteredProducts.value.length / itemsPerPage.value) || 1);
+
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  return filteredProducts.value.slice(start, start + itemsPerPage.value);
 });
 
 const stats = computed(() => {
@@ -213,7 +230,7 @@ function adjustStock(amount: number) {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50 dark:divide-slate-900">
-              <tr v-for="product in filteredProducts" :key="product.id" class="group hover:bg-slate-50/30 dark:hover:bg-slate-900/20 transition-colors">
+              <tr v-for="product in paginatedProducts" :key="product.id" class="group hover:bg-slate-50/30 dark:hover:bg-slate-900/20 transition-colors">
                 <!-- Product Details -->
                 <td class="px-8 py-6">
                   <div class="flex items-center gap-4">
@@ -335,38 +352,13 @@ function adjustStock(amount: number) {
           </table>
         </div>
 
-        <!-- Pagination Decorator -->
-        <div class="px-8 py-6 border-t border-slate-50 dark:border-slate-900 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/20 dark:bg-slate-900/10">
-          <div class="flex items-center gap-8">
-            <div>
-              <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1">Global Presence</p>
-              <div class="flex -space-x-1">
-                <div v-for="i in 4" :key="i" class="w-6 h-6 rounded-full border-2 border-white dark:border-slate-950 bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-[8px] font-bold overflow-hidden">
-                  <img :src="`https://api.dicebear.com/7.x/initials/svg?seed=${['NY', 'LON', 'TOK', 'SIN'][i-1]}`" class="w-full h-full object-cover" />
-                </div>
-              </div>
-            </div>
-            <div class="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
-             <div>
-              <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1">Sync Latency</p>
-              <p class="text-xs font-mono font-bold text-emerald-500">24ms <span class="text-slate-300">/ OK</span></p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <UiButton variant="outline" size="icon" class="rounded-xl" disabled>
-              <ChevronLeft class="w-4 h-4" />
-            </UiButton>
-            <div class="flex items-center gap-1 mx-2">
-              <button class="w-8 h-8 rounded-lg bg-primary text-white font-bold text-[10px]">1</button>
-              <button class="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 font-bold text-[10px]">2</button>
-              <button class="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 font-bold text-[10px]">3</button>
-            </div>
-            <UiButton variant="outline" size="icon" class="rounded-xl">
-              <ChevronRight class="w-4 h-4" />
-            </UiButton>
-          </div>
-        </div>
+        <!-- Pagination -->
+        <UiPagination
+          v-model:current-page="currentPage"
+          :total-pages="totalPages"
+          :total-items="filteredProducts.length"
+          :items-per-page="itemsPerPage"
+        />
       </div>
     </div>
   </div>

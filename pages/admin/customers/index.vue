@@ -1,5 +1,7 @@
 <!-- File: /pages/admin/customers/index.vue -->
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { refDebounced } from '@vueuse/core';
 import { 
   Search, 
   Filter, 
@@ -11,14 +13,13 @@ import {
   DollarSign,
   ShoppingBag,
   ExternalLink,
-  ChevronLeft,
-  ChevronRight,
   ArrowUpDown,
   UserPlus,
   TrendingUp
 } from 'lucide-vue-next';
 import { useAdminStore } from '@/stores/admin';
 import { formatCurrency, cn } from '@/utils';
+import UiPagination from '@/components/ui/UiPagination.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -26,12 +27,28 @@ definePageMeta({
 
 const adminStore = useAdminStore();
 const searchQuery = ref('');
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
+
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
 
 const filteredCustomers = computed(() => {
   return adminStore.customers.filter(c => {
-    return c.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-           c.email.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const query = debouncedSearchQuery.value.toLowerCase().trim();
+    return !query || c.name.toLowerCase().includes(query) || 
+           c.email.toLowerCase().includes(query);
   });
+});
+
+watch(debouncedSearchQuery, () => {
+  currentPage.value = 1;
+});
+
+const totalPages = computed(() => Math.ceil(filteredCustomers.value.length / itemsPerPage.value) || 1);
+
+const paginatedCustomers = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  return filteredCustomers.value.slice(start, start + itemsPerPage.value);
 });
 </script>
 
@@ -104,7 +121,7 @@ const filteredCustomers = computed(() => {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 dark:divide-slate-900">
-            <tr v-for="customer in filteredCustomers" :key="customer.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+            <tr v-for="customer in paginatedCustomers" :key="customer.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
               <td class="px-8 py-5">
                 <div class="flex items-center gap-4">
                   <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center font-bold text-slate-400 group-hover:text-primary transition-colors">
@@ -155,18 +172,12 @@ const filteredCustomers = computed(() => {
       </div>
 
       <!-- Pagination -->
-      <div class="px-8 py-6 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between font-medium">
-        <p class="text-xs text-slate-400">Total Records: <span class="text-slate-900 dark:text-slate-100 font-bold">{{ filteredCustomers.length }}</span></p>
-        <div class="flex items-center gap-2">
-          <button class="w-9 h-9 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 disabled:opacity-50" disabled title="Previous page" aria-label="Previous page">
-            <ChevronLeft class="w-4 h-4" />
-          </button>
-          <button class="w-9 h-9 flex items-center justify-center bg-primary text-white font-bold text-xs rounded-xl shadow-lg shadow-primary/10">1</button>
-          <button class="w-9 h-9 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900" title="Next page" aria-label="Next page">
-            <ChevronRight class="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <UiPagination
+        v-model:current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="filteredCustomers.length"
+        :items-per-page="itemsPerPage"
+      />
     </div>
   </div>
 </template>

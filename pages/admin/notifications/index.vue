@@ -1,5 +1,7 @@
 <!-- File: /pages/admin/notifications/index.vue -->
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { refDebounced } from '@vueuse/core';
 import { 
   Bell, 
   ShieldAlert, 
@@ -21,6 +23,7 @@ import {
   ArrowRight
 } from 'lucide-vue-next';
 import { cn } from '@/utils';
+import UiPagination from '@/components/ui/UiPagination.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -95,16 +98,32 @@ const notifications = ref<Notification[]>([
 
 const filter = ref('all');
 const searchQuery = ref('');
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
+
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
 
 const filteredNotifications = computed(() => {
   return notifications.value.filter(n => {
     const matchesFilter = filter.value === 'all' || 
                           (filter.value === 'unread' && !n.isRead) ||
                           (filter.value === n.type);
-    const matchesSearch = n.title.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                         n.message.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const query = debouncedSearchQuery.value.toLowerCase().trim();
+    const matchesSearch = !query || n.title.toLowerCase().includes(query) || 
+                         n.message.toLowerCase().includes(query);
     return matchesFilter && matchesSearch;
   });
+});
+
+watch([debouncedSearchQuery, filter], () => {
+  currentPage.value = 1;
+});
+
+const totalPages = computed(() => Math.ceil(filteredNotifications.value.length / itemsPerPage.value) || 1);
+
+const paginatedNotifications = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  return filteredNotifications.value.slice(start, start + itemsPerPage.value);
 });
 
 const getPriorityColor = (priority: string) => {
@@ -217,7 +236,7 @@ const toggleReadStatus = (notification: Notification) => {
       <!-- Feed List -->
       <div class="divide-y divide-slate-50 dark:divide-slate-900">
         <div 
-          v-for="n in filteredNotifications" 
+          v-for="n in paginatedNotifications" 
           :key="n.id" 
           :class="cn(
             'group p-6 md:px-8 transition-all duration-300 flex flex-col md:flex-row gap-6 relative',
@@ -309,15 +328,12 @@ const toggleReadStatus = (notification: Notification) => {
       </div>
 
       <!-- Footer/Pagination -->
-      <div class="p-6 border-t border-slate-50 dark:border-slate-900 bg-slate-50/20 dark:bg-slate-900/10 flex items-center justify-between">
-        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Showing <span class="text-slate-900 dark:text-white">{{ filteredNotifications.length }}</span> of {{ notifications.length }} registered events
-        </div>
-        <div class="flex items-center gap-1.5">
-           <UiButton variant="outline" size="sm" class="h-9 rounded-lg font-bold text-[10px] uppercase tracking-widest disabled:opacity-30" disabled>Previous</UiButton>
-           <UiButton variant="outline" size="sm" class="h-9 rounded-lg font-bold text-[10px] uppercase tracking-widest">Next</UiButton>
-        </div>
-      </div>
+      <UiPagination
+        v-model:current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="filteredNotifications.length"
+        :items-per-page="itemsPerPage"
+      />
     </div>
 
     <!-- Subscription Card -->

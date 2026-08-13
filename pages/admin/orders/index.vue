@@ -1,5 +1,7 @@
 <!-- File: /pages/admin/orders/index.vue -->
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { refDebounced } from '@vueuse/core';
 import { 
   Search, 
   Filter, 
@@ -14,13 +16,12 @@ import {
   XCircle,
   RefreshCcw,
   ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
   Package
 } from 'lucide-vue-next';
 import { useAdminStore } from '@/stores/admin';
 import { formatCurrency, cn } from '@/utils';
 import type { Order } from '@/types';
+import UiPagination from '@/components/ui/UiPagination.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -28,7 +29,11 @@ definePageMeta({
 
 const adminStore = useAdminStore();
 const searchQuery = ref('');
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref('all');
+
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
 
 const statusConfig = {
   pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-100 dark:border-amber-900' },
@@ -39,13 +44,25 @@ const statusConfig = {
   refunded: { icon: RefreshCcw, color: 'text-slate-600', bg: 'bg-slate-50 dark:bg-slate-950/20', border: 'border-slate-100 dark:border-slate-900' },
 };
 
-const orders = computed(() => {
+const filteredOrders = computed(() => {
   return adminStore.recentOrders.filter(o => {
-    const matchesSearch = o.orderNumber.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                         o.customerName.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const query = debouncedSearchQuery.value.toLowerCase().trim();
+    const matchesSearch = !query || o.orderNumber.toLowerCase().includes(query) || 
+                         o.customerName.toLowerCase().includes(query);
     const matchesStatus = statusFilter.value === 'all' || o.status === statusFilter.value;
     return matchesSearch && matchesStatus;
   });
+});
+
+watch([debouncedSearchQuery, statusFilter], () => {
+  currentPage.value = 1;
+});
+
+const totalPages = computed(() => Math.ceil(filteredOrders.value.length / itemsPerPage.value) || 1);
+
+const paginatedOrders = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  return filteredOrders.value.slice(start, start + itemsPerPage.value);
 });
 </script>
 
@@ -111,7 +128,7 @@ const orders = computed(() => {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 dark:divide-slate-900">
-            <tr v-for="order in orders" :key="order.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+            <tr v-for="order in paginatedOrders" :key="order.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
               <td class="px-8 py-5">
                 <div class="flex flex-col">
                   <span class="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 tracking-tighter">{{ order.orderNumber }}</span>
@@ -181,18 +198,12 @@ const orders = computed(() => {
       </div>
 
       <!-- Pagination -->
-      <div class="px-8 py-6 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between">
-        <p class="text-xs text-slate-400 font-medium">Showing <span class="font-bold text-slate-900 dark:text-slate-100">1</span> to <span class="font-bold text-slate-900 dark:text-slate-100">3</span> of <span class="font-bold text-slate-900 dark:text-slate-100">{{ orders.length }}</span> orders</p>
-        <div class="flex items-center gap-2">
-          <button class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50" disabled title="Previous page" aria-label="Previous page">
-            <ChevronLeft class="w-5 h-5" />
-          </button>
-          <button class="w-10 h-10 flex items-center justify-center bg-primary text-white font-bold text-xs rounded-xl shadow-lg shadow-primary/20">1</button>
-          <button class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100" title="Next page" aria-label="Next page">
-            <ChevronRight class="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      <UiPagination
+        v-model:current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="filteredOrders.length"
+        :items-per-page="itemsPerPage"
+      />
     </div>
   </div>
 </template>

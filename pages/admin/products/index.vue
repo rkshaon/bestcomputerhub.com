@@ -1,5 +1,7 @@
 <!-- File: /pages/admin/products/index.vue -->
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { refDebounced } from '@vueuse/core';
 import { 
   Plus, 
   Search, 
@@ -11,14 +13,13 @@ import {
   Download,
   Package,
   Layers,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight
+  ArrowUpDown
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { formatCurrency, cn } from '@/utils';
 import type { Product } from '@/types';
+import UiPagination from '@/components/ui/UiPagination.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -33,16 +34,32 @@ const canDeleteProduct = computed(() => canDeleteInModule('/admin/products'));
 
 const products = ref<Product[]>(productService.getProducts());
 const searchQuery = ref('');
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref('all');
 const categoryFilter = ref('all');
 
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+
 const filteredProducts = computed(() => {
   return products.value.filter((p: Product) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                         p.sku.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const query = debouncedSearchQuery.value.toLowerCase().trim();
+    const matchesSearch = !query || p.name.toLowerCase().includes(query) || 
+                         p.sku.toLowerCase().includes(query);
     const matchesCategory = categoryFilter.value === 'all' || p.category === categoryFilter.value;
     return matchesSearch && matchesCategory;
   });
+});
+
+watch([debouncedSearchQuery, categoryFilter, statusFilter], () => {
+  currentPage.value = 1;
+});
+
+const totalPages = computed(() => Math.ceil(filteredProducts.value.length / itemsPerPage.value) || 1);
+
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  return filteredProducts.value.slice(start, start + itemsPerPage.value);
 });
 
 const categories = [...new Set(products.value.map((p: Product) => p.category))];
@@ -119,7 +136,7 @@ const handleDelete = (id: string) => {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 dark:divide-slate-900">
-            <tr v-for="product in filteredProducts" :key="product.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+            <tr v-for="product in paginatedProducts" :key="product.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
               <td class="px-8 py-5">
                 <div class="flex items-center gap-4">
                   <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0">
@@ -188,20 +205,12 @@ const handleDelete = (id: string) => {
       </div>
 
       <!-- Pagination -->
-      <div class="px-8 py-6 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between">
-        <p class="text-xs text-slate-400 font-medium">Showing <span class="font-bold text-slate-900 dark:text-slate-100">1</span> to <span class="font-bold text-slate-900 dark:text-slate-100">10</span> of <span class="font-bold text-slate-900 dark:text-slate-100">{{ filteredProducts.length }}</span> products</p>
-        <div class="flex items-center gap-2">
-          <button class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50" disabled title="Previous page" aria-label="Previous page">
-            <ChevronLeft class="w-5 h-5" />
-          </button>
-          <button class="w-10 h-10 flex items-center justify-center bg-primary text-white font-bold text-xs rounded-xl shadow-lg shadow-primary/20">1</button>
-          <button class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">2</button>
-          <button class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">3</button>
-          <button class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100" title="Next page" aria-label="Next page">
-            <ChevronRight class="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      <UiPagination
+        v-model:current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="filteredProducts.length"
+        :items-per-page="itemsPerPage"
+      />
     </div>
   </div>
 </template>
