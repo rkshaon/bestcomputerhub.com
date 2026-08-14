@@ -1079,3 +1079,22 @@ All administrative list and table interfaces that require numbered pagination mu
   - Use **`<UiPagination />`** for admin tables, list views, and records management where users benefit from page jumping, explicit page numbers, and total count awareness.
   - Use **`<UiInfiniteScroll />`** (`useInfinitePagination`) for continuous streaming lists, dropdown selectors, and compact modal feeds where discrete page numbers are unnecessary.
 
+---
+
+## 40. Admin Reusable Table Standard (`<UiTable />`)
+
+All administrative pages displaying tabular data must use `<UiTable />` from `/components/ui/UiTable.vue` instead of implementing raw `<table>` HTML markup or inline table styling directly within pages.
+
+- **Mandatory Reusable Primitive**: `<UiTable />` is the sole standard table primitive for all Admin dataset tables. Future and existing Admin pages displaying tabular data must first look for and reuse `<UiTable />` rather than creating raw custom table markup or duplicate table components.
+- **Presentation & Visual Responsibilities**:
+  - Table container/wrapper with responsive horizontal scroll handling (`overflow-x-auto`).
+  - Standard header rendering (`<thead>`, `<th>`) driven by a clean column definition prop.
+  - Standard row (`<tr>`) and cell (`<td>`) styling enforcing consistent padding, typography, alignment, hover states, and semantic design tokens (`bg-card`, `text-card-foreground`, `border-border`, etc.).
+  - Built-in empty state display when data collection is empty.
+  - Built-in loading state display (skeletons or spinners) during data operations.
+- **Customization via Reusable API**:
+  - Column alignment, widths, and cell content (badges, images, action buttons) are defined via props and named slot templates (`#cell(columnKey)`) without hardcoding entity-specific logic into `<UiTable />`.
+- **Strict Architectural Separation**:
+  - **Pagination**: Kept separate. `<UiPagination />` and `<UiInfiniteScroll />` remain responsible for pagination controls positioned outside `<UiTable />`.
+  - **Data & Business Logic**: Searching, filtering, sorting computations, permission checks, row action handling, and API data-fetching remain managed by parent pages or composables and passed into `<UiTable />`.
+

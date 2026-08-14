@@ -219,6 +219,22 @@ For common, visually recognizable secondary actions (such as View, Edit, Delete,
 - **When to Use Visible Text**: Retain text labels for primary CTAs, non-obvious actions, or when additional context is needed to prevent ambiguity.
 - **Accessibility Requirements**: All icon-only action buttons MUST include an accessible `aria-label` and an appropriate `title`/tooltip for sighted users while using the project's standard icon library (`lucide-vue-next`).
 
+### 8. Standard Reusable Admin Table Pattern (`<UiTable />`)
+All administrative list and data views displaying tabular data must use the standard `<UiTable />` component (`/components/ui/UiTable.vue`) rather than implementing raw `<table>` HTML markup or inline table styling directly within pages.
+
+- **Mandatory Reusable Primitive**: `<UiTable />` is the required standard primitive for all Admin list and tabular data views. Future and existing Admin pages displaying tabular data must first check for and reuse `<UiTable />` instead of creating raw custom table markup or duplicate table components.
+- **Encapsulated Presentation Responsibilities**: `<UiTable />` handles core table structure and visual presentation:
+  - Responsive table container wrapper handling overflow and scroll behavior (`overflow-x-auto`).
+  - Standardized header rendering (`<thead>`, `<th>`) and column configuration API.
+  - Consistent row (`<tr>`) and cell (`<td>`) padding, borders, typography, alignment, hover states, and semantic design tokens (`bg-card`, `text-card-foreground`, `border-border`, etc.).
+  - Built-in empty state rendering when dataset collections are empty.
+  - Built-in loading state rendering (skeletons or spinners) during asynchronous operations.
+- **Flexible Column & Cell Rendering API**:
+  - Entity-specific fields, badges, avatars, action buttons, and custom formatters must be supported via a flexible slot/prop API (e.g., named cell slots like `#cell(columnKey)` or `#cell-name`) without hardcoding domain entity logic inside `<UiTable />`.
+- **Strict Separation of Concerns**:
+  - **Pagination**: Kept strictly separate. `<UiPagination />` and `<UiInfiniteScroll />` remain responsible for pagination controls and page navigation, positioned outside `<UiTable />`.
+  - **Business & Data Logic**: Sorting, searching, filtering, permissions checking, row action handlers, and API data-fetching logic remain outside `<UiTable />`, managed by pages, composables, or stores and passed into `<UiTable />` via props/slots.
+
 ## Structural Changes
 
 Agents may autonomously perform small, task-local,
