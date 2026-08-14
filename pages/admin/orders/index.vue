@@ -22,10 +22,21 @@ import { useAdminStore } from '@/stores/admin';
 import { formatCurrency, cn } from '@/utils';
 import type { Order } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
+import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 
 definePageMeta({
   layout: 'admin'
 });
+
+const tableColumns: UiTableColumn<Order>[] = [
+  { key: 'orderInfo', label: 'Order Info', sortable: true, headerClass: 'px-8', cellClass: 'px-8 py-5' },
+  { key: 'customer', label: 'Customer', headerClass: 'px-8', cellClass: 'px-8 py-5' },
+  { key: 'status', label: 'Status', headerClass: 'px-8', cellClass: 'px-8 py-5' },
+  { key: 'payment', label: 'Payment', headerClass: 'px-8', cellClass: 'px-8 py-5' },
+  { key: 'totalAmount', label: 'Total', align: 'right', headerClass: 'px-8', cellClass: 'px-8 py-5 text-right' },
+  { key: 'createdAt', label: 'Date', headerClass: 'px-8', cellClass: 'px-8 py-5' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8 py-5 text-right' },
+];
 
 const adminStore = useAdminStore();
 const searchQuery = ref('');
@@ -111,100 +122,98 @@ const paginatedOrders = computed(() => {
     </div>
 
     <!-- Orders Table -->
-    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 dark:border-slate-900">
-              <th class="px-8 py-5">
-                <div class="flex items-center gap-2">Order Info <ArrowUpDown class="w-3 h-3" /></div>
-              </th>
-              <th class="px-8 py-5">Customer</th>
-              <th class="px-8 py-5">Status</th>
-              <th class="px-8 py-5">Payment</th>
-              <th class="px-8 py-5 text-right">Total</th>
-              <th class="px-8 py-5">Date</th>
-              <th class="px-8 py-5 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-50 dark:divide-slate-900">
-            <tr v-for="order in paginatedOrders" :key="order.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
-              <td class="px-8 py-5">
-                <div class="flex flex-col">
-                  <span class="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 tracking-tighter">{{ order.orderNumber }}</span>
-                  <span class="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
-                    <Package class="w-2.5 h-2.5" /> {{ Math.floor(Math.random() * 5) + 1 }} Items
-                  </span>
-                </div>
-              </td>
-              <td class="px-8 py-5">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-[10px] font-bold">
-                    {{ order.customerName.split(' ').map(n => n[0]).join('') }}
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="text-sm font-bold">{{ order.customerName }}</span>
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Enterprise Client</span>
-                  </div>
-                </div>
-              </td>
-              <td class="px-8 py-5">
-                <div :class="cn(
-                  'inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors',
-                  statusConfig[order.status].bg,
-                  statusConfig[order.status].color,
-                  statusConfig[order.status].border
-                )">
-                  <component :is="statusConfig[order.status].icon" class="w-3 h-3" />
-                  {{ order.status }}
-                </div>
-              </td>
-              <td class="px-8 py-5">
-                <div class="flex items-center gap-2">
-                  <CreditCard class="w-3.5 h-3.5 text-slate-400" />
-                  <span :class="cn(
-                    'text-[10px] font-bold uppercase tracking-widest',
-                    order.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-amber-600'
-                  )">
-                    {{ order.paymentStatus === 'paid' ? 'Settled' : 'Pending' }}
-                  </span>
-                </div>
-              </td>
-              <td class="px-8 py-5 text-right">
-                <span class="text-sm font-bold tracking-tight">{{ formatCurrency(order.totalAmount) }}</span>
-              </td>
-              <td class="px-8 py-5">
-                <div class="flex items-center gap-2 text-slate-400">
-                  <Calendar class="w-3.5 h-3.5" />
-                  <span class="text-xs font-medium">{{ new Date(order.createdAt).toLocaleDateString() }}</span>
-                </div>
-              </td>
-              <td class="px-8 py-5 text-right">
-                <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <NuxtLink :to="`/admin/orders/${order.id}`" class="p-2 text-slate-400 hover:text-primary transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm" title="View order details" aria-label="View order details">
-                    <Eye class="w-3.5 h-3.5" />
-                  </NuxtLink>
-                  <button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm" title="More options" aria-label="More options">
-                    <MoreVertical class="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <button class="p-2 text-slate-400 group-hover:hidden" title="More options" aria-label="More options">
-                  <MoreVertical class="w-4 h-4" />
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <UiTable
+      :columns="tableColumns"
+      :data="paginatedOrders"
+      key-field="id"
+    >
+      <!-- Order Info -->
+      <template #cell-orderInfo="{ item: order }">
+        <div class="flex flex-col">
+          <span class="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 tracking-tighter">{{ order.orderNumber }}</span>
+          <span class="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
+            <Package class="w-2.5 h-2.5" /> {{ Math.floor(Math.random() * 5) + 1 }} Items
+          </span>
+        </div>
+      </template>
+
+      <!-- Customer -->
+      <template #cell-customer="{ item: order }">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-[10px] font-bold">
+            {{ order.customerName.split(' ').map(n => n[0]).join('') }}
+          </div>
+          <div class="flex flex-col">
+            <span class="text-sm font-bold">{{ order.customerName }}</span>
+            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Enterprise Client</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- Status -->
+      <template #cell-status="{ item: order }">
+        <div :class="cn(
+          'inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors',
+          statusConfig[order.status].bg,
+          statusConfig[order.status].color,
+          statusConfig[order.status].border
+        )">
+          <component :is="statusConfig[order.status].icon" class="w-3 h-3" />
+          {{ order.status }}
+        </div>
+      </template>
+
+      <!-- Payment -->
+      <template #cell-payment="{ item: order }">
+        <div class="flex items-center gap-2">
+          <CreditCard class="w-3.5 h-3.5 text-slate-400" />
+          <span :class="cn(
+            'text-[10px] font-bold uppercase tracking-widest',
+            order.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-amber-600'
+          )">
+            {{ order.paymentStatus === 'paid' ? 'Settled' : 'Pending' }}
+          </span>
+        </div>
+      </template>
+
+      <!-- Total -->
+      <template #cell-totalAmount="{ item: order }">
+        <span class="text-sm font-bold tracking-tight">{{ formatCurrency(order.totalAmount) }}</span>
+      </template>
+
+      <!-- Date -->
+      <template #cell-createdAt="{ item: order }">
+        <div class="flex items-center gap-2 text-slate-400">
+          <Calendar class="w-3.5 h-3.5" />
+          <span class="text-xs font-medium">{{ new Date(order.createdAt).toLocaleDateString() }}</span>
+        </div>
+      </template>
+
+      <!-- Actions -->
+      <template #cell-actions="{ item: order }">
+        <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <NuxtLink :to="`/admin/orders/${order.id}`" class="p-2 text-slate-400 hover:text-primary transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm" title="View order details" aria-label="View order details">
+            <Eye class="w-3.5 h-3.5" />
+          </NuxtLink>
+          <button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm cursor-pointer" title="More options" aria-label="More options">
+            <MoreVertical class="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <button class="p-2 text-slate-400 group-hover:hidden cursor-pointer" title="More options" aria-label="More options">
+          <MoreVertical class="w-4 h-4" />
+        </button>
+      </template>
 
       <!-- Pagination -->
-      <UiPagination
-        v-model:current-page="currentPage"
-        :total-pages="totalPages"
-        :total-count="filteredOrders.length"
-        :items-per-page="itemsPerPage"
-        item-label="orders"
-      />
-    </div>
+      <template #footer>
+        <UiPagination
+          v-model:current-page="currentPage"
+          :total-pages="totalPages"
+          :total-count="filteredOrders.length"
+          :items-per-page="itemsPerPage"
+          item-label="orders"
+        />
+      </template>
+    </UiTable>
   </div>
 </template>

@@ -24,10 +24,19 @@ import { useProductService } from '@/composables/useProductService';
 import { formatCurrency, cn } from '@/utils';
 import type { Product, InventoryAlert } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
+import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 
 definePageMeta({
   layout: 'admin'
 });
+
+const tableColumns: UiTableColumn<Product>[] = [
+  { key: 'name', label: 'Product Matrix', headerClass: 'px-8', cellClass: 'px-8 py-6' },
+  { key: 'sku', label: 'Logistics SKU', headerClass: 'px-8', cellClass: 'px-8 py-6' },
+  { key: 'stock', label: 'Current Volume', headerClass: 'px-8', cellClass: 'px-8 py-6' },
+  { key: 'status', label: 'Health Status', headerClass: 'px-8', cellClass: 'px-8 py-6' },
+  { key: 'actions', label: 'Operations', align: 'right', headerClass: 'px-8', cellClass: 'px-8 py-6' },
+];
 
 const adminStore = useAdminStore();
 const productService = useProductService();
@@ -217,150 +226,140 @@ function adjustStock(amount: number) {
       </div>
 
       <!-- Inventory Table -->
-      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
-        <div class="overflow-x-auto text-nowrap">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/50">
-                <th class="px-8 py-5">Product Matrix</th>
-                <th class="px-8 py-5">Logistics SKU</th>
-                <th class="px-8 py-5">Current Volume</th>
-                <th class="px-8 py-5">Health Status</th>
-                <th class="px-8 py-5 text-right">Operations</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-50 dark:divide-slate-900">
-              <tr v-for="product in paginatedProducts" :key="product.id" class="group hover:bg-slate-50/30 dark:hover:bg-slate-900/20 transition-colors">
-                <!-- Product Details -->
-                <td class="px-8 py-6">
-                  <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 shrink-0 overflow-hidden">
-                      <img :src="product.images[0]" class="w-full h-full object-cover rounded-xl" />
-                    </div>
-                    <div>
-                      <p class="text-sm font-bold tracking-tight">{{ product.name }}</p>
-                      <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{{ product.category }} • {{ product.brand }}</p>
-                    </div>
-                  </div>
-                </td>
+      <UiTable
+        :columns="tableColumns"
+        :data="paginatedProducts"
+        key-field="id"
+        wrapper-class="overflow-x-auto text-nowrap"
+      >
+        <!-- Product Details -->
+        <template #cell-name="{ item: product }">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 shrink-0 overflow-hidden">
+              <img :src="product.images[0]" class="w-full h-full object-cover rounded-xl" />
+            </div>
+            <div>
+              <p class="text-sm font-bold tracking-tight">{{ product.name }}</p>
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{{ product.category }} • {{ product.brand }}</p>
+            </div>
+          </div>
+        </template>
 
-                <!-- SKU -->
-                <td class="px-8 py-6">
-                  <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-400">
-                      <Package class="w-3.5 h-3.5" />
-                    </div>
-                    <code class="text-xs font-mono font-bold text-slate-500 tracking-tighter">{{ product.sku }}</code>
-                  </div>
-                </td>
+        <!-- SKU -->
+        <template #cell-sku="{ item: product }">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-400">
+              <Package class="w-3.5 h-3.5" />
+            </div>
+            <code class="text-xs font-mono font-bold text-slate-500 tracking-tighter">{{ product.sku }}</code>
+          </div>
+        </template>
 
-                <!-- Current Volume -->
-                <td class="px-8 py-6">
-                  <div v-if="editingId === product.id" class="flex items-center gap-3 animate-in zoom-in-95">
-                    <div class="flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2 h-10 shadow-inner">
-                      <button @click="adjustStock(-1)" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-colors" title="Decrease stock" aria-label="Decrease stock">
-                        <Minus class="w-4 h-4" />
-                      </button>
-                      <input 
-                        v-model.number="editStock" 
-                        type="number" 
-                        class="w-14 text-center bg-transparent border-none outline-none font-black text-sm"
-                      />
-                      <button @click="adjustStock(1)" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-colors" title="Increase stock" aria-label="Increase stock">
-                        <Plus class="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                      <button 
-                        @click="updateStock(product)" 
-                        class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-                        :disabled="isUpdating"
-                        title="Save stock level"
-                        aria-label="Save stock level"
-                      >
-                        <Save v-if="!isUpdating" class="w-4 h-4" />
-                        <Loader2 v-else class="w-4 h-4 animate-spin" />
-                      </button>
-                      <button 
-                        @click="cancelEditing" 
-                        class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-all"
-                        :disabled="isUpdating"
-                        title="Cancel stock editing"
-                        aria-label="Cancel stock editing"
-                      >
-                        <RotateCcw class="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div v-else class="flex flex-col gap-2 min-w-[140px]">
-                    <div class="flex items-baseline gap-1.5">
-                      <span :class="cn('text-lg font-black tracking-tighter transition-colors duration-500', 
-                        product.stock === 0 ? 'text-rose-600' : product.stock < 10 ? 'text-amber-600' : 'text-slate-900 dark:text-white'
-                      )">
-                        {{ product.stock }}
-                      </span>
-                      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Units Reserved</span>
-                    </div>
-                    <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden shadow-inner">
-                      <div 
-                        :class="cn(
-                          'h-full rounded-full transition-all duration-1000 ease-out', 
-                          product.stock === 0 ? 'bg-rose-500' : product.stock < 10 ? 'bg-amber-500' : 'bg-primary'
-                        )"
-                        :style="{ width: `${Math.min((product.stock / 100) * 100, 100)}%` }"
-                      ></div>
-                    </div>
-                  </div>
-                </td>
+        <!-- Current Volume -->
+        <template #cell-stock="{ item: product }">
+          <div v-if="editingId === product.id" class="flex items-center gap-3 animate-in zoom-in-95">
+            <div class="flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2 h-10 shadow-inner">
+              <button @click="adjustStock(-1)" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-colors cursor-pointer" title="Decrease stock" aria-label="Decrease stock">
+                <Minus class="w-4 h-4" />
+              </button>
+              <input 
+                v-model.number="editStock" 
+                type="number" 
+                class="w-14 text-center bg-transparent border-none outline-none font-black text-sm"
+              />
+              <button @click="adjustStock(1)" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-colors cursor-pointer" title="Increase stock" aria-label="Increase stock">
+                <Plus class="w-4 h-4" />
+              </button>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button 
+                @click="updateStock(product)" 
+                class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                :disabled="isUpdating"
+                title="Save stock level"
+                aria-label="Save stock level"
+              >
+                <Save v-if="!isUpdating" class="w-4 h-4" />
+                <Loader2 v-else class="w-4 h-4 animate-spin" />
+              </button>
+              <button 
+                @click="cancelEditing" 
+                class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-all cursor-pointer"
+                :disabled="isUpdating"
+                title="Cancel stock editing"
+                aria-label="Cancel stock editing"
+              >
+                <RotateCcw class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          
+          <div v-else class="flex flex-col gap-2 min-w-[140px]">
+            <div class="flex items-baseline gap-1.5">
+              <span :class="cn('text-lg font-black tracking-tighter transition-colors duration-500', 
+                product.stock === 0 ? 'text-rose-600' : product.stock < 10 ? 'text-amber-600' : 'text-slate-900 dark:text-white'
+              )">
+                {{ product.stock }}
+              </span>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Units Reserved</span>
+            </div>
+            <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden shadow-inner">
+              <div 
+                :class="cn(
+                  'h-full rounded-full transition-all duration-1000 ease-out', 
+                  product.stock === 0 ? 'bg-rose-500' : product.stock < 10 ? 'bg-amber-500' : 'bg-primary'
+                )"
+                :style="{ width: `${Math.min((product.stock / 100) * 100, 100)}%` }"
+              ></div>
+            </div>
+          </div>
+        </template>
 
-                <!-- Status Decorator -->
-                <td class="px-8 py-6">
-                  <div class="flex items-center gap-2">
-                    <component 
-                      :is="getStockStatus(product.stock) === 'out' ? XCircle : getStockStatus(product.stock) === 'low' ? AlertTriangle : CheckCircle2" 
-                      :class="cn('w-4 h-4', 
-                        getStockStatus(product.stock) === 'out' ? 'text-rose-500' : getStockStatus(product.stock) === 'low' ? 'text-amber-500' : 'text-emerald-500'
-                      )"
-                    />
-                    <span :class="cn('text-[10px] font-black uppercase tracking-widest', 
-                      getStockStatus(product.stock) === 'out' ? 'text-rose-600' : getStockStatus(product.stock) === 'low' ? 'text-amber-600' : 'text-emerald-600'
-                    )">
-                      {{ getStockStatus(product.stock) === 'out' ? 'DEPLETED' : getStockStatus(product.stock) === 'low' ? 'CRITICAL LIMIT' : 'OPTIMAL' }}
-                    </span>
-                  </div>
-                </td>
+        <!-- Status Decorator -->
+        <template #cell-status="{ item: product }">
+          <div class="flex items-center gap-2">
+            <component 
+              :is="getStockStatus(product.stock) === 'out' ? XCircle : getStockStatus(product.stock) === 'low' ? AlertTriangle : CheckCircle2" 
+              :class="cn('w-4 h-4', 
+                getStockStatus(product.stock) === 'out' ? 'text-rose-500' : getStockStatus(product.stock) === 'low' ? 'text-amber-500' : 'text-emerald-500'
+              )"
+            />
+            <span :class="cn('text-[10px] font-black uppercase tracking-widest', 
+              getStockStatus(product.stock) === 'out' ? 'text-rose-600' : getStockStatus(product.stock) === 'low' ? 'text-amber-600' : 'text-emerald-600'
+            )">
+              {{ getStockStatus(product.stock) === 'out' ? 'DEPLETED' : getStockStatus(product.stock) === 'low' ? 'CRITICAL LIMIT' : 'OPTIMAL' }}
+            </span>
+          </div>
+        </template>
 
-                <!-- Actions -->
-                <td class="px-8 py-6 text-right">
-                  <div v-if="editingId !== product.id" class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                    <UiButton 
-                      variant="outline" 
-                      size="sm" 
-                      class="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 bg-white dark:bg-slate-950"
-                      @click="startEditing(product)"
-                    >
-                      <Plus class="w-3 h-3" /> Update Stock
-                    </UiButton>
-                    <button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" title="More options" aria-label="More options">
-                      <MoreHorizontal class="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <!-- Actions -->
+        <template #cell-actions="{ item: product }">
+          <div v-if="editingId !== product.id" class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+            <UiButton 
+              variant="outline" 
+              size="sm" 
+              class="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 bg-white dark:bg-slate-950"
+              @click="startEditing(product)"
+            >
+              <Plus class="w-3 h-3" /> Update Stock
+            </UiButton>
+            <button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer" title="More options" aria-label="More options">
+              <MoreHorizontal class="w-4 h-4" />
+            </button>
+          </div>
+        </template>
 
         <!-- Pagination -->
-        <UiPagination
-          v-model:current-page="currentPage"
-          :total-pages="totalPages"
-          :total-count="filteredProducts.length"
-          :items-per-page="itemsPerPage"
-          item-label="products"
-        />
-      </div>
+        <template #footer>
+          <UiPagination
+            v-model:current-page="currentPage"
+            :total-pages="totalPages"
+            :total-count="filteredProducts.length"
+            :items-per-page="itemsPerPage"
+            item-label="products"
+          />
+        </template>
+      </UiTable>
     </div>
   </div>
 </template>

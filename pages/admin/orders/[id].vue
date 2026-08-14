@@ -19,6 +19,7 @@ import {
 import { useAdminStore } from '@/stores/admin';
 import { formatCurrency, cn } from '@/utils';
 import type { Order } from '@/types';
+import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -32,6 +33,19 @@ const order = ref<Order | null>(adminStore.recentOrders.find(o => o.id === order
 if (!order.value) {
   navigateTo('/admin/orders');
 }
+
+interface LineItem {
+  id: number;
+}
+
+const lineItems: LineItem[] = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+const tableColumns: UiTableColumn<LineItem>[] = [
+  { key: 'item', label: 'Resource Identification', headerClass: 'px-8 py-4', cellClass: 'px-8 py-5' },
+  { key: 'qty', label: 'Qty', align: 'center', headerClass: 'px-8 py-4 text-center', cellClass: 'px-8 py-5 text-center text-sm font-bold' },
+  { key: 'unitPrice', label: 'Unit Capital', align: 'right', headerClass: 'px-8 py-4 text-right', cellClass: 'px-8 py-5 text-right text-sm font-medium' },
+  { key: 'total', label: 'Total', align: 'right', headerClass: 'px-8 py-4 text-right', cellClass: 'px-8 py-5 text-right text-sm font-bold' },
+];
 
 const statusConfig = {
   pending: { icon: markRaw(Clock), color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-100 dark:border-amber-900', label: 'Awaiting Fulfillment' },
@@ -104,49 +118,50 @@ const timeline = [
         </div>
 
         <!-- Line Items -->
-        <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
-          <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-900">
-             <h3 class="text-lg font-display font-bold flex items-center gap-3">
-               <Package class="w-5 h-5 text-primary" /> Manifest Allocation
-             </h3>
-          </div>
-          <div class="p-0">
-            <table class="w-full text-left">
-              <thead>
-                <tr class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 bg-slate-50/50 dark:bg-slate-900/30">
-                  <th class="px-8 py-4">Resource Identification</th>
-                  <th class="px-8 py-4 text-center">Qty</th>
-                  <th class="px-8 py-4 text-right">Unit Capital</th>
-                  <th class="px-8 py-4 text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-50 dark:divide-slate-900">
-                <tr v-for="i in 3" :key="i" class="group transition-colors hover:bg-slate-50/30">
-                  <td class="px-8 py-5">
-                    <div class="flex items-center gap-4">
-                       <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center grow-0 shrink-0">
-                          <Package class="w-6 h-6 text-slate-400" />
-                       </div>
-                       <div>
-                          <p class="text-sm font-bold">Hardware Module-X{{ i }}</p>
-                          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Type: Enterprise Hardware</p>
-                       </div>
-                    </div>
-                  </td>
-                  <td class="px-8 py-5 text-center text-sm font-bold">1</td>
-                  <td class="px-8 py-5 text-right text-sm font-medium">{{ formatCurrency(order.totalAmount / 3) }}</td>
-                  <td class="px-8 py-5 text-right text-sm font-bold">{{ formatCurrency(order.totalAmount / 3) }}</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                 <tr class="bg-slate-50/50 dark:bg-slate-900/30">
-                    <td colspan="3" class="px-8 py-4 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Cumulative Total</td>
-                    <td class="px-8 py-4 text-right text-lg font-black tracking-tight text-primary">{{ formatCurrency(order.totalAmount) }}</td>
-                 </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
+        <UiTable
+          :columns="tableColumns"
+          :data="lineItems"
+          key-field="id"
+        >
+          <template #header>
+            <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-900">
+               <h3 class="text-lg font-display font-bold flex items-center gap-3">
+                 <Package class="w-5 h-5 text-primary" /> Manifest Allocation
+               </h3>
+            </div>
+          </template>
+
+          <template #cell-item="{ item }">
+            <div class="flex items-center gap-4">
+               <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center grow-0 shrink-0">
+                  <Package class="w-6 h-6 text-slate-400" />
+               </div>
+               <div>
+                  <p class="text-sm font-bold">Hardware Module-X{{ item.id }}</p>
+                  <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Type: Enterprise Hardware</p>
+               </div>
+            </div>
+          </template>
+
+          <template #cell-qty>
+            1
+          </template>
+
+          <template #cell-unitPrice>
+            {{ formatCurrency(order.totalAmount / 3) }}
+          </template>
+
+          <template #cell-total>
+            {{ formatCurrency(order.totalAmount / 3) }}
+          </template>
+
+          <template #footer>
+            <div class="bg-slate-50/50 dark:bg-slate-900/30 px-8 py-4 flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Cumulative Total</span>
+              <span class="text-lg font-black tracking-tight text-primary">{{ formatCurrency(order.totalAmount) }}</span>
+            </div>
+          </template>
+        </UiTable>
       </div>
 
       <!-- Right Column: Customer & Shipping -->

@@ -20,10 +20,21 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { formatCurrency, cn } from '@/utils';
 import type { Product } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
+import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 
 definePageMeta({
   layout: 'admin'
 });
+
+const tableColumns: UiTableColumn<Product>[] = [
+  { key: 'name', label: 'Product Details', sortable: true, headerClass: 'px-8', cellClass: 'px-8 py-5' },
+  { key: 'sku', label: 'SKU', headerClass: 'px-8', cellClass: 'px-8 py-5' },
+  { key: 'category', label: 'Category', headerClass: 'px-8', cellClass: 'px-8 py-5' },
+  { key: 'price', label: 'Price', align: 'right', headerClass: 'px-8', cellClass: 'px-8 py-5 text-right' },
+  { key: 'stock', label: 'Inventory', headerClass: 'px-8', cellClass: 'px-8 py-5' },
+  { key: 'status', label: 'Status', headerClass: 'px-8', cellClass: 'px-8 py-5' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8 py-5 text-right' },
+];
 
 const productService = useProductService();
 const { canCreateInModule, canEditInModule, canDeleteInModule } = useAdminPermissions();
@@ -117,101 +128,97 @@ const handleDelete = (id: string) => {
     </div>
 
     <!-- Products Table -->
-    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left">
-          <thead>
-            <tr class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 dark:border-slate-900">
-              <th class="px-8 py-5">
-                <div class="flex items-center gap-2 cursor-pointer hover:text-slate-600">
-                  Product Details <ArrowUpDown class="w-3 h-3" />
-                </div>
-              </th>
-              <th class="px-8 py-5">SKU</th>
-              <th class="px-8 py-5">Category</th>
-              <th class="px-8 py-5 text-right">Price</th>
-              <th class="px-8 py-5">Inventory</th>
-              <th class="px-8 py-5">Status</th>
-              <th class="px-8 py-5 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-50 dark:divide-slate-900">
-            <tr v-for="product in paginatedProducts" :key="product.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
-              <td class="px-8 py-5">
-                <div class="flex items-center gap-4">
-                  <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0">
-                    <img :src="product.images[0]" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  </div>
-                  <div class="min-w-0">
-                    <p class="text-sm font-bold truncate group-hover:text-primary transition-colors">{{ product.name }}</p>
-                    <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{{ product.brand }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-8 py-5">
-                <span class="font-mono text-xs font-bold text-slate-500 tracking-tighter">{{ product.sku }}</span>
-              </td>
-              <td class="px-8 py-5">
-                 <div class="flex items-center gap-2">
-                   <Layers class="w-3 h-3 text-slate-400" />
-                   <span class="text-xs font-medium">{{ product.category }}</span>
-                 </div>
-              </td>
-              <td class="px-8 py-5 text-right">
-                <div class="text-sm font-bold tracking-tight">{{ formatCurrency(product.price) }}</div>
-                <div v-if="product.originalPrice" class="text-[10px] text-rose-500 line-through font-bold">{{ formatCurrency(product.originalPrice) }}</div>
-              </td>
-              <td class="px-8 py-5">
-                <div class="flex flex-col gap-1.5 min-w-[100px]">
-                  <div class="flex justify-between text-[10px] font-bold">
-                    <span :class="product.stock < 10 ? 'text-rose-500' : 'text-slate-500'">{{ product.stock }} units</span>
-                    <span class="text-slate-400">/ 100</span>
-                  </div>
-                  <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden">
-                    <div 
-                      :class="cn(
-                        'h-full rounded-full transition-all duration-500', 
-                        product.stock < 10 ? 'bg-rose-500' : product.stock < 30 ? 'bg-amber-500' : 'bg-emerald-500'
-                      )"
-                      :style="{ width: `${Math.min(product.stock, 100)}%` }"
-                    ></div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-8 py-5">
-                <span :class="cn(
-                  'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border',
-                  product.stock > 0 ? 'bg-emerald-50/50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900' : 'bg-rose-50/50 text-rose-600 border-rose-100 dark:bg-rose-950/20 dark:border-rose-900'
-                )">
-                  {{ product.stock > 0 ? 'Active' : 'Out of Stock' }}
-                </span>
-              </td>
-              <td class="px-8 py-5 text-right">
-                <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <NuxtLink :to="`/admin/products/${product.id}`" class="p-2 text-slate-400 hover:text-primary transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm" title="Edit product" aria-label="Edit product">
-                    <Edit2 class="w-3.5 h-3.5" />
-                  </NuxtLink>
-                  <button @click="handleDelete(product.id)" class="p-2 text-slate-400 hover:text-rose-600 transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm" title="Delete product" aria-label="Delete product">
-                    <Trash2 class="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <button class="p-2 text-slate-400 group-hover:hidden" title="More options" aria-label="More options">
-                  <MoreVertical class="w-4 h-4" />
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <UiTable
+      :columns="tableColumns"
+      :data="paginatedProducts"
+      key-field="id"
+    >
+      <!-- Product Details Column -->
+      <template #cell-name="{ item: product }">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0">
+            <img :src="product.images[0]" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-bold truncate group-hover:text-primary transition-colors">{{ product.name }}</p>
+            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{{ product.brand }}</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- SKU Column -->
+      <template #cell-sku="{ item: product }">
+        <span class="font-mono text-xs font-bold text-slate-500 tracking-tighter">{{ product.sku }}</span>
+      </template>
+
+      <!-- Category Column -->
+      <template #cell-category="{ item: product }">
+        <div class="flex items-center gap-2">
+          <Layers class="w-3 h-3 text-slate-400" />
+          <span class="text-xs font-medium">{{ product.category }}</span>
+        </div>
+      </template>
+
+      <!-- Price Column -->
+      <template #cell-price="{ item: product }">
+        <div class="text-sm font-bold tracking-tight">{{ formatCurrency(product.price) }}</div>
+        <div v-if="product.originalPrice" class="text-[10px] text-rose-500 line-through font-bold">{{ formatCurrency(product.originalPrice) }}</div>
+      </template>
+
+      <!-- Inventory Column -->
+      <template #cell-stock="{ item: product }">
+        <div class="flex flex-col gap-1.5 min-w-[100px]">
+          <div class="flex justify-between text-[10px] font-bold">
+            <span :class="product.stock < 10 ? 'text-rose-500' : 'text-slate-500'">{{ product.stock }} units</span>
+            <span class="text-slate-400">/ 100</span>
+          </div>
+          <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden">
+            <div 
+              :class="cn(
+                'h-full rounded-full transition-all duration-500', 
+                product.stock < 10 ? 'bg-rose-500' : product.stock < 30 ? 'bg-amber-500' : 'bg-emerald-500'
+              )"
+              :style="{ width: `${Math.min(product.stock, 100)}%` }"
+            ></div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Status Column -->
+      <template #cell-status="{ item: product }">
+        <span :class="cn(
+          'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border',
+          product.stock > 0 ? 'bg-emerald-50/50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900' : 'bg-rose-50/50 text-rose-600 border-rose-100 dark:bg-rose-950/20 dark:border-rose-900'
+        )">
+          {{ product.stock > 0 ? 'Active' : 'Out of Stock' }}
+        </span>
+      </template>
+
+      <!-- Actions Column -->
+      <template #cell-actions="{ item: product }">
+        <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <NuxtLink v-if="canEditProduct" :to="`/admin/products/${product.id}`" class="p-2 text-slate-400 hover:text-primary transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm" title="Edit product" aria-label="Edit product">
+            <Edit2 class="w-3.5 h-3.5" />
+          </NuxtLink>
+          <button v-if="canDeleteProduct" @click="handleDelete(product.id)" class="p-2 text-slate-400 hover:text-rose-600 transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm cursor-pointer" title="Delete product" aria-label="Delete product">
+            <Trash2 class="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <button class="p-2 text-slate-400 group-hover:hidden cursor-pointer" title="More options" aria-label="More options">
+          <MoreVertical class="w-4 h-4" />
+        </button>
+      </template>
 
       <!-- Pagination -->
-      <UiPagination
-        v-model:current-page="currentPage"
-        :total-pages="totalPages"
-        :total-count="filteredProducts.length"
-        :items-per-page="itemsPerPage"
-        item-label="products"
-      />
-    </div>
+      <template #footer>
+        <UiPagination
+          v-model:current-page="currentPage"
+          :total-pages="totalPages"
+          :total-count="filteredProducts.length"
+          :items-per-page="itemsPerPage"
+          item-label="products"
+        />
+      </template>
+    </UiTable>
   </div>
 </template>

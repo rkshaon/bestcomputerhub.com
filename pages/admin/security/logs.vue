@@ -22,6 +22,7 @@ import {
   Eye
 } from 'lucide-vue-next';
 import { cn } from '@/utils';
+import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -38,6 +39,15 @@ interface SecurityLog {
   status: 'allowed' | 'blocked' | 'flagged';
   details: string;
 }
+
+const tableColumns: UiTableColumn<SecurityLog>[] = [
+  { key: 'event', label: 'Event Identifier', headerClass: 'px-8', cellClass: 'px-8 py-6' },
+  { key: 'severity', label: 'Magnitude', headerClass: 'px-8', cellClass: 'px-8 py-6' },
+  { key: 'ip', label: 'Origin (IP)', headerClass: 'px-8', cellClass: 'px-8 py-6' },
+  { key: 'status', label: 'Response', headerClass: 'px-8', cellClass: 'px-8 py-6' },
+  { key: 'timestamp', label: 'Timeline', headerClass: 'px-8', cellClass: 'px-8 py-6' },
+  { key: 'details', label: 'Payload', align: 'right', headerClass: 'px-8', cellClass: 'px-8 py-6 text-right' },
+];
 
 const logs = ref<SecurityLog[]>([
   {
@@ -201,128 +211,126 @@ const refreshLogs = async () => {
     </div>
 
     <!-- Main Table Container -->
-    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
+    <UiTable
+      :columns="tableColumns"
+      :data="filteredLogs"
+      :loading="isLoading"
+      key-field="id"
+      empty-text="No security logs found"
+      empty-description="Try adjusting your search query or severity filter."
+    >
       <!-- Table Filters -->
-      <div class="p-6 border-b border-slate-50 dark:border-slate-900 bg-slate-50/20 dark:bg-slate-900/10 flex flex-col lg:flex-row gap-4">
-        <div class="flex-1 relative group">
-          <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-          <input 
-            v-model="searchQuery"
-            type="text" 
-            placeholder="Search logs by IP, event name, or trace ID..." 
-            class="w-full h-12 pl-12 pr-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-4 focus:ring-primary/5 transition-all text-xs font-medium"
-          />
-        </div>
-        
-        <div class="flex items-center gap-3">
-          <select 
-            v-model="severityFilter"
-            class="h-12 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-4 focus:ring-primary/5 text-[10px] font-bold uppercase tracking-widest cursor-pointer appearance-none shadow-sm min-w-[160px]"
-          >
-            <option value="all">Global Severity</option>
-            <option value="critical">Critical</option>
-            <option value="high">High Level</option>
-            <option value="medium">Medium</option>
-            <option value="info">Information Only</option>
-          </select>
+      <template #header>
+        <div class="p-6 border-b border-slate-50 dark:border-slate-900 bg-slate-50/20 dark:bg-slate-900/10 flex flex-col lg:flex-row gap-4">
+          <div class="flex-1 relative group">
+            <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+            <input 
+              v-model="searchQuery"
+              type="text" 
+              placeholder="Search logs by IP, event name, or trace ID..." 
+              class="w-full h-12 pl-12 pr-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-4 focus:ring-primary/5 transition-all text-xs font-medium"
+            />
+          </div>
           
-          <UiButton variant="outline" class="h-12 w-12 rounded-xl p-0 shadow-sm border-slate-200 dark:border-slate-800">
-            <Filter class="w-4 h-4" />
-          </UiButton>
+          <div class="flex items-center gap-3">
+            <select 
+              v-model="severityFilter"
+              class="h-12 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-4 focus:ring-primary/5 text-[10px] font-bold uppercase tracking-widest cursor-pointer appearance-none shadow-sm min-w-[160px]"
+            >
+              <option value="all">Global Severity</option>
+              <option value="critical">Critical</option>
+              <option value="high">High Level</option>
+              <option value="medium">Medium</option>
+              <option value="info">Information Only</option>
+            </select>
+            
+            <UiButton variant="outline" class="h-12 w-12 rounded-xl p-0 shadow-sm border-slate-200 dark:border-slate-800">
+              <Filter class="w-4 h-4" />
+            </UiButton>
+          </div>
         </div>
-      </div>
+      </template>
 
-      <!-- Log Table -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50 dark:border-slate-900 bg-slate-50/10 dark:bg-slate-900/10">
-              <th class="px-8 py-5">Event Identifier</th>
-              <th class="px-8 py-5">Magnitude</th>
-              <th class="px-8 py-5">Origin (IP)</th>
-              <th class="px-8 py-5">Response</th>
-              <th class="px-8 py-5">Timeline</th>
-              <th class="px-8 py-5 text-right">Payload</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-50 dark:divide-slate-900">
-            <tr v-for="log in filteredLogs" :key="log.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
-              <td class="px-8 py-6">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400">
-                    <Terminal class="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p class="text-sm font-bold tracking-tight text-slate-900 dark:text-white">{{ log.event }}</p>
-                    <p class="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest">{{ log.id }}</p>
-                  </div>
-                </div>
-              </td>
-
-              <td class="px-8 py-6">
-                <span :class="cn('px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest', getSeverityClass(log.severity))">
-                  {{ log.severity }}
-                </span>
-              </td>
-
-              <td class="px-8 py-6">
-                <div class="flex flex-col gap-0.5">
-                  <code class="text-xs font-mono font-bold text-slate-600 dark:text-slate-400">{{ log.ip }}</code>
-                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-1">
-                    <Globe class="w-3 h-3" /> {{ log.location }}
-                  </span>
-                </div>
-              </td>
-
-              <td class="px-8 py-6">
-                <div class="flex items-center gap-2">
-                  <div v-if="log.status === 'blocked'" class="w-2 h-2 rounded-full bg-rose-500"></div>
-                  <div v-else-if="log.status === 'flagged'" class="w-2 h-2 rounded-full bg-amber-500"></div>
-                  <div v-else class="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  <span :class="cn('text-[10px] font-bold uppercase tracking-widest', 
-                    log.status === 'blocked' ? 'text-rose-600' : log.status === 'flagged' ? 'text-amber-600' : 'text-emerald-600'
-                  )">
-                    {{ log.status }}
-                  </span>
-                </div>
-              </td>
-
-              <td class="px-8 py-6">
-                <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                  <Clock class="w-3.5 h-3.5" />
-                  {{ log.timestamp }}
-                </div>
-              </td>
-
-              <td class="px-8 py-6 text-right">
-                <UiButton variant="ghost" size="icon" class="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900 transition-all opacity-40 group-hover:opacity-100 scale-90 group-hover:scale-100">
-                  <Eye class="w-4 h-4" />
-                </UiButton>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Pagination Decorator -->
-      <div class="p-6 border-t border-slate-50 dark:border-slate-900 bg-slate-50/20 dark:bg-slate-900/10 flex items-center justify-between">
-        <div class="flex items-center gap-8">
-           <div class="flex items-center gap-3">
-             <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Logging Engine Status: Nominal</span>
-           </div>
-           <div class="h-4 w-px bg-slate-200 dark:bg-slate-800"></div>
-           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ logs.length }} Events Indexed</span>
+      <!-- Event Identifier -->
+      <template #cell-event="{ item: log }">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400">
+            <Terminal class="w-4 h-4" />
+          </div>
+          <div>
+            <p class="text-sm font-bold tracking-tight text-slate-900 dark:text-white">{{ log.event }}</p>
+            <p class="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest">{{ log.id }}</p>
+          </div>
         </div>
+      </template>
 
-        <div class="flex items-center gap-1.5 font-mono text-[10px] font-bold">
-           <button class="p-2 px-3 border border-slate-200 dark:border-slate-800 rounded-lg opacity-30" disabled>PREV</button>
-           <button class="p-2 px-3 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-900 text-white">01</button>
-           <button class="p-2 px-3 border border-slate-200 dark:border-slate-800 rounded-lg">02</button>
-           <button class="p-2 px-3 border border-slate-200 dark:border-slate-800 rounded-lg">NEXT</button>
+      <!-- Severity -->
+      <template #cell-severity="{ item: log }">
+        <span :class="cn('px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest', getSeverityClass(log.severity))">
+          {{ log.severity }}
+        </span>
+      </template>
+
+      <!-- Origin (IP) -->
+      <template #cell-ip="{ item: log }">
+        <div class="flex flex-col gap-0.5">
+          <code class="text-xs font-mono font-bold text-slate-600 dark:text-slate-400">{{ log.ip }}</code>
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+            <Globe class="w-3 h-3" /> {{ log.location }}
+          </span>
         </div>
-      </div>
-    </div>
+      </template>
+
+      <!-- Response Status -->
+      <template #cell-status="{ item: log }">
+        <div class="flex items-center gap-2">
+          <div v-if="log.status === 'blocked'" class="w-2 h-2 rounded-full bg-rose-500"></div>
+          <div v-else-if="log.status === 'flagged'" class="w-2 h-2 rounded-full bg-amber-500"></div>
+          <div v-else class="w-2 h-2 rounded-full bg-emerald-500"></div>
+          <span :class="cn('text-[10px] font-bold uppercase tracking-widest', 
+            log.status === 'blocked' ? 'text-rose-600' : log.status === 'flagged' ? 'text-amber-600' : 'text-emerald-600'
+          )">
+            {{ log.status }}
+          </span>
+        </div>
+      </template>
+
+      <!-- Timeline (Timestamp) -->
+      <template #cell-timestamp="{ item: log }">
+        <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+          <Clock class="w-3.5 h-3.5" />
+          {{ log.timestamp }}
+        </div>
+      </template>
+
+      <!-- Payload Details / Actions -->
+      <template #cell-details>
+        <UiButton variant="ghost" size="icon" class="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900 transition-all opacity-40 group-hover:opacity-100 scale-90 group-hover:scale-100">
+          <Eye class="w-4 h-4" />
+        </UiButton>
+      </template>
+
+      <!-- Footer / Pagination Decorator -->
+      <template #footer>
+        <div class="p-6 border-t border-slate-50 dark:border-slate-900 bg-slate-50/20 dark:bg-slate-900/10 flex items-center justify-between">
+          <div class="flex items-center gap-8">
+             <div class="flex items-center gap-3">
+               <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+               <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Logging Engine Status: Nominal</span>
+             </div>
+             <div class="h-4 w-px bg-slate-200 dark:bg-slate-800"></div>
+             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ logs.length }} Events Indexed</span>
+          </div>
+
+          <div class="flex items-center gap-1.5 font-mono text-[10px] font-bold">
+             <button class="p-2 px-3 border border-slate-200 dark:border-slate-800 rounded-lg opacity-30" disabled>PREV</button>
+             <button class="p-2 px-3 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-900 text-white">01</button>
+             <button class="p-2 px-3 border border-slate-200 dark:border-slate-800 rounded-lg">02</button>
+             <button class="p-2 px-3 border border-slate-200 dark:border-slate-800 rounded-lg">NEXT</button>
+          </div>
+        </div>
+      </template>
+    </UiTable>
 
     <!-- Security Protocols Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
