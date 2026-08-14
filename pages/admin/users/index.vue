@@ -1,6 +1,8 @@
 <!-- File: /pages/admin/users/index.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { refDebounced } from '@vueuse/core';
 import { 
   Users, 
   UserPlus, 
@@ -24,8 +26,9 @@ import { useRoleService } from '@/composables/useRoleService';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
-import { useToast } from '@/composables/useToast';
+import { useToast, extractErrorMessage, handleApiError } from '@/composables/useToast';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
+import UiPagination from '@/components/ui/UiPagination.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -50,12 +53,16 @@ useSeoMeta({
   robots: 'noindex, nofollow'
 });
 
+const route = useRoute();
+const router = useRouter();
+
 const userService = useUserService();
 const roleService = useRoleService();
 const { canViewModule, canCreateInModule, canEditInModule, canDeleteInModule } = useAdminPermissions();
 const { toastSuccess, toastError } = useToast();
 
-const searchQuery = ref('');
+const searchQuery = ref(String(route.query.search || ''));
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const isDeleting = ref(false);
 const viewMode = ref<'grid' | 'list'>('list');
 
@@ -64,21 +71,70 @@ const canCreateUser = computed(() => canCreateInModule('/admin/users'));
 const canEditUser = computed(() => canEditInModule('/admin/users'));
 const canDeleteUser = computed(() => canDeleteInModule('/admin/users'));
 
-// Reusable infinite pagination composable
+// --- LIST VIEW NUMBERED PAGINATION STATE ---
+const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
+const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
+const listUsers = ref<UserItem[]>([]);
+const listTotalCount = ref<number>(0);
+const isListLoading = ref<boolean>(false);
+const listError = ref<string | null>(null);
+
+const listTotalPages = computed(() => {
+  return Math.ceil(listTotalCount.value / itemsPerPage.value) || 1;
+});
+
+const fetchListUsers = async () => {
+  if (viewMode.value !== 'list') return;
+  isListLoading.value = true;
+  listError.value = null;
+  try {
+    const res = await userService.getUsers({
+      page: currentPage.value,
+      page_size: itemsPerPage.value,
+      search: searchQuery.value
+    });
+    listUsers.value = res.results;
+    listTotalCount.value = res.count;
+  } catch (err: any) {
+    listError.value = extractErrorMessage(err, 'Failed to retrieve user accounts catalog.');
+    listUsers.value = [];
+    listTotalCount.value = 0;
+  } finally {
+    isListLoading.value = false;
+  }
+};
+
+// --- GRID VIEW INFINITE PAGINATION STATE ---
 const {
-  items: userList,
-  totalCount,
-  isLoading,
-  isFetchingNextPage,
-  hasMore,
-  error: paginationError,
-  fetchFirstPage,
-  loadNextPage,
-  refresh: refreshPagination
+  items: gridUsers,
+  totalCount: gridTotalCount,
+  isLoading: isGridLoading,
+  isFetchingNextPage: isGridFetchingNext,
+  hasMore: gridHasMore,
+  error: gridError,
+  fetchFirstPage: fetchGridFirstPage,
+  loadNextPage: loadGridNextPage,
+  refresh: refreshGridPagination,
+  reset: resetGridPagination
 } = useInfinitePagination<UserItem>({
-  fetcher: userService.getUsers,
+  fetcher: async (params) => {
+    if (viewMode.value !== 'grid') {
+      return { results: [], count: 0, page: 1, pages: 1 };
+    }
+    const res = await userService.getUsers({
+      page: params.page,
+      page_size: 12,
+      search: searchQuery.value
+    });
+    return {
+      results: res.results,
+      count: res.count,
+      page: params.page,
+      pages: Math.ceil(res.count / 12) || 1
+    };
+  },
   search: searchQuery,
-  pageSize: 12
+  autoFetch: false
 });
 
 // Reusable URL-driven modal state infrastructure for users CRUD dialogs
@@ -117,14 +173,67 @@ const rolesMap = computed(() => {
 
 onMounted(async () => {
   roleService.getRoles();
+  if (viewMode.value === 'grid') {
+    await fetchGridFirstPage();
+  } else {
+    await fetchListUsers();
+  }
 });
 
-const handleSearch = () => {
-  fetchFirstPage();
+// Watch view mode toggles to reset and isolate pagination strategies
+watch(viewMode, async (newMode) => {
+  if (newMode === 'grid') {
+    resetGridPagination();
+    await fetchGridFirstPage();
+  } else if (newMode === 'list') {
+    currentPage.value = 1;
+    await fetchListUsers();
+  }
+});
+
+// Watch debounced search
+watch(debouncedSearchQuery, async () => {
+  if (viewMode.value === 'grid') {
+    await fetchGridFirstPage();
+  } else if (viewMode.value === 'list') {
+    currentPage.value = 1;
+    await fetchListUsers();
+  }
+});
+
+// Watch pagination state for List view
+watch([currentPage, itemsPerPage], async () => {
+  if (viewMode.value === 'list') {
+    await fetchListUsers();
+  }
+});
+
+// Sync route parameters
+watch([searchQuery, currentPage, itemsPerPage, viewMode], () => {
+  const query: Record<string, any> = { ...route.query };
+
+  if (searchQuery.value) query.search = searchQuery.value;
+  else delete query.search;
+
+  if (viewMode.value === 'list' && currentPage.value !== 1) query.page = String(currentPage.value);
+  else delete query.page;
+
+  if (itemsPerPage.value !== 10) query.pageSize = String(itemsPerPage.value);
+  else delete query.pageSize;
+
+  router.replace({ query });
+});
+
+const refreshActiveView = async () => {
+  if (viewMode.value === 'grid') {
+    await refreshGridPagination();
+  } else {
+    await fetchListUsers();
+  }
 };
 
 const handleUserSaved = async () => {
-  await refreshPagination();
+  await refreshActiveView();
 };
 
 const executeDeleteUser = async () => {
@@ -143,7 +252,7 @@ const executeDeleteUser = async () => {
     const displayName = getUserDisplayName(targetUser);
     toastSuccess(`User account "${displayName}" removed successfully.`);
     await modalState.closeModal();
-    await refreshPagination();
+    await refreshActiveView();
   } catch (err: any) {
     handleApiError(err, 'Failed to delete user account.');
   } finally {
@@ -176,8 +285,22 @@ const getUserGroupNames = (user: UserItem): string[] => {
 };
 
 // --- STATS COMPUTED AGGREGATES ---
-const superadminsCount = computed(() => userList.value.filter(u => u.is_superuser).length);
-const staffAccountsCount = computed(() => userList.value.filter(u => !u.is_superuser).length);
+const totalPersonnel = computed(() => {
+  if (viewMode.value === 'grid') {
+    return gridTotalCount.value;
+  }
+  return listTotalCount.value;
+});
+
+const superadminsCount = computed(() => {
+  const source = viewMode.value === 'grid' ? gridUsers.value : listUsers.value;
+  return source.filter(u => u.is_superuser).length;
+});
+
+const staffAccountsCount = computed(() => {
+  const source = viewMode.value === 'grid' ? gridUsers.value : listUsers.value;
+  return source.filter(u => !u.is_superuser).length;
+});
 </script>
 
 <template>
@@ -198,10 +321,10 @@ const staffAccountsCount = computed(() => userList.value.filter(u => !u.is_super
         <UiButton 
           variant="outline" 
           class="rounded-2xl h-11 px-5 gap-2 border-border font-bold text-xs"
-          @click="refreshPagination"
-          :disabled="isLoading"
+          @click="refreshActiveView"
+          :disabled="isListLoading || isGridLoading"
         >
-          <RefreshCw :class="['w-4 h-4', isLoading && 'animate-spin']" />
+          <RefreshCw :class="['w-4 h-4', (isListLoading || isGridLoading) && 'animate-spin']" />
           <span>Refresh</span>
         </UiButton>
 
@@ -224,7 +347,7 @@ const staffAccountsCount = computed(() => userList.value.filter(u => !u.is_super
         </div>
         <div>
           <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Total Personnel</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ totalCount }}</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ totalPersonnel }}</p>
         </div>
       </UiCard>
       <UiCard class="flex items-center gap-6 p-8">
@@ -291,23 +414,23 @@ const staffAccountsCount = computed(() => userList.value.filter(u => !u.is_super
     </div>
 
     <!-- Loading State (First Page) -->
-    <div v-if="isLoading && userList.length === 0" class="py-16 text-center space-y-3">
+    <div v-if="(viewMode === 'list' && isListLoading && listUsers.length === 0) || (viewMode === 'grid' && isGridLoading && gridUsers.length === 0)" class="py-16 text-center space-y-3">
       <Loader2 class="w-8 h-8 animate-spin text-primary mx-auto" />
       <p class="text-xs font-semibold text-muted-foreground">Retrieving user accounts catalog...</p>
     </div>
 
     <!-- Error Banner -->
-    <div v-else-if="paginationError && userList.length === 0" class="p-6 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-center space-y-3">
+    <div v-else-if="(viewMode === 'list' && listError && listUsers.length === 0) || (viewMode === 'grid' && gridError && gridUsers.length === 0)" class="p-6 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-center space-y-3">
       <AlertCircle class="w-8 h-8 mx-auto" />
-      <p class="text-xs font-semibold">{{ paginationError }}</p>
-      <Button variant="outline" size="sm" @click="fetchFirstPage" class="gap-1.5">
+      <p class="text-xs font-semibold">{{ viewMode === 'list' ? listError : gridError }}</p>
+      <Button variant="outline" size="sm" @click="refreshActiveView" class="gap-1.5">
         <RefreshCw class="w-3.5 h-3.5" />
         <span>Try Again</span>
       </Button>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="userList.length === 0" class="py-16 text-center border-2 border-dashed border-border rounded-3xl bg-card/50 p-8 space-y-4">
+    <div v-else-if="(viewMode === 'list' && listUsers.length === 0) || (viewMode === 'grid' && gridUsers.length === 0)" class="py-16 text-center border-2 border-dashed border-border rounded-3xl bg-card/50 p-8 space-y-4">
       <div class="w-12 h-12 rounded-2xl bg-muted/50 border border-border flex items-center justify-center mx-auto text-muted-foreground">
         <Users class="w-6 h-6" />
       </div>
@@ -328,83 +451,197 @@ const staffAccountsCount = computed(() => userList.value.filter(u => !u.is_super
     <!-- Users Display Modes -->
     <template v-else>
       <!-- Users Grid Mode -->
-      <div v-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div 
-          v-for="user in userList" 
-          :key="user.id"
-          class="bg-card border border-border rounded-2xl p-6 shadow-sm hover:border-primary/30 transition-all duration-300 flex flex-col justify-between group"
-        >
-          <div class="space-y-5">
-            
-            <!-- Card Top Bar -->
-            <div class="flex items-start justify-between gap-3">
-              <div class="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-display font-extrabold text-lg shrink-0 overflow-hidden">
-                <UserIcon class="w-7 h-7" />
-              </div>
-
-              <div class="flex items-center gap-1.5">
-                <span 
-                  v-if="user.is_superuser"
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-                >
-                  <Crown class="w-3 h-3" /> Superadmin
-                </span>
-                <span 
-                  v-else
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                >
-                  <CheckCircle2 class="w-3 h-3" /> Active
-                </span>
-              </div>
-            </div>
-
-            <!-- User Info -->
-            <div>
-              <h3 class="text-base font-display font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
-                {{ getUserDisplayName(user) }}
-              </h3>
+      <div v-if="viewMode === 'grid'" class="space-y-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div 
+            v-for="user in gridUsers" 
+            :key="user.id"
+            class="bg-card border border-border rounded-2xl p-6 shadow-sm hover:border-primary/30 transition-all duration-300 flex flex-col justify-between group"
+          >
+            <div class="space-y-5">
               
-              <div class="flex items-center gap-1.5 text-xs text-muted-foreground mt-1 font-medium">
-                <Mail class="w-3.5 h-3.5 text-muted-foreground/70" />
-                <span class="truncate">{{ user.email }}</span>
+              <!-- Card Top Bar -->
+              <div class="flex items-start justify-between gap-3">
+                <div class="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-display font-extrabold text-lg shrink-0 overflow-hidden">
+                  <UserIcon class="w-7 h-7" />
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                  <span 
+                    v-if="user.is_superuser"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                  >
+                    <Crown class="w-3 h-3" /> Superadmin
+                  </span>
+                  <span 
+                    v-else
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                  >
+                    <CheckCircle2 class="w-3 h-3" /> Active
+                  </span>
+                </div>
               </div>
 
-              <div v-if="user.username" class="text-[11px] font-mono text-muted-foreground/80 mt-1">
-                @{{ user.username }}
+              <!-- User Info -->
+              <div>
+                <h3 class="text-base font-display font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
+                  {{ getUserDisplayName(user) }}
+                </h3>
+                
+                <div class="flex items-center gap-1.5 text-xs text-muted-foreground mt-1 font-medium">
+                  <Mail class="w-3.5 h-3.5 text-muted-foreground/70" />
+                  <span class="truncate">{{ user.email }}</span>
+                </div>
+
+                <div v-if="user.username" class="text-[11px] font-mono text-muted-foreground/80 mt-1">
+                  @{{ user.username }}
+                </div>
               </div>
+
+              <!-- Roles / Groups List -->
+              <div class="pt-4 border-t border-border/60">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
+                  <Shield class="w-3 h-3 text-primary" /> Security Groups & Scope
+                </div>
+
+                <div class="flex flex-wrap gap-1.5">
+                  <span 
+                    v-for="(groupName, idx) in getUserGroupNames(user)" 
+                    :key="idx"
+                    :class="[
+                      'inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-semibold border',
+                      groupName === 'No groups assigned'
+                        ? 'bg-muted/40 text-muted-foreground border-border/40 italic'
+                        : 'bg-muted text-foreground border-border'
+                    ]"
+                  >
+                    {{ groupName }}
+                  </span>
+                </div>
+              </div>
+
             </div>
 
-            <!-- Roles / Groups List -->
-            <div class="pt-4 border-t border-border/60">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
-                <Shield class="w-3 h-3 text-primary" /> Security Groups & Scope
-              </div>
-
-              <div class="flex flex-wrap gap-1.5">
-                <span 
-                  v-for="(groupName, idx) in getUserGroupNames(user)" 
-                  :key="idx"
-                  :class="[
-                    'inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-semibold border',
-                    groupName === 'No groups assigned'
-                      ? 'bg-muted/40 text-muted-foreground border-border/40 italic'
-                      : 'bg-muted text-foreground border-border'
-                  ]"
+            <div class="mt-5 pt-3 border-t border-border/40 text-[10px] font-semibold text-muted-foreground flex items-center justify-end">
+              <!-- Action Controls (View, Edit & Delete) -->
+              <div class="flex items-center gap-1">
+                <button 
+                  type="button" 
+                  @click="modalState.openView(user.id)"
+                  class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                  title="View User Details"
+                  aria-label="View user details"
                 >
-                  {{ groupName }}
-                </span>
+                  <Eye class="w-4 h-4" />
+                </button>
+
+                <button 
+                  v-if="canEditUser"
+                  type="button" 
+                  @click="modalState.openEdit(user.id)"
+                  class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                  title="Edit User Account"
+                  aria-label="Edit user account"
+                >
+                  <Edit class="w-4 h-4" />
+                </button>
+
+                <button 
+                  v-if="canDeleteUser"
+                  type="button" 
+                  @click="modalState.openDelete(user.id)"
+                  class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  title="Delete User Account"
+                  aria-label="Delete user account"
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
               </div>
             </div>
-
           </div>
+        </div>
 
-          <div class="mt-5 pt-3 border-t border-border/40 text-[10px] font-semibold text-muted-foreground flex items-center justify-end">
-            <!-- Action Controls (View, Edit & Delete) -->
-            <div class="flex items-center gap-1">
+        <!-- Infinite Scroll Pagination Control for Grid Mode -->
+        <UiInfiniteScroll 
+          :has-more="gridHasMore"
+          :is-loading="isGridFetchingNext"
+          :error="gridError"
+          @load-more="loadGridNextPage"
+          @retry="loadGridNextPage"
+        />
+      </div>
+
+      <!-- Users List/Table Mode -->
+      <div v-else-if="viewMode === 'list'" class="space-y-6">
+        <UiTable
+          :columns="tableColumns"
+          :data="listUsers"
+          key-field="id"
+        >
+          <!-- User Info Column -->
+          <template #cell-user="{ item: user }">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-display font-extrabold text-xs shrink-0">
+                <UserIcon class="w-4.5 h-4.5" />
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                  {{ getUserDisplayName(user) }}
+                </span>
+                <span class="text-[10px] text-muted-foreground font-medium">ID: #{{ user.id }}</span>
+              </div>
+            </div>
+          </template>
+
+          <!-- Status Column -->
+          <template #cell-status="{ item: user }">
+            <span 
+              v-if="user.is_superuser"
+              class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+            >
+              <Crown class="w-2.5 h-2.5" /> Superadmin
+            </span>
+            <span 
+              v-else
+              class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+            >
+              <CheckCircle2 class="w-2.5 h-2.5" /> Active
+            </span>
+          </template>
+
+          <!-- Contact Column -->
+          <template #cell-contact="{ item: user }">
+            <div class="flex flex-col max-w-[200px] sm:max-w-xs">
+              <span class="text-xs text-foreground font-medium truncate">{{ user.email }}</span>
+              <span v-if="user.username" class="text-[10px] font-mono text-muted-foreground">@{{ user.username }}</span>
+            </div>
+          </template>
+
+          <!-- Security Groups Column -->
+          <template #cell-groups="{ item: user }">
+            <div class="flex flex-wrap gap-1">
+              <span 
+                v-for="(groupName, idx) in getUserGroupNames(user)" 
+                :key="idx"
+                :class="[
+                  'inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold border',
+                  groupName === 'No groups assigned'
+                    ? 'bg-muted/40 text-muted-foreground border-border/40 italic'
+                    : 'bg-muted text-foreground border-border'
+                ]"
+              >
+                {{ groupName }}
+              </span>
+            </div>
+          </template>
+
+          <!-- Actions Column -->
+          <template #cell-actions="{ item: user }">
+            <div class="flex items-center justify-end gap-1 font-medium">
               <button 
                 type="button" 
                 @click="modalState.openView(user.id)"
-                class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
                 title="View User Details"
                 aria-label="View user details"
               >
@@ -415,7 +652,7 @@ const staffAccountsCount = computed(() => userList.value.filter(u => !u.is_super
                 v-if="canEditUser"
                 type="button" 
                 @click="modalState.openEdit(user.id)"
-                class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
                 title="Edit User Account"
                 aria-label="Edit user account"
               >
@@ -426,128 +663,28 @@ const staffAccountsCount = computed(() => userList.value.filter(u => !u.is_super
                 v-if="canDeleteUser"
                 type="button" 
                 @click="modalState.openDelete(user.id)"
-                class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                 title="Delete User Account"
                 aria-label="Delete user account"
               >
                 <Trash2 class="w-4 h-4" />
               </button>
             </div>
-          </div>
-        </div>
+          </template>
+        </UiTable>
+
+        <!-- Numbered Pagination Control for List Mode -->
+        <UiPagination
+          v-model:current-page="currentPage"
+          :total-pages="listTotalPages"
+          :total-count="listTotalCount"
+          :items-per-page="itemsPerPage"
+          item-label="users"
+          prefix-label="Showing"
+          variant="card"
+        />
       </div>
-
-      <!-- Users List/Table Mode -->
-      <UiTable
-        v-else
-        :columns="tableColumns"
-        :data="userList"
-        key-field="id"
-      >
-        <!-- User Info Column -->
-        <template #cell-user="{ item: user }">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-display font-extrabold text-xs shrink-0">
-              <UserIcon class="w-4.5 h-4.5" />
-            </div>
-            <div class="flex flex-col">
-              <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-                {{ getUserDisplayName(user) }}
-              </span>
-              <span class="text-[10px] text-muted-foreground font-medium">ID: #{{ user.id }}</span>
-            </div>
-          </div>
-        </template>
-
-        <!-- Status Column -->
-        <template #cell-status="{ item: user }">
-          <span 
-            v-if="user.is_superuser"
-            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-          >
-            <Crown class="w-2.5 h-2.5" /> Superadmin
-          </span>
-          <span 
-            v-else
-            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-          >
-            <CheckCircle2 class="w-2.5 h-2.5" /> Active
-          </span>
-        </template>
-
-        <!-- Contact Column -->
-        <template #cell-contact="{ item: user }">
-          <div class="flex flex-col max-w-[200px] sm:max-w-xs">
-            <span class="text-xs text-foreground font-medium truncate">{{ user.email }}</span>
-            <span v-if="user.username" class="text-[10px] font-mono text-muted-foreground">@{{ user.username }}</span>
-          </div>
-        </template>
-
-        <!-- Security Groups Column -->
-        <template #cell-groups="{ item: user }">
-          <div class="flex flex-wrap gap-1">
-            <span 
-              v-for="(groupName, idx) in getUserGroupNames(user)" 
-              :key="idx"
-              :class="[
-                'inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold border',
-                groupName === 'No groups assigned'
-                  ? 'bg-muted/40 text-muted-foreground border-border/40 italic'
-                  : 'bg-muted text-foreground border-border'
-              ]"
-            >
-              {{ groupName }}
-            </span>
-          </div>
-        </template>
-
-        <!-- Actions Column -->
-        <template #cell-actions="{ item: user }">
-          <div class="flex items-center justify-end gap-1 font-medium">
-            <button 
-              type="button" 
-              @click="modalState.openView(user.id)"
-              class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-              title="View User Details"
-              aria-label="View user details"
-            >
-              <Eye class="w-4 h-4" />
-            </button>
-
-            <button 
-              v-if="canEditUser"
-              type="button" 
-              @click="modalState.openEdit(user.id)"
-              class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-              title="Edit User Account"
-              aria-label="Edit user account"
-            >
-              <Edit class="w-4 h-4" />
-            </button>
-
-            <button 
-              v-if="canDeleteUser"
-              type="button" 
-              @click="modalState.openDelete(user.id)"
-              class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-              title="Delete User Account"
-              aria-label="Delete user account"
-            >
-              <Trash2 class="w-4 h-4" />
-            </button>
-          </div>
-        </template>
-      </UiTable>
     </template>
-
-    <!-- Infinite Scroll Pagination Control -->
-    <UiInfiniteScroll 
-      :has-more="hasMore"
-      :is-loading="isFetchingNextPage"
-      :error="paginationError"
-      @load-more="loadNextPage"
-      @retry="loadNextPage"
-    />
 
     <!-- User Form Modal (Create / Edit / View) -->
     <UserFormModal 
@@ -608,3 +745,4 @@ const staffAccountsCount = computed(() => userList.value.filter(u => !u.is_super
 
   </div>
 </template>
+
