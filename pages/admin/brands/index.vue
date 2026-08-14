@@ -34,6 +34,8 @@ import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import { toastSuccess, toastError, toastInfo, extractErrorMessage } from '@/composables/useToast';
 import Button from '@/components/ui/Button.vue';
 import { useAdminModalState } from '@/composables/useAdminModalState';
+import { useInfinitePagination } from '@/composables/useInfinitePagination';
+import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 
@@ -185,6 +187,50 @@ const triggerToast = (message: string, type: 'success' | 'error' | 'info' = 'suc
   }
 };
 
+// Infinite scroll pagination composable for Grid View
+const {
+  items: gridBrands,
+  totalCount: gridTotalCount,
+  isLoading: isGridLoading,
+  isFetchingNextPage: isGridFetchingNext,
+  hasMore: gridHasMore,
+  error: gridError,
+  fetchFirstPage: fetchGridFirstPage,
+  loadNextPage: loadGridNextPage,
+  refresh: refreshGridPagination,
+  reset: resetGridPagination
+} = useInfinitePagination<Brand>({
+  fetcher: async (params) => {
+    if (viewMode.value !== 'grid') {
+      return { results: [], count: 0, page: 1, pages: 1 };
+    }
+    const res = await brandService.getBrandsPaginatedList({
+      page: params.page,
+      page_size: 12,
+      search: searchQuery.value
+    });
+    let results = res.results.map(b => ({
+      ...b,
+      is_active: b.is_active !== undefined ? b.is_active : true
+    }));
+    if (statusFilter.value !== 'all') {
+      results = results.filter(b => 
+        (statusFilter.value === 'active' && b.is_active) ||
+        (statusFilter.value === 'inactive' && !b.is_active)
+      );
+    }
+    return {
+      results,
+      count: res.count,
+      page: res.page,
+      pages: res.pages
+    };
+  },
+  search: searchQuery,
+  extraParams: computed(() => ({ status: statusFilter.value })),
+  autoFetch: false
+});
+
 // Data integration lifecycles
 const fetchRegistry = async () => {
   isLoading.value = true;
@@ -202,17 +248,42 @@ const fetchRegistry = async () => {
   }
 };
 
+const refreshActiveView = async () => {
+  if (viewMode.value === 'grid') {
+    await refreshGridPagination();
+  } else {
+    await fetchRegistry();
+  }
+};
+
 onMounted(async () => {
-  await fetchRegistry();
+  if (viewMode.value === 'grid') {
+    await fetchGridFirstPage();
+  } else {
+    await fetchRegistry();
+  }
 });
 
-// Refetch when debounced search query changes
-watch(debouncedSearchQuery, async () => {
-  currentPage.value = 1;
-  await fetchRegistry();
+// Watch view mode changes to execute isolated pagination strategy switches
+watch(viewMode, async (newMode) => {
+  if (newMode === 'grid') {
+    resetGridPagination();
+    await fetchGridFirstPage();
+  } else if (newMode === 'list') {
+    currentPage.value = 1;
+    await fetchRegistry();
+  }
 });
 
-// Reactivity filters
+// Refetch when debounced search query or status filter changes in List View
+watch([debouncedSearchQuery, statusFilter], async () => {
+  if (viewMode.value === 'list') {
+    currentPage.value = 1;
+    await fetchRegistry();
+  }
+});
+
+// Reactivity filters for List View
 const filteredBrands = computed(() => {
   return brandsList.value.filter(b => {
     const matchesStatus = statusFilter.value === 'all' || 
@@ -223,7 +294,7 @@ const filteredBrands = computed(() => {
   });
 });
 
-// Pagination computed bounds
+// Pagination computed bounds for List View
 const totalPages = computed(() => {
   return Math.ceil(filteredBrands.value.length / itemsPerPage.value) || 1;
 });
@@ -234,13 +305,13 @@ const paginatedBrands = computed(() => {
   return filteredBrands.value.slice(start, end);
 });
 
-// Auto-reset page on search filter/page size trigger
-watch([searchQuery, statusFilter, itemsPerPage], () => {
+// Auto-reset page on itemsPerPage trigger
+watch(itemsPerPage, () => {
   currentPage.value = 1;
 });
 
 // Update URL parameters when state changes
-watch([searchQuery, statusFilter, currentPage, itemsPerPage], () => {
+watch([searchQuery, statusFilter, currentPage, itemsPerPage, viewMode], () => {
   const query: Record<string, any> = { ...route.query };
 
   if (searchQuery.value) query.search = searchQuery.value;
@@ -249,7 +320,7 @@ watch([searchQuery, statusFilter, currentPage, itemsPerPage], () => {
   if (statusFilter.value !== 'all') query.status = statusFilter.value;
   else delete query.status;
 
-  if (currentPage.value !== 1) query.page = String(currentPage.value);
+  if (viewMode.value === 'list' && currentPage.value !== 1) query.page = String(currentPage.value);
   else delete query.page;
 
   if (itemsPerPage.value !== 5) query.pageSize = String(itemsPerPage.value);
@@ -316,7 +387,7 @@ const handleCreateBrand = async () => {
     removeSelectedLogo();
     modalState.closeModal();
     triggerToast(`Partner [${formPayload.value.name}] initialized successfully.`);
-    await fetchRegistry();
+    await refreshActiveView();
   } catch (err: any) {
     const msg = extractErrorMessage(err, 'Operation failed on brand registration.');
     formError.value = msg;
@@ -356,7 +427,7 @@ const handleUpdateBrand = async () => {
     modalState.closeModal();
     removeSelectedLogo();
     triggerToast(`Brand [${formPayload.value.name}] updated successfully.`);
-    await fetchRegistry();
+    await refreshActiveView();
   } catch (err: any) {
     const msg = extractErrorMessage(err, 'Operation failed on brand modification.');
     formError.value = msg;
@@ -373,7 +444,7 @@ const executeDeleteBrand = async () => {
   try {
     await brandService.deleteBrand(brand.id);
     triggerToast(`Brand [${brand.name}] has been successfully deleted.`, 'info');
-    await fetchRegistry();
+    await refreshActiveView();
     if (currentPage.value > totalPages.value) {
       currentPage.value = Math.max(1, totalPages.value);
     }
@@ -427,29 +498,30 @@ const onDrop = async (event: DragEvent, id: string | number) => {
 const handleReorder = async (draggedId: string | number, targetId: string | number) => {
   if (draggedId === targetId) return;
 
-  const draggedIdx = brandsList.value.findIndex(b => b.id === draggedId);
-  const targetIdx = brandsList.value.findIndex(b => b.id === targetId);
+  const currentList = viewMode.value === 'grid' ? [...gridBrands.value] : [...brandsList.value];
+
+  const draggedIdx = currentList.findIndex(b => b.id === draggedId);
+  const targetIdx = currentList.findIndex(b => b.id === targetId);
 
   if (draggedIdx === -1 || targetIdx === -1) return;
 
   // Permute array locally first for zero-latency UI response
-  const updatedList = [...brandsList.value];
-  const movedItems = updatedList.splice(draggedIdx, 1);
+  const movedItems = currentList.splice(draggedIdx, 1);
   const movedItem = movedItems[0];
   if (!movedItem) return;
-  updatedList.splice(targetIdx, 0, movedItem);
+  currentList.splice(targetIdx, 0, movedItem);
 
   // Extract and sort current display_order values
-  const sortedOrders = brandsList.value
+  const sortedOrders = currentList
     .map((b, idx) => b.display_order !== undefined ? b.display_order : idx + 1)
     .sort((a, b) => a - b);
 
   // Match the new visual layout with the display order list
   const updates: { id: string | number; display_order: number; name: string; slug: string; description: string }[] = [];
 
-  for (let i = 0; i < updatedList.length; i++) {
+  for (let i = 0; i < currentList.length; i++) {
     const newOrder = sortedOrders[i];
-    const brand = updatedList[i];
+    const brand = currentList[i];
     if (!brand || newOrder === undefined) continue;
     if (brand.display_order !== newOrder) {
       brand.display_order = newOrder;
@@ -464,7 +536,11 @@ const handleReorder = async (draggedId: string | number, targetId: string | numb
   }
 
   // Update local reactive list immediately
-  brandsList.value = updatedList;
+  if (viewMode.value === 'grid') {
+    gridBrands.value = currentList;
+  } else {
+    brandsList.value = currentList;
+  }
 
   // Persist modifications to backend service
   if (updates.length > 0) {
@@ -482,7 +558,7 @@ const handleReorder = async (draggedId: string | number, targetId: string | numb
     } catch (err: any) {
       const msg = extractErrorMessage(err, 'Failed to save updated brand order.');
       triggerToast(msg, 'error');
-      await fetchRegistry(); // Revert to database truth on failure
+      await refreshActiveView(); // Revert to database truth on failure
     } finally {
       isLoading.value = false;
     }
@@ -490,9 +566,22 @@ const handleReorder = async (draggedId: string | number, targetId: string | numb
 };
 
 // --- STATS COMPUTED AGGREGATES ---
-const totalBrandsCount = computed(() => brandsList.value.length);
-const activeBrandsCount = computed(() => brandsList.value.filter(b => b.is_active !== false).length);
-const inactiveBrandsCount = computed(() => brandsList.value.filter(b => b.is_active === false).length);
+const totalBrandsCount = computed(() => {
+  if (viewMode.value === 'grid') {
+    return gridTotalCount.value;
+  }
+  return brandsList.value.length;
+});
+
+const activeBrandsCount = computed(() => {
+  const source = viewMode.value === 'grid' ? gridBrands.value : brandsList.value;
+  return source.filter(b => b.is_active !== false).length;
+});
+
+const inactiveBrandsCount = computed(() => {
+  const source = viewMode.value === 'grid' ? gridBrands.value : brandsList.value;
+  return source.filter(b => b.is_active === false).length;
+});
 
 // --- REUSABLE TABLE CONFIGURATION ---
 const tableColumns: UiTableColumn<Brand>[] = [
@@ -535,10 +624,10 @@ const getTableRowAttrs = (brand: Brand) => ({
         <UiButton 
           variant="outline" 
           class="rounded-2xl h-11 px-5 gap-2 border-border font-bold text-xs"
-          @click="fetchRegistry"
-          :disabled="isLoading"
+          @click="refreshActiveView"
+          :disabled="isLoading || isGridLoading"
         >
-          <RefreshCw :class="['w-4 h-4', isLoading && 'animate-spin']" />
+          <RefreshCw :class="['w-4 h-4', (isLoading || isGridLoading) && 'animate-spin']" />
           <span>Refresh</span>
         </UiButton>
 
@@ -639,20 +728,20 @@ const getTableRowAttrs = (brand: Brand) => ({
     </div>
 
     <!-- Loading, Empty, Error status layout handlers -->
-    <div v-if="brandService.isLoading.value" class="h-64 flex flex-col items-center justify-center gap-3 bg-card border border-border rounded-2xl">
+    <div v-if="(viewMode === 'list' && isLoading) || (viewMode === 'grid' && isGridLoading && gridBrands.length === 0)" class="h-64 flex flex-col items-center justify-center gap-3 bg-card border border-border rounded-2xl">
       <span class="animate-spin border-4 border-primary/20 border-t-primary rounded-full w-10 h-10"></span>
       <p class="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Querying Database Registry...</p>
     </div>
 
-    <div v-else-if="brandService.errorMsg.value" class="h-64 flex flex-col items-center justify-center gap-4 p-6 text-center bg-card border border-border rounded-2xl">
+    <div v-else-if="brandService.errorMsg.value || (viewMode === 'grid' && gridError && gridBrands.length === 0)" class="h-64 flex flex-col items-center justify-center gap-4 p-6 text-center bg-card border border-border rounded-2xl">
       <div class="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center">
         <AlertCircle class="w-6 h-6" />
       </div>
       <div>
         <p class="text-lg font-bold text-foreground">Network Integration Malfunction</p>
-        <p class="text-xs text-muted-foreground max-w-md mx-auto mt-1">{{ brandService.errorMsg.value }}</p>
+        <p class="text-xs text-muted-foreground max-w-md mx-auto mt-1">{{ brandService.errorMsg.value || gridError }}</p>
       </div>
-      <button @click="fetchRegistry" class="bg-primary text-primary-foreground text-xs px-4 py-2 rounded-xl font-bold hover:opacity-90">
+      <button @click="refreshActiveView" class="bg-primary text-primary-foreground text-xs px-4 py-2 rounded-xl font-bold hover:opacity-90">
         Re-verify Connection
       </button>
     </div>
@@ -661,7 +750,7 @@ const getTableRowAttrs = (brand: Brand) => ({
     <div v-else-if="viewMode === 'grid'" class="space-y-8">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div 
-          v-for="brand in paginatedBrands" 
+          v-for="brand in gridBrands" 
           :key="brand.id"
           draggable="true"
           @dragstart="onDragStart($event, brand.id)"
@@ -767,7 +856,7 @@ const getTableRowAttrs = (brand: Brand) => ({
         </div>
 
         <!-- Empty state in grid mode -->
-        <div v-if="filteredBrands.length === 0" class="col-span-1 md:col-span-2 lg:col-span-3 py-16 text-center bg-card border border-border rounded-2xl">
+        <div v-if="gridBrands.length === 0" class="col-span-1 md:col-span-2 lg:col-span-3 py-16 text-center bg-card border border-border rounded-2xl">
           <div class="flex flex-col items-center justify-center gap-4 text-muted-foreground">
             <div class="w-16 h-16 rounded-2xl bg-muted/50 border border-border flex items-center justify-center">
               <Search class="w-7 h-7 text-muted-foreground" />
@@ -780,15 +869,13 @@ const getTableRowAttrs = (brand: Brand) => ({
         </div>
       </div>
 
-      <!-- Shared Pagination Footer for Grid Mode -->
-      <UiPagination
-        v-model:current-page="currentPage"
-        :total-pages="totalPages"
-        :total-count="filteredBrands.length"
-        :items-per-page="itemsPerPage"
-        item-label="brands"
-        prefix-label="Showing"
-        variant="card"
+      <!-- Infinite Scroll Pagination Footer for Grid Mode -->
+      <UiInfiniteScroll
+        :has-more="gridHasMore"
+        :is-loading="isGridFetchingNext"
+        :error="gridError"
+        @load-more="loadGridNextPage"
+        @retry="loadGridNextPage"
       />
     </div>
 
