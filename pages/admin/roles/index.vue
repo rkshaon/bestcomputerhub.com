@@ -23,6 +23,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiSearchInput from '@/components/ui/UiSearchInput.vue';
+import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 import RoleFormModal from '@/components/admin/RoleFormModal.vue';
 import type { Role } from '@/types';
 
@@ -34,6 +35,13 @@ useSeoMeta({
   title: 'Roles & Access Permissions - Admin',
   robots: 'noindex, nofollow'
 });
+
+const tableColumns: UiTableColumn<Role>[] = [
+  { key: 'name', label: 'Role Name', headerClass: 'px-8 py-5', cellClass: 'px-8 py-5' },
+  { key: 'permissionsCount', label: 'Permissions', headerClass: 'px-8 py-5', cellClass: 'px-8 py-5' },
+  { key: 'permissionsPreview', label: 'Assigned Permissions Preview', headerClass: 'px-8 py-5', cellClass: 'px-8 py-5' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8 py-5 text-right', cellClass: 'px-8 py-5 text-right font-medium' },
+];
 
 const roleService = useRoleService();
 const { canViewModule, canCreateInModule, canEditInModule, canDeleteInModule } = useAdminPermissions();
@@ -384,103 +392,95 @@ const avgPermissionsCount = computed(() => roles.value.length > 0 ? Math.round(t
       </div>
 
       <!-- Roles List/Table Mode -->
-      <div v-else class="bg-card border border-border rounded-[2rem] overflow-hidden shadow-sm">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground border-b border-border/60 bg-muted/30">
-                <th class="px-8 py-5">Role Name</th>
-                <th class="px-8 py-5">Permissions</th>
-                <th class="px-8 py-5">Assigned Permissions Preview</th>
-                <th class="px-8 py-5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-border/40">
-              <tr 
-                v-for="role in filteredRoles" 
-                :key="role.id" 
-                class="group hover:bg-muted/30 transition-colors"
-              >
-                <td class="px-8 py-5">
-                  <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shrink-0">
-                      <Shield class="w-4.5 h-4.5" />
-                    </div>
-                    <div class="flex flex-col">
-                      <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-                        {{ role.name }}
-                      </span>
-                      <span class="text-[10px] text-muted-foreground font-medium">ID: #{{ role.id }}</span>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-8 py-5">
-                  <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-muted-foreground text-[10px] font-black uppercase tracking-wider w-fit">
-                    <Key class="w-3 h-3 text-primary" />
-                    <span>{{ role.permissions ? role.permissions.length : 0 }} Permissions</span>
-                  </div>
-                </td>
-                <td class="px-8 py-5">
-                  <div v-if="role.permissions && role.permissions.length > 0" class="flex flex-wrap gap-1">
-                    <span 
-                      v-for="perm in role.permissions.slice(0, 4)" 
-                      :key="perm.id"
-                      class="px-2 py-0.5 rounded text-[9px] font-semibold border bg-muted text-foreground border-border truncate max-w-[150px]"
-                      :title="perm.codename"
-                    >
-                      {{ perm.name }}
-                    </span>
-                    <span 
-                      v-if="role.permissions.length > 4" 
-                      class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20"
-                    >
-                      +{{ role.permissions.length - 4 }} more
-                    </span>
-                  </div>
-                  <p v-else class="text-[11px] text-muted-foreground italic">
-                    No permissions assigned.
-                  </p>
-                </td>
-                <td class="px-8 py-5 text-right font-medium">
-                  <div class="flex items-center justify-end gap-1">
-                    <button 
-                      type="button" 
-                      @click="modalState.openView(role.id)"
-                      class="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                      title="View Role Details"
-                      aria-label="View role details"
-                    >
-                      <Eye class="w-4 h-4" />
-                    </button>
+      <UiTable
+        v-else
+        :columns="tableColumns"
+        :data="filteredRoles"
+        key-field="id"
+      >
+        <!-- Role Name -->
+        <template #cell-name="{ item: role }">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shrink-0">
+              <Shield class="w-4.5 h-4.5" />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                {{ role.name }}
+              </span>
+              <span class="text-[10px] text-muted-foreground font-medium">ID: #{{ role.id }}</span>
+            </div>
+          </div>
+        </template>
 
-                    <button 
-                      v-if="canEditRole"
-                      type="button" 
-                      @click="modalState.openEdit(role.id)"
-                      class="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                      title="Edit Role"
-                      aria-label="Edit role"
-                    >
-                      <Edit class="w-4 h-4" />
-                    </button>
+        <!-- Permissions Count -->
+        <template #cell-permissionsCount="{ item: role }">
+          <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-muted-foreground text-[10px] font-black uppercase tracking-wider w-fit">
+            <Key class="w-3 h-3 text-primary" />
+            <span>{{ role.permissions ? role.permissions.length : 0 }} Permissions</span>
+          </div>
+        </template>
 
-                    <button 
-                      v-if="canDeleteRole"
-                      type="button" 
-                      @click="modalState.openDelete(role.id)"
-                      class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      title="Delete Role"
-                      aria-label="Delete role"
-                    >
-                      <Trash2 class="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <!-- Assigned Permissions Preview -->
+        <template #cell-permissionsPreview="{ item: role }">
+          <div v-if="role.permissions && role.permissions.length > 0" class="flex flex-wrap gap-1">
+            <span 
+              v-for="perm in role.permissions.slice(0, 4)" 
+              :key="perm.id"
+              class="px-2 py-0.5 rounded text-[9px] font-semibold border bg-muted text-foreground border-border truncate max-w-[150px]"
+              :title="perm.codename"
+            >
+              {{ perm.name }}
+            </span>
+            <span 
+              v-if="role.permissions.length > 4" 
+              class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20"
+            >
+              +{{ role.permissions.length - 4 }} more
+            </span>
+          </div>
+          <p v-else class="text-[11px] text-muted-foreground italic">
+            No permissions assigned.
+          </p>
+        </template>
+
+        <!-- Actions -->
+        <template #cell-actions="{ item: role }">
+          <div class="flex items-center justify-end gap-1">
+            <button 
+              type="button" 
+              @click="modalState.openView(role.id)"
+              class="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              title="View Role Details"
+              aria-label="View role details"
+            >
+              <Eye class="w-4 h-4" />
+            </button>
+
+            <button 
+              v-if="canEditRole"
+              type="button" 
+              @click="modalState.openEdit(role.id)"
+              class="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              title="Edit Role"
+              aria-label="Edit role"
+            >
+              <Edit class="w-4 h-4" />
+            </button>
+
+            <button 
+              v-if="canDeleteRole"
+              type="button" 
+              @click="modalState.openDelete(role.id)"
+              class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+              title="Delete Role"
+              aria-label="Delete role"
+            >
+              <Trash2 class="w-4 h-4" />
+            </button>
+          </div>
+        </template>
+      </UiTable>
     </template>
 
     <!-- Role Form Modal (Create / Edit / View) -->
