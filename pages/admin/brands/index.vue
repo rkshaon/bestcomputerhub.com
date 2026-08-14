@@ -30,6 +30,7 @@ import { refDebounced } from '@vueuse/core';
 import { useBrandService } from '@/composables/useBrandService';
 import { cn } from '@/utils';
 import type { Brand } from '@/types';
+import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import { toastSuccess, toastError, toastInfo, extractErrorMessage } from '@/composables/useToast';
 import Button from '@/components/ui/Button.vue';
 import { useAdminModalState } from '@/composables/useAdminModalState';
@@ -492,6 +493,33 @@ const handleReorder = async (draggedId: string | number, targetId: string | numb
 const totalBrandsCount = computed(() => brandsList.value.length);
 const activeBrandsCount = computed(() => brandsList.value.filter(b => b.is_active !== false).length);
 const inactiveBrandsCount = computed(() => brandsList.value.filter(b => b.is_active === false).length);
+
+// --- REUSABLE TABLE CONFIGURATION ---
+const tableColumns: UiTableColumn<Brand>[] = [
+  { key: 'name', label: 'Brand', headerClass: 'px-8', cellClass: 'px-8' },
+  { key: 'slug', label: 'Slug', headerClass: 'px-6', cellClass: 'px-6' },
+  { key: 'is_active', label: 'Status', headerClass: 'px-6', cellClass: 'px-6' },
+  { key: 'display_order', label: 'Display Order', headerClass: 'px-6', cellClass: 'px-6' },
+  { key: 'productCount', label: 'Products', headerClass: 'px-6', cellClass: 'px-6' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8' },
+];
+
+const getTableRowClass = (brand: Brand) => {
+  return cn(
+    'cursor-grab active:cursor-grabbing',
+    draggedBrandId.value === brand.id ? 'opacity-40' : '',
+    dragOverBrandId.value === brand.id ? 'bg-primary/5 border-y-2 border-dashed border-primary/40' : ''
+  );
+};
+
+const getTableRowAttrs = (brand: Brand) => ({
+  draggable: true,
+  onDragstart: (e: DragEvent) => onDragStart(e, brand.id),
+  onDragover: (e: DragEvent) => onDragOver(e, brand.id),
+  onDragleave: (e: DragEvent) => onDragLeave(e, brand.id),
+  onDrop: (e: DragEvent) => onDrop(e, brand.id),
+  onDragend: (e: DragEvent) => onDragEnd(e),
+});
 </script>
 
 <template>
@@ -765,147 +793,122 @@ const inactiveBrandsCount = computed(() => brandsList.value.filter(b => b.is_act
     </div>
 
     <!-- Paginated brand table (List View Mode) -->
-    <div v-else class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left">
-          <thead>
-            <tr class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 dark:border-slate-900">
-              <th class="px-8 py-5">Brand</th>
-              <th class="px-6 py-5">Slug</th>
-              <th class="px-6 py-5">Status</th>
-              <th class="px-6 py-5">Display Order</th>
-              <th class="px-6 py-5">Products</th>
-              <th class="px-8 py-5 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-50 dark:divide-slate-900/50">
-            <tr 
-              v-for="brand in paginatedBrands" 
-              :key="brand.id" 
-              draggable="true"
-              @dragstart="onDragStart($event, brand.id)"
-              @dragover.prevent="onDragOver($event, brand.id)"
-              @dragleave="onDragLeave($event, brand.id)"
-              @drop="onDrop($event, brand.id)"
-              @dragend="onDragEnd($event)"
-              :class="[
-                'group hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors cursor-grab active:cursor-grabbing',
-                draggedBrandId === brand.id ? 'opacity-40' : '',
-                dragOverBrandId === brand.id ? 'bg-primary/5 border-y-2 border-dashed border-primary/40' : ''
-              ]"
-            >
-              
-              <!-- Brand Identity Column -->
-              <td class="px-8 py-5">
-                <div class="flex items-center gap-4">
-                  <GripVertical class="w-4 h-4 text-slate-300 dark:text-slate-700 cursor-grab active:cursor-grabbing hover:text-slate-400 dark:hover:text-slate-500 transition-colors shrink-0" />
-                  <div class="w-12 h-12 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center p-2 shadow-sm overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300">
-                    <img :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" :alt="brand.name" class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" />
-                  </div>
-                  <div>
-                    <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors leading-tight">{{ brand.name }}</h4>
-                    <p class="text-xs text-slate-400 line-clamp-1 max-w-[280px] mt-0.5 leading-relaxed">{{ brand.description || 'No description recorded.' }}</p>
-                  </div>
-                </div>
-              </td>
+    <UiTable
+      v-else
+      :columns="tableColumns"
+      :data="paginatedBrands"
+      :loading="isLoading"
+      key-field="id"
+      :row-class="getTableRowClass"
+      :row-attrs="getTableRowAttrs"
+    >
+      <!-- Brand Identity Column -->
+      <template #cell-name="{ item: brand }">
+        <div class="flex items-center gap-4">
+          <GripVertical class="w-4 h-4 text-slate-300 dark:text-slate-700 cursor-grab active:cursor-grabbing hover:text-slate-400 dark:hover:text-slate-500 transition-colors shrink-0" />
+          <div class="w-12 h-12 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center p-2 shadow-sm overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300">
+            <img :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" :alt="brand.name" class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" />
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors leading-tight">{{ brand.name }}</h4>
+            <p class="text-xs text-slate-400 line-clamp-1 max-w-[280px] mt-0.5 leading-relaxed">{{ brand.description || 'No description recorded.' }}</p>
+          </div>
+        </div>
+      </template>
 
-              <!-- Slug Column -->
-              <td class="px-6 py-5">
-                <span class="font-mono text-xs text-slate-400 bg-slate-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 uppercase tracking-wider font-semibold">
-                  {{ brand.slug }}
-                </span>
-              </td>
+      <!-- Slug Column -->
+      <template #cell-slug="{ item: brand }">
+        <span class="font-mono text-xs text-slate-400 bg-slate-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 uppercase tracking-wider font-semibold">
+          {{ brand.slug }}
+        </span>
+      </template>
 
-              <!-- Status Lights Column -->
-              <td class="px-6 py-5">
-                <div class="flex items-center gap-2">
-                  <span :class="cn(
-                    'w-2 h-2 rounded-full ring-4',
-                    brand.is_active !== false 
-                      ? 'bg-emerald-500 ring-emerald-500/10' 
-                      : 'bg-slate-300 dark:bg-slate-700 ring-slate-300/10 dark:ring-slate-700/10'
-                  )"></span>
-                  <span class="text-[10px] uppercase font-bold tracking-widest" :class="brand.is_active !== false ? 'text-emerald-500' : 'text-slate-400'">
-                    {{ brand.is_active !== false ? 'Active' : 'Inactive' }}
-                  </span>
-                </div>
-              </td>
+      <!-- Status Lights Column -->
+      <template #cell-is_active="{ item: brand }">
+        <div class="flex items-center gap-2">
+          <span :class="cn(
+            'w-2 h-2 rounded-full ring-4',
+            brand.is_active !== false 
+              ? 'bg-emerald-500 ring-emerald-500/10' 
+              : 'bg-slate-300 dark:bg-slate-700 ring-slate-300/10 dark:ring-slate-700/10'
+          )"></span>
+          <span class="text-[10px] uppercase font-bold tracking-widest" :class="brand.is_active !== false ? 'text-emerald-500' : 'text-slate-400'">
+            {{ brand.is_active !== false ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+      </template>
 
-              <!-- Display Order Column -->
-              <td class="px-6 py-5">
-                <span class="font-mono text-xs font-bold text-slate-600 dark:text-slate-400">
-                  #{{ brand.display_order || 'Unassigned' }}
-                </span>
-              </td>
+      <!-- Display Order Column -->
+      <template #cell-display_order="{ item: brand }">
+        <span class="font-mono text-xs font-bold text-slate-600 dark:text-slate-400">
+          #{{ brand.display_order || 'Unassigned' }}
+        </span>
+      </template>
 
-              <!-- Products Column -->
-              <td class="px-6 py-5">
-                <div class="flex items-center gap-2">
-                  <Tag class="w-3.5 h-3.5 text-slate-300" />
-                  <span class="text-xs font-black text-slate-900 dark:text-slate-100">{{ brand.productCount || 0 }} Items</span>
-                </div>
-              </td>
+      <!-- Products Column -->
+      <template #cell-productCount="{ item: brand }">
+        <div class="flex items-center gap-2">
+          <Tag class="w-3.5 h-3.5 text-slate-300" />
+          <span class="text-xs font-black text-slate-900 dark:text-slate-100">{{ brand.productCount || 0 }} Items</span>
+        </div>
+      </template>
 
-              <!-- Action triggers Column -->
-              <td class="px-8 py-5 text-right">
-                <div class="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                  <button 
-                    @click="modalState.openView(brand.id)" 
-                    class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                    title="View Brand Details"
-                    aria-label="View brand details"
-                  >
-                    <Eye class="w-4 h-4" />
-                  </button>
-                  <button 
-                    @click="modalState.openEdit(brand.id)" 
-                    class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                    title="Edit Brand"
-                    aria-label="Edit brand record"
-                  >
-                    <Edit2 class="w-4 h-4" />
-                  </button>
-                  <button 
-                    @click="modalState.openDelete(brand.id)" 
-                    class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                    title="Delete Brand"
-                    aria-label="Delete brand"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
+      <!-- Action triggers Column -->
+      <template #cell-actions="{ item: brand }">
+        <div class="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+          <button 
+            @click="modalState.openView(brand.id)" 
+            class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            title="View Brand Details"
+            aria-label="View brand details"
+          >
+            <Eye class="w-4 h-4" />
+          </button>
+          <button 
+            @click="modalState.openEdit(brand.id)" 
+            class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            title="Edit Brand"
+            aria-label="Edit brand record"
+          >
+            <Edit2 class="w-4 h-4" />
+          </button>
+          <button 
+            @click="modalState.openDelete(brand.id)" 
+            class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            title="Delete Brand"
+            aria-label="Delete brand"
+          >
+            <Trash2 class="w-4 h-4" />
+          </button>
+        </div>
+      </template>
 
-            <!-- Empty list layout -->
-            <tr v-if="filteredBrands.length === 0">
-              <td colspan="6" class="px-8 py-16 text-center h-64">
-                <div class="flex flex-col items-center justify-center gap-4 text-slate-400">
-                  <div class="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
-                    <Search class="w-7 h-7 text-slate-300" />
-                  </div>
-                  <div>
-                    <p class="font-display font-medium text-lg text-slate-900 dark:text-slate-100">No Brands Found</p>
-                    <p class="text-xs max-w-sm mx-auto mt-1">No brands matched the filter criteria.</p>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <!-- Empty list layout -->
+      <template #empty>
+        <div class="flex flex-col items-center justify-center gap-4 text-slate-400 py-6">
+          <div class="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+            <Search class="w-7 h-7 text-slate-300" />
+          </div>
+          <div>
+            <p class="font-display font-medium text-lg text-slate-900 dark:text-slate-100">No Brands Found</p>
+            <p class="text-xs max-w-sm mx-auto mt-1">No brands matched the filter criteria.</p>
+          </div>
+        </div>
+      </template>
 
       <!-- Pagination Footer System -->
-      <UiPagination
-        v-model:current-page="currentPage"
-        :total-pages="totalPages"
-        :total-count="filteredBrands.length"
-        :items-per-page="itemsPerPage"
-        item-label="brands"
-        prefix-label="Showing"
-        variant="footer"
-      />
-    </div>
+      <template #footer>
+        <UiPagination
+          v-model:current-page="currentPage"
+          :total-pages="totalPages"
+          :total-count="filteredBrands.length"
+          :items-per-page="itemsPerPage"
+          item-label="brands"
+          prefix-label="Showing"
+          variant="footer"
+        />
+      </template>
+    </UiTable>
 
     <!-- MODAL 1: Create New Partner -->
     <UiAdminModal :is-open="modalState.isCreate.value" max-width="max-w-xl" :show-close-button="false" @close="modalState.closeModal">

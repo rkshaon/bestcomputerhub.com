@@ -23,6 +23,7 @@ interface Props {
   emptyDescription?: string;
   hoverable?: boolean;
   rowClass?: string | ((item: T, index: number) => string);
+  rowAttrs?: (item: T, index: number) => Record<string, any>;
   tableClass?: string;
   wrapperClass?: string;
 }
@@ -63,6 +64,13 @@ function getRowClass(item: T, index: number): string {
     return cn(base, props.rowClass(item, index));
   }
   return cn(base, props.rowClass);
+}
+
+function getRowAttrs(item: T, index: number): Record<string, any> {
+  if (typeof props.rowAttrs === 'function') {
+    return props.rowAttrs(item, index);
+  }
+  return {};
 }
 
 function getAlignmentClass(align?: 'left' | 'center' | 'right'): string {
@@ -158,6 +166,7 @@ function getAlignmentClass(align?: 'left' | 'center' | 'right'): string {
               v-for="(item, index) in data"
               :key="getRowKey(item, index)"
               :class="cn('group transition-colors', getRowClass(item, index))"
+              v-bind="getRowAttrs(item, index)"
               @click="emit('row-click', item, index)"
             >
               <td

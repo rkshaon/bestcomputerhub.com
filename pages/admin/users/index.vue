@@ -28,6 +28,7 @@ import { useToast } from '@/composables/useToast';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiSearchInput from '@/components/ui/UiSearchInput.vue';
+import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 import Button from '@/components/ui/Button.vue';
 import UserFormModal from '@/components/admin/UserFormModal.vue';
 import type { UserItem, UserGroup, Role } from '@/types';
@@ -35,6 +36,14 @@ import type { UserItem, UserGroup, Role } from '@/types';
 definePageMeta({
   layout: 'admin'
 });
+
+const tableColumns: UiTableColumn<UserItem>[] = [
+  { key: 'user', label: 'User', headerClass: 'px-8', cellClass: 'px-8' },
+  { key: 'status', label: 'Status', headerClass: 'px-8', cellClass: 'px-8' },
+  { key: 'contact', label: 'Email / Username', headerClass: 'px-8', cellClass: 'px-8' },
+  { key: 'groups', label: 'Security Groups', headerClass: 'px-8', cellClass: 'px-8' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8' },
+];
 
 useSeoMeta({
   title: 'User Accounts & Personnel Access - Admin',
@@ -429,113 +438,106 @@ const staffAccountsCount = computed(() => userList.value.filter(u => !u.is_super
       </div>
 
       <!-- Users List/Table Mode -->
-      <div v-else class="bg-card border border-border rounded-[2rem] overflow-hidden shadow-sm">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground border-b border-border/60 bg-muted/30">
-                <th class="px-8 py-5">User</th>
-                <th class="px-8 py-5">Status</th>
-                <th class="px-8 py-5">Email / Username</th>
-                <th class="px-8 py-5">Security Groups</th>
-                <th class="px-8 py-5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-border/40">
-              <tr 
-                v-for="user in userList" 
-                :key="user.id" 
-                class="group hover:bg-muted/30 transition-colors"
-              >
-                <td class="px-8 py-5">
-                  <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-display font-extrabold text-xs shrink-0">
-                      <UserIcon class="w-4.5 h-4.5" />
-                    </div>
-                    <div class="flex flex-col">
-                      <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-                        {{ getUserDisplayName(user) }}
-                      </span>
-                      <span class="text-[10px] text-muted-foreground font-medium">ID: #{{ user.id }}</span>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-8 py-5">
-                  <span 
-                    v-if="user.is_superuser"
-                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-                  >
-                    <Crown class="w-2.5 h-2.5" /> Superadmin
-                  </span>
-                  <span 
-                    v-else
-                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                  >
-                    <CheckCircle2 class="w-2.5 h-2.5" /> Active
-                  </span>
-                </td>
-                <td class="px-8 py-5">
-                  <div class="flex flex-col max-w-[200px] sm:max-w-xs">
-                    <span class="text-xs text-foreground font-medium truncate">{{ user.email }}</span>
-                    <span v-if="user.username" class="text-[10px] font-mono text-muted-foreground">@{{ user.username }}</span>
-                  </div>
-                </td>
-                <td class="px-8 py-5">
-                  <div class="flex flex-wrap gap-1">
-                    <span 
-                      v-for="(groupName, idx) in getUserGroupNames(user)" 
-                      :key="idx"
-                      :class="[
-                        'inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold border',
-                        groupName === 'No groups assigned'
-                          ? 'bg-muted/40 text-muted-foreground border-border/40 italic'
-                          : 'bg-muted text-foreground border-border'
-                      ]"
-                    >
-                      {{ groupName }}
-                    </span>
-                  </div>
-                </td>
-                <td class="px-8 py-5 text-right font-medium">
-                  <div class="flex items-center justify-end gap-1">
-                    <button 
-                      type="button" 
-                      @click="modalState.openView(user.id)"
-                      class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                      title="View User Details"
-                      aria-label="View user details"
-                    >
-                      <Eye class="w-4 h-4" />
-                    </button>
+      <UiTable
+        v-else
+        :columns="tableColumns"
+        :data="userList"
+        key-field="id"
+      >
+        <!-- User Info Column -->
+        <template #cell-user="{ item: user }">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-display font-extrabold text-xs shrink-0">
+              <UserIcon class="w-4.5 h-4.5" />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                {{ getUserDisplayName(user) }}
+              </span>
+              <span class="text-[10px] text-muted-foreground font-medium">ID: #{{ user.id }}</span>
+            </div>
+          </div>
+        </template>
 
-                    <button 
-                      v-if="canEditUser"
-                      type="button" 
-                      @click="modalState.openEdit(user.id)"
-                      class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                      title="Edit User Account"
-                      aria-label="Edit user account"
-                    >
-                      <Edit class="w-4 h-4" />
-                    </button>
+        <!-- Status Column -->
+        <template #cell-status="{ item: user }">
+          <span 
+            v-if="user.is_superuser"
+            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+          >
+            <Crown class="w-2.5 h-2.5" /> Superadmin
+          </span>
+          <span 
+            v-else
+            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+          >
+            <CheckCircle2 class="w-2.5 h-2.5" /> Active
+          </span>
+        </template>
 
-                    <button 
-                      v-if="canDeleteUser"
-                      type="button" 
-                      @click="modalState.openDelete(user.id)"
-                      class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      title="Delete User Account"
-                      aria-label="Delete user account"
-                    >
-                      <Trash2 class="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <!-- Contact Column -->
+        <template #cell-contact="{ item: user }">
+          <div class="flex flex-col max-w-[200px] sm:max-w-xs">
+            <span class="text-xs text-foreground font-medium truncate">{{ user.email }}</span>
+            <span v-if="user.username" class="text-[10px] font-mono text-muted-foreground">@{{ user.username }}</span>
+          </div>
+        </template>
+
+        <!-- Security Groups Column -->
+        <template #cell-groups="{ item: user }">
+          <div class="flex flex-wrap gap-1">
+            <span 
+              v-for="(groupName, idx) in getUserGroupNames(user)" 
+              :key="idx"
+              :class="[
+                'inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold border',
+                groupName === 'No groups assigned'
+                  ? 'bg-muted/40 text-muted-foreground border-border/40 italic'
+                  : 'bg-muted text-foreground border-border'
+              ]"
+            >
+              {{ groupName }}
+            </span>
+          </div>
+        </template>
+
+        <!-- Actions Column -->
+        <template #cell-actions="{ item: user }">
+          <div class="flex items-center justify-end gap-1 font-medium">
+            <button 
+              type="button" 
+              @click="modalState.openView(user.id)"
+              class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+              title="View User Details"
+              aria-label="View user details"
+            >
+              <Eye class="w-4 h-4" />
+            </button>
+
+            <button 
+              v-if="canEditUser"
+              type="button" 
+              @click="modalState.openEdit(user.id)"
+              class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+              title="Edit User Account"
+              aria-label="Edit user account"
+            >
+              <Edit class="w-4 h-4" />
+            </button>
+
+            <button 
+              v-if="canDeleteUser"
+              type="button" 
+              @click="modalState.openDelete(user.id)"
+              class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+              title="Delete User Account"
+              aria-label="Delete user account"
+            >
+              <Trash2 class="w-4 h-4" />
+            </button>
+          </div>
+        </template>
+      </UiTable>
     </template>
 
     <!-- Infinite Scroll Pagination Control -->
