@@ -182,6 +182,15 @@ All admin list views and paginated collections must use the established, reusabl
   - Use **`<UiPagination />`** when users need explicit page jumping, total record count visibility, or standard tabular admin dataset navigation.
   - Use **`<UiInfiniteScroll />`** when users stream through items continuously (e.g., dropdown search pickers, live audit logs, or infinite catalog feeds) without needing discrete page jumps.
 
+- **Admin View-Based Pagination Rule (Grid View vs. List/Table View)**:
+  For any existing or future Admin page that provides both Grid View and List/Table View:
+  - **Grid View**: Must use infinite-scroll data loading using the existing `useInfinitePagination()` + `<UiInfiniteScroll />` pattern.
+  - **List/Table View**: Must use numbered pagination using the existing numbered pagination pattern with `<UiPagination />`.
+  - **Strategy Switching**: The active view mode determines the active pagination/data-loading strategy.
+  - **State Reset on Switch**: Pagination and data-loading state must be reset appropriately when switching between Grid and List views so state from one strategy is not incorrectly carried into the other.
+  - **Separation of Responsibilities**: `<UiTable />`, `<UiPagination />`, and `<UiInfiniteScroll />` remain strictly separate reusable responsibilities.
+  - **No Infrastructure Duplication**: Do not duplicate pagination infrastructure for individual pages.
+
 ### 2. URL-Driven Admin Modal State (`useAdminModalState` & `<UiAdminModal />`)
 All admin CRUD dialogs (Create/Edit/View/Delete) must synchronize their state directly with route query parameters using `useAdminModalState<T>()` from `/composables/useAdminModalState.ts` and `<UiAdminModal />` from `/components/ui/UiAdminModal.vue`.
 - Standard URL query format: `?modal=create`, `?modal=edit&id=15`, `?modal=view&id=15`, `?modal=delete&id=15`.
