@@ -34,7 +34,7 @@ import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import { toastSuccess, toastError, toastInfo, extractErrorMessage } from '@/composables/useToast';
 import Button from '@/components/ui/Button.vue';
 import { useAdminModalState } from '@/composables/useAdminModalState';
-import { useInfinitePagination } from '@/composables/useInfinitePagination';
+import { useInfinitePagination, type PaginatedResponse } from '@/composables/useInfinitePagination';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiSearchInput from '@/components/ui/UiSearchInput.vue';
@@ -200,16 +200,16 @@ const {
   refresh: refreshGridPagination,
   reset: resetGridPagination
 } = useInfinitePagination<Brand>({
-  fetcher: async (params) => {
+  fetcher: async (params): Promise<PaginatedResponse<Brand>> => {
     if (viewMode.value !== 'grid') {
-      return { results: [], count: 0, page: 1, pages: 1 };
+      return { results: [], count: 0, next: null, previous: null };
     }
     const res = await brandService.getBrandsPaginatedList({
       page: params.page,
       page_size: 12,
       search: searchQuery.value
     });
-    let results = res.results.map(b => ({
+    let results: Brand[] = res.results.map(b => ({
       ...b,
       is_active: b.is_active !== undefined ? b.is_active : true
     }));
@@ -219,11 +219,13 @@ const {
         (statusFilter.value === 'inactive' && !b.is_active)
       );
     }
+    const pageNum = res.page ?? params.page;
+    const totalPagesNum = res.pages ?? (Math.ceil(res.count / 12) || 1);
     return {
       results,
       count: res.count,
-      page: res.page,
-      pages: res.pages
+      next: pageNum < totalPagesNum ? `?page=${pageNum + 1}` : null,
+      previous: pageNum > 1 ? `?page=${pageNum - 1}` : null
     };
   },
   search: searchQuery,

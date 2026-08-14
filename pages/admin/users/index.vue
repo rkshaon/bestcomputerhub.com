@@ -23,7 +23,7 @@ import {
 } from 'lucide-vue-next';
 import { useUserService } from '@/composables/useUserService';
 import { useRoleService } from '@/composables/useRoleService';
-import { useInfinitePagination } from '@/composables/useInfinitePagination';
+import { useInfinitePagination, type PaginatedResponse } from '@/composables/useInfinitePagination';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast, extractErrorMessage, handleApiError } from '@/composables/useToast';
@@ -117,20 +117,21 @@ const {
   refresh: refreshGridPagination,
   reset: resetGridPagination
 } = useInfinitePagination<UserItem>({
-  fetcher: async (params) => {
+  fetcher: async (params): Promise<PaginatedResponse<UserItem>> => {
     if (viewMode.value !== 'grid') {
-      return { results: [], count: 0, page: 1, pages: 1 };
+      return { results: [], count: 0, next: null, previous: null };
     }
     const res = await userService.getUsers({
       page: params.page,
       page_size: 12,
       search: searchQuery.value
     });
+    const totalPages = Math.ceil(res.count / 12) || 1;
     return {
       results: res.results,
       count: res.count,
-      page: params.page,
-      pages: Math.ceil(res.count / 12) || 1
+      next: params.page < totalPages ? `?page=${params.page + 1}` : null,
+      previous: params.page > 1 ? `?page=${params.page - 1}` : null
     };
   },
   search: searchQuery,
