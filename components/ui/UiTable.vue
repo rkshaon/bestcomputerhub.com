@@ -198,5 +198,6 @@ function getAlignmentClass(align?: 'left' | 'center' | 'right'): string {
         </tbody>
       </table>
     </div>
+    <slot name="footer" />
   </div>
 </template>

@@ -26,11 +26,21 @@ import { useProductService } from '@/composables/useProductService';
 import { cn } from '@/utils';
 import { refDebounced } from '@vueuse/core';
 import type { Category } from '@/types';
+import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import { toastSuccess, toastError, toastInfo, handleApiError, extractErrorMessage } from '@/composables/useToast';
 
 definePageMeta({
   layout: 'admin'
 });
+
+const tableColumns: UiTableColumn<Category>[] = [
+  { key: 'name', label: 'Classification', headerClass: 'px-8', cellClass: 'px-8' },
+  { key: 'slug', label: 'System ID (Slug)', headerClass: 'px-6', cellClass: 'px-6' },
+  { key: 'order', label: 'Priority (Order)', headerClass: 'px-6', cellClass: 'px-6' },
+  { key: 'parentCategoryId', label: 'Structural Parent', headerClass: 'px-6', cellClass: 'px-6' },
+  { key: 'description', label: 'Memo Overview', headerClass: 'px-6', cellClass: 'px-6 max-w-[320px]' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8' },
+];
 
 const categoryService = useCategoryService();
 const productService = useProductService();
@@ -643,126 +653,114 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
     </div>
 
     <!-- Active Grid Table View -->
-    <div v-else class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left">
-          <thead>
-            <tr class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 dark:border-slate-900">
-              <th class="px-8 py-5">Classification</th>
-              <th class="px-6 py-5">System ID (Slug)</th>
-              <th class="px-6 py-5">Priority (Order)</th>
-              <th class="px-6 py-5">Structural Parent</th>
-              <th class="px-6 py-5">Memo Overview</th>
-              <th class="px-8 py-5 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-50 dark:divide-slate-900/50">
-            <tr v-for="cat in categoriesList" :key="cat.id" class="group hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
-              
-              <!-- Category Identifier -->
-              <td class="px-8 py-5">
-                <div class="flex items-center gap-4">
-                  <div class="w-12 h-12 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-xl shadow-sm shrink-0 group-hover:scale-105 transition-transform duration-300">
-                    <span>{{ cat.icon || '📁' }}</span>
-                  </div>
-                  <div>
-                    <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors leading-tight">{{ cat.name }}</h4>
-                    <p class="text-[10px] text-slate-400 font-mono tracking-wider mt-0.5">{{ cat.id }}</p>
-                  </div>
-                </div>
-              </td>
+    <UiTable
+      v-else
+      :columns="tableColumns"
+      :data="categoriesList"
+      key-field="id"
+    >
+      <!-- Category Identifier -->
+      <template #cell-name="{ item: cat }">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-xl shadow-sm shrink-0 group-hover:scale-105 transition-transform duration-300">
+            <span>{{ cat.icon || '📁' }}</span>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors leading-tight">{{ cat.name }}</h4>
+            <p class="text-[10px] text-slate-400 font-mono tracking-wider mt-0.5">{{ cat.id }}</p>
+          </div>
+        </div>
+      </template>
 
-              <!-- System Identification Code (Slug) -->
-              <td class="px-6 py-5">
-                <span class="font-mono text-xs text-slate-400 bg-slate-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 uppercase tracking-wider font-semibold">
-                  {{ cat.slug }}
-                </span>
-              </td>
+      <!-- System Identification Code (Slug) -->
+      <template #cell-slug="{ item: cat }">
+        <span class="font-mono text-xs text-slate-400 bg-slate-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 uppercase tracking-wider font-semibold">
+          {{ cat.slug }}
+        </span>
+      </template>
 
-              <!-- Priority (Order) -->
-              <td class="px-6 py-5 font-mono text-xs font-bold text-slate-500 dark:text-slate-400">
-                {{ cat.order !== undefined ? cat.order : 0 }}
-              </td>
+      <!-- Priority (Order) -->
+      <template #cell-order="{ item: cat }">
+        <span class="font-mono text-xs font-bold text-slate-500 dark:text-slate-400">
+          {{ cat.order !== undefined ? cat.order : 0 }}
+        </span>
+      </template>
 
-              <!-- Parent classification mapping -->
-              <td class="px-6 py-5">
-                <div class="flex items-center gap-2">
-                  <span :class="cn(
-                    'w-2 h-2 rounded-full',
-                    cat.parentCategoryId ? 'bg-indigo-500' : 'bg-emerald-500'
-                  )"></span>
-                  <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                    {{ getParentName(cat.parentCategoryId) }}
-                  </span>
-                </div>
-              </td>
+      <!-- Structural Parent -->
+      <template #cell-parentCategoryId="{ item: cat }">
+        <div class="flex items-center gap-2">
+          <span :class="cn(
+            'w-2 h-2 rounded-full',
+            cat.parentCategoryId ? 'bg-indigo-500' : 'bg-emerald-500'
+          )"></span>
+          <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+            {{ getParentName(cat.parentCategoryId) }}
+          </span>
+        </div>
+      </template>
 
-              <!-- Short Memo Description -->
-              <td class="px-6 py-5 max-w-[320px]">
-                <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed italic">
-                  {{ cat.description || 'No formal engineering description defined.' }}
-                </p>
-              </td>
+      <!-- Short Memo Overview -->
+      <template #cell-description="{ item: cat }">
+        <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed italic">
+          {{ cat.description || 'No formal engineering description defined.' }}
+        </p>
+      </template>
 
-              <!-- Action button overrides -->
-              <td class="px-8 py-5 text-right">
-                <div class="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                  <button 
-                    @click="triggerViewModal(cat)" 
-                    class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                    title="Inspect Node Properties"
-                    aria-label="Inspect category properties"
-                  >
-                    <Info class="w-4 h-4" />
-                  </button>
-                  <button 
-                    @click="triggerEditModal(cat)" 
-                    class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                    title="Modify Class Configurations"
-                    aria-label="Modify category configurations"
-                  >
-                    <Edit2 class="w-4 h-4" />
-                  </button>
-                  <button 
-                    @click="deleteCategoryNode(cat)" 
-                    class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
-                    title="Deregister Node"
-                    aria-label="Delete category node"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
+      <!-- Action button overrides -->
+      <template #cell-actions="{ item: cat }">
+        <div class="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+          <button 
+            @click="triggerViewModal(cat)" 
+            class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            title="Inspect Node Properties"
+            aria-label="Inspect category properties"
+          >
+            <Info class="w-4 h-4" />
+          </button>
+          <button 
+            @click="triggerEditModal(cat)" 
+            class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            title="Modify Class Configurations"
+            aria-label="Modify category configurations"
+          >
+            <Edit2 class="w-4 h-4" />
+          </button>
+          <button 
+            @click="deleteCategoryNode(cat)" 
+            class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            title="Deregister Node"
+            aria-label="Delete category node"
+          >
+            <Trash2 class="w-4 h-4" />
+          </button>
+        </div>
+      </template>
 
-            <!-- Search fallback display when size is empty -->
-            <tr v-if="categoriesList.length === 0">
-              <td colspan="5" class="px-8 py-16 text-center h-64">
-                <div class="flex flex-col items-center justify-center gap-4 text-slate-400">
-                  <div class="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
-                    <Layers class="w-7 h-7 text-slate-300" />
-                  </div>
-                  <div>
-                    <p class="font-display font-medium text-lg text-slate-900 dark:text-slate-100">Zero Categories Found</p>
-                    <p class="text-xs max-w-sm mx-auto mt-1">No classification domains matched search filters [{{ searchQuery || 'None' }}]. Extend the architecture index.</p>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <!-- Empty State Override -->
+      <template #empty>
+        <div class="flex flex-col items-center justify-center gap-4 text-slate-400 py-6">
+          <div class="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+            <Layers class="w-7 h-7 text-slate-300" />
+          </div>
+          <div>
+            <p class="font-display font-medium text-lg text-slate-900 dark:text-slate-100">Zero Categories Found</p>
+            <p class="text-xs max-w-sm mx-auto mt-1">No classification domains matched search filters [{{ searchQuery || 'None' }}]. Extend the architecture index.</p>
+          </div>
+        </div>
+      </template>
 
-      <!-- Reusable pagination panel -->
-      <UiPagination
-        v-model:current-page="currentPage"
-        :total-pages="totalPages"
-        :total-count="totalCount"
-        :items-per-page="itemsPerPage"
-        item-label="classes"
-        prefix-label="Displaying"
-      />
-    </div>
+      <!-- Reusable pagination panel in footer slot -->
+      <template #footer>
+        <UiPagination
+          v-model:current-page="currentPage"
+          :total-pages="totalPages"
+          :total-count="totalCount"
+          :items-per-page="itemsPerPage"
+          item-label="classes"
+          prefix-label="Displaying"
+        />
+      </template>
+    </UiTable>
 
     <!-- MODAL 1: Create New Category Class -->
     <div v-if="isCreateModalOpen" @click.self="isCreateModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
