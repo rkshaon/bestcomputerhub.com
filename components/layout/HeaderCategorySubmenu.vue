@@ -246,7 +246,7 @@ watch(() => props.isOpen, (newVal) => {
     ref="panelRef"
     v-if="isOpen && items.length > 0"
     :class="cn(
-      'absolute z-50 transition-all duration-150 origin-top pointer-events-auto',
+      'absolute z-[100] transition-all duration-150 origin-top pointer-events-auto',
       level === 1 
         ? (alignRight ? 'top-full right-0 pt-1.5' : 'top-full left-0 pt-1.5')
         : (flyoutLeft ? 'right-full top-0 pr-1.5' : 'left-full top-0 pl-1.5')
@@ -276,7 +276,7 @@ watch(() => props.isOpen, (newVal) => {
       <div
         ref="scrollContainerRef"
         class="p-1.5 overflow-y-auto custom-submenu-scrollbar"
-        :style="{ maxHeight: maxScrollHeight ? `${maxScrollHeight}px` : undefined }"
+        :style="{ maxHeight: maxScrollHeight ? `${maxScrollHeight}px` : '420px' }"
         @scroll="handleScroll"
       >
         <ul class="space-y-0.5">
