@@ -78,6 +78,12 @@ const getSubCategories = (cat: Category): Category[] => {
   if (cached && cached.length > 0) {
     return cached;
   }
+  if (cat.slug) {
+    const cachedBySlug = categoryService.getChildrenForParent(cat.slug);
+    if (cachedBySlug && cachedBySlug.length > 0) {
+      return cachedBySlug;
+    }
+  }
   if (cat.children && Array.isArray(cat.children) && cat.children.length > 0) {
     return cat.children;
   }
@@ -90,7 +96,7 @@ const getSubCategories = (cat: Category): Category[] => {
   }
   if (props.allCategories && props.allCategories.length > 0) {
     const parentMatches = props.allCategories.filter(
-      c => c.id !== cat.id && (c.parentCategoryId === cat.id || c.parentCategoryId === cat.slug)
+      c => c.id !== cat.id && (String(c.parentCategoryId) === String(cat.id) || c.parentCategoryId === cat.slug)
     );
     if (parentMatches.length > 0) return parentMatches;
   }
@@ -156,7 +162,8 @@ const handleItemHover = async (item: Category, event?: MouseEvent | FocusEvent) 
   emit('keepOpen');
 
   // Lazy load direct children if has_children is true and not yet loaded in cache
-  if (item && item.has_children !== false && !categoryService.hasChildrenLoaded(item.id)) {
+  const isLoaded = categoryService.hasChildrenLoaded(item.id) || (item.slug ? categoryService.hasChildrenLoaded(item.slug) : false);
+  if (item && item.has_children !== false && !isLoaded) {
     activeItemId.value = item.id;
     if (event && event.currentTarget && typeof window !== 'undefined') {
       const isLeft = checkFlyoutDirection(event.currentTarget as HTMLElement);

@@ -140,14 +140,23 @@ const loadMenuCategories = async () => {
         childrenList = await categoryService.getCategoryChildrenBatch(rootIdsWithChildren);
       }
 
-      // Map direct children to their respective root parent categories by category ID
+      // Map direct children to their respective root parent categories by category ID or slug
       const enrichedRoots: Category[] = rootRes.map(root => {
-        const cachedChildren = categoryService.getChildrenForParent(root.id);
-        const directChildren = cachedChildren.length > 0
-          ? cachedChildren
-          : childrenList.filter(
-              child => String(child.parentCategoryId) === String(root.id)
-            );
+        let directChildren = categoryService.getChildrenForParent(root.id);
+        if (directChildren.length === 0 && root.slug) {
+          directChildren = categoryService.getChildrenForParent(root.slug);
+        }
+        if (directChildren.length === 0) {
+          directChildren = childrenList.filter(
+            child => String(child.parentCategoryId) === String(root.id) || (root.slug && child.parentCategoryId === root.slug)
+          );
+        }
+        if (directChildren.length > 0) {
+          categoryService.storeChildrenInCache(root.id, directChildren);
+          if (root.slug && root.slug !== root.id) {
+            categoryService.storeChildrenInCache(root.slug, directChildren);
+          }
+        }
         return {
           ...root,
           children: directChildren.length > 0 ? directChildren : root.children
@@ -198,14 +207,30 @@ const getSubCategories = (cat: Category): Category[] => {
     return cached;
   }
 
+  if (cat.slug) {
+    const cachedBySlug = categoryService.getChildrenForParent(cat.slug);
+    if (cachedBySlug && cachedBySlug.length > 0) {
+      return cachedBySlug;
+    }
+  }
+
   if (cat.children && Array.isArray(cat.children) && cat.children.length) {
     return cat.children;
   }
   
   if (cat.subCategories && Array.isArray(cat.subCategories)) {
-    return cat.subCategories
-      .map(slug => getCategoryBySlug(slug))
+    const list = allCategories.value || [];
+    const matched = cat.subCategories
+      .map(idOrSlug => list.find(c => c.id === idOrSlug || c.slug === idOrSlug))
       .filter((c): c is Category => !!c);
+    if (matched.length > 0) return matched;
+  }
+
+  if (allCategories.value && allCategories.value.length > 0) {
+    const matches = allCategories.value.filter(
+      c => c.id !== cat.id && (String(c.parentCategoryId) === String(cat.id) || c.parentCategoryId === cat.slug)
+    );
+    if (matches.length > 0) return matches;
   }
   
   return [];
@@ -223,8 +248,11 @@ const openMegaMenu = async (catId: string | number) => {
   activeMegaMenuId.value = catIdStr;
 
   const cat = categories.value.find(c => String(c.id) === cleanId) || allCategories.value.find(c => String(c.id) === cleanId);
-  if (cat && cat.has_children !== false && !categoryService.hasChildrenLoaded(cleanId)) {
-    await categoryService.getCategoryChildrenBatch([cleanId]);
+  if (cat && cat.has_children !== false) {
+    const isLoaded = categoryService.hasChildrenLoaded(cleanId) || (cat.slug ? categoryService.hasChildrenLoaded(cat.slug) : false);
+    if (!isLoaded) {
+      await categoryService.getCategoryChildrenBatch([cleanId]);
+    }
   }
 };
 

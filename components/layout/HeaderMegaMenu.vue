@@ -34,6 +34,12 @@ const getSubCategories = (cat: Category): Category[] => {
   if (cached && cached.length > 0) {
     return cached;
   }
+  if (cat.slug) {
+    const cachedBySlug = categoryService.getChildrenForParent(cat.slug);
+    if (cachedBySlug && cachedBySlug.length > 0) {
+      return cachedBySlug;
+    }
+  }
   if (cat.children && Array.isArray(cat.children) && cat.children.length > 0) {
     return cat.children;
   }
