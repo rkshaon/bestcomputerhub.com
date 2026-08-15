@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Category } from '@/types';
+import { useCategoryService } from '@/composables/useCategoryService';
 import HeaderCategorySubmenu from '@/components/layout/HeaderCategorySubmenu.vue';
 
 const props = withDefaults(
@@ -25,8 +26,14 @@ const emit = defineEmits<{
   (e: 'keepOpen'): void;
 }>();
 
+const categoryService = useCategoryService();
+
 const getSubCategories = (cat: Category): Category[] => {
   if (!cat) return [];
+  const cached = categoryService.getChildrenForParent(cat.id);
+  if (cached && cached.length > 0) {
+    return cached;
+  }
   if (cat.children && Array.isArray(cat.children) && cat.children.length > 0) {
     return cat.children;
   }
@@ -39,7 +46,7 @@ const getSubCategories = (cat: Category): Category[] => {
   }
   if (props.allCategories && props.allCategories.length > 0) {
     const parentMatches = props.allCategories.filter(
-      c => c.id !== cat.id && (c.parentCategoryId === cat.id || c.parentCategoryId === cat.slug)
+      c => c.id !== cat.id && (String(c.parentCategoryId) === String(cat.id) || c.parentCategoryId === cat.slug)
     );
     if (parentMatches.length > 0) return parentMatches;
   }

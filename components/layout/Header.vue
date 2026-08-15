@@ -213,9 +213,16 @@ const isThemeMenuOpen = ref(false);
 const activeMegaMenuId = ref<string | null>(null);
 let megaMenuTimer: ReturnType<typeof setTimeout> | null = null;
 
-const openMegaMenu = (catId: string | number) => {
+const openMegaMenu = async (catId: string | number) => {
   if (megaMenuTimer) clearTimeout(megaMenuTimer);
-  activeMegaMenuId.value = String(catId);
+  const catIdStr = String(catId);
+  const cleanId = catIdStr.startsWith('more-') ? catIdStr.replace('more-', '') : catIdStr;
+  activeMegaMenuId.value = catIdStr;
+
+  const cat = categories.value.find(c => String(c.id) === cleanId) || allCategories.value.find(c => String(c.id) === cleanId);
+  if (cat && cat.has_children !== false && !categoryService.hasChildrenLoaded(cleanId)) {
+    await categoryService.getCategoryChildrenBatch([cleanId]);
+  }
 };
 
 const closeMegaMenu = () => {
