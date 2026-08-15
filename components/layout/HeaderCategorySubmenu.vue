@@ -199,6 +199,30 @@ const handleWindowResizeOrScroll = () => {
 onMounted(() => {
   nextTick(() => {
     updateMaxScrollHeight();
+    if (typeof window !== 'undefined' && panelRef.value) {
+      const rect = panelRef.value.getBoundingClientRect();
+      const style = window.getComputedStyle(panelRef.value);
+      console.log('[RUNTIME DIAGNOSTIC HeaderCategorySubmenu MOUNTED]', {
+        level: props.level,
+        itemsLength: props.items?.length,
+        isOpen: props.isOpen,
+        display: style.display,
+        visibility: style.visibility,
+        opacity: style.opacity,
+        position: style.position,
+        zIndex: style.zIndex,
+        width: style.width,
+        height: style.height,
+        rect: {
+          x: rect.x,
+          y: rect.y,
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height
+        }
+      });
+    }
   });
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', handleWindowResizeOrScroll, { passive: true });
