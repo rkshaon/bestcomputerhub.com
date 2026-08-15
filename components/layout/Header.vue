@@ -24,11 +24,15 @@ const route = useRoute();
 
 // Mobile Category Drawer Accordion State
 const openMobileCategoryIds = ref<string[]>([]);
-const toggleMobileCategory = (catId: string) => {
+const toggleMobileCategory = async (catId: string) => {
   if (openMobileCategoryIds.value.includes(catId)) {
     openMobileCategoryIds.value = openMobileCategoryIds.value.filter(id => id !== catId);
   } else {
     openMobileCategoryIds.value.push(catId);
+    const cat = categories.value.find(c => String(c.id) === String(catId)) || allCategories.value.find(c => String(c.id) === String(catId));
+    if (cat && cat.has_children !== false && !categoryService.hasChildrenLoaded(catId)) {
+      await categoryService.getCategoryChildrenBatch([catId]);
+    }
   }
 };
 
@@ -1109,7 +1113,7 @@ if (process.client) {
                   :aria-label="`Toggle subcategories for ${cat.name}`"
                 >
                   <ChevronRight 
-                    :class="cn('w-4 h-4 transition-transform duration-200', openMobileCategoryIds.includes(cat.id) ? 'rotate-90 text-primary' : '')" 
+                    :class="cn('w-4 h-4 transition-transform duration-200', categoryService.isChildrenLoading(cat.id) ? 'animate-spin text-primary' : (openMobileCategoryIds.includes(cat.id) ? 'rotate-90 text-primary' : ''))" 
                   />
                 </button>
               </div>

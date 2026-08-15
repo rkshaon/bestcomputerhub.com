@@ -10,6 +10,7 @@ const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 // Storefront direct category children cache keyed by parent category ID
 const categoryChildrenCache = ref<Record<string, Category[]>>({});
 const loadedChildrenParentIds = ref<Set<string>>(new Set());
+const loadingParentIds = ref<Set<string>>(new Set());
 
 export const useCategoryService = () => {
   const apiClient = useApiClient();
@@ -757,6 +758,10 @@ export const useCategoryService = () => {
     return `/product-category/${path.join('/')}/`;
   };
 
+  const isChildrenLoading = (parentId: string | number): boolean => {
+    return loadingParentIds.value.has(String(parentId));
+  };
+
   const getChildrenForParent = (parentId: string | number): Category[] => {
     return categoryChildrenCache.value[String(parentId)] || [];
   };
@@ -789,24 +794,31 @@ export const useCategoryService = () => {
       return allCached;
     }
 
+    // Mark parent IDs as currently loading
+    missingParentIds.forEach(id => loadingParentIds.value.add(id));
+
     const idsParam = missingParentIds.join(',');
     const endpoint = `/api/v1/categories/children/?ids=${encodeURIComponent(idsParam)}`;
 
     if (checkMockMode()) {
-      await new Promise(resolve => setTimeout(resolve, 150));
-      const allMock = getMockCategories();
-      missingParentIds.forEach(pId => {
-        const children = allMock
-          .filter(c => String(c.parentCategoryId) === pId)
-          .map(mapCategoryResponse);
-        storeChildrenInCache(pId, children);
-      });
+      try {
+        await new Promise(resolve => setTimeout(resolve, 150));
+        const allMock = getMockCategories();
+        missingParentIds.forEach(pId => {
+          const children = allMock
+            .filter(c => String(c.parentCategoryId) === pId)
+            .map(mapCategoryResponse);
+          storeChildrenInCache(pId, children);
+        });
 
-      const result: Category[] = [];
-      parentIdStrings.forEach(pId => {
-        result.push(...getChildrenForParent(pId));
-      });
-      return result;
+        const result: Category[] = [];
+        parentIdStrings.forEach(pId => {
+          result.push(...getChildrenForParent(pId));
+        });
+        return result;
+      } finally {
+        missingParentIds.forEach(id => loadingParentIds.value.delete(id));
+      }
     }
 
     try {
@@ -860,6 +872,8 @@ export const useCategoryService = () => {
         fallbackResult.push(...getChildrenForParent(pId));
       });
       return fallbackResult;
+    } finally {
+      missingParentIds.forEach(id => loadingParentIds.value.delete(id));
     }
   };
 
@@ -869,9 +883,11 @@ export const useCategoryService = () => {
     getCategoryChildrenBatch,
     getChildrenForParent,
     hasChildrenLoaded,
+    isChildrenLoading,
     storeChildrenInCache,
     categoryChildrenCache,
     loadedChildrenParentIds,
+    loadingParentIds,
     getCategoryDetails,
     getCategoryUrl,
     createCategory,

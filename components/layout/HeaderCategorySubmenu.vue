@@ -62,6 +62,15 @@ const activeItem = computed(() => {
   return props.items.find(i => i.id === activeItemId.value) || null;
 });
 
+// Helper to check if a category has child categories or has_children flag
+const hasChildren = (cat: Category): boolean => {
+  if (!cat) return false;
+  if (typeof cat.has_children === 'boolean') {
+    return cat.has_children;
+  }
+  return getSubCategories(cat).length > 0;
+};
+
 // Helper to resolve child categories
 const getSubCategories = (cat: Category): Category[] => {
   if (!cat) return [];
@@ -142,9 +151,19 @@ const handleScroll = () => {
   updateMaxScrollHeight();
 };
 
-const handleItemHover = (item: Category, event?: MouseEvent | FocusEvent) => {
+const handleItemHover = async (item: Category, event?: MouseEvent | FocusEvent) => {
   if (hoverTimer) clearTimeout(hoverTimer);
   emit('keepOpen');
+
+  // Lazy load direct children if has_children is true and not yet loaded in cache
+  if (item && item.has_children !== false && !categoryService.hasChildrenLoaded(item.id)) {
+    activeItemId.value = item.id;
+    if (event && event.currentTarget && typeof window !== 'undefined') {
+      const isLeft = checkFlyoutDirection(event.currentTarget as HTMLElement);
+      flyoutLeftMap.value[item.id] = isLeft;
+    }
+    await categoryService.getCategoryChildrenBatch([item.id]);
+  }
 
   const children = getSubCategories(item);
   if (children.length > 0) {
@@ -157,7 +176,7 @@ const handleItemHover = (item: Category, event?: MouseEvent | FocusEvent) => {
     nextTick(() => {
       updateActiveItemTop();
     });
-  } else {
+  } else if (!categoryService.isChildrenLoading(item.id)) {
     activeItemId.value = null;
   }
 };
@@ -281,10 +300,10 @@ watch(() => props.isOpen, (newVal) => {
             >
               <span class="truncate">{{ item.name }}</span>
               <ChevronRight 
-                v-if="getSubCategories(item).length > 0"
+                v-if="hasChildren(item)"
                 :class="cn(
                   'w-3.5 h-3.5 transition-transform duration-150 shrink-0 ml-2',
-                  activeItemId === item.id ? 'text-primary translate-x-0.5' : 'text-muted-foreground/60 group-hover/item:translate-x-0.5 group-hover/item:text-foreground'
+                  categoryService.isChildrenLoading(item.id) ? 'animate-spin text-primary' : (activeItemId === item.id ? 'text-primary translate-x-0.5' : 'text-muted-foreground/60 group-hover/item:translate-x-0.5 group-hover/item:text-foreground')
                 )"
               />
             </NuxtLink>
