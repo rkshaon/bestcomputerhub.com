@@ -792,12 +792,6 @@ export const useCategoryService = () => {
     const parentIdStrings = parentIds.map(String);
     const missingParentIds = parentIdStrings.filter(id => !loadedChildrenParentIds.value.has(id));
 
-    // [CATEGORY DEBUG] 3. Before fetching
-    console.log(`[CATEGORY DEBUG] getCategoryChildrenBatch\nrequested parent IDs: [${parentIdStrings.join(', ')}]\nnormalized IDs: [${parentIdStrings.join(', ')}]`);
-    if (missingParentIds.length === 0) {
-      console.log(`[CATEGORY DEBUG] Request skipped because parent IDs [${parentIdStrings.join(', ')}] are already considered loaded.`);
-    }
-
     // If all requested parent IDs already have their direct children loaded, return from cache immediately
     if (missingParentIds.length === 0) {
       const allCached: Category[] = [];
@@ -815,9 +809,6 @@ export const useCategoryService = () => {
 
     const idsParam = missingParentIds.join(',');
     const endpoint = `/api/v1/categories/children/?ids=${encodeURIComponent(idsParam)}`;
-
-    // [CATEGORY DEBUG] 4. Actual API request
-    console.log(`[CATEGORY DEBUG] Children API request\nids: ${idsParam}`);
 
     if (checkMockMode()) {
       try {
@@ -875,38 +866,7 @@ export const useCategoryService = () => {
         }
       }
 
-      // [CATEGORY DEBUG] RAW CHILD RESPONSE (Inspect first 3 raw items)
-      console.log('[CATEGORY DEBUG] RAW DATA ROOT STRUCTURE:', {
-        isArray: Array.isArray(data),
-        rootKeys: data && typeof data === 'object' ? Object.keys(data) : typeof data,
-        rawItemsCount: rawItems.length
-      });
-
-      rawItems.slice(0, 3).forEach((rawChild, idx) => {
-        console.log(`[CATEGORY DEBUG] RAW CHILD RESPONSE #${idx + 1}:`, rawChild);
-        console.log(`[CATEGORY DEBUG] RAW CHILD KEYS #${idx + 1}:`, Object.keys(rawChild || {}));
-        const possibleParentValues = {
-          parent: rawChild?.parent,
-          parent_id: rawChild?.parent_id,
-          parentCategoryId: rawChild?.parentCategoryId,
-          parent_category_id: rawChild?.parent_category_id,
-          parent_category: rawChild?.parent_category,
-          parent_slug: rawChild?.parent_slug,
-          parentId: rawChild?.parentId,
-          parent_pk: rawChild?.parent_pk
-        };
-        console.log(`[CATEGORY DEBUG] RAW PARENT CANDIDATE VALUES #${idx + 1}:`, possibleParentValues);
-        const mappedChild = mapCategoryResponse(rawChild);
-        console.log(`[CATEGORY DEBUG] MAPPED CHILD #${idx + 1}:`, mappedChild);
-      });
-
       const fetchedChildren = rawItems.map(mapCategoryResponse);
-
-      // [CATEGORY DEBUG] 5. API response
-      console.log(`[CATEGORY DEBUG] Children API response\nstatus: 200\ntotal returned: ${fetchedChildren.length}`);
-      fetchedChildren.forEach(child => {
-        console.log(`[CATEGORY DEBUG] Child: id=${child.id}, name="${child.name}", slug="${child.slug}", parentCategoryId="${child.parentCategoryId}", has_children=${child.has_children}`);
-      });
 
       // Store fetched direct children in cache keyed by parent category ID
       missingParentIds.forEach(pId => {
@@ -914,17 +874,6 @@ export const useCategoryService = () => {
         let childrenForParent = fetchedChildren.filter(
           child => child.parentCategoryId !== undefined && String(child.parentCategoryId) === normalizedPId
         );
-        const unmatchedChildren = fetchedChildren.filter(
-          child => child.parentCategoryId === undefined || String(child.parentCategoryId) !== normalizedPId
-        );
-
-        // [CATEGORY DEBUG] 6. Parent matching
-        console.log(`[CATEGORY DEBUG] Parent matching\nrequested parent: ${normalizedPId}\nmatched children: ${childrenForParent.length}\nunmatched children: ${unmatchedChildren.length}`);
-        if (unmatchedChildren.length > 0) {
-          unmatchedChildren.forEach(u => {
-            console.log(`[CATEGORY DEBUG] Unmatched Child: id=${u.id}, name="${u.name}", actual parent field received: "${u.parentCategoryId}"`);
-          });
-        }
 
         // Fallback for single parent request if parentCategoryId was not explicitly returned on child objects
         if (childrenForParent.length === 0 && missingParentIds.length === 1 && fetchedChildren.length > 0) {
@@ -934,16 +883,7 @@ export const useCategoryService = () => {
           childrenForParent = fetchedChildren;
         }
 
-        // [CATEGORY DEBUG] 7. Cache storage
-        console.log(`[CATEGORY DEBUG] Cache storage\nkey: "${normalizedPId}"\nchildren stored: ${childrenForParent.length}`);
-        
-        // [CATEGORY CACHE DEBUG]
-        console.log(`[CATEGORY CACHE DEBUG] Parent: ${normalizedPId}`);
-        console.log(`[CATEGORY CACHE DEBUG] Matched children: ${childrenForParent.length}`);
-        console.log(`[CATEGORY CACHE DEBUG] Cache key: "${normalizedPId}"`);
         storeChildrenInCache(normalizedPId, childrenForParent);
-        console.log(`[CATEGORY CACHE DEBUG] Cached children: ${categoryChildrenCache.value[normalizedPId]?.length || 0}`);
-        console.log(`[CATEGORY CACHE DEBUG] getChildrenForParent(${normalizedPId}): ${getChildrenForParent(normalizedPId).length}`);
       });
 
       const combinedResult: Category[] = [];
