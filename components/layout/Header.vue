@@ -142,9 +142,12 @@ const loadMenuCategories = async () => {
 
       // Map direct children to their respective root parent categories by category ID
       const enrichedRoots: Category[] = rootRes.map(root => {
-        const directChildren = childrenList.filter(
-          child => String(child.parentCategoryId) === String(root.id)
-        );
+        const cachedChildren = categoryService.getChildrenForParent(root.id);
+        const directChildren = cachedChildren.length > 0
+          ? cachedChildren
+          : childrenList.filter(
+              child => String(child.parentCategoryId) === String(root.id)
+            );
         return {
           ...root,
           children: directChildren.length > 0 ? directChildren : root.children

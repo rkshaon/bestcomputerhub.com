@@ -22,10 +22,13 @@ export const useCategoryService = () => {
   const mapCategoryResponse = (cat: any): Category => {
     if (!cat) return cat;
     let parentId: string | undefined = undefined;
-    if (cat.parentCategoryId !== undefined) {
-      parentId = String(cat.parentCategoryId);
-    } else if (cat.parent) {
-      parentId = typeof cat.parent === 'object' ? String(cat.parent.id) : String(cat.parent);
+    const rawParent = cat.parentCategoryId ?? cat.parent_category_id ?? cat.parent_id ?? cat.parent_category ?? cat.parent;
+    if (rawParent !== undefined && rawParent !== null) {
+      if (typeof rawParent === 'object') {
+        parentId = rawParent.id !== undefined && rawParent.id !== null ? String(rawParent.id) : undefined;
+      } else {
+        parentId = String(rawParent);
+      }
     }
     const mapped: Category = {
       ...cat,
@@ -772,8 +775,13 @@ export const useCategoryService = () => {
 
   const storeChildrenInCache = (parentId: string | number, children: Category[]) => {
     const key = String(parentId);
-    categoryChildrenCache.value[key] = children;
-    loadedChildrenParentIds.value.add(key);
+    categoryChildrenCache.value = {
+      ...categoryChildrenCache.value,
+      [key]: children
+    };
+    const updatedLoadedSet = new Set(loadedChildrenParentIds.value);
+    updatedLoadedSet.add(key);
+    loadedChildrenParentIds.value = updatedLoadedSet;
   };
 
   const getCategoryChildrenBatch = async (parentIds: (string | number)[]): Promise<Category[]> => {
@@ -853,9 +861,16 @@ export const useCategoryService = () => {
 
       // Store fetched direct children in cache keyed by parent category ID
       missingParentIds.forEach(pId => {
-        const childrenForParent = fetchedChildren.filter(
-          child => String(child.parentCategoryId) === pId
+        let childrenForParent = fetchedChildren.filter(
+          child => child.parentCategoryId !== undefined && String(child.parentCategoryId) === pId
         );
+        // Fallback for single parent request if parentCategoryId was not explicitly returned on child objects
+        if (childrenForParent.length === 0 && missingParentIds.length === 1 && fetchedChildren.length > 0) {
+          fetchedChildren.forEach(child => {
+            child.parentCategoryId = pId;
+          });
+          childrenForParent = fetchedChildren;
+        }
         storeChildrenInCache(pId, childrenForParent);
       });
 
