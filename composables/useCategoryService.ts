@@ -22,7 +22,9 @@ export const useCategoryService = () => {
   const mapCategoryResponse = (cat: any): Category => {
     if (!cat) return cat;
     let parentId: string | undefined = undefined;
-    const rawParent = cat.parentCategoryId ?? cat.parent_category_id ?? cat.parent_id ?? cat.parent_category ?? cat.parent_slug ?? cat.parent;
+    // The children cache is keyed by category ID, so an explicit parent ID must win
+    // over a parent slug whenever the backend returns both.
+    const rawParent = cat.parentCategoryId ?? cat.parent_category_id ?? cat.parent_id ?? cat.parent_category ?? cat.parent ?? cat.parent_slug;
     if (rawParent !== undefined && rawParent !== null) {
       if (typeof rawParent === 'object') {
         parentId = rawParent.id !== undefined && rawParent.id !== null 
@@ -884,10 +886,33 @@ export const useCategoryService = () => {
         storeChildrenInCache(normalizedPId, childrenForParent);
       });
 
-      const combinedResult: Category[] = [];
-      parentIdStrings.forEach(pId => {
-        combinedResult.push(...getChildrenForParent(pId));
+      // A child may reference its parent by slug instead of ID. Cache those groups under
+      // the key they actually carry so slug-based lookups still resolve them, rather than
+      // dropping the children and leaving the parent cached as empty.
+      const childrenByParentKey = new Map<string, Category[]>();
+      fetchedChildren.forEach(child => {
+        const key = child.parentCategoryId !== undefined ? String(child.parentCategoryId) : '';
+        if (!key || parentIdStrings.includes(key)) return;
+        const group = childrenByParentKey.get(key) || [];
+        group.push(child);
+        childrenByParentKey.set(key, group);
       });
+      childrenByParentKey.forEach((children, key) => {
+        storeChildrenInCache(key, children);
+      });
+
+      const combinedResult: Category[] = [];
+      const collectedChildIds = new Set<string>();
+      const collect = (child: Category) => {
+        const childId = String(child.id);
+        if (collectedChildIds.has(childId)) return;
+        collectedChildIds.add(childId);
+        combinedResult.push(child);
+      };
+      parentIdStrings.forEach(pId => {
+        getChildrenForParent(pId).forEach(collect);
+      });
+      fetchedChildren.forEach(collect);
 
       return combinedResult;
     } catch (err: any) {

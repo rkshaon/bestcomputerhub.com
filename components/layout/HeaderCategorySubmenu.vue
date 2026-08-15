@@ -49,96 +49,6 @@ const itemRefs = new Map<string, HTMLElement>();
 const maxScrollHeight = ref<number | null>(null);
 let hoverTimer: ReturnType<typeof setTimeout> | null = null;
 
-// ==========================================
-// [TEMPORARY DIAGNOSTICS] Runtime Inspection
-// ==========================================
-const isMounted = ref(false);
-const diagnosticData = ref<Record<string, any>>({});
-
-const runDiagnosticCheck = () => {
-  if (typeof window === 'undefined') return;
-  const targetEl = outerCardRef.value || panelRef.value;
-  
-  if (!targetEl) {
-    diagnosticData.value = {
-      mounted: isMounted.value,
-      level: props.level,
-      isOpen: props.isOpen,
-      itemsLength: props.items?.length || 0,
-      elementFound: false,
-      message: 'Submenu DOM element not attached to ref'
-    };
-    console.warn('[MEGA_MENU_DIAGNOSTIC] Element not attached:', diagnosticData.value);
-    return;
-  }
-
-  const rect = targetEl.getBoundingClientRect();
-  const computedStyle = window.getComputedStyle(targetEl);
-  
-  const inViewport = (
-    rect.top >= 0 &&
-    rect.left >= 0 &&
-    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-    rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-  );
-
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-  
-  let elementAtCenter: Element | null = null;
-  let elementAtCenterTag = 'none';
-  let isPanelCovered = false;
-
-  if (rect.width > 0 && rect.height > 0 && centerX >= 0 && centerY >= 0) {
-    elementAtCenter = document.elementFromPoint(centerX, centerY);
-    if (elementAtCenter) {
-      elementAtCenterTag = `${elementAtCenter.tagName.toLowerCase()}${elementAtCenter.id ? '#' + elementAtCenter.id : ''}${elementAtCenter.className ? '.' + String(elementAtCenter.className).split(' ')[0] : ''}`;
-      isPanelCovered = !targetEl.contains(elementAtCenter) && elementAtCenter !== targetEl;
-    }
-  }
-
-  const result = {
-    mounted: isMounted.value,
-    level: props.level,
-    isOpen: props.isOpen,
-    itemsLength: props.items?.length || 0,
-    rect: {
-      top: Math.round(rect.top),
-      left: Math.round(rect.left),
-      width: Math.round(rect.width),
-      height: Math.round(rect.height),
-      bottom: Math.round(rect.bottom),
-      right: Math.round(rect.right)
-    },
-    computedStyles: {
-      display: computedStyle.display,
-      visibility: computedStyle.visibility,
-      opacity: computedStyle.opacity,
-      zIndex: computedStyle.zIndex,
-      position: computedStyle.position,
-      pointerEvents: computedStyle.pointerEvents
-    },
-    inViewport,
-    elementAtCenter: elementAtCenterTag,
-    isPanelCovered,
-    itemsSample: props.items?.map(i => i.name) || []
-  };
-
-  diagnosticData.value = result;
-
-  // Global window inspection handle
-  (window as any).__MEGA_MENU_DIAGNOSTICS__ = (window as any).__MEGA_MENU_DIAGNOSTICS__ || {};
-  (window as any).__MEGA_MENU_DIAGNOSTICS__[`level_${props.level}`] = result;
-
-  console.group(`[MEGA_MENU_DIAGNOSTIC] Level ${props.level} (isOpen: ${props.isOpen}, items: ${props.items?.length})`);
-  console.log('1. Mounted & Open State:', { mounted: isMounted.value, isOpen: props.isOpen, itemsCount: props.items?.length });
-  console.log('2. BoundingClientRect:', result.rect);
-  console.log('3. Computed Styles:', result.computedStyles);
-  console.log('4. Viewport & Occlusion:', { inViewport, elementAtCenter: elementAtCenterTag, isPanelCovered });
-  console.groupEnd();
-};
-// ==========================================
-
 const setItemRef = (id: string, el: any) => {
   if (el) {
     itemRefs.set(id, (el as any).$el || el);
@@ -309,10 +219,8 @@ const handleWindowResizeOrScroll = () => {
 };
 
 onMounted(() => {
-  isMounted.value = true;
   nextTick(() => {
     updateMaxScrollHeight();
-    runDiagnosticCheck();
   });
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', handleWindowResizeOrScroll, { passive: true });
@@ -321,7 +229,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  isMounted.value = false;
   if (hoverTimer) clearTimeout(hoverTimer);
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', handleWindowResizeOrScroll);
@@ -333,18 +240,11 @@ watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     nextTick(() => {
       updateMaxScrollHeight();
-      runDiagnosticCheck();
     });
   } else {
     activeItemId.value = null;
   }
 });
-
-watch(() => props.items, () => {
-  nextTick(() => {
-    runDiagnosticCheck();
-  });
-}, { deep: true });
 </script>
 
 <template>
@@ -374,17 +274,11 @@ watch(() => props.items, () => {
       )"
     ></div>
 
-    <!-- Submenu Card Panel (with temporary diagnostic highlight: border-2 border-rose-500 shadow-rose-500/40) -->
+    <!-- Submenu Card Panel -->
     <div
       ref="outerCardRef"
-      class="bg-card border-2 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.35)] rounded-xl text-card-foreground relative overflow-visible min-w-[200px] max-w-[260px]"
+      class="bg-card border border-border shadow-2xl rounded-xl text-card-foreground relative overflow-visible min-w-[200px] max-w-[260px]"
     >
-      <!-- [TEMPORARY DIAGNOSTIC HEADER BADGE] -->
-      <div class="px-2 py-0.5 bg-rose-500/15 border-b border-rose-500/30 text-[10px] font-mono text-rose-500 font-bold flex items-center justify-between select-none">
-        <span>[DIAG] Level {{ level }} ({{ items.length }} items)</span>
-        <span>isOpen: {{ isOpen }}</span>
-      </div>
-
       <div
         ref="scrollContainerRef"
         class="p-1.5 overflow-y-auto custom-submenu-scrollbar"
