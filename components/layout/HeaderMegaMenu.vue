@@ -44,20 +44,6 @@ const levelItems = computed(() => {
   }
   return [];
 });
-
-// [TEMPORARY DIAGNOSTIC]
-watch(() => props.isOpen, (open) => {
-  if (open) {
-    console.log('[RUNTIME DIAGNOSTIC HeaderMegaMenu]', {
-      categoryId: props.category?.id,
-      categorySlug: props.category?.slug,
-      categoryName: props.category?.name,
-      isOpen: props.isOpen,
-      childrenFromService: categoryService.getChildrenForParent(props.category?.id)?.length,
-      levelItemsLength: levelItems.value?.length
-    });
-  }
-});
 </script>
 
 <template>

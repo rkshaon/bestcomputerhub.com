@@ -242,7 +242,10 @@ const activeMegaMenuId = ref<string | null>(null);
 let megaMenuTimer: ReturnType<typeof setTimeout> | null = null;
 
 const openMegaMenu = async (catId: string | number) => {
-  if (megaMenuTimer) clearTimeout(megaMenuTimer);
+  if (megaMenuTimer) {
+    clearTimeout(megaMenuTimer);
+    megaMenuTimer = null;
+  }
   const catIdStr = String(catId);
   const cleanId = catIdStr.startsWith('more-') ? catIdStr.replace('more-', '') : catIdStr;
   activeMegaMenuId.value = catIdStr;
@@ -257,13 +260,20 @@ const openMegaMenu = async (catId: string | number) => {
 };
 
 const closeMegaMenu = () => {
+  if (megaMenuTimer) {
+    clearTimeout(megaMenuTimer);
+  }
   megaMenuTimer = setTimeout(() => {
     activeMegaMenuId.value = null;
-  }, 180);
+    megaMenuTimer = null;
+  }, 200);
 };
 
 const keepMegaMenuOpen = () => {
-  if (megaMenuTimer) clearTimeout(megaMenuTimer);
+  if (megaMenuTimer) {
+    clearTimeout(megaMenuTimer);
+    megaMenuTimer = null;
+  }
 };
 
 // ==========================================

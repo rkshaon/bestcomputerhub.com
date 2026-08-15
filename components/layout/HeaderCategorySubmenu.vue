@@ -135,8 +135,15 @@ const handleScroll = () => {
   updateMaxScrollHeight();
 };
 
+const clearHoverTimer = () => {
+  if (hoverTimer) {
+    clearTimeout(hoverTimer);
+    hoverTimer = null;
+  }
+};
+
 const handleItemHover = async (item: Category, event?: MouseEvent | FocusEvent) => {
-  if (hoverTimer) clearTimeout(hoverTimer);
+  clearHoverTimer();
   emit('keepOpen');
 
   // Lazy load direct children if has_children is true and not yet loaded in cache
@@ -167,26 +174,34 @@ const handleItemHover = async (item: Category, event?: MouseEvent | FocusEvent) 
 };
 
 const handleItemLeave = () => {
-  if (hoverTimer) clearTimeout(hoverTimer);
+  clearHoverTimer();
   hoverTimer = setTimeout(() => {
     activeItemId.value = null;
-  }, 180);
+    hoverTimer = null;
+  }, 200);
 };
 
 const handlePanelMouseEnter = () => {
-  if (hoverTimer) clearTimeout(hoverTimer);
+  clearHoverTimer();
   emit('keepOpen');
 };
 
 const handlePanelMouseLeave = () => {
-  if (hoverTimer) clearTimeout(hoverTimer);
+  clearHoverTimer();
   hoverTimer = setTimeout(() => {
     activeItemId.value = null;
+    hoverTimer = null;
     emit('close');
-  }, 180);
+  }, 200);
+};
+
+const handleChildSubmenuClose = () => {
+  // Only dismiss the child submenu without closing this panel
+  activeItemId.value = null;
 };
 
 const handleLinkClick = () => {
+  clearHoverTimer();
   activeItemId.value = null;
   emit('close');
 };
@@ -199,30 +214,6 @@ const handleWindowResizeOrScroll = () => {
 onMounted(() => {
   nextTick(() => {
     updateMaxScrollHeight();
-    if (typeof window !== 'undefined' && panelRef.value) {
-      const rect = panelRef.value.getBoundingClientRect();
-      const style = window.getComputedStyle(panelRef.value);
-      console.log('[RUNTIME DIAGNOSTIC HeaderCategorySubmenu MOUNTED]', {
-        level: props.level,
-        itemsLength: props.items?.length,
-        isOpen: props.isOpen,
-        display: style.display,
-        visibility: style.visibility,
-        opacity: style.opacity,
-        position: style.position,
-        zIndex: style.zIndex,
-        width: style.width,
-        height: style.height,
-        rect: {
-          x: rect.x,
-          y: rect.y,
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height
-        }
-      });
-    }
   });
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', handleWindowResizeOrScroll, { passive: true });
@@ -231,7 +222,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (hoverTimer) clearTimeout(hoverTimer);
+  clearHoverTimer();
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', handleWindowResizeOrScroll);
     window.removeEventListener('scroll', handleWindowResizeOrScroll);
@@ -244,6 +235,7 @@ watch(() => props.isOpen, (newVal) => {
       updateMaxScrollHeight();
     });
   } else {
+    clearHoverTimer();
     activeItemId.value = null;
   }
 });
@@ -266,7 +258,7 @@ watch(() => props.isOpen, (newVal) => {
     <!-- Pointer Hover Bridge to prevent gap flicker -->
     <div 
       v-if="level === 1" 
-      class="absolute -top-2 inset-x-0 h-2 pointer-events-auto"
+      class="absolute -top-3 inset-x-0 h-3 pointer-events-auto"
     ></div>
     <div 
       v-else 
@@ -329,7 +321,7 @@ watch(() => props.isOpen, (newVal) => {
         :flyout-left="flyoutLeftMap[String(activeItem.id)] || false"
         :custom-style="{ top: activeItemTop + 'px' }"
         @keep-open="handlePanelMouseEnter"
-        @close="handleLinkClick"
+        @close="handleChildSubmenuClose"
       />
     </div>
   </div>
