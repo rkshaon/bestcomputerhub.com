@@ -6,7 +6,6 @@ import { extractErrorMessage } from './useToast';
 import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse } from '@/types';
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
-const rootCategoriesCache = ref<Category[] | null>(null);
 
 export const useCategoryService = () => {
   const apiClient = useApiClient();
@@ -19,13 +18,17 @@ export const useCategoryService = () => {
     if (!cat) return cat;
     let parentId: string | undefined = undefined;
     if (cat.parentCategoryId !== undefined) {
-      parentId = cat.parentCategoryId;
+      parentId = String(cat.parentCategoryId);
     } else if (cat.parent) {
-      parentId = typeof cat.parent === 'object' ? cat.parent.id : cat.parent;
+      parentId = typeof cat.parent === 'object' ? String(cat.parent.id) : String(cat.parent);
     }
     const mapped: Category = {
       ...cat,
-      parentCategoryId: parentId
+      id: String(cat.id),
+      parentCategoryId: parentId,
+      has_children: typeof cat.has_children === 'boolean'
+        ? cat.has_children
+        : Boolean(cat.children?.length || cat.subCategories?.length)
     };
     if (cat.children && Array.isArray(cat.children)) {
       mapped.children = cat.children.map(mapCategoryResponse);
@@ -683,24 +686,37 @@ export const useCategoryService = () => {
     }
   };
 
-  const getRootCategories = async (forceRefetch = false): Promise<Category[]> => {
-    if (rootCategoriesCache.value && !forceRefetch) {
-      return rootCategoriesCache.value;
-    }
-
+  const getRootCategories = async (params: { page?: number; page_size?: number } = { page: 1 }): Promise<Category[]> => {
     isLoading.value = true;
     errorMsg.value = null;
+
+    const page = params.page || 1;
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', page.toString());
+    if (params.page_size) {
+      queryParams.append('page_size', params.page_size.toString());
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/v1/categories/roots/${queryString ? `?${queryString}` : ''}`;
 
     if (checkMockMode()) {
       await new Promise(resolve => setTimeout(resolve, 300));
       isLoading.value = false;
-      const res = getMockCategories().filter(c => !c.parentCategoryId).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      rootCategoriesCache.value = res;
+      const res = getMockCategories()
+        .filter(c => !c.parentCategoryId)
+        .map(c => ({
+          ...c,
+          has_children: typeof c.has_children === 'boolean'
+            ? c.has_children
+            : Boolean(c.children?.length || c.subCategories?.length)
+        }))
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       return res;
     }
 
     try {
-      const data = await apiClient.request<any>('/api/v1/categories/?is_parent=true', {
+      const data = await apiClient.request<PaginatedResponse<Category> | Category[]>(endpoint, {
         method: 'GET'
       });
       isLoading.value = false;
@@ -715,17 +731,11 @@ export const useCategoryService = () => {
           results = data.map(mapCategoryResponse);
         }
       }
-      // Sort real backend results as well if order is supplied to ensure consistency
-      results.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      rootCategoriesCache.value = results;
       return results;
     } catch (err: any) {
-      errorMsg.value = err.data?.message || err.message || 'Failed to retrieve root categories.';
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve root categories.');
       isLoading.value = false;
-      const res = getMockCategories().filter(c => !c.parentCategoryId).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      // Cache this list even on error so that future visual navigation parses correctly and quickly
-      rootCategoriesCache.value = res;
-      return res;
+      throw err;
     }
   };
 

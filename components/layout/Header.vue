@@ -123,27 +123,10 @@ const loadMenuCategories = async () => {
   isMenuLoading.value = true;
   menuError.value = null;
   try {
-    const rootRes = await categoryService.getRootCategories();
+    const rootRes = await categoryService.getRootCategories({ page: 1 });
     if (rootRes && rootRes.length) {
       categories.value = rootRes;
-    }
-    
-    // Recursively collect all categories from root categories' children arrays to guarantee robust localized slug mapping and eliminate the redundant getCategoriesList call
-    const collected: Category[] = [];
-    const collectAllCategories = (list: Category[]) => {
-      list.forEach(c => {
-        if (!collected.some(existing => existing.id === c.id)) {
-          collected.push(c);
-        }
-        if (c.children && c.children.length) {
-          collectAllCategories(c.children);
-        }
-      });
-    };
-    
-    if (categories.value && categories.value.length) {
-      collectAllCategories(categories.value);
-      allCategories.value = collected;
+      allCategories.value = rootRes;
     }
   } catch (err: any) {
     menuError.value = err.message || 'Failed to sync categories.';
@@ -162,6 +145,14 @@ const handleScroll = () => {
 
 // Helper to get category by slug safely
 const getCategoryBySlug = (slug: string) => allCategories.value.find(c => c.slug === slug);
+
+// Helper to check if a category has child categories using has_children or children arrays
+const hasChildren = (cat: Category): boolean => {
+  if (typeof cat.has_children === 'boolean') {
+    return cat.has_children;
+  }
+  return getSubCategories(cat).length > 0;
+};
 
 // Helper to get sub-categories dynamically from either 'children' object list (real backend) or 'subCategories' key (mock)
 const getSubCategories = (cat: Category): Category[] => {
@@ -955,12 +946,12 @@ if (process.client) {
                   @click="isMoreOpen = false; activeMegaMenuId = null"
                 >
                   <span class="truncate">{{ cat.name }}</span>
-                  <ChevronRight v-if="getSubCategories(cat).length > 0" class="w-3.5 h-3.5 text-muted-foreground group-hover/moreitem:text-primary shrink-0 ml-2" />
+                  <ChevronRight v-if="hasChildren(cat)" class="w-3.5 h-3.5 text-muted-foreground group-hover/moreitem:text-primary shrink-0 ml-2" />
                 </NuxtLink>
 
                 <!-- Nested Mega Menu for overflow items -->
                 <HeaderMegaMenu 
-                  v-if="getSubCategories(cat).length > 0"
+                  v-if="hasChildren(cat)"
                   :category="cat" 
                   :all-categories="allCategories"
                   :is-open="activeMegaMenuId === 'more-' + cat.id"
@@ -1076,7 +1067,7 @@ if (process.client) {
                 </NuxtLink>
 
                 <button 
-                  v-if="getSubCategories(cat).length"
+                  v-if="hasChildren(cat)"
                   type="button"
                   @click="toggleMobileCategory(cat.id)"
                   class="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"

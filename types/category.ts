@@ -12,6 +12,14 @@ export interface Category {
   subCategories?: string[];
   order?: number;
   children?: Category[];
+  has_children?: boolean;
+}
+
+export interface RootCategory {
+  id: string | number;
+  slug: string;
+  name: string;
+  has_children: boolean;
 }
 
 export interface CategoryFilters {
