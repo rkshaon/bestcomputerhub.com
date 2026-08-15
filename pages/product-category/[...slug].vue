@@ -14,7 +14,8 @@ const categoryService = useCategoryService();
 const slugs = computed(() => {
   const s = route.params.slug;
   if (!s) return [];
-  return Array.isArray(s) ? s : [s].filter(Boolean);
+  const raw = Array.isArray(s) ? s : [s];
+  return raw.map(segment => (typeof segment === 'string' ? segment.trim() : '')).filter(Boolean);
 });
 
 const categorySlug = computed(() => {

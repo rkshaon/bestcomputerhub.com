@@ -760,7 +760,7 @@ export const useCategoryService = () => {
       path.unshift(parent.slug);
       current = parent;
     }
-    return `/product-category/${path.join('/')}/`;
+    return `/product-category/${path.join('/')}`;
   };
 
   const isChildrenLoading = (parentId: string | number): boolean => {
