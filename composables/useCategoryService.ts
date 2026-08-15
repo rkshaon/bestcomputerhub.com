@@ -875,6 +875,31 @@ export const useCategoryService = () => {
         }
       }
 
+      // [CATEGORY DEBUG] RAW CHILD RESPONSE (Inspect first 3 raw items)
+      console.log('[CATEGORY DEBUG] RAW DATA ROOT STRUCTURE:', {
+        isArray: Array.isArray(data),
+        rootKeys: data && typeof data === 'object' ? Object.keys(data) : typeof data,
+        rawItemsCount: rawItems.length
+      });
+
+      rawItems.slice(0, 3).forEach((rawChild, idx) => {
+        console.log(`[CATEGORY DEBUG] RAW CHILD RESPONSE #${idx + 1}:`, rawChild);
+        console.log(`[CATEGORY DEBUG] RAW CHILD KEYS #${idx + 1}:`, Object.keys(rawChild || {}));
+        const possibleParentValues = {
+          parent: rawChild?.parent,
+          parent_id: rawChild?.parent_id,
+          parentCategoryId: rawChild?.parentCategoryId,
+          parent_category_id: rawChild?.parent_category_id,
+          parent_category: rawChild?.parent_category,
+          parent_slug: rawChild?.parent_slug,
+          parentId: rawChild?.parentId,
+          parent_pk: rawChild?.parent_pk
+        };
+        console.log(`[CATEGORY DEBUG] RAW PARENT CANDIDATE VALUES #${idx + 1}:`, possibleParentValues);
+        const mappedChild = mapCategoryResponse(rawChild);
+        console.log(`[CATEGORY DEBUG] MAPPED CHILD #${idx + 1}:`, mappedChild);
+      });
+
       const fetchedChildren = rawItems.map(mapCategoryResponse);
 
       // [CATEGORY DEBUG] 5. API response
@@ -911,7 +936,14 @@ export const useCategoryService = () => {
 
         // [CATEGORY DEBUG] 7. Cache storage
         console.log(`[CATEGORY DEBUG] Cache storage\nkey: "${normalizedPId}"\nchildren stored: ${childrenForParent.length}`);
+        
+        // [CATEGORY CACHE DEBUG]
+        console.log(`[CATEGORY CACHE DEBUG] Parent: ${normalizedPId}`);
+        console.log(`[CATEGORY CACHE DEBUG] Matched children: ${childrenForParent.length}`);
+        console.log(`[CATEGORY CACHE DEBUG] Cache key: "${normalizedPId}"`);
         storeChildrenInCache(normalizedPId, childrenForParent);
+        console.log(`[CATEGORY CACHE DEBUG] Cached children: ${categoryChildrenCache.value[normalizedPId]?.length || 0}`);
+        console.log(`[CATEGORY CACHE DEBUG] getChildrenForParent(${normalizedPId}): ${getChildrenForParent(normalizedPId).length}`);
       });
 
       const combinedResult: Category[] = [];
