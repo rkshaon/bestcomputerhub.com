@@ -182,8 +182,15 @@ const hasChildren = (cat: Category): boolean => {
   return getSubCategories(cat).length > 0;
 };
 
-// Helper to get sub-categories dynamically from either 'children' object list (real backend) or 'subCategories' key (mock)
+// Helper to get sub-categories dynamically from cached children state or 'children' object list
 const getSubCategories = (cat: Category): Category[] => {
+  if (!cat) return [];
+
+  const cached = categoryService.getChildrenForParent(cat.id);
+  if (cached && cached.length > 0) {
+    return cached;
+  }
+
   if (cat.children && Array.isArray(cat.children) && cat.children.length) {
     return cat.children;
   }

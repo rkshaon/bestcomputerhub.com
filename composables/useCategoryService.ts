@@ -7,6 +7,10 @@ import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesR
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 
+// Storefront direct category children cache keyed by parent category ID
+const categoryChildrenCache = ref<Record<string, Category[]>>({});
+const loadedChildrenParentIds = ref<Set<string>>(new Set());
+
 export const useCategoryService = () => {
   const apiClient = useApiClient();
   const productService = useProductService();
@@ -753,19 +757,56 @@ export const useCategoryService = () => {
     return `/product-category/${path.join('/')}/`;
   };
 
+  const getChildrenForParent = (parentId: string | number): Category[] => {
+    return categoryChildrenCache.value[String(parentId)] || [];
+  };
+
+  const hasChildrenLoaded = (parentId: string | number): boolean => {
+    return loadedChildrenParentIds.value.has(String(parentId));
+  };
+
+  const storeChildrenInCache = (parentId: string | number, children: Category[]) => {
+    const key = String(parentId);
+    categoryChildrenCache.value[key] = children;
+    loadedChildrenParentIds.value.add(key);
+  };
+
   const getCategoryChildrenBatch = async (parentIds: (string | number)[]): Promise<Category[]> => {
     if (!parentIds.length) return [];
 
-    const idsParam = parentIds.map(String).join(',');
+    const parentIdStrings = parentIds.map(String);
+    const missingParentIds = parentIdStrings.filter(id => !loadedChildrenParentIds.value.has(id));
+
+    // If all requested parent IDs already have their direct children loaded, return from cache immediately
+    if (missingParentIds.length === 0) {
+      const allCached: Category[] = [];
+      parentIdStrings.forEach(pId => {
+        const cached = categoryChildrenCache.value[pId];
+        if (cached) {
+          allCached.push(...cached);
+        }
+      });
+      return allCached;
+    }
+
+    const idsParam = missingParentIds.join(',');
     const endpoint = `/api/v1/categories/children/?ids=${encodeURIComponent(idsParam)}`;
 
     if (checkMockMode()) {
       await new Promise(resolve => setTimeout(resolve, 150));
       const allMock = getMockCategories();
-      const parentIdStrings = parentIds.map(String);
-      return allMock
-        .filter(c => c.parentCategoryId && parentIdStrings.includes(String(c.parentCategoryId)))
-        .map(mapCategoryResponse);
+      missingParentIds.forEach(pId => {
+        const children = allMock
+          .filter(c => String(c.parentCategoryId) === pId)
+          .map(mapCategoryResponse);
+        storeChildrenInCache(pId, children);
+      });
+
+      const result: Category[] = [];
+      parentIdStrings.forEach(pId => {
+        result.push(...getChildrenForParent(pId));
+      });
+      return result;
     }
 
     try {
@@ -796,10 +837,29 @@ export const useCategoryService = () => {
         }
       }
 
-      return rawItems.map(mapCategoryResponse);
+      const fetchedChildren = rawItems.map(mapCategoryResponse);
+
+      // Store fetched direct children in cache keyed by parent category ID
+      missingParentIds.forEach(pId => {
+        const childrenForParent = fetchedChildren.filter(
+          child => String(child.parentCategoryId) === pId
+        );
+        storeChildrenInCache(pId, childrenForParent);
+      });
+
+      const combinedResult: Category[] = [];
+      parentIdStrings.forEach(pId => {
+        combinedResult.push(...getChildrenForParent(pId));
+      });
+
+      return combinedResult;
     } catch (err: any) {
       console.warn('Failed to load category children batch:', err.message || err);
-      return [];
+      const fallbackResult: Category[] = [];
+      parentIdStrings.forEach(pId => {
+        fallbackResult.push(...getChildrenForParent(pId));
+      });
+      return fallbackResult;
     }
   };
 
@@ -807,6 +867,11 @@ export const useCategoryService = () => {
     getCategoriesList,
     getRootCategories,
     getCategoryChildrenBatch,
+    getChildrenForParent,
+    hasChildrenLoaded,
+    storeChildrenInCache,
+    categoryChildrenCache,
+    loadedChildrenParentIds,
     getCategoryDetails,
     getCategoryUrl,
     createCategory,

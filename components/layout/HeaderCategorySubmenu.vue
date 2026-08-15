@@ -65,6 +65,10 @@ const activeItem = computed(() => {
 // Helper to resolve child categories
 const getSubCategories = (cat: Category): Category[] => {
   if (!cat) return [];
+  const cached = categoryService.getChildrenForParent(cat.id);
+  if (cached && cached.length > 0) {
+    return cached;
+  }
   if (cat.children && Array.isArray(cat.children) && cat.children.length > 0) {
     return cat.children;
   }
