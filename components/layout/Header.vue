@@ -124,9 +124,37 @@ const loadMenuCategories = async () => {
   menuError.value = null;
   try {
     const rootRes = await categoryService.getRootCategories({ page: 1 });
-    if (rootRes && rootRes.length) {
-      categories.value = rootRes;
-      allCategories.value = rootRes;
+    if (rootRes && rootRes.length > 0) {
+      // Collect root category IDs that have children
+      const rootIdsWithChildren = rootRes
+        .filter(c => c.has_children !== false)
+        .map(c => c.id);
+
+      // Batched request for direct children across all root categories in a single call
+      let childrenList: Category[] = [];
+      if (rootIdsWithChildren.length > 0) {
+        childrenList = await categoryService.getCategoryChildrenBatch(rootIdsWithChildren);
+      }
+
+      // Map direct children to their respective root parent categories by category ID
+      const enrichedRoots: Category[] = rootRes.map(root => {
+        const directChildren = childrenList.filter(
+          child => String(child.parentCategoryId) === String(root.id)
+        );
+        return {
+          ...root,
+          children: directChildren.length > 0 ? directChildren : root.children
+        };
+      });
+
+      categories.value = enrichedRoots;
+
+      // Combine root categories and their direct children for global lookup and routing
+      const combined = [...enrichedRoots];
+      childrenList.forEach(child => {
+        if (!combined.some(c => String(c.id) === String(child.id))) combined.push(child);
+      });
+      allCategories.value = combined;
     }
   } catch (err: any) {
     menuError.value = err.message || 'Failed to sync categories.';

@@ -753,9 +753,60 @@ export const useCategoryService = () => {
     return `/product-category/${path.join('/')}/`;
   };
 
+  const getCategoryChildrenBatch = async (parentIds: (string | number)[]): Promise<Category[]> => {
+    if (!parentIds.length) return [];
+
+    const idsParam = parentIds.map(String).join(',');
+    const endpoint = `/api/v1/categories/children/?ids=${encodeURIComponent(idsParam)}`;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 150));
+      const allMock = getMockCategories();
+      const parentIdStrings = parentIds.map(String);
+      return allMock
+        .filter(c => c.parentCategoryId && parentIdStrings.includes(String(c.parentCategoryId)))
+        .map(mapCategoryResponse);
+    }
+
+    try {
+      const data = await apiClient.request<any>(endpoint, {
+        method: 'GET'
+      });
+
+      let rawItems: any[] = [];
+      if (Array.isArray(data)) {
+        rawItems = data;
+      } else if (data && typeof data === 'object') {
+        if (Array.isArray(data.results)) {
+          rawItems = data.results;
+        } else if (Array.isArray(data.data)) {
+          rawItems = data.data;
+        } else {
+          // In case DRF returns { [parentId]: Category[] }
+          Object.entries(data).forEach(([parentId, children]) => {
+            if (Array.isArray(children)) {
+              children.forEach(ch => {
+                rawItems.push({
+                  ...ch,
+                  parentCategoryId: ch.parentCategoryId ?? ch.parent ?? parentId
+                });
+              });
+            }
+          });
+        }
+      }
+
+      return rawItems.map(mapCategoryResponse);
+    } catch (err: any) {
+      console.warn('Failed to load category children batch:', err.message || err);
+      return [];
+    }
+  };
+
   return {
     getCategoriesList,
     getRootCategories,
+    getCategoryChildrenBatch,
     getCategoryDetails,
     getCategoryUrl,
     createCategory,
