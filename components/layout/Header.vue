@@ -242,9 +242,6 @@ const activeMegaMenuId = ref<string | null>(null);
 let megaMenuTimer: ReturnType<typeof setTimeout> | null = null;
 
 const openMegaMenu = async (catId: string | number) => {
-  // [TEMPORARY DIAGNOSTIC] Generic hover log (executes immediately and independently)
-  console.log('[MEGA MENU] Root category hover fired');
-
   if (megaMenuTimer) {
     clearTimeout(megaMenuTimer);
     megaMenuTimer = null;
@@ -255,32 +252,29 @@ const openMegaMenu = async (catId: string | number) => {
 
   const cat = categories.value.find(c => String(c.id) === cleanId) || allCategories.value.find(c => String(c.id) === cleanId);
 
-  // [TEMPORARY DIAGNOSTIC] Root Category Info
-  if (cat) {
-    console.log(`[MEGA MENU] Category: ${cat.name} | ID: ${cat.id} | slug: ${cat.slug || 'N/A'}`);
-    console.log(`[MEGA MENU] has_children: ${cat.has_children}`);
-  } else {
-    console.log(`[MEGA MENU] Category ID: ${cleanId}`);
-  }
+  // [CATEGORY DEBUG] 1. Hover
+  console.log(`[CATEGORY DEBUG] Hover\nid: ${cleanId}\nslug: ${cat?.slug || 'N/A'}\nhas_children: ${cat?.has_children}`);
+
+  // [CATEGORY DEBUG] 2. Before child lookup
+  console.log(`[CATEGORY DEBUG] getChildrenForParent\nrequested parentId: ${cleanId}\nnormalized key: "${cleanId}"\ncached children count: ${categoryService.getChildrenForParent(cleanId).length}`);
 
   if (cat && cat.has_children !== false) {
     const isLoaded = categoryService.hasChildrenLoaded(cleanId) || (cat.slug ? categoryService.hasChildrenLoaded(cat.slug) : false);
     if (!isLoaded) {
       await categoryService.getCategoryChildrenBatch([cleanId]);
+    } else {
+      console.log(`[CATEGORY DEBUG] Skipping getCategoryChildrenBatch: parent ${cleanId} is already marked loaded in loadedChildrenParentIds.`);
     }
   }
 
-  // [TEMPORARY DIAGNOSTIC] Child Resolution & logging using frontend category relationship
-  const resolvedChildren = (cat 
+  // [CATEGORY DEBUG] 8. Final retrieval
+  const finalChildren = (cat 
     ? (categoryService.getChildrenForParent(cat.id).length > 0 
         ? categoryService.getChildrenForParent(cat.id) 
         : (cat.slug ? categoryService.getChildrenForParent(cat.slug) : [])) 
     : categoryService.getChildrenForParent(cleanId)) || [];
 
-  console.log(`[MEGA MENU] Children count: ${resolvedChildren.length}`);
-  resolvedChildren.forEach(child => {
-    console.log(`[MEGA MENU] Child: ${child.name} | ID: ${child.id} | slug: ${child.slug || 'N/A'} | has_children: ${child.has_children}`);
-  });
+  console.log(`[CATEGORY DEBUG] Final getChildrenForParent\nkey: "${cleanId}"\nchildren count: ${finalChildren.length}`);
 };
 
 const closeMegaMenu = () => {

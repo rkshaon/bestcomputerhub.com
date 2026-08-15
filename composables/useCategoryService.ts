@@ -792,6 +792,12 @@ export const useCategoryService = () => {
     const parentIdStrings = parentIds.map(String);
     const missingParentIds = parentIdStrings.filter(id => !loadedChildrenParentIds.value.has(id));
 
+    // [CATEGORY DEBUG] 3. Before fetching
+    console.log(`[CATEGORY DEBUG] getCategoryChildrenBatch\nrequested parent IDs: [${parentIdStrings.join(', ')}]\nnormalized IDs: [${parentIdStrings.join(', ')}]`);
+    if (missingParentIds.length === 0) {
+      console.log(`[CATEGORY DEBUG] Request skipped because parent IDs [${parentIdStrings.join(', ')}] are already considered loaded.`);
+    }
+
     // If all requested parent IDs already have their direct children loaded, return from cache immediately
     if (missingParentIds.length === 0) {
       const allCached: Category[] = [];
@@ -809,6 +815,9 @@ export const useCategoryService = () => {
 
     const idsParam = missingParentIds.join(',');
     const endpoint = `/api/v1/categories/children/?ids=${encodeURIComponent(idsParam)}`;
+
+    // [CATEGORY DEBUG] 4. Actual API request
+    console.log(`[CATEGORY DEBUG] Children API request\nids: ${idsParam}`);
 
     if (checkMockMode()) {
       try {
@@ -868,12 +877,30 @@ export const useCategoryService = () => {
 
       const fetchedChildren = rawItems.map(mapCategoryResponse);
 
+      // [CATEGORY DEBUG] 5. API response
+      console.log(`[CATEGORY DEBUG] Children API response\nstatus: 200\ntotal returned: ${fetchedChildren.length}`);
+      fetchedChildren.forEach(child => {
+        console.log(`[CATEGORY DEBUG] Child: id=${child.id}, name="${child.name}", slug="${child.slug}", parentCategoryId="${child.parentCategoryId}", has_children=${child.has_children}`);
+      });
+
       // Store fetched direct children in cache keyed by parent category ID
       missingParentIds.forEach(pId => {
         const normalizedPId = String(pId);
         let childrenForParent = fetchedChildren.filter(
           child => child.parentCategoryId !== undefined && String(child.parentCategoryId) === normalizedPId
         );
+        const unmatchedChildren = fetchedChildren.filter(
+          child => child.parentCategoryId === undefined || String(child.parentCategoryId) !== normalizedPId
+        );
+
+        // [CATEGORY DEBUG] 6. Parent matching
+        console.log(`[CATEGORY DEBUG] Parent matching\nrequested parent: ${normalizedPId}\nmatched children: ${childrenForParent.length}\nunmatched children: ${unmatchedChildren.length}`);
+        if (unmatchedChildren.length > 0) {
+          unmatchedChildren.forEach(u => {
+            console.log(`[CATEGORY DEBUG] Unmatched Child: id=${u.id}, name="${u.name}", actual parent field received: "${u.parentCategoryId}"`);
+          });
+        }
+
         // Fallback for single parent request if parentCategoryId was not explicitly returned on child objects
         if (childrenForParent.length === 0 && missingParentIds.length === 1 && fetchedChildren.length > 0) {
           fetchedChildren.forEach(child => {
@@ -881,6 +908,9 @@ export const useCategoryService = () => {
           });
           childrenForParent = fetchedChildren;
         }
+
+        // [CATEGORY DEBUG] 7. Cache storage
+        console.log(`[CATEGORY DEBUG] Cache storage\nkey: "${normalizedPId}"\nchildren stored: ${childrenForParent.length}`);
         storeChildrenInCache(normalizedPId, childrenForParent);
       });
 
