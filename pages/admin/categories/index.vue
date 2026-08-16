@@ -25,9 +25,11 @@ import {
 } from 'lucide-vue-next';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
+import { useInfinitePagination } from '@/composables/useInfinitePagination';
+import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import { cn } from '@/utils';
 import { refDebounced } from '@vueuse/core';
-import type { Category, CategorySummaryResponse } from '@/types';
+import type { Category, CategorySummaryResponse, CategoryFilters } from '@/types';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import { toastSuccess, toastError, toastInfo, handleApiError, extractErrorMessage } from '@/composables/useToast';
 
@@ -54,9 +56,89 @@ const router = useRouter();
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const parentFilter = ref(route.query.parent ? String(route.query.parent) : 'all'); // 'all', 'none' (main level only), or specific category ID
+const menuFilter = ref(route.query.menu ? String(route.query.menu) : (route.query.is_menu === 'true' ? 'menu_only' : 'all')); // 'all', 'menu_only', or specific menu category ID
 const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'order'); // 'order', '-order', 'name', '-name', 'slug', '-slug'
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
+
+// Infinite scroll options for Root / Parent categories filter (GET /api/v1/categories/?is_parent=true)
+const parentPagination = useInfinitePagination<Category>({
+  fetcher: async (params) => {
+    return await categoryService.getCategoriesList({
+      page: params.page,
+      page_size: 10,
+      is_parent: true
+    });
+  },
+  pageSize: 10,
+  dedupeKey: (c) => String(c.id),
+  autoFetch: true
+});
+
+// Infinite scroll options for Menu categories filter (GET /api/v1/categories/?is_menu=true)
+const menuPagination = useInfinitePagination<Category>({
+  fetcher: async (params) => {
+    return await categoryService.getCategoriesList({
+      page: params.page,
+      page_size: 10,
+      is_menu: true
+    });
+  },
+  pageSize: 10,
+  dedupeKey: (c) => String(c.id),
+  autoFetch: true
+});
+
+// Filter dropdown visibility & popover refs
+const isParentDropdownOpen = ref(false);
+const isMenuDropdownOpen = ref(false);
+const parentDropdownRef = ref<HTMLElement | null>(null);
+const menuDropdownRef = ref<HTMLElement | null>(null);
+
+const toggleParentDropdown = () => {
+  isParentDropdownOpen.value = !isParentDropdownOpen.value;
+  if (isParentDropdownOpen.value) isMenuDropdownOpen.value = false;
+};
+
+const toggleMenuDropdown = () => {
+  isMenuDropdownOpen.value = !isMenuDropdownOpen.value;
+  if (isMenuDropdownOpen.value) isParentDropdownOpen.value = false;
+};
+
+const selectParent = (val: string) => {
+  parentFilter.value = val;
+  isParentDropdownOpen.value = false;
+};
+
+const selectMenu = (val: string) => {
+  menuFilter.value = val;
+  isMenuDropdownOpen.value = false;
+};
+
+const activeParentLabel = computed(() => {
+  if (parentFilter.value === 'all') return 'All Levels';
+  if (parentFilter.value === 'none') return 'Main Categories Only';
+  const found = parentPagination.items.value.find(c => String(c.id) === parentFilter.value) 
+    || allCategoriesList.value.find(c => String(c.id) === parentFilter.value);
+  return found ? `Sub of ${found.name}` : `Parent: ${parentFilter.value}`;
+});
+
+const activeMenuLabel = computed(() => {
+  if (menuFilter.value === 'all') return 'All Categories';
+  if (menuFilter.value === 'menu_only') return 'In Menu Only';
+  const found = menuPagination.items.value.find(c => String(c.id) === menuFilter.value);
+  return found ? `Menu: ${found.name}` : `Menu: ${menuFilter.value}`;
+});
+
+const handleGlobalClick = (e: MouseEvent) => {
+  const target = e.target as Node;
+  if (parentDropdownRef.value && !parentDropdownRef.value.contains(target)) {
+    isParentDropdownOpen.value = false;
+  }
+  if (menuDropdownRef.value && !menuDropdownRef.value.contains(target)) {
+    isMenuDropdownOpen.value = false;
+  }
+};
 
 // Multi-select or dropdown values for raw root categories
 const allCategoriesList = ref<Category[]>([]); // Broad list copy for parent lookup / select dropdowns
@@ -243,7 +325,8 @@ const formPayload = ref({
 // Retrieve parent category name by ID (Local state resolution)
 const getParentName = (parentId?: string): string => {
   if (!parentId) return 'None (Primary Group)';
-  const matched = allCategoriesList.value.find(c => c.id === parentId);
+  const matched = parentPagination.items.value.find(c => String(c.id) === parentId)
+    || allCategoriesList.value.find(c => String(c.id) === parentId);
   return matched ? matched.name : parentId;
 };
 
@@ -251,7 +334,7 @@ const getParentName = (parentId?: string): string => {
 const fetchCategoriesPage = async () => {
   isLoading.value = true;
   try {
-    const filters: any = {
+    const filters: CategoryFilters = {
       page: currentPage.value,
       page_size: itemsPerPage.value
     };
@@ -260,6 +343,14 @@ const fetchCategoriesPage = async () => {
     }
     if (parentFilter.value !== 'all') {
       filters.parent = parentFilter.value;
+    }
+    if (menuFilter.value !== 'all') {
+      if (menuFilter.value === 'menu_only') {
+        filters.is_menu = true;
+      } else {
+        filters.menu = menuFilter.value;
+        filters.is_menu = true;
+      }
     }
     if (ordering.value && ordering.value !== 'order') {
       filters.ordering = ordering.value;
@@ -313,16 +404,25 @@ const loadCategoriesGrid = async () => {
 
 // Lifecycles
 onMounted(async () => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('click', handleGlobalClick);
+  }
   await fetchAllCategoriesRawList();
 });
 
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('click', handleGlobalClick);
+  }
+});
+
 // If searching or filtering, reset page index to 1
-watch([debouncedSearchQuery, parentFilter, ordering, itemsPerPage], () => {
+watch([debouncedSearchQuery, parentFilter, menuFilter, ordering, itemsPerPage], () => {
   currentPage.value = 1;
 });
 
 // Update URL parameters and fetch active page when parameters change
-watch([debouncedSearchQuery, parentFilter, ordering, currentPage, itemsPerPage], async () => {
+watch([debouncedSearchQuery, parentFilter, menuFilter, ordering, currentPage, itemsPerPage], async () => {
   const query: Record<string, any> = { ...route.query };
 
   if (searchQuery.value) query.search = searchQuery.value;
@@ -330,6 +430,19 @@ watch([debouncedSearchQuery, parentFilter, ordering, currentPage, itemsPerPage],
 
   if (parentFilter.value !== 'all') query.parent = parentFilter.value;
   else delete query.parent;
+
+  if (menuFilter.value !== 'all') {
+    if (menuFilter.value === 'menu_only') {
+      query.is_menu = 'true';
+      delete query.menu;
+    } else {
+      query.menu = menuFilter.value;
+      query.is_menu = 'true';
+    }
+  } else {
+    delete query.menu;
+    delete query.is_menu;
+  }
 
   if (ordering.value !== 'order') query.ordering = ordering.value;
   else delete query.ordering;
@@ -358,6 +471,14 @@ watch(() => route.query, async (newQuery) => {
   const newParent = newQuery.parent ? String(newQuery.parent) : 'all';
   if (parentFilter.value !== newParent) {
     parentFilter.value = newParent;
+    needsFetch = true;
+  }
+
+  const newMenu = newQuery.menu 
+    ? String(newQuery.menu) 
+    : (newQuery.is_menu === 'true' ? 'menu_only' : 'all');
+  if (menuFilter.value !== newMenu) {
+    menuFilter.value = newMenu;
     needsFetch = true;
   }
 
@@ -626,20 +747,156 @@ const deleteCategoryNode = async (cat: Category) => {
         />
       </div>
       
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto justify-end">
-        <!-- Parent grouping filter dropdown -->
-        <div class="flex items-center gap-2 border-l border-border pl-4">
-          <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Structural Level:</span>
-          <select 
-            v-model="parentFilter"
-            class="h-10 px-3 bg-background border border-input rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
+      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+        <!-- Parent grouping filter dropdown (Structural Level) -->
+        <div ref="parentDropdownRef" class="relative">
+          <div class="flex items-center gap-2 border-l border-border pl-4">
+            <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground whitespace-nowrap">Structural Level:</span>
+            <button 
+              type="button"
+              @click.stop="toggleParentDropdown"
+              class="h-10 px-3 bg-background border border-input rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[140px]"
+            >
+              <span class="truncate">{{ activeParentLabel }}</span>
+              <ChevronDown :class="['w-3.5 h-3.5 shrink-0 transition-transform duration-200', isParentDropdownOpen && 'rotate-180']" />
+            </button>
+          </div>
+
+          <!-- Parent Options Popover Menu -->
+          <div 
+            v-if="isParentDropdownOpen"
+            @click.stop
+            class="absolute right-0 sm:left-4 z-30 mt-2 w-64 bg-card border border-border rounded-2xl shadow-xl p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
           >
-            <option value="all">All Levels</option>
-            <option value="none">Main Categories Only</option>
-            <option v-for="parentCat in allCategoriesList.filter(c => !c.parentCategoryId)" :key="parentCat.id" :value="parentCat.id">
-              Sub of {{ parentCat.name }}
-            </option>
-          </select>
+            <div class="max-h-56 overflow-y-auto space-y-1 p-1 scrollbar-thin">
+              <button
+                type="button"
+                @click="selectParent('all')"
+                :class="[
+                  'w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between',
+                  parentFilter === 'all' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
+                ]"
+              >
+                <span>All Levels</span>
+                <span v-if="parentFilter === 'all'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              </button>
+
+              <button
+                type="button"
+                @click="selectParent('none')"
+                :class="[
+                  'w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between',
+                  parentFilter === 'none' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
+                ]"
+              >
+                <span>Main Categories Only</span>
+                <span v-if="parentFilter === 'none'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              </button>
+
+              <div class="my-1 border-t border-border/60"></div>
+
+              <!-- Root category options from GET /api/v1/categories/?is_parent=true -->
+              <button
+                v-for="parentCat in parentPagination.items.value"
+                :key="parentCat.id"
+                type="button"
+                @click="selectParent(String(parentCat.id))"
+                :class="[
+                  'w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-between',
+                  parentFilter === String(parentCat.id) ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                ]"
+              >
+                <span class="truncate">Sub of {{ parentCat.name }}</span>
+                <span v-if="parentFilter === String(parentCat.id)" class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+              </button>
+
+              <!-- Infinite Scroll Sentinel for Root Filter -->
+              <UiInfiniteScroll
+                :has-more="parentPagination.hasMore.value"
+                :is-loading="parentPagination.isFetchingNextPage.value"
+                :error="parentPagination.error.value"
+                @load-more="parentPagination.loadNextPage"
+                @retry="parentPagination.loadNextPage"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu Filter Dropdown (Menu Categories) -->
+        <div ref="menuDropdownRef" class="relative">
+          <div class="flex items-center gap-2 border-l border-border pl-4">
+            <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground whitespace-nowrap">Menu Filter:</span>
+            <button 
+              type="button"
+              @click.stop="toggleMenuDropdown"
+              class="h-10 px-3 bg-background border border-input rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[140px]"
+            >
+              <span class="truncate">{{ activeMenuLabel }}</span>
+              <ChevronDown :class="['w-3.5 h-3.5 shrink-0 transition-transform duration-200', isMenuDropdownOpen && 'rotate-180']" />
+            </button>
+          </div>
+
+          <!-- Menu Options Popover Menu -->
+          <div 
+            v-if="isMenuDropdownOpen"
+            @click.stop
+            class="absolute right-0 sm:left-4 z-30 mt-2 w-64 bg-card border border-border rounded-2xl shadow-xl p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div class="max-h-56 overflow-y-auto space-y-1 p-1 scrollbar-thin">
+              <button
+                type="button"
+                @click="selectMenu('all')"
+                :class="[
+                  'w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between',
+                  menuFilter === 'all' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
+                ]"
+              >
+                <span>All Categories</span>
+                <span v-if="menuFilter === 'all'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              </button>
+
+              <button
+                type="button"
+                @click="selectMenu('menu_only')"
+                :class="[
+                  'w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between',
+                  menuFilter === 'menu_only' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
+                ]"
+              >
+                <span>In Menu Only</span>
+                <span v-if="menuFilter === 'menu_only'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              </button>
+
+              <div class="my-1 border-t border-border/60"></div>
+
+              <!-- Menu category options from GET /api/v1/categories/?is_menu=true -->
+              <button
+                v-for="menuCat in menuPagination.items.value"
+                :key="menuCat.id"
+                type="button"
+                @click="selectMenu(String(menuCat.id))"
+                :class="[
+                  'w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-between',
+                  menuFilter === String(menuCat.id) ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                ]"
+              >
+                <div class="flex flex-col min-w-0 pr-2">
+                  <span class="truncate font-semibold">{{ menuCat.name }}</span>
+                  <span class="text-[10px] text-muted-foreground font-mono truncate">/{{ menuCat.slug }}</span>
+                </div>
+                <span v-if="menuFilter === String(menuCat.id)" class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+              </button>
+
+              <!-- Infinite Scroll Sentinel for Menu Filter -->
+              <UiInfiniteScroll
+                :has-more="menuPagination.hasMore.value"
+                :is-loading="menuPagination.isFetchingNextPage.value"
+                :error="menuPagination.error.value"
+                @load-more="menuPagination.loadNextPage"
+                @retry="menuPagination.loadNextPage"
+              />
+            </div>
+          </div>
         </div>
 
         <div class="flex items-center gap-2 border-l border-border pl-4">

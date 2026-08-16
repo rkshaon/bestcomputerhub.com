@@ -5,4 +5,6 @@ export interface PaginatedResponse<T> {
   count: number;
   page: number;
   pages: number;
+  next?: string | null;
+  previous?: string | null;
 }

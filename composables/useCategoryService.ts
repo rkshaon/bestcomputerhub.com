@@ -36,6 +36,8 @@ export const useCategoryService = () => {
       ...cat,
       id: String(cat.id),
       parentCategoryId: parentId,
+      show_in_menu: cat.show_in_menu !== undefined ? Boolean(cat.show_in_menu) : (cat.is_menu !== undefined ? Boolean(cat.is_menu) : true),
+      is_menu: cat.is_menu !== undefined ? Boolean(cat.is_menu) : (cat.show_in_menu !== undefined ? Boolean(cat.show_in_menu) : true),
       has_children: typeof cat.has_children === 'boolean'
         ? cat.has_children
         : Boolean(cat.children?.length || cat.subCategories?.length)
@@ -89,6 +91,8 @@ export const useCategoryService = () => {
     const ordering = filters.ordering || '';
     const parent = filters.parent || '';
     const is_parent = filters.is_parent;
+    const is_menu = filters.is_menu;
+    const menu = filters.menu;
 
     if (checkMockMode()) {
       // Simulate artificial latency
@@ -106,6 +110,17 @@ export const useCategoryService = () => {
           list = list.filter(c => !c.parentCategoryId);
         } else {
           list = list.filter(c => c.parentCategoryId === parent);
+        }
+      }
+
+      if (is_menu) {
+        list = list.filter(c => Boolean(c.show_in_menu || c.is_menu));
+      }
+      if (menu && menu !== 'all') {
+        if (menu === 'menu_only') {
+          list = list.filter(c => Boolean(c.show_in_menu || c.is_menu));
+        } else {
+          list = list.filter(c => String(c.id) === String(menu) || c.slug === menu);
         }
       }
 
@@ -154,7 +169,9 @@ export const useCategoryService = () => {
         results,
         count: totalCount,
         page,
-        pages: totalPages
+        pages: totalPages,
+        next: page < totalPages ? `?page=${page + 1}` : null,
+        previous: page > 1 ? `?page=${page - 1}` : null
       };
     }
 
@@ -168,6 +185,12 @@ export const useCategoryService = () => {
       if (parent) params.append('parent', parent);
       if (is_parent !== undefined) {
         params.append('is_parent', is_parent.toString());
+      }
+      if (is_menu !== undefined) {
+        params.append('is_menu', is_menu.toString());
+      }
+      if (menu) {
+        params.append('menu', menu);
       }
 
       const queryString = params.toString();
@@ -183,8 +206,13 @@ export const useCategoryService = () => {
       let results: Category[] = [];
       let totalCount = 0;
       let totalPages = 1;
+      let nextUrl: string | null = null;
+      let prevUrl: string | null = null;
 
       if (data && typeof data === 'object') {
+        if ('next' in data) nextUrl = data.next ?? null;
+        if ('previous' in data) prevUrl = data.previous ?? null;
+
         if ('results' in data && Array.isArray(data.results)) {
           results = data.results.map(mapCategoryResponse);
           totalCount = data.count !== undefined ? data.count : results.length;
@@ -200,11 +228,17 @@ export const useCategoryService = () => {
         }
       }
 
+      if (!nextUrl && page < totalPages) {
+        nextUrl = `?page=${page + 1}`;
+      }
+
       return {
         results,
         count: totalCount,
         page,
-        pages: totalPages
+        pages: totalPages,
+        next: nextUrl,
+        previous: prevUrl
       };
     } catch (err: any) {
       errorMsg.value = extractErrorMessage(err, 'Failed to retrieve categories taxonomy.');
@@ -221,7 +255,9 @@ export const useCategoryService = () => {
         results,
         count: totalCount,
         page,
-        pages: totalPages
+        pages: totalPages,
+        next: page < totalPages ? `?page=${page + 1}` : null,
+        previous: page > 1 ? `?page=${page - 1}` : null
       };
     }
   };

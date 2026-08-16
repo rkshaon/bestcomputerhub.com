@@ -13,6 +13,8 @@ export interface Category {
   order?: number;
   children?: Category[];
   has_children?: boolean;
+  show_in_menu?: boolean;
+  is_menu?: boolean;
 }
 
 export interface RootCategory {
@@ -29,6 +31,8 @@ export interface CategoryFilters {
   ordering?: string;
   parent?: string;
   is_parent?: boolean;
+  is_menu?: boolean;
+  menu?: string;
 }
 
 export interface CategorySummaryResponse {
