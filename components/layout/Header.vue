@@ -11,13 +11,8 @@ import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useToast } from '@/composables/useToast';
 import type { Category, Product } from '@/types';
-import HeaderMegaMenu from '@/components/layout/HeaderMegaMenu.vue';
 import HeaderMegaMenuV2 from '@/components/layout/HeaderMegaMenuV2.vue';
 import HeaderUtilityBar from '@/components/layout/HeaderUtilityBar.vue';
-
-// TEMPORARY: desktop mega-menu implementation switch.
-// Set to false to restore the original HeaderMegaMenu for comparison.
-const USE_MEGA_MENU_V2 = true;
 
 const uiStore = useUIStore();
 const cartStore = useCartStore();
@@ -980,17 +975,7 @@ if (process.client) {
             
             <!-- Mega Menu Dropdown -->
             <HeaderMegaMenuV2
-              v-if="USE_MEGA_MENU_V2"
               :category="cat"
-              :is-open="activeMegaMenuId === String(cat.id)"
-              :align-right="index >= visibleCategories.length / 2"
-              @keep-open="keepMegaMenuOpen"
-              @close="closeMegaMenu"
-            />
-            <HeaderMegaMenu
-              v-else
-              :category="cat"
-              :all-categories="allCategories"
               :is-open="activeMegaMenuId === String(cat.id)"
               :align-right="index >= visibleCategories.length / 2"
               @keep-open="keepMegaMenuOpen"
@@ -1058,18 +1043,8 @@ if (process.client) {
 
                 <!-- Nested Mega Menu for overflow items -->
                 <HeaderMegaMenuV2
-                  v-if="USE_MEGA_MENU_V2 && hasChildren(cat)"
+                  v-if="hasChildren(cat)"
                   :category="cat"
-                  :is-open="activeMegaMenuId === 'more-' + cat.id"
-                  :level="2"
-                  :flyout-left="true"
-                  @keep-open="keepMegaMenuOpen"
-                  @close="closeMegaMenu"
-                />
-                <HeaderMegaMenu
-                  v-else-if="hasChildren(cat)"
-                  :category="cat"
-                  :all-categories="allCategories"
                   :is-open="activeMegaMenuId === 'more-' + cat.id"
                   :level="2"
                   :flyout-left="true"
