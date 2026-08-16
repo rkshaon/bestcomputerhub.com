@@ -12,12 +12,7 @@ import { useCategoryService } from '@/composables/useCategoryService';
 import { useToast } from '@/composables/useToast';
 import type { Category, Product } from '@/types';
 import HeaderMegaMenu from '@/components/layout/HeaderMegaMenu.vue';
-import HeaderMegaMenuV2 from '@/components/layout/HeaderMegaMenuV2.vue';
 import HeaderUtilityBar from '@/components/layout/HeaderUtilityBar.vue';
-
-// TEMPORARY: desktop mega-menu implementation switch.
-// Set to false to restore the original HeaderMegaMenu for comparison.
-const USE_MEGA_MENU_V2 = true;
 
 const uiStore = useUIStore();
 const cartStore = useCartStore();
@@ -699,27 +694,6 @@ if (process.client) {
             </transition>
           </div>
           
-          <!-- Admin Panel Button (Super Admin Exclusive) -->
-          <NuxtLink 
-            v-if="isSuperAdmin" 
-            to="/admin" 
-            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 hover:bg-primary/10 border border-primary/20 text-primary rounded-full transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
-            title="Admin Protocol System"
-          >
-            <ShieldCheck class="w-4 h-4" />
-            <span class="text-[9px] font-extrabold uppercase tracking-widest">Admin</span>
-          </NuxtLink>
-
-          <!-- Mobile Admin Panel Button (Super Admin Exclusive, visible on small viewports) -->
-          <NuxtLink 
-            v-if="isSuperAdmin" 
-            to="/admin" 
-            class="sm:hidden p-2 hover:bg-primary/10 text-primary rounded-full transition-colors shrink-0" 
-            title="Admin Protocol System"
-          >
-            <ShieldCheck class="w-5 h-5" />
-          </NuxtLink>
-
           <!-- Promotional Actions (Offers, New Arrivals, Flash Sale, Happy Hours) -->
           <div class="hidden lg:flex items-center gap-1.5 shrink-0">
             <!-- Offers -->
@@ -979,17 +953,8 @@ if (process.client) {
             </NuxtLink>
             
             <!-- Mega Menu Dropdown -->
-            <HeaderMegaMenuV2
-              v-if="USE_MEGA_MENU_V2"
-              :category="cat"
-              :is-open="activeMegaMenuId === String(cat.id)"
-              :align-right="index >= visibleCategories.length / 2"
-              @keep-open="keepMegaMenuOpen"
-              @close="closeMegaMenu"
-            />
-            <HeaderMegaMenu
-              v-else
-              :category="cat"
+            <HeaderMegaMenu 
+              :category="cat" 
               :all-categories="allCategories"
               :is-open="activeMegaMenuId === String(cat.id)"
               :align-right="index >= visibleCategories.length / 2"
@@ -1057,18 +1022,9 @@ if (process.client) {
                 </NuxtLink>
 
                 <!-- Nested Mega Menu for overflow items -->
-                <HeaderMegaMenuV2
-                  v-if="USE_MEGA_MENU_V2 && hasChildren(cat)"
-                  :category="cat"
-                  :is-open="activeMegaMenuId === 'more-' + cat.id"
-                  :level="2"
-                  :flyout-left="true"
-                  @keep-open="keepMegaMenuOpen"
-                  @close="closeMegaMenu"
-                />
-                <HeaderMegaMenu
-                  v-else-if="hasChildren(cat)"
-                  :category="cat"
+                <HeaderMegaMenu 
+                  v-if="hasChildren(cat)"
+                  :category="cat" 
                   :all-categories="allCategories"
                   :is-open="activeMegaMenuId === 'more-' + cat.id"
                   :level="2"
