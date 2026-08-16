@@ -1,20 +1,20 @@
-<!-- File: /components/layout/HeaderMegaMenuV2.vue -->
+<!-- File: /components/layout/HeaderMegaMenu.vue -->
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 import type { Category } from '@/types';
 import { useMegaMenuV2 } from '@/composables/useMegaMenuV2';
 import { cn } from '@/utils';
-import HeaderCategorySubmenuV2 from '@/components/layout/HeaderCategorySubmenuV2.vue';
+import HeaderCategorySubmenu from '@/components/layout/HeaderCategorySubmenu.vue';
 
 defineOptions({
-  name: 'HeaderMegaMenuV2'
+  name: 'HeaderMegaMenu'
 });
 
 /**
- * Desktop mega menu (V2).
+ * Desktop mega menu.
  *
  * Root category -> hover (isOpen) -> category ID -> direct children -> submenu.
- * Deeper levels are loaded lazily by HeaderCategorySubmenuV2 on hover.
+ * Deeper levels are loaded lazily by HeaderCategorySubmenu on hover.
  */
 const props = withDefaults(
   defineProps<{
@@ -77,7 +77,7 @@ watch(
     </div>
   </div>
 
-  <HeaderCategorySubmenuV2
+  <HeaderCategorySubmenu
     v-else
     :items="directChildren"
     :ancestor-slugs="[category.slug]"

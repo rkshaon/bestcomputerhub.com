@@ -1,4 +1,4 @@
-<!-- File: /components/layout/HeaderCategorySubmenuV2.vue -->
+<!-- File: /components/layout/HeaderCategorySubmenu.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { ChevronRight } from 'lucide-vue-next';
@@ -7,7 +7,7 @@ import { useMegaMenuV2 } from '@/composables/useMegaMenuV2';
 import { cn } from '@/utils';
 
 defineOptions({
-  name: 'HeaderCategorySubmenuV2'
+  name: 'HeaderCategorySubmenu'
 });
 
 const props = withDefaults(
@@ -276,7 +276,7 @@ watch(
       </div>
 
       <!-- Next level, rendered outside the scroll container so it is never clipped -->
-      <HeaderCategorySubmenuV2
+      <HeaderCategorySubmenu
         v-if="activeItem && activeItemChildren.length > 0"
         :items="activeItemChildren"
         :ancestor-slugs="childAncestorSlugs"

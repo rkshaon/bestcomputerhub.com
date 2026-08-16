@@ -11,7 +11,7 @@ import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useToast } from '@/composables/useToast';
 import type { Category, Product } from '@/types';
-import HeaderMegaMenuV2 from '@/components/layout/HeaderMegaMenuV2.vue';
+import HeaderMegaMenu from '@/components/layout/HeaderMegaMenu.vue';
 import HeaderUtilityBar from '@/components/layout/HeaderUtilityBar.vue';
 
 const uiStore = useUIStore();
@@ -974,7 +974,7 @@ if (process.client) {
             </NuxtLink>
             
             <!-- Mega Menu Dropdown -->
-            <HeaderMegaMenuV2
+            <HeaderMegaMenu
               :category="cat"
               :is-open="activeMegaMenuId === String(cat.id)"
               :align-right="index >= visibleCategories.length / 2"
@@ -1042,7 +1042,7 @@ if (process.client) {
                 </NuxtLink>
 
                 <!-- Nested Mega Menu for overflow items -->
-                <HeaderMegaMenuV2
+                <HeaderMegaMenu
                   v-if="hasChildren(cat)"
                   :category="cat"
                   :is-open="activeMegaMenuId === 'more-' + cat.id"
