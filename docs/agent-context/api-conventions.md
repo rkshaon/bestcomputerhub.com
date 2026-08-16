@@ -25,6 +25,17 @@ PaginatedResponse<T>
 Do not create domain-specific pagination wrappers unless
 the backend contract genuinely differs.
 
+### Paginated Filter Options Standard
+
+All filter option endpoints across Admin, Storefront, and reusable filter components that return paginated responses (`PaginatedResponse<T>`) must follow the project-wide infinite-scroll filter standard:
+- Check `next` to evaluate whether subsequent option pages exist.
+- Load the next page when scrolling reaches the end of current options and append results to the existing option list (never overwrite loaded options).
+- Terminate pagination when `next` is `null` (do not dispatch requests when `next` is `null`).
+- Prevent concurrent or duplicate in-flight requests for the same next page.
+- Preserve already-loaded options upon filter close/reopen where component state lifecycle permits.
+- Enforce demand-driven loading: do not fetch filter options until the filter is opened or activated by the user.
+- Debounce search queries (standard 300ms delay via `refDebounced`) when option searching is enabled.
+
 ## Contract Integrity
 
 Do not send multiple guessed aliases such as:

@@ -177,6 +177,16 @@ All admin list views and paginated collections must use the established, reusabl
 
 - **Infinite Scroll (`useInfinitePagination<T>` & `<UiInfiniteScroll />`)**:
   - Use `useInfinitePagination<T>()` from `/composables/useInfinitePagination.ts` and `<UiInfiniteScroll />` from `/components/ui/UiInfiniteScroll.vue` for continuous infinite-scroll feeds, dropdown selectors, or compact modal list views where streaming items continuously is preferred over discrete page numbers.
+  - **Paginated Filter Option Standard**: All filter option lists across the application — including Admin pages, Storefront interfaces, and reusable filter/select components — whose option API returns paginated data must implement infinite scrolling using `useInfinitePagination<T>()` and/or `<UiInfiniteScroll />` according to these project-wide rules:
+    - **`next` Link Page Checks**: Use the API response `next` pagination URL/value to evaluate whether subsequent option pages exist.
+    - **End-of-List Scroll Triggering**: Load the next page automatically when the user scrolls to the end of available options.
+    - **Option Appending**: Append newly loaded options to the existing options list; never overwrite or replace previously loaded options.
+    - **Termination**: Continue loading sequential pages upon scrolling until `next` is `null`. Do not request another page when there is no `next` page.
+    - **Duplicate & Concurrency Prevention**: Prevent duplicate or concurrent API requests for the same next page while a fetch request is pending (`isFetchingNextPage`).
+    - **Option State Preservation**: Preserve already-loaded filter options when the filter popover or dropdown is closed and reopened where the component or state lifecycle permits.
+    - **Demand-Driven Lazy Loading**: Fetch filter options strictly on demand when the user opens or interacts with the filter workflow; never issue pre-emptive option requests on page or component mount.
+    - **Data Reuse**: Reuse previously loaded option collections across UI open triggers instead of dispatching redundant requests.
+    - **Search Debouncing**: When the filter supports search, maintain immediate local typing responsiveness while debouncing downstream API queries (standard 300ms delay via `refDebounced`).
 
 - **Pattern Selection Guideline**:
   - Use **`<UiPagination />`** when users need explicit page jumping, total record count visibility, or standard tabular admin dataset navigation.

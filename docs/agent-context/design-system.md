@@ -1077,7 +1077,8 @@ All administrative list and table interfaces that require numbered pagination mu
 - **Extensibility**: If an admin page requires additional pagination behavior not currently supported, extend `<UiPagination />` directly rather than creating a separate pagination implementation.
 - **Infinite Scroll vs. Numbered Pagination**:
   - Use **`<UiPagination />`** for admin tables, list views, and records management where users benefit from page jumping, explicit page numbers, and total count awareness.
-  - Use **`<UiInfiniteScroll />`** (`useInfinitePagination`) for continuous streaming lists, dropdown selectors, and compact modal feeds where discrete page numbers are unnecessary.
+  - Use **`<UiInfiniteScroll />`** (`useInfinitePagination`) for continuous streaming lists, dropdown selectors, compact modal feeds, and paginated filter option lists where discrete page numbers are unnecessary.
+  - **Paginated Filter Option Standard**: All filter option lists across Storefront and Admin whose option API is paginated must use `useInfinitePagination` / `<UiInfiniteScroll />`. They must check the API's `next` pagination URL, load and append new option pages when scrolling reaches the end of list without overwriting existing options, stop requesting pages when `next` is `null`, prevent duplicate in-flight requests, preserve loaded option state when closed and reopened where lifecycle permits, fetch options strictly on demand, and debounce option searches (300ms).
 
 ---
 

@@ -68,6 +68,7 @@ Examples:
 * For search inputs and filter controls driving API requests, maintain immediate local input responsiveness while debouncing the downstream API query state (e.g. using `refDebounced` with 300ms delay) to prevent requests on every keystroke.
 * Do not blindly debounce generic `v-model` updates on all input components unless they are specifically designed for debounced search queries.
 * Avoid triggering unnecessary API calls during component mounting, watcher execution, or modal setup; fetch data only when required for the current view or active user workflow, reusing existing state/props where available.
+* For paginated filter option controls across Admin and Storefront, implement infinite scroll (`useInfinitePagination` / `<UiInfiniteScroll />`) to fetch and append sequential option pages as the user scrolls until `next` is `null`. Do not overwrite loaded options, prevent duplicate concurrent requests, preserve loaded option state when closed and reopened where lifecycle permits, fetch options strictly on demand when activated, and debounce search inputs (300ms).
 * Do not create premature generic abstractions for hypothetical future use.
 
 ## Component Placement

@@ -344,6 +344,7 @@ All user-input-driven search and filter interactions must be debounced by defaul
 API requests must be driven by actual data requirements, not merely by component or page mounting or anticipated future actions.
 - **Check Availability First**: Before making an API request, verify if the data is already available in existing state, props, stores, or services.
 - **Defer Auxiliary Workflows**: Fetch auxiliary datasets (such as modal dropdown options or full entity details) only when the corresponding workflow is actively initiated.
+- **Paginated Filter Option Infinite Scroll**: All filter option lists across Admin and Storefront with paginated APIs must load options on demand via `useInfinitePagination` / `<UiInfiniteScroll />`. Sequential pages must be loaded on scroll and appended to existing options until `next` is `null`, guarding against duplicate/in-flight requests, preserving loaded option collections across reopening, and debouncing option search inputs (300ms).
 - **Prevent Mounting Side-Effects**: Do not call secondary or unrelated APIs in `onMounted()` or top-level setup scripts simply because a component or composable is mounted.
 
 ## 13. Centralized API Error Message Handling Principle
