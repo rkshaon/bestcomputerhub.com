@@ -25,7 +25,7 @@ import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
 import { cn } from '@/utils';
 import { refDebounced } from '@vueuse/core';
-import type { Category } from '@/types';
+import type { Category, CategorySummaryResponse } from '@/types';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import { toastSuccess, toastError, toastInfo, handleApiError, extractErrorMessage } from '@/composables/useToast';
 
@@ -62,9 +62,15 @@ const allCategoriesList = ref<Category[]>([]); // Broad list copy for parent loo
 // Server-side paginated states
 const categoriesList = ref<Category[]>([]);
 const totalCount = ref(0);
-const systemTotalCount = ref(0);
 const isLoading = ref(false);
 const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
+
+// Category summary statistics
+const categorySummary = ref<CategorySummaryResponse>({
+  total_categories: 0,
+  root_categories: 0,
+  sub_categories: 0
+});
 
 // Overlay control triggers
 const isCreateModalOpen = ref(false);
@@ -265,20 +271,30 @@ const fetchCategoriesPage = async () => {
   }
 };
 
-// Fetch broader category hierarchy list for dropdowns
+// Fetch global category summary statistics
+const fetchCategorySummary = async () => {
+  try {
+    const summary = await categoryService.getCategorySummary();
+    if (summary) {
+      categorySummary.value = summary;
+    }
+  } catch (error: any) {
+    console.warn('Category summary indexing latency:', error.message);
+  }
+};
+
+// Fetch broader category hierarchy list for dropdowns and initialize page data
 const fetchAllCategoriesRawList = async () => {
   isLoading.value = true;
   try {
-    // Queries root categories for dropdown selectors/hierarchical lookup
-    const rootRes = await categoryService.getCategoriesList({ is_parent: true, page_size: 10 });
-    allCategoriesList.value = rootRes.results;
-
-    // Retrieve system total count when no search/parent filter is applied (for stat cards overview)
-    const systemRes = await categoryService.getCategoriesList({ page_size: 1 });
-    systemTotalCount.value = systemRes.count;
-
-    // Load active paginated grid content
-    await fetchCategoriesPage();
+    await Promise.all([
+      fetchCategorySummary(),
+      (async () => {
+        const rootRes = await categoryService.getCategoriesList({ is_parent: true, page_size: 10 });
+        allCategoriesList.value = rootRes.results;
+      })(),
+      fetchCategoriesPage()
+    ]);
   } catch (error: any) {
     console.warn('Parent categories indexing latency:', error.message);
   } finally {
@@ -501,9 +517,6 @@ const deleteCategoryNode = async (cat: Category) => {
   }
 };
 
-// Stats computed aggregates
-const mainCategoriesCount = computed(() => allCategoriesList.value.length);
-const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value - mainCategoriesCount.value));
 </script>
 
 <template>
@@ -558,7 +571,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
         </div>
         <div>
           <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Total Classes</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ systemTotalCount }}</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.total_categories }}</p>
         </div>
       </UiCard>
       <UiCard class="flex items-center gap-6 p-8">
@@ -567,7 +580,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
         </div>
         <div>
           <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Main Categories</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ mainCategoriesCount }}</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.root_categories }}</p>
         </div>
       </UiCard>
       <UiCard class="flex items-center gap-6 p-8">
@@ -576,7 +589,7 @@ const nestedCategoriesCount = computed(() => Math.max(0, systemTotalCount.value 
         </div>
         <div>
           <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Sub-Categories</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ nestedCategoriesCount }}</p>
+          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.sub_categories }}</p>
         </div>
       </UiCard>
     </div>

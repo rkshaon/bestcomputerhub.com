@@ -31,6 +31,14 @@ export interface CategoryFilters {
   is_parent?: boolean;
 }
 
+export interface CategorySummaryResponse {
+  total_categories: number;
+  root_categories: number;
+  sub_categories: number;
+  menu_categories?: number;
+  sub_menu_categories?: number;
+}
+
 export type PaginatedCategoriesResponse = PaginatedResponse<Category>;
 
 export interface CategoryImportResponse {

@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
 import { extractErrorMessage } from './useToast';
-import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse } from '@/types';
+import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse, CategorySummaryResponse } from '@/types';
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 
@@ -222,6 +222,53 @@ export const useCategoryService = () => {
         count: totalCount,
         page,
         pages: totalPages
+      };
+    }
+  };
+
+  const getCategorySummary = async (): Promise<CategorySummaryResponse> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+      const list = getMockCategories();
+      const rootCount = list.filter(c => !c.parentCategoryId).length;
+      const subCount = list.filter(c => !!c.parentCategoryId).length;
+      return {
+        total_categories: list.length,
+        root_categories: rootCount,
+        sub_categories: subCount,
+        menu_categories: rootCount,
+        sub_menu_categories: subCount
+      };
+    }
+
+    try {
+      const data = await apiClient.request<CategorySummaryResponse>('/api/v1/categories/summary/', {
+        method: 'GET'
+      });
+      isLoading.value = false;
+      return {
+        total_categories: data?.total_categories ?? 0,
+        root_categories: data?.root_categories ?? 0,
+        sub_categories: data?.sub_categories ?? 0,
+        menu_categories: data?.menu_categories,
+        sub_menu_categories: data?.sub_menu_categories
+      };
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve category summary.');
+      isLoading.value = false;
+      const list = getMockCategories();
+      const rootCount = list.filter(c => !c.parentCategoryId).length;
+      const subCount = list.filter(c => !!c.parentCategoryId).length;
+      return {
+        total_categories: list.length,
+        root_categories: rootCount,
+        sub_categories: subCount,
+        menu_categories: rootCount,
+        sub_menu_categories: subCount
       };
     }
   };
@@ -906,6 +953,7 @@ export const useCategoryService = () => {
 
   return {
     getCategoriesList,
+    getCategorySummary,
     getRootCategories,
     getCategoryChildrenBatch,
     getChildrenForParent,
