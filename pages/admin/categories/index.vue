@@ -7,19 +7,21 @@ import {
   Edit2, 
   Trash2, 
   Layers, 
-  ChevronRight,
-  ChevronLeft,
-  ChevronDown,
-  Box,
-  Image as ImageIcon,
-  ExternalLink,
-  RotateCcw,
-  AlertCircle,
-  X,
-  FolderOpen,
-  Info,
-  Upload,
-  RefreshCw
+  ChevronRight, 
+  ChevronLeft, 
+  ChevronDown, 
+  Box, 
+  Image as ImageIcon, 
+  ExternalLink, 
+  RotateCcw, 
+  AlertCircle, 
+  X, 
+  FolderOpen, 
+  Info, 
+  Upload, 
+  RefreshCw,
+  Menu,
+  ListTree
 } from 'lucide-vue-next';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
@@ -69,7 +71,9 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
 const categorySummary = ref<CategorySummaryResponse>({
   total_categories: 0,
   root_categories: 0,
-  sub_categories: 0
+  sub_categories: 0,
+  menu_categories: 0,
+  sub_menu_categories: 0
 });
 
 // Overlay control triggers
@@ -564,32 +568,50 @@ const deleteCategoryNode = async (cat: Category) => {
     </div>
 
     <!-- Active Analytics row -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <UiCard class="flex items-center gap-6 p-8">
-        <div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
-          <Layers class="w-7 h-7" />
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <UiCard class="flex items-center gap-4 p-5">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Layers class="w-6 h-6" />
         </div>
-        <div>
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Total Classes</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.total_categories }}</p>
-        </div>
-      </UiCard>
-      <UiCard class="flex items-center gap-6 p-8">
-        <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
-          <FolderOpen class="w-7 h-7" />
-        </div>
-        <div>
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Main Categories</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.root_categories }}</p>
+        <div class="min-w-0">
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1 truncate">Total Classes</p>
+          <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.total_categories }}</p>
         </div>
       </UiCard>
-      <UiCard class="flex items-center gap-6 p-8">
-        <div class="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
-          <ChevronDown class="w-7 h-7" />
+      <UiCard class="flex items-center gap-4 p-5">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+          <FolderOpen class="w-6 h-6" />
         </div>
-        <div>
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Sub-Categories</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.sub_categories }}</p>
+        <div class="min-w-0">
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1 truncate">Main Categories</p>
+          <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.root_categories }}</p>
+        </div>
+      </UiCard>
+      <UiCard class="flex items-center gap-4 p-5">
+        <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+          <ChevronDown class="w-6 h-6" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1 truncate">Sub-Categories</p>
+          <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.sub_categories }}</p>
+        </div>
+      </UiCard>
+      <UiCard class="flex items-center gap-4 p-5">
+        <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Menu class="w-6 h-6" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1 truncate">Menu Categories</p>
+          <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.menu_categories ?? 0 }}</p>
+        </div>
+      </UiCard>
+      <UiCard class="flex items-center gap-4 p-5">
+        <div class="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 shadow-inner">
+          <ListTree class="w-6 h-6" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1 truncate">Sub-Menu Categories</p>
+          <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.sub_menu_categories ?? 0 }}</p>
         </div>
       </UiCard>
     </div>
