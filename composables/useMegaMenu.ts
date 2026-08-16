@@ -1,10 +1,10 @@
-// File: /composables/useMegaMenuV2.ts
+// File: /composables/useMegaMenu.ts
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import type { Category } from '@/types';
 
 /**
- * Temporary desktop mega-menu (V2) category tree state.
+ * Desktop mega-menu category tree state.
  *
  * Categories ARE the menu structure:
  *   root category -> hover -> category ID -> direct children -> submenu -> lazily deeper.
@@ -60,7 +60,7 @@ const extractChildrenItems = (payload: unknown): CategoryChildrenApiItem[] => {
   return [];
 };
 
-export const useMegaMenuV2 = () => {
+export const useMegaMenu = () => {
   const apiClient = useApiClient();
 
   const getChildren = (parentId: string | number): Category[] => {

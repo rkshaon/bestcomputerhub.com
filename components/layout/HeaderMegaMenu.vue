@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 import type { Category } from '@/types';
-import { useMegaMenuV2 } from '@/composables/useMegaMenuV2';
+import { useMegaMenu } from '@/composables/useMegaMenu';
 import { cn } from '@/utils';
 import HeaderCategorySubmenu from '@/components/layout/HeaderCategorySubmenu.vue';
 
@@ -39,7 +39,7 @@ const emit = defineEmits<{
   (e: 'keepOpen'): void;
 }>();
 
-const megaMenu = useMegaMenuV2();
+const megaMenu = useMegaMenu();
 
 /** Direct children of this root category, resolved by category ID */
 const directChildren = computed<Category[]>(() => megaMenu.getChildren(props.category.id));

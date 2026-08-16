@@ -3,7 +3,7 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { ChevronRight } from 'lucide-vue-next';
 import type { Category } from '@/types';
-import { useMegaMenuV2 } from '@/composables/useMegaMenuV2';
+import { useMegaMenu } from '@/composables/useMegaMenu';
 import { cn } from '@/utils';
 
 defineOptions({
@@ -37,7 +37,7 @@ const emit = defineEmits<{
   (e: 'keepOpen'): void;
 }>();
 
-const megaMenu = useMegaMenuV2();
+const megaMenu = useMegaMenu();
 
 const activeItemId = ref<string | null>(null);
 const activeItemTop = ref(0);
