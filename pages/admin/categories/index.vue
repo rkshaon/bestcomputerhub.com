@@ -39,10 +39,7 @@ definePageMeta({
 
 const tableColumns: UiTableColumn<Category>[] = [
   { key: 'name', label: 'Classification', headerClass: 'px-8', cellClass: 'px-8' },
-  { key: 'slug', label: 'System ID (Slug)', headerClass: 'px-6', cellClass: 'px-6' },
-  { key: 'order', label: 'Priority (Order)', headerClass: 'px-6', cellClass: 'px-6' },
-  { key: 'parentCategoryId', label: 'Structural Parent', headerClass: 'px-6', cellClass: 'px-6' },
-  { key: 'description', label: 'Memo Overview', headerClass: 'px-6', cellClass: 'px-6 max-w-[320px]' },
+  { key: 'show_in_menu', label: 'Menu', headerClass: 'px-6', cellClass: 'px-6' },
   { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8' },
 ];
 
@@ -964,38 +961,19 @@ const deleteCategoryNode = async (cat: Category) => {
         </div>
       </template>
 
-      <!-- System Identification Code (Slug) -->
-      <template #cell-slug="{ item: cat }">
-        <span class="font-mono text-xs text-slate-400 bg-slate-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 uppercase tracking-wider font-semibold">
-          {{ cat.slug }}
-        </span>
-      </template>
-
-      <!-- Priority (Order) -->
-      <template #cell-order="{ item: cat }">
-        <span class="font-mono text-xs font-bold text-slate-500 dark:text-slate-400">
-          {{ cat.order !== undefined ? cat.order : 0 }}
-        </span>
-      </template>
-
-      <!-- Structural Parent -->
-      <template #cell-parentCategoryId="{ item: cat }">
+      <!-- Menu Status -->
+      <template #cell-show_in_menu="{ item: cat }">
         <div class="flex items-center gap-2">
           <span :class="cn(
-            'w-2 h-2 rounded-full',
-            cat.parentCategoryId ? 'bg-indigo-500' : 'bg-emerald-500'
+            'w-2 h-2 rounded-full ring-4',
+            (cat.show_in_menu !== false && cat.is_menu !== false)
+              ? 'bg-emerald-500 ring-emerald-500/10'
+              : 'bg-muted-foreground/30 ring-muted-foreground/10'
           )"></span>
-          <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">
-            {{ getParentName(cat.parentCategoryId) }}
+          <span class="text-xs font-semibold" :class="(cat.show_in_menu !== false && cat.is_menu !== false) ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'">
+            {{ (cat.show_in_menu !== false && cat.is_menu !== false) ? 'In Menu' : 'Hidden' }}
           </span>
         </div>
-      </template>
-
-      <!-- Short Memo Overview -->
-      <template #cell-description="{ item: cat }">
-        <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed italic">
-          {{ cat.description || 'No formal engineering description defined.' }}
-        </p>
       </template>
 
       <!-- Action button overrides -->
