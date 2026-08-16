@@ -52,8 +52,7 @@ watch(
   () => [props.isOpen, props.category.id] as const,
   async ([open]) => {
     if (!open || props.category.has_children === false) return;
-    const children = await megaMenu.ensureChildren(props.category.id);
-    megaMenu.logCategoryChildren(props.category, children);
+    await megaMenu.ensureChildren(props.category.id);
   },
   { immediate: true }
 );

@@ -251,16 +251,11 @@ const openMegaMenu = async (catId: string | number) => {
   activeMegaMenuId.value = catIdStr;
 
   const cat = categories.value.find(c => String(c.id) === cleanId) || allCategories.value.find(c => String(c.id) === cleanId);
-  const childrenAtHover = categoryService.getChildrenForParent(cleanId);
-
-  console.log(`[MEGA HOVER DEBUG]\nCategory: ${cat?.name || 'Unknown'}\nID: ${cleanId}\nChildren count: ${childrenAtHover.length}\nChildren:`, childrenAtHover);
 
   if (cat && cat.has_children !== false) {
     const isLoaded = categoryService.hasChildrenLoaded(cleanId) || (cat.slug ? categoryService.hasChildrenLoaded(cat.slug) : false);
     if (!isLoaded) {
       await categoryService.getCategoryChildrenBatch([cleanId]);
-      const childrenPostFetch = categoryService.getChildrenForParent(cleanId);
-      console.log(`[MEGA HOVER DEBUG] (post-fetch)\nCategory: ${cat?.name || 'Unknown'}\nID: ${cleanId}\nChildren count: ${childrenPostFetch.length}\nChildren:`, childrenPostFetch);
     }
   }
 };

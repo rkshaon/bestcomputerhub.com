@@ -136,11 +136,8 @@ export const useMegaMenuV2 = () => {
     return `/product-category/${segments.join('/')}`;
   };
 
-  const logCategoryChildren = (category: Category, children: Category[]) => {
-    // Temporary data-flow visibility for the V2 mega menu.
-    console.log(
-      `[MEGA MENU V2]\nCategory: ${category.name}\nID: ${category.id}\nChildren count: ${children.length}`
-    );
+  const logCategoryChildren = (_category: Category, _children: Category[]) => {
+    // Diagnostic logging removed for production clean state
   };
 
   return {

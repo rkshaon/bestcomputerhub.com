@@ -138,8 +138,7 @@ const handleItemEnter = async (item: Category, event?: MouseEvent | FocusEvent) 
   }
 
   // Lazily load the next level using the hovered category ID as the parent identifier
-  const children = await megaMenu.ensureChildren(item.id);
-  megaMenu.logCategoryChildren(item, children);
+  await megaMenu.ensureChildren(item.id);
 
   if (activeItemId.value === itemId) {
     await nextTick();

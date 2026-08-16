@@ -68,7 +68,6 @@ useSeoMeta({
 
 const resolveCategory = async () => {
   const targetSlug = categorySlug.value ? categorySlug.value.toLowerCase() : '';
-  console.log('[ProductCategory] Resolving category for slug:', targetSlug);
   if (!targetSlug) {
     activeCategory.value = null;
     return;
@@ -104,9 +103,7 @@ const resolveCategory = async () => {
 
   // 3. Regardless of finding local match, ALWAYS call the Category Details API to load full rich content/description
   try {
-    console.log('[ProductCategory] Calling getCategoryDetails for slug:', targetSlug);
     const detail = await categoryService.getCategoryDetails(targetSlug);
-    console.log('[ProductCategory] getCategoryDetails returned:', detail);
     if (detail) {
       if (activeCategory.value) {
         // Merge rich details (like full description/guide) onto the basic category object
@@ -161,8 +158,7 @@ onMounted(() => {
   loadAllCategories();
 });
 
-watch(() => route.params.slug, async (newVal) => {
-  console.log('[ProductCategory] route.params.slug changed:', newVal);
+watch(() => route.params.slug, async () => {
   await resolveCategory();
 }, { immediate: true, deep: true });
 
