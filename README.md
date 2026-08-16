@@ -10,8 +10,9 @@ The frontend communicates with a **Django REST Framework (DRF)** backend and is 
 
 ---
 
-[Backend Reference](https://github.com/KrystalSoftwareBangladesh/Ecommerce-Backend)
-[Docs](https://apibestcomputerhub.rkshaon.info/docs)
+## References
+* [Backend Reference](https://github.com/KrystalSoftwareBangladesh/Ecommerce-Backend)
+* [Docs](https://apibestcomputerhub.rkshaon.info/docs)
 
 ---
 

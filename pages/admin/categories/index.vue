@@ -52,6 +52,8 @@ const router = useRouter();
 // State managers initialized from URL query parameters
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
+const onlyParentsFilter = ref(route.query.is_parent === 'true');
+const onlyMenusFilter = ref(route.query.is_menu === 'true');
 const parentFilter = ref(route.query.parent ? String(route.query.parent) : 'all'); // 'all', 'none' (main level only), or specific category ID
 const menuFilter = ref(route.query.menu ? String(route.query.menu) : (route.query.is_menu === 'true' ? 'menu_only' : 'all')); // 'all', 'menu_only', or specific menu category ID
 const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'order'); // 'order', '-order', 'name', '-name', 'slug', '-slug'
@@ -338,6 +340,12 @@ const fetchCategoriesPage = async () => {
     if (searchQuery.value) {
       filters.search = searchQuery.value;
     }
+    if (onlyParentsFilter.value) {
+      filters.is_parent = true;
+    }
+    if (onlyMenusFilter.value) {
+      filters.is_menu = true;
+    }
     if (parentFilter.value !== 'all') {
       filters.parent = parentFilter.value;
     }
@@ -414,31 +422,42 @@ onBeforeUnmount(() => {
 });
 
 // If searching or filtering, reset page index to 1
-watch([debouncedSearchQuery, parentFilter, menuFilter, ordering, itemsPerPage], () => {
+watch([debouncedSearchQuery, onlyParentsFilter, onlyMenusFilter, parentFilter, menuFilter, ordering, itemsPerPage], () => {
   currentPage.value = 1;
 });
 
 // Update URL parameters and fetch active page when parameters change
-watch([debouncedSearchQuery, parentFilter, menuFilter, ordering, currentPage, itemsPerPage], async () => {
+watch([debouncedSearchQuery, onlyParentsFilter, onlyMenusFilter, parentFilter, menuFilter, ordering, currentPage, itemsPerPage], async () => {
   const query: Record<string, any> = { ...route.query };
 
   if (searchQuery.value) query.search = searchQuery.value;
   else delete query.search;
+
+  if (onlyParentsFilter.value) {
+    query.is_parent = 'true';
+  } else {
+    delete query.is_parent;
+  }
+
+  if (onlyMenusFilter.value) {
+    query.is_menu = 'true';
+  } else if (menuFilter.value === 'menu_only') {
+    query.is_menu = 'true';
+  } else {
+    delete query.is_menu;
+  }
 
   if (parentFilter.value !== 'all') query.parent = parentFilter.value;
   else delete query.parent;
 
   if (menuFilter.value !== 'all') {
     if (menuFilter.value === 'menu_only') {
-      query.is_menu = 'true';
       delete query.menu;
     } else {
       query.menu = menuFilter.value;
-      query.is_menu = 'true';
     }
   } else {
     delete query.menu;
-    delete query.is_menu;
   }
 
   if (ordering.value !== 'order') query.ordering = ordering.value;
@@ -465,6 +484,18 @@ watch(() => route.query, async (newQuery) => {
     needsFetch = true;
   }
 
+  const newOnlyParents = newQuery.is_parent === 'true';
+  if (onlyParentsFilter.value !== newOnlyParents) {
+    onlyParentsFilter.value = newOnlyParents;
+    needsFetch = true;
+  }
+
+  const newOnlyMenus = newQuery.is_menu === 'true';
+  if (onlyMenusFilter.value !== newOnlyMenus) {
+    onlyMenusFilter.value = newOnlyMenus;
+    needsFetch = true;
+  }
+
   const newParent = newQuery.parent ? String(newQuery.parent) : 'all';
   if (parentFilter.value !== newParent) {
     parentFilter.value = newParent;
@@ -473,7 +504,7 @@ watch(() => route.query, async (newQuery) => {
 
   const newMenu = newQuery.menu 
     ? String(newQuery.menu) 
-    : (newQuery.is_menu === 'true' ? 'menu_only' : 'all');
+    : (newQuery.is_menu === 'true' && !newOnlyMenus ? 'menu_only' : 'all');
   if (menuFilter.value !== newMenu) {
     menuFilter.value = newMenu;
     needsFetch = true;
@@ -745,6 +776,41 @@ const deleteCategoryNode = async (cat: Category) => {
       </div>
       
       <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+        <!-- Boolean Filters: Only Parents & Only Menus -->
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            @click="onlyParentsFilter = !onlyParentsFilter"
+            :class="[
+              'h-10 px-3.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 cursor-pointer select-none',
+              onlyParentsFilter
+                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-xs'
+                : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            ]"
+            :aria-pressed="onlyParentsFilter"
+            title="Filter to root/parent categories only"
+          >
+            <span class="w-2 h-2 rounded-full transition-colors" :class="onlyParentsFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+            <span>Only Parents</span>
+          </button>
+
+          <button
+            type="button"
+            @click="onlyMenusFilter = !onlyMenusFilter"
+            :class="[
+              'h-10 px-3.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 cursor-pointer select-none',
+              onlyMenusFilter
+                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-xs'
+                : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            ]"
+            :aria-pressed="onlyMenusFilter"
+            title="Filter to menu categories only"
+          >
+            <span class="w-2 h-2 rounded-full transition-colors" :class="onlyMenusFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+            <span>Only Menus</span>
+          </button>
+        </div>
+
         <!-- Parent grouping filter dropdown (Structural Level) -->
         <div ref="parentDropdownRef" class="relative">
           <div class="flex items-center gap-2 border-l border-border pl-4">
