@@ -297,7 +297,7 @@ const breadcrumbs = computed(() => {
       <!-- Content -->
       <div class="flex-1 p-6 lg:p-8">
         <!-- Breadcrumbs -->
-        <nav class="flex mb-6" aria-label="Breadcrumb">
+        <nav class="flex mb-3" aria-label="Breadcrumb">
           <ol class="flex items-center space-x-2 text-xs font-medium">
             <li>
               <NuxtLink to="/admin" class="text-muted-foreground hover:text-foreground">Admin</NuxtLink>

@@ -721,17 +721,12 @@ const toggleCategoryMenu = async (cat: Category) => {
   <div class="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
     
     <!-- Header Block -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-display font-extrabold tracking-tight text-foreground">
-          Categories
-        </h1>
-        <p class="text-muted-foreground text-xs mt-0.5">
-          Organize hardware components, computing nodes and server equipment classes.
-        </p>
-      </div>
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <h1 class="text-2xl font-display font-extrabold tracking-tight text-foreground">
+        Categories
+      </h1>
 
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <UiButton 
           variant="outline" 
           class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
