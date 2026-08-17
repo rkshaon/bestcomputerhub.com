@@ -43,9 +43,9 @@ definePageMeta({
 });
 
 const tableColumns: UiTableColumn<Category>[] = [
-  { key: 'name', label: 'Classification', headerClass: 'px-8', cellClass: 'px-8' },
-  { key: 'show_in_menu', label: 'Menu', headerClass: 'px-6', cellClass: 'px-6' },
-  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8' },
+  { key: 'name', label: 'Classification', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'show_in_menu', label: 'Menu', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
 ];
 
 const categoryService = useCategoryService();
@@ -718,170 +718,170 @@ const toggleCategoryMenu = async (cat: Category) => {
 </script>
 
 <template>
-  <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+  <div class="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
     
     <!-- Header Block -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-display font-extrabold tracking-tight text-foreground">
+        <h1 class="text-2xl font-display font-extrabold tracking-tight text-foreground">
           Categories
         </h1>
-        <p class="text-muted-foreground text-sm mt-1">
+        <p class="text-muted-foreground text-xs mt-0.5">
           Organize hardware components, computing nodes and server equipment classes.
         </p>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <UiButton 
           variant="outline" 
-          class="rounded-2xl h-11 px-5 gap-2 border-border font-bold text-xs"
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
           @click="loadCategoriesGrid"
           :disabled="isLoading"
         >
-          <RefreshCw :class="['w-4 h-4', isLoading && 'animate-spin']" />
+          <RefreshCw :class="['w-3.5 h-3.5', isLoading && 'animate-spin']" />
           <span>Refresh</span>
         </UiButton>
 
         <UiButton 
           variant="outline" 
-          class="rounded-2xl h-11 px-5 gap-2 border-border font-bold text-xs"
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
           @click="triggerImportModal"
         >
-          <Upload class="w-4 h-4" />
+          <Upload class="w-3.5 h-3.5" />
           <span>Import Taxonomies</span>
         </UiButton>
 
         <UiButton 
-          class="rounded-2xl h-11 px-6 gap-2 shadow-xl shadow-primary/20 bg-primary text-primary-foreground font-bold text-xs"
+          class="rounded-xl h-9 px-4 gap-1.5 shadow-md shadow-primary/20 bg-primary text-primary-foreground font-bold text-xs"
           @click="triggerCreateModal"
         >
-          <Plus class="w-4 h-4" />
+          <Plus class="w-3.5 h-3.5" />
           <span>Add Category</span>
         </UiButton>
       </div>
     </div>
 
     <!-- Active Analytics row -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      <UiCard class="flex items-center gap-4 p-5">
-        <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
-          <Layers class="w-6 h-6" />
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <UiCard class="flex items-center gap-3 p-3">
+        <div class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Layers class="w-4 h-4" />
         </div>
         <div class="min-w-0">
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1 truncate">Total Classes</p>
-          <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.total_categories }}</p>
+          <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Total Classes</p>
+          <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ categorySummary.total_categories }}</p>
         </div>
       </UiCard>
-      <UiCard class="flex items-center gap-4 p-5">
-        <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
-          <FolderOpen class="w-6 h-6" />
+      <UiCard class="flex items-center gap-3 p-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+          <FolderOpen class="w-4 h-4" />
         </div>
         <div class="min-w-0">
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1 truncate">Main Categories</p>
-          <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.root_categories }}</p>
+          <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Main Categories</p>
+          <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ categorySummary.root_categories }}</p>
         </div>
       </UiCard>
-      <UiCard class="flex items-center gap-4 p-5">
-        <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
-          <ChevronDown class="w-6 h-6" />
+      <UiCard class="flex items-center gap-3 p-3">
+        <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+          <ChevronDown class="w-4 h-4" />
         </div>
         <div class="min-w-0">
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1 truncate">Sub-Categories</p>
-          <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.sub_categories }}</p>
+          <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Sub-Categories</p>
+          <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ categorySummary.sub_categories }}</p>
         </div>
       </UiCard>
-      <UiCard class="flex items-center gap-4 p-5">
-        <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
-          <Menu class="w-6 h-6" />
+      <UiCard class="flex items-center gap-3 p-3">
+        <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
+          <Menu class="w-4 h-4" />
         </div>
         <div class="min-w-0">
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1 truncate">Menu Categories</p>
-          <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.menu_categories ?? 0 }}</p>
+          <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Menu Categories</p>
+          <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ categorySummary.menu_categories ?? 0 }}</p>
         </div>
       </UiCard>
-      <UiCard class="flex items-center gap-4 p-5">
-        <div class="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 shadow-inner">
-          <ListTree class="w-6 h-6" />
+      <UiCard class="flex items-center gap-3 p-3">
+        <div class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 shadow-inner">
+          <ListTree class="w-4 h-4" />
         </div>
         <div class="min-w-0">
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1 truncate">Sub-Menu Categories</p>
-          <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ categorySummary.sub_menu_categories ?? 0 }}</p>
+          <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Sub-Menu Categories</p>
+          <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ categorySummary.sub_menu_categories ?? 0 }}</p>
         </div>
       </UiCard>
     </div>
 
     <!-- Filter row -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border p-4 rounded-2xl shadow-sm">
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border p-3 rounded-xl shadow-xs">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
         <UiSearchInput 
           v-model="searchQuery" 
           placeholder="Search taxonomies by name, slug or description..." 
-          class="w-full sm:w-80"
+          class="w-full sm:w-72"
         />
 
         <!-- View Toggle Buttons -->
-        <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-xl border border-border/80">
+        <div class="flex items-center self-start sm:self-auto bg-muted/60 p-0.5 rounded-lg border border-border/80">
           <button
             type="button"
             @click="viewMode = 'grid'"
             :class="[
-              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
+              'p-1.5 rounded-md transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'grid'
-                ? 'bg-background text-primary shadow-sm'
+                ? 'bg-background text-primary shadow-2xs'
                 : 'text-muted-foreground hover:text-foreground'
             ]"
             title="Grid View"
             aria-label="Grid view"
           >
-            <LayoutGrid class="w-4 h-4" />
+            <LayoutGrid class="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
             @click="viewMode = 'list'"
             :class="[
-              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
+              'p-1.5 rounded-md transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'list'
-                ? 'bg-background text-primary shadow-sm'
+                ? 'bg-background text-primary shadow-2xs'
                 : 'text-muted-foreground hover:text-foreground'
             ]"
             title="List View"
             aria-label="List view"
           >
-            <List class="w-4 h-4" />
+            <List class="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
             @click="viewMode = 'tree'"
             :class="[
-              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
+              'p-1.5 rounded-md transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'tree'
-                ? 'bg-background text-primary shadow-sm'
+                ? 'bg-background text-primary shadow-2xs'
                 : 'text-muted-foreground hover:text-foreground'
             ]"
             title="Tree View"
             aria-label="Tree view"
           >
-            <FolderTree class="w-4 h-4" />
+            <FolderTree class="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
       
-      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+      <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
         <!-- Boolean Filters: Only Parents & Only Menus -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <button
             type="button"
             @click="onlyParentsFilter = !onlyParentsFilter"
             :class="[
-              'h-10 px-3.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 cursor-pointer select-none',
+              'h-8.5 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
               onlyParentsFilter
-                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-xs'
+                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
                 : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
             ]"
             :aria-pressed="onlyParentsFilter"
             title="Filter to root/parent categories only"
           >
-            <span class="w-2 h-2 rounded-full transition-colors" :class="onlyParentsFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+            <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="onlyParentsFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
             <span>Only Parents</span>
           </button>
 
@@ -889,30 +889,30 @@ const toggleCategoryMenu = async (cat: Category) => {
             type="button"
             @click="onlyMenusFilter = !onlyMenusFilter"
             :class="[
-              'h-10 px-3.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 cursor-pointer select-none',
+              'h-8.5 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
               onlyMenusFilter
-                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-xs'
+                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
                 : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
             ]"
             :aria-pressed="onlyMenusFilter"
             title="Filter to menu categories only"
           >
-            <span class="w-2 h-2 rounded-full transition-colors" :class="onlyMenusFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+            <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="onlyMenusFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
             <span>Only Menus</span>
           </button>
         </div>
 
         <!-- Parent grouping filter dropdown (Structural Level) -->
         <div ref="parentDropdownRef" class="relative">
-          <div class="flex items-center gap-2 border-l border-border pl-4">
-            <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground whitespace-nowrap">Structural Level:</span>
+          <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">Level:</span>
             <button 
               type="button"
               @click.stop="toggleParentDropdown"
-              class="h-10 px-3 bg-background border border-input rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[140px]"
+              class="h-8.5 px-2.5 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[130px]"
             >
               <span class="truncate">{{ activeParentLabel }}</span>
-              <ChevronDown :class="['w-3.5 h-3.5 shrink-0 transition-transform duration-200', isParentDropdownOpen && 'rotate-180']" />
+              <ChevronDown :class="['w-3 h-3 shrink-0 transition-transform duration-200', isParentDropdownOpen && 'rotate-180']" />
             </button>
           </div>
 
@@ -920,14 +920,14 @@ const toggleCategoryMenu = async (cat: Category) => {
           <div 
             v-if="isParentDropdownOpen"
             @click.stop
-            class="absolute right-0 sm:left-4 z-30 mt-2 w-64 bg-card border border-border rounded-2xl shadow-xl p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+            class="absolute right-0 sm:left-4 z-30 mt-1.5 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
           >
-            <div class="max-h-56 overflow-y-auto space-y-1 p-1 scrollbar-thin">
+            <div class="max-h-52 overflow-y-auto space-y-1 p-0.5 scrollbar-thin">
               <button
                 type="button"
                 @click="selectParent('all')"
                 :class="[
-                  'w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between',
+                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
                   parentFilter === 'all' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
                 ]"
               >
@@ -939,7 +939,7 @@ const toggleCategoryMenu = async (cat: Category) => {
                 type="button"
                 @click="selectParent('none')"
                 :class="[
-                  'w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between',
+                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
                   parentFilter === 'none' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
                 ]"
               >
@@ -956,7 +956,7 @@ const toggleCategoryMenu = async (cat: Category) => {
                 type="button"
                 @click="selectParent(String(parentCat.id))"
                 :class="[
-                  'w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-between',
+                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
                   parentFilter === String(parentCat.id) ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                 ]"
               >
@@ -978,15 +978,15 @@ const toggleCategoryMenu = async (cat: Category) => {
 
         <!-- Menu Filter Dropdown (Menu Categories) -->
         <div ref="menuDropdownRef" class="relative">
-          <div class="flex items-center gap-2 border-l border-border pl-4">
-            <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground whitespace-nowrap">Menu Filter:</span>
+          <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">Menu:</span>
             <button 
               type="button"
               @click.stop="toggleMenuDropdown"
-              class="h-10 px-3 bg-background border border-input rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[140px]"
+              class="h-8.5 px-2.5 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[130px]"
             >
               <span class="truncate">{{ activeMenuLabel }}</span>
-              <ChevronDown :class="['w-3.5 h-3.5 shrink-0 transition-transform duration-200', isMenuDropdownOpen && 'rotate-180']" />
+              <ChevronDown :class="['w-3 h-3 shrink-0 transition-transform duration-200', isMenuDropdownOpen && 'rotate-180']" />
             </button>
           </div>
 
@@ -994,14 +994,14 @@ const toggleCategoryMenu = async (cat: Category) => {
           <div 
             v-if="isMenuDropdownOpen"
             @click.stop
-            class="absolute right-0 sm:left-4 z-30 mt-2 w-64 bg-card border border-border rounded-2xl shadow-xl p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+            class="absolute right-0 sm:left-4 z-30 mt-1.5 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
           >
-            <div class="max-h-56 overflow-y-auto space-y-1 p-1 scrollbar-thin">
+            <div class="max-h-52 overflow-y-auto space-y-1 p-0.5 scrollbar-thin">
               <button
                 type="button"
                 @click="selectMenu('all')"
                 :class="[
-                  'w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between',
+                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
                   menuFilter === 'all' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
                 ]"
               >
@@ -1013,7 +1013,7 @@ const toggleCategoryMenu = async (cat: Category) => {
                 type="button"
                 @click="selectMenu('menu_only')"
                 :class="[
-                  'w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between',
+                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
                   menuFilter === 'menu_only' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
                 ]"
               >
@@ -1030,7 +1030,7 @@ const toggleCategoryMenu = async (cat: Category) => {
                 type="button"
                 @click="selectMenu(String(menuCat.id))"
                 :class="[
-                  'w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-between',
+                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
                   menuFilter === String(menuCat.id) ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                 ]"
               >
@@ -1053,14 +1053,14 @@ const toggleCategoryMenu = async (cat: Category) => {
           </div>
         </div>
 
-        <div class="flex items-center gap-2 border-l border-border pl-4">
-          <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Order By:</span>
+        <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
+          <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Order:</span>
           <select 
             v-model="ordering"
-            class="h-10 px-3 bg-background border border-input rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
+            class="h-8.5 px-2 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
           >
-            <option value="order">Display Priority (Asc)</option>
-            <option value="-order">Display Priority (Desc)</option>
+            <option value="order">Priority (Asc)</option>
+            <option value="-order">Priority (Desc)</option>
             <option value="name">Name (A-Z)</option>
             <option value="-name">Name (Z-A)</option>
             <option value="slug">Slug (A-Z)</option>
@@ -1070,11 +1070,11 @@ const toggleCategoryMenu = async (cat: Category) => {
         
         <button 
           @click="loadCategoriesGrid" 
-          class="p-2.5 bg-background hover:bg-muted border border-input rounded-xl text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+          class="p-2 bg-background hover:bg-muted border border-input rounded-lg text-muted-foreground hover:text-primary transition-colors cursor-pointer"
           title="Force Sync Protocols"
           aria-label="Refresh categories"
         >
-          <RotateCcw class="w-4 h-4" />
+          <RotateCcw class="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
@@ -1261,22 +1261,22 @@ const toggleCategoryMenu = async (cat: Category) => {
     >
       <!-- Category Identifier -->
       <template #cell-name="{ item: cat }">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-xl shadow-sm shrink-0 group-hover:scale-105 transition-transform duration-300">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-card border border-border rounded-lg flex items-center justify-center text-sm shadow-2xs shrink-0 group-hover:scale-105 transition-transform duration-200">
             <span>{{ cat.icon || '📁' }}</span>
           </div>
-          <div>
-            <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors leading-tight">{{ cat.name }}</h4>
-            <p class="text-[10px] text-slate-400 font-mono tracking-wider mt-0.5">{{ cat.id }}</p>
+          <div class="min-w-0">
+            <h4 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors leading-tight truncate">{{ cat.name }}</h4>
+            <p class="text-[10px] text-muted-foreground font-mono tracking-wider mt-0.5 truncate">{{ cat.id }}</p>
           </div>
         </div>
       </template>
 
       <!-- Menu Status -->
       <template #cell-show_in_menu="{ item: cat }">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <span :class="cn(
-            'w-2 h-2 rounded-full ring-4',
+            'w-1.5 h-1.5 rounded-full ring-2',
             cat.show_in_menu === true
               ? 'bg-emerald-500 ring-emerald-500/10'
               : 'bg-muted-foreground/30 ring-muted-foreground/10'
@@ -1289,46 +1289,46 @@ const toggleCategoryMenu = async (cat: Category) => {
 
       <!-- Action button overrides -->
       <template #cell-actions="{ item: cat }">
-        <div class="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+        <div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
           <button 
             type="button"
             @click="toggleCategoryMenu(cat)" 
             :disabled="togglingMenuSlug === cat.slug"
             :class="[
-              'p-2 rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
+              'p-1.5 rounded-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
               cat.show_in_menu === true
                 ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30'
-                : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                : 'text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
             ]"
             :title="cat.show_in_menu === true ? 'Remove from Menu' : 'Mark as Menu'"
             :aria-label="cat.show_in_menu === true ? 'Remove from Menu' : 'Mark as Menu'"
           >
-            <Loader2 v-if="togglingMenuSlug === cat.slug" class="w-4 h-4 animate-spin text-primary" />
-            <Menu v-else class="w-4 h-4" />
+            <Loader2 v-if="togglingMenuSlug === cat.slug" class="w-3.5 h-3.5 animate-spin text-primary" />
+            <Menu v-else class="w-3.5 h-3.5" />
           </button>
           <button 
             @click="triggerViewModal(cat)" 
-            class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            class="p-1.5 text-muted-foreground hover:text-primary hover:bg-muted rounded-md transition-all cursor-pointer"
             title="Inspect Node Properties"
             aria-label="Inspect category properties"
           >
-            <Info class="w-4 h-4" />
+            <Info class="w-3.5 h-3.5" />
           </button>
           <button 
             @click="triggerEditModal(cat)" 
-            class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            class="p-1.5 text-muted-foreground hover:text-yellow-500 hover:bg-muted rounded-md transition-all cursor-pointer"
             title="Modify Class Configurations"
             aria-label="Modify category configurations"
           >
-            <Edit2 class="w-4 h-4" />
+            <Edit2 class="w-3.5 h-3.5" />
           </button>
           <button 
             @click="deleteCategoryNode(cat)" 
-            class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-muted rounded-md transition-all cursor-pointer"
             title="Deregister Node"
             aria-label="Delete category node"
           >
-            <Trash2 class="w-4 h-4" />
+            <Trash2 class="w-3.5 h-3.5" />
           </button>
         </div>
       </template>
