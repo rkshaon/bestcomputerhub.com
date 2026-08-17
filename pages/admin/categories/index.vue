@@ -811,8 +811,8 @@ const toggleCategoryMenu = async (cat: Category) => {
     </div>
 
     <!-- Filter row -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border p-3 rounded-xl shadow-xs">
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
         <UiSearchInput 
           v-model="searchQuery" 
           placeholder="Search taxonomies by name, slug or description..." 
@@ -820,12 +820,12 @@ const toggleCategoryMenu = async (cat: Category) => {
         />
 
         <!-- View Toggle Buttons -->
-        <div class="flex items-center self-start sm:self-auto bg-muted/60 p-0.5 rounded-lg border border-border/80">
+        <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-lg border border-border/80">
           <button
             type="button"
             @click="viewMode = 'grid'"
             :class="[
-              'p-1.5 rounded-md transition-all flex items-center justify-center cursor-pointer',
+              'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'grid'
                 ? 'bg-background text-primary shadow-2xs'
                 : 'text-muted-foreground hover:text-foreground'
@@ -839,7 +839,7 @@ const toggleCategoryMenu = async (cat: Category) => {
             type="button"
             @click="viewMode = 'list'"
             :class="[
-              'p-1.5 rounded-md transition-all flex items-center justify-center cursor-pointer',
+              'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'list'
                 ? 'bg-background text-primary shadow-2xs'
                 : 'text-muted-foreground hover:text-foreground'
@@ -853,7 +853,7 @@ const toggleCategoryMenu = async (cat: Category) => {
             type="button"
             @click="viewMode = 'tree'"
             :class="[
-              'p-1.5 rounded-md transition-all flex items-center justify-center cursor-pointer',
+              'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
               viewMode === 'tree'
                 ? 'bg-background text-primary shadow-2xs'
                 : 'text-muted-foreground hover:text-foreground'
@@ -866,14 +866,14 @@ const toggleCategoryMenu = async (cat: Category) => {
         </div>
       </div>
       
-      <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
+      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
         <!-- Boolean Filters: Only Parents & Only Menus -->
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-2">
           <button
             type="button"
             @click="onlyParentsFilter = !onlyParentsFilter"
             :class="[
-              'h-8.5 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+              'h-9 px-3.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
               onlyParentsFilter
                 ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
                 : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -889,7 +889,7 @@ const toggleCategoryMenu = async (cat: Category) => {
             type="button"
             @click="onlyMenusFilter = !onlyMenusFilter"
             :class="[
-              'h-8.5 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+              'h-9 px-3.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
               onlyMenusFilter
                 ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
                 : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -904,15 +904,15 @@ const toggleCategoryMenu = async (cat: Category) => {
 
         <!-- Parent grouping filter dropdown (Structural Level) -->
         <div ref="parentDropdownRef" class="relative">
-          <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
+          <div class="flex items-center gap-2 border-l border-border pl-3">
             <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">Level:</span>
             <button 
               type="button"
               @click.stop="toggleParentDropdown"
-              class="h-8.5 px-2.5 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[130px]"
+              class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[135px]"
             >
               <span class="truncate">{{ activeParentLabel }}</span>
-              <ChevronDown :class="['w-3 h-3 shrink-0 transition-transform duration-200', isParentDropdownOpen && 'rotate-180']" />
+              <ChevronDown :class="['w-3.5 h-3.5 shrink-0 transition-transform duration-200', isParentDropdownOpen && 'rotate-180']" />
             </button>
           </div>
 
@@ -920,7 +920,7 @@ const toggleCategoryMenu = async (cat: Category) => {
           <div 
             v-if="isParentDropdownOpen"
             @click.stop
-            class="absolute right-0 sm:left-4 z-30 mt-1.5 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+            class="absolute right-0 sm:left-4 z-30 mt-2 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
           >
             <div class="max-h-52 overflow-y-auto space-y-1 p-0.5 scrollbar-thin">
               <button
@@ -978,15 +978,15 @@ const toggleCategoryMenu = async (cat: Category) => {
 
         <!-- Menu Filter Dropdown (Menu Categories) -->
         <div ref="menuDropdownRef" class="relative">
-          <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
+          <div class="flex items-center gap-2 border-l border-border pl-3">
             <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">Menu:</span>
             <button 
               type="button"
               @click.stop="toggleMenuDropdown"
-              class="h-8.5 px-2.5 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[130px]"
+              class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[135px]"
             >
               <span class="truncate">{{ activeMenuLabel }}</span>
-              <ChevronDown :class="['w-3 h-3 shrink-0 transition-transform duration-200', isMenuDropdownOpen && 'rotate-180']" />
+              <ChevronDown :class="['w-3.5 h-3.5 shrink-0 transition-transform duration-200', isMenuDropdownOpen && 'rotate-180']" />
             </button>
           </div>
 
@@ -994,7 +994,7 @@ const toggleCategoryMenu = async (cat: Category) => {
           <div 
             v-if="isMenuDropdownOpen"
             @click.stop
-            class="absolute right-0 sm:left-4 z-30 mt-1.5 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+            class="absolute right-0 sm:left-4 z-30 mt-2 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
           >
             <div class="max-h-52 overflow-y-auto space-y-1 p-0.5 scrollbar-thin">
               <button
@@ -1053,11 +1053,11 @@ const toggleCategoryMenu = async (cat: Category) => {
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
+        <div class="flex items-center gap-2 border-l border-border pl-3">
           <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Order:</span>
           <select 
             v-model="ordering"
-            class="h-8.5 px-2 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
+            class="h-9 px-2.5 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
           >
             <option value="order">Priority (Asc)</option>
             <option value="-order">Priority (Desc)</option>
@@ -1070,7 +1070,7 @@ const toggleCategoryMenu = async (cat: Category) => {
         
         <button 
           @click="loadCategoriesGrid" 
-          class="p-2 bg-background hover:bg-muted border border-input rounded-lg text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+          class="h-9 w-9 flex items-center justify-center bg-background hover:bg-muted border border-input rounded-lg text-muted-foreground hover:text-primary transition-colors cursor-pointer shrink-0"
           title="Force Sync Protocols"
           aria-label="Refresh categories"
         >
