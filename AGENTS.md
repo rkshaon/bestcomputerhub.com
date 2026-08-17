@@ -254,6 +254,13 @@ All administrative list and data views displaying tabular data must use the stan
   - **Pagination**: Kept strictly separate. `<UiPagination />` and `<UiInfiniteScroll />` remain responsible for pagination controls and page navigation, positioned outside `<UiTable />`.
   - **Business & Data Logic**: Sorting, searching, filtering, permissions checking, row action handlers, and API data-fetching logic remain outside `<UiTable />`, managed by pages, composables, or stores and passed into `<UiTable />` via props/slots.
 
+### 9. Admin UI Layout & Information-Density Standards
+All Admin pages must maintain high information density, clear visual hierarchy, and compact container spacing across all modules (Categories, Products, Brands, Orders, Inventory, Users/Staff, Roles, Permissions, Notifications, Security, etc.):
+- **Single-Row Page Header**: On pages with breadcrumbs, combine the breadcrumb path and page title on the left side of the header row with page action buttons right-aligned on the same row. Omit redundant descriptive subtitles to save vertical viewport space.
+- **Viewport Information Density**: Maximize visible data and controls within the viewport by reducing outer container padding and section vertical gaps. Do not shrink font sizes or interactive control targets below standard guidelines.
+- **Compact Search & Filter Containers**: Outer search/filter bar wrappers must remain vertically compact (e.g., `px-3.5 py-2.5`), while individual filter controls retain comfortable internal heights (`h-9`) and breathing room. Never shrink search input components.
+- **Full Guidance**: See `/docs/agent-context/design-system.md` for detailed authoritative layout and density standards.
+
 ## Structural Changes
 
 Agents may autonomously perform small, task-local,

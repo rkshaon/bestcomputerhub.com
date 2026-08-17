@@ -60,6 +60,8 @@ Large UI sections should be extracted into appropriate feature or reusable compo
 
 Public storefront pages such as product, category, brand, and content pages must be designed with server rendering and SEO in mind.
 
+Admin pages must follow the Admin UI Layout & Information Density Standards (combining breadcrumb, title, and actions on a single row where feasible, and optimizing container padding for high viewport density; see `/docs/agent-context/design-system.md`).
+
 ---
 
 ## 3. Components

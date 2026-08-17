@@ -1099,3 +1099,48 @@ All administrative pages displaying tabular data must use `<UiTable />` from `/c
   - **Pagination**: Kept separate. `<UiPagination />` and `<UiInfiniteScroll />` remain responsible for pagination controls positioned outside `<UiTable />`.
   - **Data & Business Logic**: Searching, filtering, sorting computations, permission checks, row action handling, and API data-fetching remain managed by parent pages or composables and passed into `<UiTable />`.
 
+---
+
+## 41. Admin UI Layout & Information Density Standards
+
+All administrative panel pages across the application (including Categories, Products, Brands, Orders, Inventory, Users/Staff, Roles, Permissions, Notifications, Security, and future Admin CRUD pages) must adhere to these project-wide layout efficiency and information density standards.
+
+### Admin Page Header Standard
+
+For Admin pages that contain a breadcrumb/path, page title, and page-level actions:
+
+- **Single-Row Header Layout**: Position the breadcrumb trail and page title together on the left side of the header row, with page-level action buttons (e.g. Refresh, Import, Add Entity) right-aligned on the same horizontal row.
+- **Avoid Redundant Title Rows**: Do not allocate a dedicated vertical row solely for the page title when it can be cleanly combined with the breadcrumb/header row.
+- **Omit Low-Value Subtitles**: Remove descriptive page subtitles or body paragraphs that consume vertical space without providing meaningful operational value.
+- **Title Prominence & Hierarchy**: Ensure the page title remains visually prominent (e.g. `text-xl` or `text-2xl` display font) and clearly distinguishable from the breadcrumb text.
+- **Responsive Adaptation**: On narrower screens or mobile viewports, allow the header row to wrap smoothly (`flex flex-col sm:flex-row sm:items-center justify-between gap-3`) rather than forcing horizontal clipping or overflow.
+
+*Note: This is a layout-efficiency principle. It does not mandate forcing every page into an identical layout if a specific complex workflow genuinely requires unique header structures.*
+
+### Admin Information-Density Standard
+
+Administrative workflows prioritize operational efficiency and visibility of actionable data within the primary viewport.
+
+- **Viewport Content Maximization**: Maximize the amount of useful data, metrics, and interactive controls visible above the fold by reducing excessive vertical padding and margins between major page sections.
+- **Container Padding Reduction**: Prefer compact container margins and card padding (e.g. `p-3` or `p-3.5` instead of `p-6` or `p-8` for summary metrics and toolbars).
+- **Whitespace Over Font Shrinking**: Increase information density primarily by removing unnecessary outer whitespace, section gaps, and tall padding — NOT by reducing font sizes or interactive control touch targets below WCAG AA accessibility guidelines.
+- **Visual Balance**: Maintain distinct section boundaries, semantic borders, and clear typographic hierarchy so dense interfaces remain easily scannable and comfortable to navigate.
+
+### Search / Filter Bar Standard
+
+For Admin pages containing search inputs and filter controls:
+
+- **Compact Outer Container**: Keep the top and bottom padding of the overall search/filter bar container compact (e.g. `px-3.5 py-2.5`).
+- **Comfortable Internal Controls**: Individual filter buttons, dropdown toggles, select inputs, and action buttons inside the row must retain comfortable height and internal breathing room (standard `h-9` height with clear padding) to avoid a cramped appearance.
+- **Search Input Size Protection**: Never reduce the height or internal padding of the search input component (`UiSearchInput`) itself.
+- **Horizontal Organization**: Arrange search inputs, boolean toggles, popover filters, ordering dropdowns, and view switchers on a single cleanly aligned horizontal flex row.
+
+```text
+Outer filter container
+  → compact (e.g. px-3.5 py-2.5)
+
+Individual filter controls & search field
+  → comfortable & readable (e.g. h-9 height, full input padding)
+```
+
+
