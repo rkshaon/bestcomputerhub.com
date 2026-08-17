@@ -24,8 +24,10 @@ import {
   ListTree,
   Loader2,
   LayoutGrid,
-  List
+  List,
+  FolderTree
 } from 'lucide-vue-next';
+import CategoryTreeAdmin from '@/components/admin/CategoryTreeAdmin.vue';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
@@ -62,7 +64,7 @@ const menuFilter = ref(route.query.menu ? String(route.query.menu) : (route.quer
 const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'order'); // 'order', '-order', 'name', '-name', 'slug', '-slug'
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
-const viewMode = ref<'grid' | 'list'>('list');
+const viewMode = ref<'grid' | 'list' | 'tree'>('list');
 
 // Infinite scroll options for Root / Parent categories filter (GET /api/v1/categories/?is_parent=true)
 const parentPagination = useInfinitePagination<Category>({
@@ -847,6 +849,20 @@ const toggleCategoryMenu = async (cat: Category) => {
           >
             <List class="w-4 h-4" />
           </button>
+          <button
+            type="button"
+            @click="viewMode = 'tree'"
+            :class="[
+              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
+              viewMode === 'tree'
+                ? 'bg-background text-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            ]"
+            title="Tree View"
+            aria-label="Tree view"
+          >
+            <FolderTree class="w-4 h-4" />
+          </button>
         </div>
       </div>
       
@@ -1224,6 +1240,17 @@ const toggleCategoryMenu = async (cat: Category) => {
         />
       </div>
     </div>
+
+    <!-- Tree View Mode -->
+    <CategoryTreeAdmin
+      v-else-if="viewMode === 'tree'"
+      :toggling-menu-slug="togglingMenuSlug"
+      :search-query="searchQuery"
+      @toggle-menu="toggleCategoryMenu"
+      @view="triggerViewModal"
+      @edit="triggerEditModal"
+      @delete="deleteCategoryNode"
+    />
 
     <!-- Active List / Table View Mode -->
     <UiTable
