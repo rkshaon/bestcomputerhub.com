@@ -22,7 +22,9 @@ import {
   RefreshCw,
   Menu,
   ListTree,
-  Loader2
+  Loader2,
+  LayoutGrid,
+  List
 } from 'lucide-vue-next';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
@@ -60,6 +62,7 @@ const menuFilter = ref(route.query.menu ? String(route.query.menu) : (route.quer
 const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'order'); // 'order', '-order', 'name', '-name', 'slug', '-slug'
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
+const viewMode = ref<'grid' | 'list'>('list');
 
 // Infinite scroll options for Root / Parent categories filter (GET /api/v1/categories/?is_parent=true)
 const parentPagination = useInfinitePagination<Category>({
@@ -813,6 +816,38 @@ const toggleCategoryMenu = async (cat: Category) => {
           placeholder="Search taxonomies by name, slug or description..." 
           class="w-full sm:w-80"
         />
+
+        <!-- View Toggle Buttons -->
+        <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-xl border border-border/80">
+          <button
+            type="button"
+            @click="viewMode = 'grid'"
+            :class="[
+              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
+              viewMode === 'grid'
+                ? 'bg-background text-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            ]"
+            title="Grid View"
+            aria-label="Grid view"
+          >
+            <LayoutGrid class="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            @click="viewMode = 'list'"
+            :class="[
+              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
+              viewMode === 'list'
+                ? 'bg-background text-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            ]"
+            title="List View"
+            aria-label="List view"
+          >
+            <List class="w-4 h-4" />
+          </button>
+        </div>
       </div>
       
       <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
@@ -1047,9 +1082,152 @@ const toggleCategoryMenu = async (cat: Category) => {
       </button>
     </div>
 
-    <!-- Active Grid Table View -->
+    <!-- Grid View Mode -->
+    <div v-else-if="viewMode === 'grid'" class="space-y-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div 
+          v-for="cat in categoriesList" 
+          :key="cat.id"
+          class="bg-card text-card-foreground border border-border rounded-2xl p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+        >
+          <div class="space-y-4">
+            <!-- Icon & Menu Status -->
+            <div class="flex items-start justify-between gap-4">
+              <div class="w-14 h-14 bg-background border border-border rounded-xl flex items-center justify-center text-2xl shadow-sm shrink-0 group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+                <span>{{ cat.icon || '📁' }}</span>
+              </div>
+
+              <div class="flex items-center gap-2 bg-muted/50 px-3 py-1 rounded-full border border-border/60">
+                <span :class="cn(
+                  'w-2 h-2 rounded-full ring-4',
+                  cat.show_in_menu === true 
+                    ? 'bg-emerald-500 ring-emerald-500/10' 
+                    : 'bg-muted-foreground/30 ring-muted-foreground/10'
+                )"></span>
+                <span class="text-[10px] uppercase font-bold tracking-widest" :class="cat.show_in_menu === true ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'">
+                  {{ cat.show_in_menu === true ? 'In Menu' : 'Hidden' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Name and Slug -->
+            <div>
+              <h3 class="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
+                {{ cat.name }}
+              </h3>
+              <div class="mt-1 flex items-center gap-2 flex-wrap">
+                <span class="font-mono text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border/60 uppercase tracking-wider font-semibold">
+                  /{{ cat.slug }}
+                </span>
+                <span v-if="cat.parentCategoryId" class="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
+                  <span class="w-1 h-1 rounded-full bg-muted-foreground/60"></span>
+                  {{ getParentName(cat.parentCategoryId) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <p class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+              {{ cat.description || 'No database memo recorded for this classification node.' }}
+            </p>
+
+            <!-- Order & Hierarchy Metadata -->
+            <div class="pt-3 border-t border-border/60 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <span class="text-[11px] font-bold text-foreground font-mono">
+                  Order: #{{ cat.order !== undefined ? cat.order : 0 }}
+                </span>
+              </div>
+              <span v-if="cat.subCategories?.length" class="text-[11px] font-semibold text-muted-foreground">
+                {{ cat.subCategories.length }} sub-nodes
+              </span>
+              <span v-else class="text-[11px] text-muted-foreground">
+                {{ cat.parentCategoryId ? 'Sub-category' : 'Main category' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Card Actions Footer -->
+          <div class="mt-5 pt-3 border-t border-border/60 flex items-center justify-between">
+            <span class="text-[10px] font-mono font-semibold text-muted-foreground truncate max-w-[120px]">
+              {{ cat.id }}
+            </span>
+
+            <div class="flex items-center gap-1">
+              <button 
+                type="button"
+                @click="toggleCategoryMenu(cat)" 
+                :disabled="togglingMenuSlug === cat.slug"
+                :class="[
+                  'p-2 rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
+                  cat.show_in_menu === true
+                    ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                    : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                ]"
+                :title="cat.show_in_menu === true ? 'Remove from Menu' : 'Mark as Menu'"
+                :aria-label="cat.show_in_menu === true ? 'Remove from Menu' : 'Mark as Menu'"
+              >
+                <Loader2 v-if="togglingMenuSlug === cat.slug" class="w-4 h-4 animate-spin text-primary" />
+                <Menu v-else class="w-4 h-4" />
+              </button>
+              <button 
+                @click="triggerViewModal(cat)" 
+                class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all cursor-pointer"
+                title="Inspect Node Properties"
+                aria-label="Inspect category properties"
+              >
+                <Info class="w-4 h-4" />
+              </button>
+              <button 
+                @click="triggerEditModal(cat)" 
+                class="p-2 text-muted-foreground hover:text-yellow-500 hover:bg-muted rounded-lg transition-all cursor-pointer"
+                title="Modify Class Configurations"
+                aria-label="Modify category configurations"
+              >
+                <Edit2 class="w-4 h-4" />
+              </button>
+              <button 
+                @click="deleteCategoryNode(cat)" 
+                class="p-2 text-muted-foreground hover:text-destructive hover:bg-muted rounded-lg transition-all cursor-pointer"
+                title="Deregister Node"
+                aria-label="Delete category node"
+              >
+                <Trash2 class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state in grid mode -->
+        <div v-if="categoriesList.length === 0" class="col-span-1 md:col-span-2 lg:col-span-3 py-16 text-center bg-card border border-border rounded-2xl">
+          <div class="flex flex-col items-center justify-center gap-4 text-muted-foreground">
+            <div class="w-16 h-16 rounded-2xl bg-muted/50 border border-border flex items-center justify-center">
+              <Layers class="w-7 h-7 text-muted-foreground" />
+            </div>
+            <div>
+              <p class="font-display font-medium text-lg text-foreground">Zero Categories Found</p>
+              <p class="text-xs max-w-sm mx-auto mt-1">No classification domains matched search filters [{{ searchQuery || 'None' }}]. Extend the architecture index.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination for Grid Mode -->
+      <div v-if="categoriesList.length > 0" class="pt-2 bg-card border border-border rounded-2xl p-4 shadow-sm">
+        <UiPagination
+          v-model:current-page="currentPage"
+          :total-pages="totalPages"
+          :total-count="totalCount"
+          :items-per-page="itemsPerPage"
+          item-label="classes"
+          prefix-label="Displaying"
+        />
+      </div>
+    </div>
+
+    <!-- Active List / Table View Mode -->
     <UiTable
-      v-else
+      v-else-if="viewMode === 'list'"
       :columns="tableColumns"
       :data="categoriesList"
       key-field="id"
