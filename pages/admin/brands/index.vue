@@ -40,7 +40,7 @@ import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 
 definePageMeta({
-  layout: 'admin'
+  layout: false
 });
 
 const brandService = useBrandService();
@@ -614,120 +614,125 @@ const getTableRowAttrs = (brand: Brand) => ({
 </script>
 
 <template>
-  <div class="space-y-8 animate-in fade-in duration-500">
-    
-    <!-- Top Action bar block -->
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
-      <div>
-        <h1 class="text-3xl font-display font-extrabold tracking-tight text-foreground">Brands</h1>
-        <p class="text-muted-foreground text-sm mt-1">Manage product brands and their catalog display details.</p>
+  <NuxtLayout name="admin">
+    <template #header-title>
+      <div class="flex items-center gap-2">
+        <span class="text-muted-foreground/40 font-light select-none">/</span>
+        <h1 class="text-xl font-display font-extrabold tracking-tight text-foreground">
+          Brands
+        </h1>
       </div>
-      <div class="flex items-center gap-3">
+    </template>
+
+    <template #header-actions>
+      <div class="flex flex-wrap items-center gap-2">
         <UiButton 
           variant="outline" 
-          class="rounded-2xl h-11 px-5 gap-2 border-border font-bold text-xs"
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
           @click="refreshActiveView"
           :disabled="isLoading || isGridLoading"
         >
-          <RefreshCw :class="['w-4 h-4', (isLoading || isGridLoading) && 'animate-spin']" />
+          <RefreshCw :class="['w-3.5 h-3.5', (isLoading || isGridLoading) && 'animate-spin']" />
           <span>Refresh</span>
         </UiButton>
 
         <UiButton 
-          class="rounded-2xl h-11 px-6 gap-2 shadow-xl shadow-primary/20 bg-primary text-primary-foreground font-bold text-xs"
+          class="rounded-xl h-9 px-3.5 gap-1.5 shadow-md shadow-primary/10 bg-primary text-primary-foreground font-bold text-xs"
           @click="modalState.openCreate()"
         >
-          <Plus class="w-4 h-4" />
+          <Plus class="w-3.5 h-3.5" />
           <span>Add Brand</span>
         </UiButton>
       </div>
-    </div>
+    </template>
 
-    <!-- Active Analytics row -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <UiCard class="flex items-center gap-6 p-8">
-        <div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
-          <Tag class="w-7 h-7" />
-        </div>
-        <div>
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Total Brands</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ totalBrandsCount }}</p>
-        </div>
-      </UiCard>
-      <UiCard class="flex items-center gap-6 p-8">
-        <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
-          <ShieldCheck class="w-7 h-7" />
-        </div>
-        <div>
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Active Brands</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ activeBrandsCount }}</p>
-        </div>
-      </UiCard>
-      <UiCard class="flex items-center gap-6 p-8">
-        <div class="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
-          <AlertCircle class="w-7 h-7" />
-        </div>
-        <div>
-          <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1">Inactive Brands</p>
-          <p class="text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100">{{ inactiveBrandsCount }}</p>
-        </div>
-      </UiCard>
-    </div>
-
-    <!-- Filters framework -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border p-4 rounded-2xl shadow-sm">
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-        <UiSearchInput 
-          v-model="searchQuery" 
-          placeholder="Search brands..." 
-          class="w-full sm:w-80"
-        />
-        
-        <!-- View Toggle Buttons -->
-        <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-xl border border-border/80">
-          <button
-            type="button"
-            @click="viewMode = 'grid'"
-            :class="[
-              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
-              viewMode === 'grid'
-                ? 'bg-background text-primary shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            ]"
-            title="Grid View"
-            aria-label="Grid view"
-          >
-            <LayoutGrid class="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            @click="viewMode = 'list'"
-            :class="[
-              'p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer',
-              viewMode === 'list'
-                ? 'bg-background text-primary shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            ]"
-            title="List View"
-            aria-label="List view"
-          >
-            <List class="w-4 h-4" />
-          </button>
-        </div>
+    <div class="space-y-4 animate-in fade-in duration-500">
+      
+      <!-- Active Analytics row -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <UiCard class="flex items-center gap-3.5 p-3.5">
+          <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
+            <Tag class="w-5 h-5" />
+          </div>
+          <div>
+            <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Total Brands</p>
+            <p class="text-2xl font-display font-extrabold tracking-tight text-foreground leading-tight">{{ totalBrandsCount }}</p>
+          </div>
+        </UiCard>
+        <UiCard class="flex items-center gap-3.5 p-3.5">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+            <ShieldCheck class="w-5 h-5" />
+          </div>
+          <div>
+            <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Active Brands</p>
+            <p class="text-2xl font-display font-extrabold tracking-tight text-foreground leading-tight">{{ activeBrandsCount }}</p>
+          </div>
+        </UiCard>
+        <UiCard class="flex items-center gap-3.5 p-3.5">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+            <AlertCircle class="w-5 h-5" />
+          </div>
+          <div>
+            <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Inactive Brands</p>
+            <p class="text-2xl font-display font-extrabold tracking-tight text-foreground leading-tight">{{ inactiveBrandsCount }}</p>
+          </div>
+        </UiCard>
       </div>
 
-      <div class="flex items-center gap-2 self-end sm:self-center border-l border-border pl-4">
-        <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Status:</span>
-        <select 
-          v-model="statusFilter"
-          class="h-10 px-3 bg-background border border-input rounded-xl outline-none text-[10px] font-bold uppercase tracking-widest cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
-        >
-          <option value="all">All</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+      <!-- Filters framework -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <UiSearchInput 
+            v-model="searchQuery" 
+            placeholder="Search brands..." 
+            class="w-full sm:w-80"
+          />
+          
+          <!-- View Toggle Buttons -->
+          <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-lg border border-border/80">
+            <button
+              type="button"
+              @click="viewMode = 'grid'"
+              :class="[
+                'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
+                viewMode === 'grid'
+                  ? 'bg-background text-primary shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              ]"
+              title="Grid View"
+              aria-label="Grid view"
+            >
+              <LayoutGrid class="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              @click="viewMode = 'list'"
+              :class="[
+                'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
+                viewMode === 'list'
+                  ? 'bg-background text-primary shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              ]"
+              title="List View"
+              aria-label="List view"
+            >
+              <List class="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 self-end sm:self-center border-l border-border pl-3">
+          <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Status:</span>
+          <select 
+            v-model="statusFilter"
+            class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
+          >
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
       </div>
-    </div>
 
     <!-- Loading, Empty, Error status layout handlers -->
     <div v-if="(viewMode === 'list' && isLoading) || (viewMode === 'grid' && isGridLoading && gridBrands.length === 0)" class="h-64 flex flex-col items-center justify-center gap-3 bg-card border border-border rounded-2xl">
@@ -1407,5 +1412,6 @@ const getTableRowAttrs = (brand: Brand) => ({
       </div>
     </UiAdminModal>
 
-  </div>
+    </div>
+  </NuxtLayout>
 </template>
