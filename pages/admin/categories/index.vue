@@ -21,7 +21,8 @@ import {
   Upload, 
   RefreshCw,
   Menu,
-  ListTree
+  ListTree,
+  Loader2
 } from 'lucide-vue-next';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
@@ -670,6 +671,45 @@ const deleteCategoryNode = async (cat: Category) => {
   }
 };
 
+// TOGGLE CATEGORY MENU (Mark as Menu / Remove from Menu)
+const togglingMenuSlug = ref<string | null>(null);
+
+const toggleCategoryMenu = async (cat: Category) => {
+  if (!cat.slug || togglingMenuSlug.value === cat.slug) return;
+
+  togglingMenuSlug.value = cat.slug;
+  const isCurrentlyMenu = cat.show_in_menu === true;
+
+  try {
+    let updatedCategory: Category;
+    if (isCurrentlyMenu) {
+      updatedCategory = await categoryService.removeFromMenu(cat.slug);
+      toastSuccess(`Category [${cat.name}] removed from menu.`);
+    } else {
+      updatedCategory = await categoryService.markAsMenu(cat.slug);
+      toastSuccess(`Category [${cat.name}] marked as menu.`);
+    }
+
+    // Update affected row in the current list
+    const index = categoriesList.value.findIndex(c => c.id === cat.id || c.slug === cat.slug);
+    if (index !== -1 && updatedCategory) {
+      categoriesList.value[index] = {
+        ...categoriesList.value[index],
+        ...updatedCategory,
+        show_in_menu: updatedCategory.show_in_menu,
+        is_menu: updatedCategory.is_menu
+      };
+    }
+
+    // Refresh category statistics in background
+    fetchCategorySummary();
+  } catch (err: any) {
+    handleApiError(err, `Failed to ${isCurrentlyMenu ? 'remove category from' : 'mark category as'} menu.`);
+  } finally {
+    togglingMenuSlug.value = null;
+  }
+};
+
 </script>
 
 <template>
@@ -1032,12 +1072,12 @@ const deleteCategoryNode = async (cat: Category) => {
         <div class="flex items-center gap-2">
           <span :class="cn(
             'w-2 h-2 rounded-full ring-4',
-            (cat.show_in_menu !== false && cat.is_menu !== false)
+            cat.show_in_menu === true
               ? 'bg-emerald-500 ring-emerald-500/10'
               : 'bg-muted-foreground/30 ring-muted-foreground/10'
           )"></span>
-          <span class="text-xs font-semibold" :class="(cat.show_in_menu !== false && cat.is_menu !== false) ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'">
-            {{ (cat.show_in_menu !== false && cat.is_menu !== false) ? 'In Menu' : 'Hidden' }}
+          <span class="text-xs font-semibold" :class="cat.show_in_menu === true ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'">
+            {{ cat.show_in_menu === true ? 'In Menu' : 'Hidden' }}
           </span>
         </div>
       </template>
@@ -1045,6 +1085,22 @@ const deleteCategoryNode = async (cat: Category) => {
       <!-- Action button overrides -->
       <template #cell-actions="{ item: cat }">
         <div class="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+          <button 
+            type="button"
+            @click="toggleCategoryMenu(cat)" 
+            :disabled="togglingMenuSlug === cat.slug"
+            :class="[
+              'p-2 rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
+              cat.show_in_menu === true
+                ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+            ]"
+            :title="cat.show_in_menu === true ? 'Remove from Menu' : 'Mark as Menu'"
+            :aria-label="cat.show_in_menu === true ? 'Remove from Menu' : 'Mark as Menu'"
+          >
+            <Loader2 v-if="togglingMenuSlug === cat.slug" class="w-4 h-4 animate-spin text-primary" />
+            <Menu v-else class="w-4 h-4" />
+          </button>
           <button 
             @click="triggerViewModal(cat)" 
             class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"

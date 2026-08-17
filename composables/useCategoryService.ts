@@ -545,6 +545,70 @@ export const useCategoryService = () => {
     }
   };
 
+  const markAsMenu = async (slug: string): Promise<Category> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+
+      const categoriesList = getMockCategories();
+      const cat = categoriesList.find(c => c.slug === slug || c.id === slug);
+      if (cat) {
+        cat.show_in_menu = true;
+        cat.is_menu = true;
+        saveMockCategories(categoriesList);
+        return mapCategoryResponse(cat);
+      }
+      throw new Error(`Category ${slug} not found.`);
+    }
+
+    try {
+      const data = await apiClient.request<any>(`/api/v1/categories/${slug}/mark-as-menu/`, {
+        method: 'POST'
+      });
+      isLoading.value = false;
+      return mapCategoryResponse(data);
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to mark category as menu.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  const removeFromMenu = async (slug: string): Promise<Category> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+
+      const categoriesList = getMockCategories();
+      const cat = categoriesList.find(c => c.slug === slug || c.id === slug);
+      if (cat) {
+        cat.show_in_menu = false;
+        cat.is_menu = false;
+        saveMockCategories(categoriesList);
+        return mapCategoryResponse(cat);
+      }
+      throw new Error(`Category ${slug} not found.`);
+    }
+
+    try {
+      const data = await apiClient.request<any>(`/api/v1/categories/${slug}/remove-from-menu/`, {
+        method: 'POST'
+      });
+      isLoading.value = false;
+      return mapCategoryResponse(data);
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to remove category from menu.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   const importCategoriesFromCSV = async (file: File): Promise<CategoryImportResponse> => {
     isLoading.value = true;
     errorMsg.value = null;
@@ -1004,6 +1068,8 @@ export const useCategoryService = () => {
     createCategory,
     updateCategory,
     deleteCategory,
+    markAsMenu,
+    removeFromMenu,
     importCategoriesFromCSV,
     importCategoriesFromJSON,
     importCategoriesFromXLSX,
