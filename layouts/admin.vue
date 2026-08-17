@@ -296,27 +296,34 @@ const breadcrumbs = computed(() => {
 
       <!-- Content -->
       <div class="flex-1 p-6 lg:p-8">
-        <!-- Breadcrumbs -->
-        <nav class="flex mb-3" aria-label="Breadcrumb">
-          <ol class="flex items-center space-x-2 text-xs font-medium">
-            <li>
-              <NuxtLink to="/admin" class="text-muted-foreground hover:text-foreground">Admin</NuxtLink>
-            </li>
-            <li v-for="crumb in breadcrumbs" :key="crumb.href" class="flex items-center">
-              <ChevronLeft class="w-3 h-3 text-muted-foreground/50 rotate-180 flex-shrink-0" />
-              <NuxtLink 
-                :to="crumb.href" 
-                :class="cn(
-                  'ml-2',
-                  crumb.current ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
-                )"
-                :aria-current="crumb.current ? 'page' : undefined"
-              >
-                {{ crumb.name }}
-              </NuxtLink>
-            </li>
-          </ol>
-        </nav>
+        <!-- Breadcrumbs & Header Row -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div class="flex items-center gap-3 flex-wrap">
+            <nav aria-label="Breadcrumb">
+              <ol class="flex items-center space-x-2 text-xs font-medium">
+                <li>
+                  <NuxtLink to="/admin" class="text-muted-foreground hover:text-foreground">Admin</NuxtLink>
+                </li>
+                <li v-for="crumb in breadcrumbs" :key="crumb.href" class="flex items-center">
+                  <ChevronLeft class="w-3 h-3 text-muted-foreground/50 rotate-180 flex-shrink-0" />
+                  <NuxtLink 
+                    :to="crumb.href" 
+                    :class="cn(
+                      'ml-2',
+                      crumb.current ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+                    )"
+                    :aria-current="crumb.current ? 'page' : undefined"
+                  >
+                    {{ crumb.name }}
+                  </NuxtLink>
+                </li>
+              </ol>
+            </nav>
+            <slot name="header-title" />
+          </div>
+
+          <slot name="header-actions" />
+        </div>
 
         <slot />
       </div>

@@ -39,7 +39,7 @@ import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import { toastSuccess, toastError, toastInfo, handleApiError, extractErrorMessage } from '@/composables/useToast';
 
 definePageMeta({
-  layout: 'admin'
+  layout: false
 });
 
 const tableColumns: UiTableColumn<Category>[] = [
@@ -718,14 +718,17 @@ const toggleCategoryMenu = async (cat: Category) => {
 </script>
 
 <template>
-  <div class="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
-    
-    <!-- Header Block -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <h1 class="text-2xl font-display font-extrabold tracking-tight text-foreground">
-        Categories
-      </h1>
+  <NuxtLayout name="admin">
+    <template #header-title>
+      <div class="flex items-center gap-2">
+        <span class="text-muted-foreground/40 font-light select-none">/</span>
+        <h1 class="text-xl font-display font-extrabold tracking-tight text-foreground">
+          Categories
+        </h1>
+      </div>
+    </template>
 
+    <template #header-actions>
       <div class="flex flex-wrap items-center gap-2">
         <UiButton 
           variant="outline" 
@@ -754,9 +757,11 @@ const toggleCategoryMenu = async (cat: Category) => {
           <span>Add Category</span>
         </UiButton>
       </div>
-    </div>
+    </template>
 
-    <!-- Active Analytics row -->
+    <div class="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+      
+      <!-- Active Analytics row -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       <UiCard class="flex items-center gap-3 p-3">
         <div class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
@@ -1798,5 +1803,6 @@ const toggleCategoryMenu = async (cat: Category) => {
       </div>
     </div>
 
-  </div>
+    </div>
+  </NuxtLayout>
 </template>
