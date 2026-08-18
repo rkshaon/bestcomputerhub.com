@@ -848,7 +848,7 @@ export const useCategoryService = () => {
     }
   };
 
-  const getRootCategories = async (params: { page?: number; page_size?: number } = { page: 1 }): Promise<Category[]> => {
+  const getRootCategories = async (params: { page?: number; page_size?: number; is_menu?: boolean } = { page: 1 }): Promise<Category[]> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -858,6 +858,9 @@ export const useCategoryService = () => {
     if (params.page_size) {
       queryParams.append('page_size', params.page_size.toString());
     }
+    if (params.is_menu !== undefined) {
+      queryParams.append('is_menu', params.is_menu.toString());
+    }
 
     const queryString = queryParams.toString();
     const endpoint = `/api/v1/categories/roots/${queryString ? `?${queryString}` : ''}`;
@@ -865,8 +868,11 @@ export const useCategoryService = () => {
     if (checkMockMode()) {
       await new Promise(resolve => setTimeout(resolve, 300));
       isLoading.value = false;
-      const res = getMockCategories()
-        .filter(c => !c.parentCategoryId)
+      let mockList = getMockCategories().filter(c => !c.parentCategoryId);
+      if (params.is_menu) {
+        mockList = mockList.filter(c => c.show_in_menu === true || c.is_menu === true);
+      }
+      const res = mockList
         .map(c => ({
           ...c,
           has_children: typeof c.has_children === 'boolean'
@@ -970,7 +976,7 @@ export const useCategoryService = () => {
 
   const getCategoryChildrenBatch = async (
     parentIds: (string | number)[],
-    options: { force?: boolean } = {}
+    options: { force?: boolean; is_menu?: boolean } = {}
   ): Promise<Category[]> => {
     if (!parentIds.length) return [];
 
@@ -995,17 +1001,24 @@ export const useCategoryService = () => {
     missingParentIds.forEach(id => loadingParentIds.value.add(id));
 
     const idsParam = missingParentIds.join(',');
-    const endpoint = `/api/v1/categories/children/?ids=${encodeURIComponent(idsParam)}`;
+    const queryParams = new URLSearchParams();
+    queryParams.append('ids', idsParam);
+    if (options.is_menu !== undefined) {
+      queryParams.append('is_menu', options.is_menu.toString());
+    }
+    const endpoint = `/api/v1/categories/children/?${queryParams.toString()}`;
 
     if (checkMockMode()) {
       try {
         await new Promise(resolve => setTimeout(resolve, 150));
         const allMock = getMockCategories();
         missingParentIds.forEach(pId => {
-          const children = allMock
-            .filter(c => String(c.parentCategoryId) === pId)
-            .map(mapCategoryResponse);
-          storeChildrenInCache(pId, children);
+          let children = allMock.filter(c => String(c.parentCategoryId) === pId);
+          if (options.is_menu) {
+            children = children.filter(c => c.show_in_menu === true || c.is_menu === true);
+          }
+          const mapped = children.map(mapCategoryResponse);
+          storeChildrenInCache(pId, mapped);
         });
 
         const result: Category[] = [];

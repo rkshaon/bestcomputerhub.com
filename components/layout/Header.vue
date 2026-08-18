@@ -31,7 +31,7 @@ const toggleMobileCategory = async (catId: string) => {
     openMobileCategoryIds.value.push(catId);
     const cat = categories.value.find(c => String(c.id) === String(catId)) || allCategories.value.find(c => String(c.id) === String(catId));
     if (cat && cat.has_children !== false && !categoryService.hasChildrenLoaded(catId)) {
-      await categoryService.getCategoryChildrenBatch([catId]);
+      await categoryService.getCategoryChildrenBatch([catId], { is_menu: true });
     }
   }
 };
@@ -127,7 +127,7 @@ const loadMenuCategories = async () => {
   isMenuLoading.value = true;
   menuError.value = null;
   try {
-    const rootRes = await categoryService.getRootCategories({ page: 1 });
+    const rootRes = await categoryService.getRootCategories({ page: 1, is_menu: true });
     if (rootRes && rootRes.length > 0) {
       // Collect root category IDs that have children
       const rootIdsWithChildren = rootRes
@@ -137,7 +137,7 @@ const loadMenuCategories = async () => {
       // Batched request for direct children across all root categories in a single call
       let childrenList: Category[] = [];
       if (rootIdsWithChildren.length > 0) {
-        childrenList = await categoryService.getCategoryChildrenBatch(rootIdsWithChildren);
+        childrenList = await categoryService.getCategoryChildrenBatch(rootIdsWithChildren, { is_menu: true });
       }
 
       // Map direct children to their respective root parent categories by category ID or slug
@@ -255,7 +255,7 @@ const openMegaMenu = async (catId: string | number) => {
   if (cat && cat.has_children !== false) {
     const isLoaded = categoryService.hasChildrenLoaded(cleanId) || (cat.slug ? categoryService.hasChildrenLoaded(cat.slug) : false);
     if (!isLoaded) {
-      await categoryService.getCategoryChildrenBatch([cleanId]);
+      await categoryService.getCategoryChildrenBatch([cleanId], { is_menu: true });
     }
   }
 };

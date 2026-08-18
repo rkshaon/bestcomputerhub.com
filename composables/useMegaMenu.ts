@@ -104,7 +104,7 @@ export const useMegaMenu = () => {
       setLoading(key, true);
       try {
         const payload = await apiClient.request<unknown>(
-          `/api/v1/categories/children/?ids=${encodeURIComponent(key)}`,
+          `/api/v1/categories/children/?ids=${encodeURIComponent(key)}&is_menu=true`,
           { method: 'GET' }
         );
 
