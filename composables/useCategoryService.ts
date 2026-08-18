@@ -11,6 +11,7 @@ const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 const categoryChildrenCache = ref<Record<string, Category[]>>({});
 const loadedChildrenParentIds = ref<Set<string>>(new Set());
 const loadingParentIds = ref<Set<string>>(new Set());
+const expandedCategoryIds = ref<Set<string>>(new Set());
 
 export const useCategoryService = () => {
   const apiClient = useApiClient();
@@ -272,12 +273,14 @@ export const useCategoryService = () => {
       const list = getMockCategories();
       const rootCount = list.filter(c => !c.parentCategoryId).length;
       const subCount = list.filter(c => !!c.parentCategoryId).length;
+      const menuRootCount = list.filter(c => !c.parentCategoryId && (c.show_in_menu || c.is_menu)).length;
+      const menuSubCount = list.filter(c => !!c.parentCategoryId && (c.show_in_menu || c.is_menu)).length;
       return {
         total_categories: list.length,
         root_categories: rootCount,
         sub_categories: subCount,
-        menu_categories: rootCount,
-        sub_menu_categories: subCount
+        menu_categories: menuRootCount,
+        sub_menu_categories: menuSubCount
       };
     }
 
@@ -299,12 +302,14 @@ export const useCategoryService = () => {
       const list = getMockCategories();
       const rootCount = list.filter(c => !c.parentCategoryId).length;
       const subCount = list.filter(c => !!c.parentCategoryId).length;
+      const menuRootCount = list.filter(c => !c.parentCategoryId && (c.show_in_menu || c.is_menu)).length;
+      const menuSubCount = list.filter(c => !!c.parentCategoryId && (c.show_in_menu || c.is_menu)).length;
       return {
         total_categories: list.length,
         root_categories: rootCount,
         sub_categories: subCount,
-        menu_categories: rootCount,
-        sub_menu_categories: subCount
+        menu_categories: menuRootCount,
+        sub_menu_categories: menuSubCount
       };
     }
   };
@@ -922,6 +927,42 @@ export const useCategoryService = () => {
     return loadedChildrenParentIds.value.has(String(parentId));
   };
 
+  const isNodeExpanded = (id: string | number): boolean => {
+    return expandedCategoryIds.value.has(String(id));
+  };
+
+  const setNodeExpanded = (id: string | number, isExpanded: boolean) => {
+    const key = String(id);
+    const updated = new Set(expandedCategoryIds.value);
+    if (isExpanded) {
+      updated.add(key);
+    } else {
+      updated.delete(key);
+    }
+    expandedCategoryIds.value = updated;
+  };
+
+  const toggleNodeExpanded = (id: string | number, forceState?: boolean): boolean => {
+    const key = String(id);
+    const updated = new Set(expandedCategoryIds.value);
+    const willExpand = forceState !== undefined ? forceState : !updated.has(key);
+    if (willExpand) {
+      updated.add(key);
+    } else {
+      updated.delete(key);
+    }
+    expandedCategoryIds.value = updated;
+    return willExpand;
+  };
+
+  const expandNode = (id: string | number) => {
+    setNodeExpanded(id, true);
+  };
+
+  const collapseNode = (id: string | number) => {
+    setNodeExpanded(id, false);
+  };
+
   const storeChildrenInCache = (parentId: string | number, children: Category[]) => {
     const key = String(parentId);
     categoryChildrenCache.value = {
@@ -933,14 +974,19 @@ export const useCategoryService = () => {
     loadedChildrenParentIds.value = updatedLoadedSet;
   };
 
-  const getCategoryChildrenBatch = async (parentIds: (string | number)[]): Promise<Category[]> => {
+  const getCategoryChildrenBatch = async (
+    parentIds: (string | number)[],
+    options: { force?: boolean } = {}
+  ): Promise<Category[]> => {
     if (!parentIds.length) return [];
 
     const parentIdStrings = parentIds.map(String);
-    const missingParentIds = parentIdStrings.filter(id => !loadedChildrenParentIds.value.has(id));
+    const missingParentIds = options.force
+      ? parentIdStrings
+      : parentIdStrings.filter(id => !loadedChildrenParentIds.value.has(id));
 
-    // If all requested parent IDs already have their direct children loaded, return from cache immediately
-    if (missingParentIds.length === 0) {
+    // If all requested parent IDs already have their direct children loaded and not forcing, return from cache immediately
+    if (missingParentIds.length === 0 && !options.force) {
       const allCached: Category[] = [];
       parentIdStrings.forEach(pId => {
         const cached = categoryChildrenCache.value[pId];
@@ -1051,11 +1097,17 @@ export const useCategoryService = () => {
     }
   };
 
+  const refreshChildrenForParent = async (parentId: string | number): Promise<Category[]> => {
+    const key = String(parentId);
+    return await getCategoryChildrenBatch([key], { force: true });
+  };
+
   return {
     getCategoriesList,
     getCategorySummary,
     getRootCategories,
     getCategoryChildrenBatch,
+    refreshChildrenForParent,
     getChildrenForParent,
     hasChildrenLoaded,
     isChildrenLoading,
@@ -1063,6 +1115,12 @@ export const useCategoryService = () => {
     categoryChildrenCache,
     loadedChildrenParentIds,
     loadingParentIds,
+    expandedCategoryIds,
+    isNodeExpanded,
+    setNodeExpanded,
+    toggleNodeExpanded,
+    expandNode,
+    collapseNode,
     getCategoryDetails,
     getCategoryUrl,
     createCategory,

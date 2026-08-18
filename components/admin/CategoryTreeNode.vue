@@ -35,33 +35,34 @@ const emit = defineEmits<{
 
 const categoryService = useCategoryService();
 
-const isExpanded = ref(false);
+const isExpanded = computed(() => categoryService.isNodeExpanded(props.node.id));
 const isLoadingChildren = ref(false);
 
 // Lazy load children on expand
 const toggleExpand = async () => {
-  if (isExpanded.value) {
-    isExpanded.value = false;
-    return;
-  }
+  const willExpand = !categoryService.isNodeExpanded(props.node.id);
+  categoryService.setNodeExpanded(props.node.id, willExpand);
 
-  isExpanded.value = true;
-  const parentId = props.node.id;
-
-  if (!categoryService.hasChildrenLoaded(parentId) && (!props.node.children || props.node.children.length === 0)) {
-    try {
-      isLoadingChildren.value = true;
-      await categoryService.getCategoryChildrenBatch([parentId]);
-    } catch (err) {
-      console.error(`Failed to load children for category ${parentId}`, err);
-    } finally {
-      isLoadingChildren.value = false;
+  if (willExpand) {
+    const parentId = props.node.id;
+    if (!categoryService.hasChildrenLoaded(parentId) && (!props.node.children || props.node.children.length === 0)) {
+      try {
+        isLoadingChildren.value = true;
+        await categoryService.getCategoryChildrenBatch([parentId]);
+      } catch (err) {
+        console.error(`Failed to load children for category ${parentId}`, err);
+      } finally {
+        isLoadingChildren.value = false;
+      }
     }
   }
 };
 
 // Retrieve loaded children for this node
 const rawChildren = computed(() => {
+  if (categoryService.hasChildrenLoaded(props.node.id)) {
+    return categoryService.getChildrenForParent(props.node.id);
+  }
   if (props.node.children && props.node.children.length > 0) {
     return props.node.children;
   }
@@ -101,7 +102,7 @@ const hasSubNodes = computed(() => {
   );
 });
 
-const isCurrentlyMenu = computed(() => props.node.show_in_menu === true);
+const isCurrentlyMenu = computed(() => props.node.show_in_menu === true || props.node.is_menu === true);
 const isToggling = computed(() => props.togglingMenuSlug === props.node.slug);
 </script>
 

@@ -678,12 +678,15 @@ const deleteCategoryNode = async (cat: Category) => {
 
 // TOGGLE CATEGORY MENU (Mark as Menu / Remove from Menu)
 const togglingMenuSlug = ref<string | null>(null);
+const treeRef = ref<any>(null);
 
 const toggleCategoryMenu = async (cat: Category) => {
   if (!cat.slug || togglingMenuSlug.value === cat.slug) return;
 
   togglingMenuSlug.value = cat.slug;
-  const isCurrentlyMenu = cat.show_in_menu === true;
+  const isCurrentlyMenu = cat.show_in_menu === true || cat.is_menu === true;
+  const parentId = cat.parentCategoryId ? String(cat.parentCategoryId) : undefined;
+  const isRoot = !parentId;
 
   try {
     let updatedCategory: Category;
@@ -695,7 +698,7 @@ const toggleCategoryMenu = async (cat: Category) => {
       toastSuccess(`Category [${cat.name}] marked as menu.`);
     }
 
-    // Update affected row in the current list
+    // Update affected row in the current list (for Grid & List views)
     const index = categoriesList.value.findIndex(c => c.id === cat.id || c.slug === cat.slug);
     if (index !== -1 && updatedCategory) {
       categoriesList.value[index] = {
@@ -706,8 +709,19 @@ const toggleCategoryMenu = async (cat: Category) => {
       };
     }
 
+    // Targeted Tree refresh:
+    if (isRoot) {
+      // Root category mutation: Refresh roots data using existing root-category API
+      if (treeRef.value?.refreshRoots) {
+        await treeRef.value.refreshRoots();
+      }
+    } else if (parentId) {
+      // Sub-category mutation: Re-fetch ONLY that parent's children using the existing children API
+      await categoryService.refreshChildrenForParent(parentId);
+    }
+
     // Refresh category statistics in background
-    fetchCategorySummary();
+    await fetchCategorySummary();
   } catch (err: any) {
     handleApiError(err, `Failed to ${isCurrentlyMenu ? 'remove category from' : 'mark category as'} menu.`);
   } finally {
@@ -1244,6 +1258,7 @@ const toggleCategoryMenu = async (cat: Category) => {
     <!-- Tree View Mode -->
     <CategoryTreeAdmin
       v-else-if="viewMode === 'tree'"
+      ref="treeRef"
       :toggling-menu-slug="togglingMenuSlug"
       :search-query="searchQuery"
       @toggle-menu="toggleCategoryMenu"

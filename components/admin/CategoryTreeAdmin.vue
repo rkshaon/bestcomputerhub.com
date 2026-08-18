@@ -39,12 +39,19 @@ const fetchRoots = async () => {
     rootError.value = null;
     const roots = await categoryService.getRootCategories({ page_size: 100 });
     rootCategories.value = roots;
+    return roots;
   } catch (err: any) {
     rootError.value = err?.message || 'Failed to load root category hierarchy.';
   } finally {
     isLoadingRoots.value = false;
   }
 };
+
+defineExpose({
+  fetchRoots,
+  refreshRoots: fetchRoots,
+  rootCategories
+});
 
 onMounted(() => {
   fetchRoots();
@@ -55,7 +62,7 @@ const displayRoots = computed(() => {
   let list = rootCategories.value;
 
   if (treeMode.value === 'menu') {
-    list = list.filter(c => c.show_in_menu === true);
+    list = list.filter(c => c.show_in_menu === true || c.is_menu === true);
   }
 
   if (props.searchQuery) {
@@ -134,7 +141,7 @@ const displayRoots = computed(() => {
     </div>
 
     <!-- Tree Body -->
-    <div v-if="isLoadingRoots" class="py-12 flex flex-col items-center justify-center gap-3">
+    <div v-if="isLoadingRoots && rootCategories.length === 0" class="py-12 flex flex-col items-center justify-center gap-3">
       <span class="animate-spin border-3 border-primary/20 border-t-primary rounded-full w-8 h-8"></span>
       <p class="text-xs font-semibold text-muted-foreground animate-pulse">Building Hierarchy Tree...</p>
     </div>
