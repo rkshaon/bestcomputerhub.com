@@ -81,7 +81,7 @@ function getAlignmentClass(align?: 'left' | 'center' | 'right'): string {
 </script>
 
 <template>
-  <div :class="cn('bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden', wrapperClass)">
+  <div :class="cn('bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden', wrapperClass)">
     <slot name="header" />
     <div class="overflow-x-auto">
       <table :class="cn('w-full text-left border-collapse', tableClass)">
