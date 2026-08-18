@@ -933,25 +933,19 @@ export const useCategoryService = () => {
 
   const setNodeExpanded = (id: string | number, isExpanded: boolean) => {
     const key = String(id);
-    const updated = new Set(expandedCategoryIds.value);
     if (isExpanded) {
-      updated.add(key);
+      expandedCategoryIds.value = new Set([key]);
     } else {
+      const updated = new Set(expandedCategoryIds.value);
       updated.delete(key);
+      expandedCategoryIds.value = updated;
     }
-    expandedCategoryIds.value = updated;
   };
 
   const toggleNodeExpanded = (id: string | number, forceState?: boolean): boolean => {
     const key = String(id);
-    const updated = new Set(expandedCategoryIds.value);
-    const willExpand = forceState !== undefined ? forceState : !updated.has(key);
-    if (willExpand) {
-      updated.add(key);
-    } else {
-      updated.delete(key);
-    }
-    expandedCategoryIds.value = updated;
+    const willExpand = forceState !== undefined ? forceState : !expandedCategoryIds.value.has(key);
+    setNodeExpanded(id, willExpand);
     return willExpand;
   };
 
