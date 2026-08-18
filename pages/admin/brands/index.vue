@@ -587,12 +587,12 @@ const inactiveBrandsCount = computed(() => {
 
 // --- REUSABLE TABLE CONFIGURATION ---
 const tableColumns: UiTableColumn<Brand>[] = [
-  { key: 'name', label: 'Brand', headerClass: 'px-8', cellClass: 'px-8' },
-  { key: 'slug', label: 'Slug', headerClass: 'px-6', cellClass: 'px-6' },
-  { key: 'is_active', label: 'Status', headerClass: 'px-6', cellClass: 'px-6' },
-  { key: 'display_order', label: 'Display Order', headerClass: 'px-6', cellClass: 'px-6' },
-  { key: 'productCount', label: 'Products', headerClass: 'px-6', cellClass: 'px-6' },
-  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8' },
+  { key: 'name', label: 'Brand', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'slug', label: 'Slug', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'is_active', label: 'Status', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'display_order', label: 'Display Order', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'productCount', label: 'Products', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
 ];
 
 const getTableRowClass = (brand: Brand) => {
@@ -898,14 +898,14 @@ const getTableRowAttrs = (brand: Brand) => ({
     >
       <!-- Brand Identity Column -->
       <template #cell-name="{ item: brand }">
-        <div class="flex items-center gap-4">
-          <GripVertical class="w-4 h-4 text-slate-300 dark:text-slate-700 cursor-grab active:cursor-grabbing hover:text-slate-400 dark:hover:text-slate-500 transition-colors shrink-0" />
-          <div class="w-12 h-12 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center p-2 shadow-sm overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300">
+        <div class="flex items-center gap-3">
+          <GripVertical class="w-3.5 h-3.5 text-muted-foreground/40 cursor-grab active:cursor-grabbing hover:text-muted-foreground transition-colors shrink-0" />
+          <div class="w-8 h-8 bg-card border border-border rounded-lg flex items-center justify-center p-1 shadow-2xs overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-200">
             <img :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" :alt="brand.name" class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" />
           </div>
-          <div>
-            <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors leading-tight">{{ brand.name }}</h4>
-            <p class="text-xs text-slate-400 line-clamp-1 max-w-[280px] mt-0.5 leading-relaxed">{{ brand.description || 'No description recorded.' }}</p>
+          <div class="min-w-0">
+            <h4 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors leading-tight truncate">{{ brand.name }}</h4>
+            <p class="text-[10px] text-muted-foreground line-clamp-1 max-w-[280px] mt-0.5 leading-relaxed">{{ brand.description || 'No description recorded.' }}</p>
           </div>
         </div>
       </template>
@@ -949,30 +949,33 @@ const getTableRowAttrs = (brand: Brand) => ({
 
       <!-- Action triggers Column -->
       <template #cell-actions="{ item: brand }">
-        <div class="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+        <div class="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
           <button 
+            type="button"
             @click="modalState.openView(brand.id)" 
-            class="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            class="p-1.5 text-muted-foreground hover:text-primary hover:bg-muted rounded-md transition-all cursor-pointer"
             title="View Brand Details"
             aria-label="View brand details"
           >
-            <Eye class="w-4 h-4" />
+            <Eye class="w-3.5 h-3.5" />
           </button>
           <button 
+            type="button"
             @click="modalState.openEdit(brand.id)" 
-            class="p-2 text-slate-400 hover:text-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            class="p-1.5 text-muted-foreground hover:text-yellow-500 hover:bg-muted rounded-md transition-all cursor-pointer"
             title="Edit Brand"
             aria-label="Edit brand record"
           >
-            <Edit2 class="w-4 h-4" />
+            <Edit2 class="w-3.5 h-3.5" />
           </button>
           <button 
+            type="button"
             @click="modalState.openDelete(brand.id)" 
-            class="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
+            class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-muted rounded-md transition-all cursor-pointer"
             title="Delete Brand"
             aria-label="Delete brand"
           >
-            <Trash2 class="w-4 h-4" />
+            <Trash2 class="w-3.5 h-3.5" />
           </button>
         </div>
       </template>

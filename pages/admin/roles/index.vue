@@ -44,10 +44,10 @@ const route = useRoute();
 const router = useRouter();
 
 const tableColumns: UiTableColumn<Role>[] = [
-  { key: 'name', label: 'Role Name', headerClass: 'px-8 py-5', cellClass: 'px-8 py-5' },
-  { key: 'permissionsCount', label: 'Permissions', headerClass: 'px-8 py-5', cellClass: 'px-8 py-5' },
-  { key: 'permissionsPreview', label: 'Assigned Permissions Preview', headerClass: 'px-8 py-5', cellClass: 'px-8 py-5' },
-  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8 py-5 text-right', cellClass: 'px-8 py-5 text-right font-medium' },
+  { key: 'name', label: 'Role Name', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'permissionsCount', label: 'Permissions', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'permissionsPreview', label: 'Assigned Permissions Preview', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-4 py-3 text-right', cellClass: 'px-4 py-2.5 text-right font-medium' },
 ];
 
 const roleService = useRoleService();
@@ -530,7 +530,7 @@ const avgPermissionsCount = computed(() => {
       </div>
 
       <!-- Roles List/Table Mode -->
-      <div v-else-if="viewMode === 'list'" class="space-y-6">
+      <div v-else-if="viewMode === 'list'">
         <UiTable
           :columns="tableColumns"
           :data="listRoles"
@@ -539,11 +539,11 @@ const avgPermissionsCount = computed(() => {
           <!-- Role Name -->
           <template #cell-name="{ item: role }">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shrink-0">
-                <Shield class="w-4.5 h-4.5" />
+              <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shrink-0">
+                <Shield class="w-4 h-4" />
               </div>
-              <div class="flex flex-col">
-                <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate">
                   {{ role.name }}
                 </span>
                 <span class="text-[10px] text-muted-foreground font-medium">ID: #{{ role.id }}</span>
@@ -553,7 +553,7 @@ const avgPermissionsCount = computed(() => {
 
           <!-- Permissions Count -->
           <template #cell-permissionsCount="{ item: role }">
-            <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-muted-foreground text-[10px] font-black uppercase tracking-wider w-fit">
+            <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-bold uppercase tracking-wider w-fit border border-border">
               <Key class="w-3 h-3 text-primary" />
               <span>{{ role.permissions ? role.permissions.length : 0 }} Permissions</span>
             </div>
@@ -572,7 +572,7 @@ const avgPermissionsCount = computed(() => {
               </span>
               <span 
                 v-if="role.permissions.length > 4" 
-                class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20"
+                class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20"
               >
                 +{{ role.permissions.length - 4 }} more
               </span>
@@ -584,52 +584,54 @@ const avgPermissionsCount = computed(() => {
 
           <!-- Actions -->
           <template #cell-actions="{ item: role }">
-            <div class="flex items-center justify-end gap-1">
+            <div class="flex items-center justify-end gap-1 font-medium">
               <button 
                 type="button" 
                 @click="modalState.openView(role.id)"
-                class="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors cursor-pointer"
                 title="View Role Details"
                 aria-label="View role details"
               >
-                <Eye class="w-4 h-4" />
+                <Eye class="w-3.5 h-3.5" />
               </button>
 
               <button 
                 v-if="canEditRole"
                 type="button" 
                 @click="modalState.openEdit(role.id)"
-                class="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-muted-foreground hover:text-yellow-500 hover:bg-muted transition-colors cursor-pointer"
                 title="Edit Role"
                 aria-label="Edit role"
               >
-                <Edit class="w-4 h-4" />
+                <Edit class="w-3.5 h-3.5" />
               </button>
 
               <button 
                 v-if="canDeleteRole"
                 type="button" 
                 @click="modalState.openDelete(role.id)"
-                class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors cursor-pointer"
                 title="Delete Role"
                 aria-label="Delete role"
               >
-                <Trash2 class="w-4 h-4" />
+                <Trash2 class="w-3.5 h-3.5" />
               </button>
             </div>
           </template>
-        </UiTable>
 
-        <!-- Numbered Pagination Control for List Mode -->
-        <UiPagination
-          v-model:current-page="currentPage"
-          :total-pages="listTotalPages"
-          :total-count="listTotalCount"
-          :items-per-page="itemsPerPage"
-          item-label="roles"
-          prefix-label="Showing"
-          variant="card"
-        />
+          <!-- Pagination Footer System -->
+          <template #footer>
+            <UiPagination
+              v-model:current-page="currentPage"
+              :total-pages="listTotalPages"
+              :total-count="listTotalCount"
+              :items-per-page="itemsPerPage"
+              item-label="roles"
+              prefix-label="Showing"
+              variant="footer"
+            />
+          </template>
+        </UiTable>
       </div>
     </template>
 

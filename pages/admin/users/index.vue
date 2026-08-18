@@ -41,11 +41,11 @@ definePageMeta({
 });
 
 const tableColumns: UiTableColumn<UserItem>[] = [
-  { key: 'user', label: 'User', headerClass: 'px-8', cellClass: 'px-8' },
-  { key: 'status', label: 'Status', headerClass: 'px-8', cellClass: 'px-8' },
-  { key: 'contact', label: 'Email / Username', headerClass: 'px-8', cellClass: 'px-8' },
-  { key: 'groups', label: 'Security Groups', headerClass: 'px-8', cellClass: 'px-8' },
-  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8' },
+  { key: 'user', label: 'User', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'status', label: 'Status', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'contact', label: 'Email / Username', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'groups', label: 'Security Groups', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
 ];
 
 useSeoMeta({
@@ -573,7 +573,7 @@ const staffAccountsCount = computed(() => {
       </div>
 
       <!-- Users List/Table Mode -->
-      <div v-else-if="viewMode === 'list'" class="space-y-6">
+      <div v-else-if="viewMode === 'list'">
         <UiTable
           :columns="tableColumns"
           :data="listUsers"
@@ -582,11 +582,11 @@ const staffAccountsCount = computed(() => {
           <!-- User Info Column -->
           <template #cell-user="{ item: user }">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-display font-extrabold text-xs shrink-0">
-                <UserIcon class="w-4.5 h-4.5" />
+              <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-display font-extrabold text-xs shrink-0">
+                <UserIcon class="w-4 h-4" />
               </div>
-              <div class="flex flex-col">
-                <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate">
                   {{ getUserDisplayName(user) }}
                 </span>
                 <span class="text-[10px] text-muted-foreground font-medium">ID: #{{ user.id }}</span>
@@ -642,48 +642,50 @@ const staffAccountsCount = computed(() => {
               <button 
                 type="button" 
                 @click="modalState.openView(user.id)"
-                class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors cursor-pointer"
                 title="View User Details"
                 aria-label="View user details"
               >
-                <Eye class="w-4 h-4" />
+                <Eye class="w-3.5 h-3.5" />
               </button>
 
               <button 
                 v-if="canEditUser"
                 type="button" 
                 @click="modalState.openEdit(user.id)"
-                class="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-muted-foreground hover:text-yellow-500 hover:bg-muted transition-colors cursor-pointer"
                 title="Edit User Account"
                 aria-label="Edit user account"
               >
-                <Edit class="w-4 h-4" />
+                <Edit class="w-3.5 h-3.5" />
               </button>
 
               <button 
                 v-if="canDeleteUser"
                 type="button" 
                 @click="modalState.openDelete(user.id)"
-                class="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors cursor-pointer"
                 title="Delete User Account"
                 aria-label="Delete user account"
               >
-                <Trash2 class="w-4 h-4" />
+                <Trash2 class="w-3.5 h-3.5" />
               </button>
             </div>
           </template>
-        </UiTable>
 
-        <!-- Numbered Pagination Control for List Mode -->
-        <UiPagination
-          v-model:current-page="currentPage"
-          :total-pages="listTotalPages"
-          :total-count="listTotalCount"
-          :items-per-page="itemsPerPage"
-          item-label="users"
-          prefix-label="Showing"
-          variant="card"
-        />
+          <!-- Pagination Footer System -->
+          <template #footer>
+            <UiPagination
+              v-model:current-page="currentPage"
+              :total-pages="listTotalPages"
+              :total-count="listTotalCount"
+              :items-per-page="itemsPerPage"
+              item-label="users"
+              prefix-label="Showing"
+              variant="footer"
+            />
+          </template>
+        </UiTable>
       </div>
     </template>
 
