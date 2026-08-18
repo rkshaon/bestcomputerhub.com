@@ -45,7 +45,7 @@ const toggleExpand = async () => {
 
   if (willExpand) {
     const parentId = props.node.id;
-    if (!categoryService.hasChildrenLoaded(parentId) && (!props.node.children || props.node.children.length === 0)) {
+    if (!categoryService.hasChildrenLoaded(parentId)) {
       try {
         isLoadingChildren.value = true;
         await categoryService.getCategoryChildrenBatch([parentId]);
