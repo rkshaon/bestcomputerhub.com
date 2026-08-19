@@ -41,7 +41,7 @@ const isLoadingChildren = ref(false);
 // Lazy load children on expand
 const toggleExpand = async () => {
   const willExpand = !categoryService.isNodeExpanded(props.node.id);
-  categoryService.setNodeExpanded(props.node.id, willExpand);
+  categoryService.setNodeExpanded(props.node.id, willExpand, props.node.parentCategoryId);
 
   if (willExpand) {
     const parentId = props.node.id;

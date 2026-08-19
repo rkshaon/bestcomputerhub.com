@@ -12,6 +12,7 @@ const categoryChildrenCache = ref<Record<string, Category[]>>({});
 const loadedChildrenParentIds = ref<Set<string>>(new Set());
 const loadingParentIds = ref<Set<string>>(new Set());
 const expandedCategoryIds = ref<Set<string>>(new Set());
+const categoryParentMap = new Map<string, string | null>();
 
 export const useCategoryService = () => {
   const apiClient = useApiClient();
@@ -43,6 +44,9 @@ export const useCategoryService = () => {
         ? cat.has_children
         : Boolean(cat.children?.length || cat.subCategories?.length)
     };
+    if (mapped.id) {
+      categoryParentMap.set(String(mapped.id), parentId ? String(parentId) : null);
+    }
     if (cat.children && Array.isArray(cat.children)) {
       mapped.children = cat.children.map(mapCategoryResponse);
     }
@@ -990,26 +994,79 @@ export const useCategoryService = () => {
     return expandedCategoryIds.value.has(String(id));
   };
 
-  const setNodeExpanded = (id: string | number, isExpanded: boolean) => {
+  const collapseDescendants = (parentId: string, set: Set<string>) => {
+    const children = categoryChildrenCache.value[parentId] || [];
+    children.forEach(child => {
+      const childId = String(child.id);
+      if (set.has(childId)) {
+        set.delete(childId);
+        collapseDescendants(childId, set);
+      }
+    });
+
+    for (const [catId, pId] of categoryParentMap.entries()) {
+      if (pId === parentId && set.has(catId)) {
+        set.delete(catId);
+        collapseDescendants(catId, set);
+      }
+    }
+  };
+
+  const setNodeExpanded = (
+    id: string | number,
+    isExpanded: boolean,
+    parentId?: string | number | null
+  ) => {
     const key = String(id);
+
+    if (parentId !== undefined) {
+      categoryParentMap.set(key, parentId !== null ? String(parentId) : null);
+    }
+
     if (isExpanded) {
-      expandedCategoryIds.value = new Set([key]);
+      const nodeParentId = categoryParentMap.has(key)
+        ? categoryParentMap.get(key)
+        : (parentId !== undefined && parentId !== null ? String(parentId) : null);
+
+      const updated = new Set(expandedCategoryIds.value);
+
+      // Sibling-level accordion: collapse only expanded categories that share the same immediate parent
+      for (const expId of updated) {
+        if (expId !== key) {
+          const expParentId = categoryParentMap.has(expId)
+            ? categoryParentMap.get(expId)
+            : null;
+
+          if (expParentId === nodeParentId) {
+            updated.delete(expId);
+            collapseDescendants(expId, updated);
+          }
+        }
+      }
+
+      updated.add(key);
+      expandedCategoryIds.value = updated;
     } else {
       const updated = new Set(expandedCategoryIds.value);
       updated.delete(key);
+      collapseDescendants(key, updated);
       expandedCategoryIds.value = updated;
     }
   };
 
-  const toggleNodeExpanded = (id: string | number, forceState?: boolean): boolean => {
+  const toggleNodeExpanded = (
+    id: string | number,
+    forceState?: boolean,
+    parentId?: string | number | null
+  ): boolean => {
     const key = String(id);
     const willExpand = forceState !== undefined ? forceState : !expandedCategoryIds.value.has(key);
-    setNodeExpanded(id, willExpand);
+    setNodeExpanded(id, willExpand, parentId);
     return willExpand;
   };
 
-  const expandNode = (id: string | number) => {
-    setNodeExpanded(id, true);
+  const expandNode = (id: string | number, parentId?: string | number | null) => {
+    setNodeExpanded(id, true, parentId);
   };
 
   const collapseNode = (id: string | number) => {
@@ -1022,6 +1079,11 @@ export const useCategoryService = () => {
       ...categoryChildrenCache.value,
       [key]: children
     };
+    children.forEach(child => {
+      if (child.id) {
+        categoryParentMap.set(String(child.id), key);
+      }
+    });
     const updatedLoadedSet = new Set(loadedChildrenParentIds.value);
     updatedLoadedSet.add(key);
     loadedChildrenParentIds.value = updatedLoadedSet;
