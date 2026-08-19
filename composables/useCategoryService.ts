@@ -1081,6 +1081,20 @@ export const useCategoryService = () => {
     setNodeExpanded(id, false);
   };
 
+  const initializeRootExpansion = (roots: Category[]) => {
+    const updated = new Set(expandedCategoryIds.value);
+    roots.forEach(root => {
+      if (root && root.id !== undefined && root.id !== null) {
+        const rootId = String(root.id);
+        categoryParentMap.set(rootId, null);
+        if (root.has_children !== false) {
+          updated.add(rootId);
+        }
+      }
+    });
+    expandedCategoryIds.value = updated;
+  };
+
   const storeChildrenInCache = (
     parentId: string | number,
     children: Category[],
@@ -1288,6 +1302,7 @@ export const useCategoryService = () => {
     toggleNodeExpanded,
     expandNode,
     collapseNode,
+    initializeRootExpansion,
     getCategoryDetails,
     getCategoryUrl,
     createCategory,

@@ -60,6 +60,8 @@ const fetchRoots = async () => {
       );
     }
 
+    categoryService.initializeRootExpansion(roots);
+
     return roots;
   } catch (err: any) {
     rootError.value = err?.message || 'Failed to load root category hierarchy.';
@@ -80,6 +82,8 @@ watch(treeMode, async (newMode) => {
         { is_menu: newMode === 'menu' }
       );
     }
+
+    categoryService.initializeRootExpansion(rootCategories.value);
   }
 });
 
