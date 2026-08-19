@@ -43,6 +43,7 @@ definePageMeta({
 });
 
 const tableColumns: UiTableColumn<Category>[] = [
+  { key: 'select', label: '', width: '48px', headerClass: 'w-12 px-4 py-3 text-center', cellClass: 'w-12 px-4 py-2.5 text-center' },
   { key: 'name', label: 'Classification', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'show_in_menu', label: 'Menu', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
@@ -729,6 +730,92 @@ const toggleCategoryMenu = async (cat: Category) => {
   }
 };
 
+// BULK SELECTION & MENU MANAGEMENT
+const selectedCategoryIds = ref<string[]>([]);
+const isBulkUpdatingMenu = ref(false);
+
+const isAllSelected = computed(() => {
+  if (!categoriesList.value.length) return false;
+  return categoriesList.value.every(cat => selectedCategoryIds.value.includes(String(cat.id)));
+});
+
+const isSomeSelected = computed(() => {
+  return selectedCategoryIds.value.length > 0 && !isAllSelected.value;
+});
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedCategoryIds.value = [];
+  } else {
+    const currentIds = categoriesList.value.map(cat => String(cat.id));
+    selectedCategoryIds.value = Array.from(new Set([...selectedCategoryIds.value, ...currentIds]));
+  }
+};
+
+const toggleSelectCategory = (id: string | number) => {
+  const key = String(id);
+  const index = selectedCategoryIds.value.indexOf(key);
+  if (index > -1) {
+    selectedCategoryIds.value.splice(index, 1);
+  } else {
+    selectedCategoryIds.value.push(key);
+  }
+};
+
+const clearSelection = () => {
+  selectedCategoryIds.value = [];
+};
+
+const handleBulkMenuUpdate = async (showInMenu: boolean) => {
+  if (!selectedCategoryIds.value.length || isBulkUpdatingMenu.value) return;
+
+  const targetIds = [...selectedCategoryIds.value];
+  isBulkUpdatingMenu.value = true;
+
+  try {
+    const res = await categoryService.bulkUpdateMenu(targetIds, showInMenu);
+    
+    const count = res?.updated_count ?? targetIds.length;
+    toastSuccess(
+      showInMenu
+        ? `Successfully marked ${count} ${count === 1 ? 'category' : 'categories'} as menu.`
+        : `Successfully removed ${count} ${count === 1 ? 'category' : 'categories'} from menu.`
+    );
+
+    // Update affected categories in current list state
+    const targetSet = new Set(targetIds.map(String));
+    categoriesList.value = categoriesList.value.map(cat => {
+      if (targetSet.has(String(cat.id)) || (cat.slug && targetSet.has(cat.slug))) {
+        return {
+          ...cat,
+          show_in_menu: showInMenu,
+          is_menu: showInMenu
+        };
+      }
+      return cat;
+    });
+
+    // Clear selection
+    clearSelection();
+
+    // Refresh category statistics in background
+    await fetchCategorySummary();
+  } catch (err: any) {
+    handleApiError(
+      err,
+      showInMenu
+        ? 'Failed to mark selected categories as menu.'
+        : 'Failed to remove selected categories from menu.'
+    );
+  } finally {
+    isBulkUpdatingMenu.value = false;
+  }
+};
+
+watch(viewMode, () => {
+  clearSelection();
+});
+
 </script>
 
 <template>
@@ -1113,7 +1200,55 @@ const toggleCategoryMenu = async (cat: Category) => {
     </div>
 
     <!-- Grid View Mode -->
-    <div v-else-if="viewMode === 'grid'" class="space-y-8">
+    <div v-else-if="viewMode === 'grid'" class="space-y-6">
+      <!-- Bulk Action Bar when items are selected in Grid View -->
+      <div 
+        v-if="selectedCategoryIds.length > 0" 
+        class="bg-card text-card-foreground border border-border rounded-2xl p-3 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs"
+      >
+        <div class="flex items-center gap-2 font-medium text-foreground">
+          <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-primary text-primary-foreground">
+            {{ selectedCategoryIds.length }}
+          </span>
+          <span>{{ selectedCategoryIds.length === 1 ? 'category' : 'categories' }} selected</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <UiButton
+            size="sm"
+            variant="outline"
+            class="h-8 px-3 text-xs gap-1.5 font-bold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 cursor-pointer"
+            :disabled="isBulkUpdatingMenu"
+            @click="handleBulkMenuUpdate(true)"
+          >
+            <Loader2 v-if="isBulkUpdatingMenu" class="w-3.5 h-3.5 animate-spin" />
+            <Menu v-else class="w-3.5 h-3.5" />
+            <span>Mark as Menu</span>
+          </UiButton>
+
+          <UiButton
+            size="sm"
+            variant="outline"
+            class="h-8 px-3 text-xs gap-1.5 font-bold border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 cursor-pointer"
+            :disabled="isBulkUpdatingMenu"
+            @click="handleBulkMenuUpdate(false)"
+          >
+            <Loader2 v-if="isBulkUpdatingMenu" class="w-3.5 h-3.5 animate-spin" />
+            <Menu v-else class="w-3.5 h-3.5" />
+            <span>Remove from Menu</span>
+          </UiButton>
+
+          <button
+            type="button"
+            @click="clearSelection"
+            class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors cursor-pointer"
+            title="Clear Selection"
+            aria-label="Clear selection"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div 
           v-for="cat in categoriesList" 
@@ -1121,10 +1256,19 @@ const toggleCategoryMenu = async (cat: Category) => {
           class="bg-card text-card-foreground border border-border rounded-2xl p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
         >
           <div class="space-y-4">
-            <!-- Icon & Menu Status -->
+            <!-- Icon & Menu Status & Checkbox -->
             <div class="flex items-start justify-between gap-4">
-              <div class="w-14 h-14 bg-background border border-border rounded-xl flex items-center justify-center text-2xl shadow-sm shrink-0 group-hover:scale-105 transition-transform duration-300 overflow-hidden">
-                <span>{{ cat.icon || '📁' }}</span>
+              <div class="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  :checked="selectedCategoryIds.includes(String(cat.id))"
+                  @change="toggleSelectCategory(cat.id)"
+                  class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer accent-primary shrink-0"
+                  :aria-label="`Select ${cat.name}`"
+                />
+                <div class="w-12 h-12 bg-background border border-border rounded-xl flex items-center justify-center text-xl shadow-sm shrink-0 group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+                  <span>{{ cat.icon || '📁' }}</span>
+                </div>
               </div>
 
               <div class="flex items-center gap-2 bg-muted/50 px-3 py-1 rounded-full border border-border/60">
@@ -1274,6 +1418,83 @@ const toggleCategoryMenu = async (cat: Category) => {
       :data="categoriesList"
       key-field="id"
     >
+      <!-- Bulk Action Bar inside Table Header Slot -->
+      <template #header>
+        <div 
+          v-if="selectedCategoryIds.length > 0" 
+          class="px-4 py-2.5 bg-primary/5 border-b border-border flex flex-wrap items-center justify-between gap-3 text-xs"
+        >
+          <div class="flex items-center gap-2 font-medium text-foreground">
+            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-primary text-primary-foreground">
+              {{ selectedCategoryIds.length }}
+            </span>
+            <span>{{ selectedCategoryIds.length === 1 ? 'category' : 'categories' }} selected</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <UiButton
+              size="sm"
+              variant="outline"
+              class="h-8 px-3 text-xs gap-1.5 font-bold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 cursor-pointer"
+              :disabled="isBulkUpdatingMenu"
+              @click="handleBulkMenuUpdate(true)"
+            >
+              <Loader2 v-if="isBulkUpdatingMenu" class="w-3.5 h-3.5 animate-spin" />
+              <Menu v-else class="w-3.5 h-3.5" />
+              <span>Mark as Menu</span>
+            </UiButton>
+
+            <UiButton
+              size="sm"
+              variant="outline"
+              class="h-8 px-3 text-xs gap-1.5 font-bold border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 cursor-pointer"
+              :disabled="isBulkUpdatingMenu"
+              @click="handleBulkMenuUpdate(false)"
+            >
+              <Loader2 v-if="isBulkUpdatingMenu" class="w-3.5 h-3.5 animate-spin" />
+              <Menu v-else class="w-3.5 h-3.5" />
+              <span>Remove from Menu</span>
+            </UiButton>
+
+            <button
+              type="button"
+              @click="clearSelection"
+              class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors cursor-pointer"
+              title="Clear Selection"
+              aria-label="Clear selection"
+            >
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <!-- Select All Header -->
+      <template #header-select>
+        <div class="flex items-center justify-center" @click.stop>
+          <input
+            type="checkbox"
+            :checked="isAllSelected"
+            :indeterminate="isSomeSelected"
+            @change="toggleSelectAll"
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer accent-primary"
+            aria-label="Select all categories on this page"
+          />
+        </div>
+      </template>
+
+      <!-- Select Row Cell -->
+      <template #cell-select="{ item: cat }">
+        <div class="flex items-center justify-center" @click.stop>
+          <input
+            type="checkbox"
+            :checked="selectedCategoryIds.includes(String(cat.id))"
+            @change="toggleSelectCategory(cat.id)"
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer accent-primary"
+            :aria-label="`Select ${cat.name}`"
+          />
+        </div>
+      </template>
+
       <!-- Category Identifier -->
       <template #cell-name="{ item: cat }">
         <div class="flex items-center gap-3">

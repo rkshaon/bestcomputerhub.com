@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
 import { extractErrorMessage } from './useToast';
-import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse, CategorySummaryResponse } from '@/types';
+import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse, CategorySummaryResponse, BulkMenuUpdateResponse } from '@/types';
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 
@@ -614,6 +614,59 @@ export const useCategoryService = () => {
     }
   };
 
+  const bulkUpdateMenu = async (
+    ids: (string | number)[],
+    showInMenu: boolean
+  ): Promise<BulkMenuUpdateResponse> => {
+    if (!ids.length) {
+      return { updated_count: 0, show_in_menu: showInMenu };
+    }
+
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+
+      const categoriesList = getMockCategories();
+      const idStrings = new Set(ids.map(String));
+      let count = 0;
+
+      categoriesList.forEach(cat => {
+        if (idStrings.has(String(cat.id)) || (cat.slug && idStrings.has(cat.slug))) {
+          cat.show_in_menu = showInMenu;
+          cat.is_menu = showInMenu;
+          count++;
+        }
+      });
+
+      saveMockCategories(categoriesList);
+      return { updated_count: count, show_in_menu: showInMenu };
+    }
+
+    try {
+      const parsedIds = ids.map(id => {
+        const num = Number(id);
+        return !isNaN(num) && String(num) === String(id).trim() ? num : id;
+      });
+
+      const res = await apiClient.request<BulkMenuUpdateResponse>('/api/v1/categories/bulk-menu-update/', {
+        method: 'POST',
+        body: {
+          ids: parsedIds,
+          show_in_menu: showInMenu
+        }
+      });
+      isLoading.value = false;
+      return res;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to update categories menu status.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   const importCategoriesFromCSV = async (file: File): Promise<CategoryImportResponse> => {
     isLoading.value = true;
     errorMsg.value = null;
@@ -1135,6 +1188,7 @@ export const useCategoryService = () => {
     deleteCategory,
     markAsMenu,
     removeFromMenu,
+    bulkUpdateMenu,
     importCategoriesFromCSV,
     importCategoriesFromJSON,
     importCategoriesFromXLSX,

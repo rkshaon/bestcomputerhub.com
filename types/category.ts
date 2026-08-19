@@ -50,3 +50,13 @@ export interface CategoryImportResponse {
   created: number;
   errors: string[];
 }
+
+export interface BulkMenuUpdateRequest {
+  ids: (string | number)[];
+  show_in_menu: boolean;
+}
+
+export interface BulkMenuUpdateResponse {
+  updated_count: number;
+  show_in_menu: boolean;
+}
