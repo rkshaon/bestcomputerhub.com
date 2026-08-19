@@ -1143,4 +1143,69 @@ Individual filter controls & search field
   → comfortable & readable (e.g. h-9 height, full input padding)
 ```
 
+---
+
+## 42. Admin Categories Tree Sibling-Level Accordion Expansion Standard
+
+The Admin Categories Tree view must use **sibling-level accordion behavior**, not global single-node expansion.
+
+### Canonical Rule
+> At each hierarchy level, only one sibling branch may be expanded at a time. Expanding a category collapses other expanded siblings with the same immediate parent, while all ancestors of the selected category remain expanded.
+
+### Hierarchy & Behavior Definitions
+1. **Siblings**:
+   - Categories with the same immediate parent are siblings.
+   - Root categories are treated as siblings under the root level.
+2. **Expansion**:
+   - Expanding a category collapses only other expanded siblings with the same immediate parent.
+   - The selected category becomes expanded.
+   - All ancestors of the selected category remain expanded.
+3. **Nested Navigation**:
+   - A child can be expanded while its parent remains expanded.
+   - A grandchild can be expanded while both its parent and grandparent remain expanded.
+   - Never collapse an ancestor simply because a descendant is expanded.
+4. **Lazy Loading**:
+   - Expanding a category continues to use the existing lazy child-loading mechanism (`categoryService.getCategoryChildrenBatch([node.id])`).
+   - Load children only when necessary.
+   - Do not introduce additional API requests because of the expansion rule.
+5. **State Management**:
+   - Use the existing centralized tree/category expansion state (`expandedCategoryIds`, `setNodeExpanded`, `isNodeExpanded`).
+   - Do not create a second independent expansion-state system.
+   - Expansion state must be hierarchical rather than globally exclusive.
+6. **Menu Tree**:
+   - The same hierarchical expansion principle applies to Menu Tree views.
+   - Existing menu filtering behavior (`is_menu=true`) remains unchanged.
+
+### Examples
+
+**Root Level**:
+```text
+Gaming Component ▼
+PC Component ▶
+Gadget ▶
+```
+*Expanding `PC Component` collapses `Gaming Component` because they are root-level siblings.*
+
+**Nested Level**:
+```text
+Gaming Component ▼
+├── Laptop ▼
+│   ├── Gaming Laptop
+│   └── Work Laptop
+├── Desktop PC Component ▶
+└── Sound System ▶
+```
+*Expanding `Laptop` must NOT collapse `Gaming Component`.*
+
+**Deeper Level**:
+```text
+Gaming Component ▼
+└── Laptop ▼
+    └── Gaming Laptop ▼
+        ├── Gaming Laptop Accessories
+        └── Gaming Laptop Parts
+```
+*Expanding `Gaming Laptop` must keep both `Laptop` and `Gaming Component` expanded.*
+
+
 

@@ -261,6 +261,16 @@ All Admin pages must maintain high information density, clear visual hierarchy, 
 - **Compact Search & Filter Containers**: Outer search/filter bar wrappers must remain vertically compact (e.g., `px-3.5 py-2.5`), while individual filter controls retain comfortable internal heights (`h-9`) and breathing room. Never shrink search input components.
 - **Full Guidance**: See `/docs/agent-context/design-system.md` for detailed authoritative layout and density standards.
 
+### 10. Admin Categories Tree Sibling-Level Accordion Expansion Standard
+The Admin Categories Tree view must use **sibling-level accordion behavior**, not global single-node expansion:
+- **Canonical Rule**: At each hierarchy level, only one sibling branch may be expanded at a time. Expanding a category collapses other expanded siblings with the same immediate parent, while all ancestors of the selected category remain expanded.
+- **Siblings**: Categories with the same immediate parent are siblings; root categories are treated as siblings at the root level.
+- **Hierarchical Ancestor Retention**: A child can be expanded while its parent remains expanded. A grandchild can be expanded while both parent and grandparent remain expanded. Never collapse an ancestor simply because a descendant is expanded.
+- **Lazy Loading**: Expanding a category continues to utilize demand-driven lazy child loading (`categoryService.getCategoryChildrenBatch`), loading children only when not already cached and without introducing redundant API requests.
+- **State Management**: Use the existing centralized tree/category expansion state (`expandedCategoryIds`, `isNodeExpanded`, `setNodeExpanded`) rather than creating duplicate, local, or globally exclusive state abstractions.
+- **Menu Tree Parity**: The same hierarchical sibling-level expansion principle applies to Menu Tree views while preserving menu filtering behavior (`is_menu=true`).
+- **Full Guidance & Examples**: See `/docs/agent-context/design-system.md` Section 42.
+
 ## Structural Changes
 
 Agents may autonomously perform small, task-local,

@@ -150,6 +150,8 @@ Categories may have multiple hierarchy levels.
 
 The frontend must not assume categories are always limited to one parent and one child level.
 
+When navigating or managing category trees (e.g. in Admin Tree views), the tree uses sibling-level accordion behavior: expanding a category collapses other expanded siblings at the same immediate hierarchy level, while all ancestor levels remain expanded.
+
 Category URLs should use stable slugs.
 
 ### Brand
