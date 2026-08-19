@@ -795,6 +795,37 @@ const handleBulkMenuUpdate = async (showInMenu: boolean) => {
       return cat;
     });
 
+    // Update affected categories in tree child cache
+    for (const parentId in categoryService.categoryChildrenCache.value) {
+      const cachedList = categoryService.categoryChildrenCache.value[parentId];
+      if (Array.isArray(cachedList)) {
+        categoryService.categoryChildrenCache.value[parentId] = cachedList.map(child => {
+          if (targetSet.has(String(child.id)) || (child.slug && targetSet.has(child.slug))) {
+            return {
+              ...child,
+              show_in_menu: showInMenu,
+              is_menu: showInMenu
+            };
+          }
+          return child;
+        });
+      }
+    }
+
+    // Update root categories in Tree view if mounted
+    if (treeRef.value?.rootCategories) {
+      treeRef.value.rootCategories = treeRef.value.rootCategories.map((cat: Category) => {
+        if (targetSet.has(String(cat.id)) || (cat.slug && targetSet.has(cat.slug))) {
+          return {
+            ...cat,
+            show_in_menu: showInMenu,
+            is_menu: showInMenu
+          };
+        }
+        return cat;
+      });
+    }
+
     // Clear selection
     clearSelection();
 
@@ -1405,6 +1436,11 @@ watch(viewMode, () => {
       ref="treeRef"
       :toggling-menu-slug="togglingMenuSlug"
       :search-query="searchQuery"
+      :selected-category-ids="selectedCategoryIds"
+      :is-bulk-updating-menu="isBulkUpdatingMenu"
+      @toggle-select="toggleSelectCategory"
+      @bulk-menu-update="handleBulkMenuUpdate"
+      @clear-selection="clearSelection"
       @toggle-menu="toggleCategoryMenu"
       @view="triggerViewModal"
       @edit="triggerEditModal"

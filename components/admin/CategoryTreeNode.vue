@@ -19,14 +19,17 @@ const props = withDefaults(defineProps<{
   treeMode?: 'category' | 'menu';
   togglingMenuSlug?: string | null;
   searchQuery?: string;
+  selectedCategoryIds?: string[];
 }>(), {
   depth: 0,
   treeMode: 'category',
   togglingMenuSlug: null,
-  searchQuery: ''
+  searchQuery: '',
+  selectedCategoryIds: () => []
 });
 
 const emit = defineEmits<{
+  (e: 'toggle-select', id: string | number): void;
   (e: 'toggle-menu', cat: Category): void;
   (e: 'view', cat: Category): void;
   (e: 'edit', cat: Category): void;
@@ -36,6 +39,10 @@ const emit = defineEmits<{
 const categoryService = useCategoryService();
 
 const isExpanded = computed(() => categoryService.isNodeExpanded(props.node.id));
+const isSelected = computed(() => {
+  if (!props.selectedCategoryIds) return false;
+  return props.selectedCategoryIds.includes(String(props.node.id));
+});
 const isLoadingChildren = ref(false);
 
 // Lazy load children on expand
@@ -135,6 +142,16 @@ const isToggling = computed(() => props.togglingMenuSlug === props.node.slug);
           <span class="w-1.5 h-1.5 rounded-full bg-border"></span>
         </div>
 
+        <!-- Selection Checkbox -->
+        <input
+          type="checkbox"
+          :checked="isSelected"
+          @click.stop
+          @change="$emit('toggle-select', node.id)"
+          class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer accent-primary shrink-0 mr-0.5"
+          :aria-label="`Select ${node.name}`"
+        />
+
         <!-- Category Emoji/Icon -->
         <div class="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center shrink-0 text-base shadow-2xs">
           <span>{{ node.icon || '📁' }}</span>
@@ -229,6 +246,8 @@ const isToggling = computed(() => props.togglingMenuSlug === props.node.slug);
         :tree-mode="treeMode"
         :toggling-menu-slug="togglingMenuSlug"
         :search-query="searchQuery"
+        :selected-category-ids="selectedCategoryIds"
+        @toggle-select="$emit('toggle-select', $event)"
         @toggle-menu="$emit('toggle-menu', $event)"
         @view="$emit('view', $event)"
         @edit="$emit('edit', $event)"

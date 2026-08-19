@@ -5,7 +5,8 @@ import {
   Menu, 
   RefreshCw, 
   AlertCircle, 
-  Layers 
+  Layers,
+  Loader2
 } from 'lucide-vue-next';
 import type { Category } from '@/types';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -14,12 +15,19 @@ import CategoryTreeNode from './CategoryTreeNode.vue';
 const props = withDefaults(defineProps<{
   togglingMenuSlug?: string | null;
   searchQuery?: string;
+  selectedCategoryIds?: string[];
+  isBulkUpdatingMenu?: boolean;
 }>(), {
   togglingMenuSlug: null,
-  searchQuery: ''
+  searchQuery: '',
+  selectedCategoryIds: () => [],
+  isBulkUpdatingMenu: false
 });
 
 const emit = defineEmits<{
+  (e: 'toggle-select', id: string | number): void;
+  (e: 'bulk-menu-update', showInMenu: boolean): void;
+  (e: 'clear-selection'): void;
   (e: 'toggle-menu', cat: Category): void;
   (e: 'view', cat: Category): void;
   (e: 'edit', cat: Category): void;
@@ -140,6 +148,50 @@ const displayRoots = computed(() => {
       </div>
     </div>
 
+    <!-- Bulk Action Bar when categories are selected in Tree View -->
+    <div 
+      v-if="selectedCategoryIds && selectedCategoryIds.length > 0" 
+      class="bg-muted/50 text-card-foreground border border-border rounded-xl p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs"
+    >
+      <div class="flex items-center gap-2 font-medium text-foreground">
+        <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-primary text-primary-foreground">
+          {{ selectedCategoryIds.length }}
+        </span>
+        <span>{{ selectedCategoryIds.length === 1 ? 'category' : 'categories' }} selected</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          :disabled="isBulkUpdatingMenu"
+          @click="$emit('bulk-menu-update', true)"
+          class="h-8 px-3 text-xs gap-1.5 font-bold border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 bg-background rounded-lg flex items-center transition-colors cursor-pointer disabled:opacity-50"
+        >
+          <Loader2 v-if="isBulkUpdatingMenu" class="w-3.5 h-3.5 animate-spin" />
+          <Menu v-else class="w-3.5 h-3.5" />
+          <span>Mark as Menu</span>
+        </button>
+
+        <button
+          type="button"
+          :disabled="isBulkUpdatingMenu"
+          @click="$emit('bulk-menu-update', false)"
+          class="h-8 px-3 text-xs gap-1.5 font-bold border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 bg-background rounded-lg flex items-center transition-colors cursor-pointer disabled:opacity-50"
+        >
+          <Loader2 v-if="isBulkUpdatingMenu" class="w-3.5 h-3.5 animate-spin" />
+          <Menu v-else class="w-3.5 h-3.5" />
+          <span>Remove from Menu</span>
+        </button>
+
+        <button
+          type="button"
+          @click="$emit('clear-selection')"
+          class="text-xs text-muted-foreground hover:text-foreground font-semibold px-2 py-1 transition-colors cursor-pointer"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+
     <!-- Tree Body -->
     <div v-if="isLoadingRoots && rootCategories.length === 0" class="py-12 flex flex-col items-center justify-center gap-3">
       <span class="animate-spin border-3 border-primary/20 border-t-primary rounded-full w-8 h-8"></span>
@@ -182,6 +234,8 @@ const displayRoots = computed(() => {
         :tree-mode="treeMode"
         :toggling-menu-slug="togglingMenuSlug"
         :search-query="searchQuery"
+        :selected-category-ids="selectedCategoryIds"
+        @toggle-select="$emit('toggle-select', $event)"
         @toggle-menu="$emit('toggle-menu', $event)"
         @view="$emit('view', $event)"
         @edit="$emit('edit', $event)"
