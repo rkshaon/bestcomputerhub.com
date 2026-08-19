@@ -52,10 +52,11 @@ const toggleExpand = async () => {
 
   if (willExpand) {
     const parentId = props.node.id;
-    if (!categoryService.hasChildrenLoaded(parentId)) {
+    const isMenu = props.treeMode === 'menu';
+    if (!categoryService.hasChildrenLoaded(parentId, { is_menu: isMenu })) {
       try {
         isLoadingChildren.value = true;
-        await categoryService.getCategoryChildrenBatch([parentId]);
+        await categoryService.getCategoryChildrenBatch([parentId], { is_menu: isMenu });
       } catch (err) {
         console.error(`Failed to load children for category ${parentId}`, err);
       } finally {
@@ -67,7 +68,8 @@ const toggleExpand = async () => {
 
 // Retrieve loaded children for this node
 const rawChildren = computed(() => {
-  if (categoryService.hasChildrenLoaded(props.node.id)) {
+  const isMenu = props.treeMode === 'menu';
+  if (categoryService.hasChildrenLoaded(props.node.id, { is_menu: isMenu })) {
     return categoryService.getChildrenForParent(props.node.id);
   }
   if (props.node.children && props.node.children.length > 0) {
@@ -81,7 +83,7 @@ const childCategories = computed(() => {
   let list = rawChildren.value;
 
   if (props.treeMode === 'menu') {
-    list = list.filter(c => c.show_in_menu === true);
+    list = list.filter(c => c.show_in_menu === true || c.is_menu === true);
   }
 
   if (props.searchQuery) {
@@ -99,7 +101,7 @@ const childCategories = computed(() => {
 // Check whether node has potential or loaded children
 const hasSubNodes = computed(() => {
   if (props.treeMode === 'menu') {
-    return childCategories.value.length > 0 || (props.node.has_children && !categoryService.hasChildrenLoaded(props.node.id));
+    return childCategories.value.length > 0 || (props.node.has_children && !categoryService.hasChildrenLoaded(props.node.id, { is_menu: true }));
   }
   return Boolean(
     props.node.has_children || 

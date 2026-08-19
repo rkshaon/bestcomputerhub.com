@@ -9,7 +9,8 @@ const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 
 // Storefront direct category children cache keyed by parent category ID
 const categoryChildrenCache = ref<Record<string, Category[]>>({});
-const loadedChildrenParentIds = ref<Set<string>>(new Set());
+const fullLoadedChildrenParentIds = ref<Set<string>>(new Set());
+const menuLoadedChildrenParentIds = ref<Set<string>>(new Set());
 const loadingParentIds = ref<Set<string>>(new Set());
 const expandedCategoryIds = ref<Set<string>>(new Set());
 const categoryParentMap = new Map<string, string | null>();
@@ -986,8 +987,15 @@ export const useCategoryService = () => {
     return categoryChildrenCache.value[String(parentId)] || [];
   };
 
-  const hasChildrenLoaded = (parentId: string | number): boolean => {
-    return loadedChildrenParentIds.value.has(String(parentId));
+  const hasChildrenLoaded = (
+    parentId: string | number,
+    options: { is_menu?: boolean } = {}
+  ): boolean => {
+    const key = String(parentId);
+    if (options.is_menu) {
+      return fullLoadedChildrenParentIds.value.has(key) || menuLoadedChildrenParentIds.value.has(key);
+    }
+    return fullLoadedChildrenParentIds.value.has(key);
   };
 
   const isNodeExpanded = (id: string | number): boolean => {
@@ -1073,20 +1081,51 @@ export const useCategoryService = () => {
     setNodeExpanded(id, false);
   };
 
-  const storeChildrenInCache = (parentId: string | number, children: Category[]) => {
+  const storeChildrenInCache = (
+    parentId: string | number,
+    children: Category[],
+    isMenuOnly = false
+  ) => {
     const key = String(parentId);
-    categoryChildrenCache.value = {
-      ...categoryChildrenCache.value,
-      [key]: children
-    };
+
+    if (!isMenuOnly) {
+      categoryChildrenCache.value = {
+        ...categoryChildrenCache.value,
+        [key]: children
+      };
+      const updatedFullSet = new Set(fullLoadedChildrenParentIds.value);
+      updatedFullSet.add(key);
+      fullLoadedChildrenParentIds.value = updatedFullSet;
+    } else {
+      if (!fullLoadedChildrenParentIds.value.has(key)) {
+        categoryChildrenCache.value = {
+          ...categoryChildrenCache.value,
+          [key]: children
+        };
+      } else {
+        const existing = categoryChildrenCache.value[key] || [];
+        const menuSet = new Set(children.map(c => String(c.id)));
+        const updated = existing.map(c => {
+          if (menuSet.has(String(c.id))) {
+            return { ...c, show_in_menu: true, is_menu: true };
+          }
+          return c;
+        });
+        categoryChildrenCache.value = {
+          ...categoryChildrenCache.value,
+          [key]: updated
+        };
+      }
+      const updatedMenuSet = new Set(menuLoadedChildrenParentIds.value);
+      updatedMenuSet.add(key);
+      menuLoadedChildrenParentIds.value = updatedMenuSet;
+    }
+
     children.forEach(child => {
       if (child.id) {
         categoryParentMap.set(String(child.id), key);
       }
     });
-    const updatedLoadedSet = new Set(loadedChildrenParentIds.value);
-    updatedLoadedSet.add(key);
-    loadedChildrenParentIds.value = updatedLoadedSet;
   };
 
   const getCategoryChildrenBatch = async (
@@ -1098,7 +1137,7 @@ export const useCategoryService = () => {
     const parentIdStrings = parentIds.map(String);
     const missingParentIds = options.force
       ? parentIdStrings
-      : parentIdStrings.filter(id => !loadedChildrenParentIds.value.has(id));
+      : parentIdStrings.filter(id => !hasChildrenLoaded(id, options) && !loadingParentIds.value.has(id));
 
     // If all requested parent IDs already have their direct children loaded and not forcing, return from cache immediately
     if (missingParentIds.length === 0 && !options.force) {
@@ -1106,7 +1145,11 @@ export const useCategoryService = () => {
       parentIdStrings.forEach(pId => {
         const cached = categoryChildrenCache.value[pId];
         if (cached) {
-          allCached.push(...cached);
+          if (options.is_menu) {
+            allCached.push(...cached.filter(c => c.show_in_menu === true || c.is_menu === true));
+          } else {
+            allCached.push(...cached);
+          }
         }
       });
       return allCached;
@@ -1133,7 +1176,7 @@ export const useCategoryService = () => {
             children = children.filter(c => c.show_in_menu === true || c.is_menu === true);
           }
           const mapped = children.map(mapCategoryResponse);
-          storeChildrenInCache(pId, mapped);
+          storeChildrenInCache(pId, mapped, Boolean(options.is_menu));
         });
 
         const result: Category[] = [];
@@ -1198,7 +1241,7 @@ export const useCategoryService = () => {
           childrenForParent = fetchedChildren;
         }
 
-        storeChildrenInCache(normalizedPId, childrenForParent);
+        storeChildrenInCache(normalizedPId, childrenForParent, Boolean(options.is_menu));
       });
 
       const combinedResult: Category[] = [];
@@ -1235,7 +1278,9 @@ export const useCategoryService = () => {
     isChildrenLoading,
     storeChildrenInCache,
     categoryChildrenCache,
-    loadedChildrenParentIds,
+    loadedChildrenParentIds: fullLoadedChildrenParentIds,
+    fullLoadedChildrenParentIds,
+    menuLoadedChildrenParentIds,
     loadingParentIds,
     expandedCategoryIds,
     isNodeExpanded,
