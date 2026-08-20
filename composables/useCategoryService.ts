@@ -1186,6 +1186,56 @@ export const useCategoryService = () => {
     });
   };
 
+  const fetchChildrenForSingleParent = async (
+    pId: string,
+    options: { is_menu?: boolean } = {}
+  ): Promise<Category[]> => {
+    const normalizedPId = String(pId);
+    const queryParams = new URLSearchParams();
+    queryParams.append('ids', normalizedPId);
+    if (options.is_menu !== undefined) {
+      queryParams.append('is_menu', options.is_menu.toString());
+    }
+    const endpoint = `/api/v1/categories/children/?${queryParams.toString()}`;
+
+    try {
+      const data = await apiClient.request<any>(endpoint, { method: 'GET' });
+
+      let rawItems: any[] = [];
+      if (Array.isArray(data)) {
+        rawItems = data;
+      } else if (data && typeof data === 'object') {
+        if (Array.isArray(data.results)) {
+          rawItems = data.results;
+        } else if (Array.isArray(data.data)) {
+          rawItems = data.data;
+        } else if (data[normalizedPId] && Array.isArray(data[normalizedPId])) {
+          rawItems = data[normalizedPId];
+        } else {
+          Object.values(data).forEach(val => {
+            if (Array.isArray(val)) {
+              rawItems.push(...val);
+            }
+          });
+        }
+      }
+
+      const fetchedChildren = rawItems.map(mapCategoryResponse);
+      fetchedChildren.forEach(child => {
+        if (!child.parentCategoryId) {
+          child.parentCategoryId = normalizedPId;
+        }
+      });
+
+      storeChildrenInCache(normalizedPId, fetchedChildren, Boolean(options.is_menu));
+      return fetchedChildren;
+    } catch (err: any) {
+      console.warn(`Failed to fetch category children for parent ${normalizedPId}:`, err?.message || err);
+      storeChildrenInCache(normalizedPId, [], Boolean(options.is_menu));
+      return [];
+    }
+  };
+
   const getCategoryChildrenBatch = async (
     parentIds: (string | number)[],
     options: { force?: boolean; is_menu?: boolean } = {}
@@ -1215,14 +1265,6 @@ export const useCategoryService = () => {
 
     // Mark parent IDs as currently loading
     missingParentIds.forEach(id => loadingParentIds.value.add(id));
-
-    const idsParam = missingParentIds.join(',');
-    const queryParams = new URLSearchParams();
-    queryParams.append('ids', idsParam);
-    if (options.is_menu !== undefined) {
-      queryParams.append('is_menu', options.is_menu.toString());
-    }
-    const endpoint = `/api/v1/categories/children/?${queryParams.toString()}`;
 
     if (checkMockMode()) {
       try {
@@ -1268,91 +1310,9 @@ export const useCategoryService = () => {
     }
 
     try {
-      const data = await apiClient.request<any>(endpoint, {
-        method: 'GET'
-      });
-
-      let rawItems: any[] = [];
-      const processDictionary = (dict: Record<string, any>) => {
-        Object.entries(dict).forEach(([dictKey, children]) => {
-          if (Array.isArray(children)) {
-            children.forEach(ch => {
-              rawItems.push({
-                ...ch,
-                _dictParentKey: String(dictKey),
-                parentCategoryId: ch.parentCategoryId ?? ch.parent_category_id ?? ch.parent_id ?? ch.parent_category ?? ch.parent_slug ?? ch.parent ?? dictKey
-              });
-            });
-          }
-        });
-      };
-
-      if (Array.isArray(data)) {
-        rawItems = data;
-      } else if (data && typeof data === 'object') {
-        if (Array.isArray(data.results)) {
-          rawItems = data.results;
-        } else if (Array.isArray(data.data)) {
-          rawItems = data.data;
-        } else if (data.results && typeof data.results === 'object') {
-          processDictionary(data.results);
-        } else if (data.data && typeof data.data === 'object') {
-          processDictionary(data.data);
-        } else {
-          processDictionary(data);
-        }
-      }
-
-      const fetchedChildren = rawItems.map(mapCategoryResponse);
-
-      // Store fetched direct children in cache keyed by parent category ID
-      missingParentIds.forEach(pId => {
-        const normalizedPId = String(pId);
-        
-        // Build set of acceptable parent identifiers (numeric ID, string ID, slug, etc.) for this parent
-        const parentIdentifiers = new Set<string>([normalizedPId]);
-        const registered = categoryRegistryMap.get(normalizedPId);
-        if (registered) {
-          if (registered.id) parentIdentifiers.add(String(registered.id));
-          if (registered.slug) parentIdentifiers.add(String(registered.slug));
-        }
-
-        let childrenForParent = fetchedChildren.filter((child, idx) => {
-          if (!child) return false;
-          // 1. Check mapped parentCategoryId
-          if (child.parentCategoryId !== undefined && parentIdentifiers.has(String(child.parentCategoryId))) {
-            return true;
-          }
-          // 2. Check dictionary key from API response
-          const rawItem = rawItems[idx];
-          if (rawItem && rawItem._dictParentKey !== undefined && parentIdentifiers.has(String(rawItem._dictParentKey))) {
-            return true;
-          }
-          // 3. Check raw parent fields (parent, parent_id, parent_slug, parent_category)
-          if (rawItem) {
-            const rawParent = rawItem.parent ?? rawItem.parent_id ?? rawItem.parent_slug ?? rawItem.parent_category_id ?? rawItem.parent_category;
-            if (rawParent !== undefined && rawParent !== null) {
-              if (typeof rawParent === 'object') {
-                if (rawParent.id !== undefined && parentIdentifiers.has(String(rawParent.id))) return true;
-                if (rawParent.slug && parentIdentifiers.has(String(rawParent.slug))) return true;
-              } else if (parentIdentifiers.has(String(rawParent))) {
-                return true;
-              }
-            }
-          }
-          return false;
-        });
-
-        // Fallback for single parent request if parentCategoryId was not explicitly matched
-        if (childrenForParent.length === 0 && missingParentIds.length === 1 && fetchedChildren.length > 0) {
-          fetchedChildren.forEach(child => {
-            child.parentCategoryId = normalizedPId;
-          });
-          childrenForParent = fetchedChildren;
-        }
-
-        storeChildrenInCache(normalizedPId, childrenForParent, Boolean(options.is_menu));
-      });
+      await Promise.all(
+        missingParentIds.map(pId => fetchChildrenForSingleParent(pId, options))
+      );
 
       const combinedResult: Category[] = [];
       parentIdStrings.forEach(pId => {
