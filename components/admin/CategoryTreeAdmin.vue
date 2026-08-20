@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { 
   FolderTree, 
   Menu, 
@@ -47,21 +47,6 @@ const fetchRoots = async () => {
     rootError.value = null;
     const roots = await categoryService.getRootCategories({ page_size: 100 });
     rootCategories.value = roots;
-
-    // Immediately batch load direct children for root categories that have children
-    const rootIdsWithChildren = roots
-      .filter(c => c.has_children !== false)
-      .map(c => String(c.id));
-
-    if (rootIdsWithChildren.length > 0) {
-      await categoryService.getCategoryChildrenBatch(
-        rootIdsWithChildren,
-        { is_menu: treeMode.value === 'menu' }
-      );
-    }
-
-    categoryService.initializeRootExpansion(roots);
-
     return roots;
   } catch (err: any) {
     rootError.value = err?.message || 'Failed to load root category hierarchy.';
@@ -69,23 +54,6 @@ const fetchRoots = async () => {
     isLoadingRoots.value = false;
   }
 };
-
-watch(treeMode, async (newMode) => {
-  if (rootCategories.value.length > 0) {
-    const rootIdsWithChildren = rootCategories.value
-      .filter(c => c.has_children !== false)
-      .map(c => String(c.id));
-
-    if (rootIdsWithChildren.length > 0) {
-      await categoryService.getCategoryChildrenBatch(
-        rootIdsWithChildren,
-        { is_menu: newMode === 'menu' }
-      );
-    }
-
-    categoryService.initializeRootExpansion(rootCategories.value);
-  }
-});
 
 defineExpose({
   fetchRoots,

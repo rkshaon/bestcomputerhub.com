@@ -9,12 +9,10 @@ const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 
 // Storefront direct category children cache keyed by parent category ID
 const categoryChildrenCache = ref<Record<string, Category[]>>({});
-const fullLoadedChildrenParentIds = ref<Set<string>>(new Set());
-const menuLoadedChildrenParentIds = ref<Set<string>>(new Set());
+const loadedChildrenParentIds = ref<Set<string>>(new Set());
 const loadingParentIds = ref<Set<string>>(new Set());
 const expandedCategoryIds = ref<Set<string>>(new Set());
 const categoryParentMap = new Map<string, string | null>();
-const categoryRegistryMap = new Map<string, { id: string; slug?: string }>();
 
 export const useCategoryService = () => {
   const apiClient = useApiClient();
@@ -48,13 +46,6 @@ export const useCategoryService = () => {
     };
     if (mapped.id) {
       categoryParentMap.set(String(mapped.id), parentId ? String(parentId) : null);
-      const catId = String(mapped.id);
-      const catSlug = mapped.slug ? String(mapped.slug) : undefined;
-      const info = { id: catId, slug: catSlug };
-      categoryRegistryMap.set(catId, info);
-      if (catSlug) {
-        categoryRegistryMap.set(catSlug, info);
-      }
     }
     if (cat.children && Array.isArray(cat.children)) {
       mapped.children = cat.children.map(mapCategoryResponse);
@@ -992,47 +983,11 @@ export const useCategoryService = () => {
   };
 
   const getChildrenForParent = (parentId: string | number): Category[] => {
-    const key = String(parentId);
-    const direct = categoryChildrenCache.value[key];
-    if (direct) {
-      return direct;
-    }
-    const registered = categoryRegistryMap.get(key);
-    if (registered) {
-      if (registered.id) {
-        const idMatch = categoryChildrenCache.value[String(registered.id)];
-        if (idMatch) return idMatch;
-      }
-      if (registered.slug) {
-        const slugMatch = categoryChildrenCache.value[String(registered.slug)];
-        if (slugMatch) return slugMatch;
-      }
-    }
-    return [];
+    return categoryChildrenCache.value[String(parentId)] || [];
   };
 
-  const hasChildrenLoaded = (
-    parentId: string | number,
-    options: { is_menu?: boolean } = {}
-  ): boolean => {
-    const key = String(parentId);
-    const set = options.is_menu ? menuLoadedChildrenParentIds.value : fullLoadedChildrenParentIds.value;
-    const fullSet = fullLoadedChildrenParentIds.value;
-    
-    if (set.has(key) || (options.is_menu && fullSet.has(key))) return true;
-
-    const registered = categoryRegistryMap.get(key);
-    if (registered) {
-      if (registered.id) {
-        const idKey = String(registered.id);
-        if (set.has(idKey) || (options.is_menu && fullSet.has(idKey))) return true;
-      }
-      if (registered.slug) {
-        const slugKey = String(registered.slug);
-        if (set.has(slugKey) || (options.is_menu && fullSet.has(slugKey))) return true;
-      }
-    }
-    return false;
+  const hasChildrenLoaded = (parentId: string | number): boolean => {
+    return loadedChildrenParentIds.value.has(String(parentId));
   };
 
   const isNodeExpanded = (id: string | number): boolean => {
@@ -1040,7 +995,7 @@ export const useCategoryService = () => {
   };
 
   const collapseDescendants = (parentId: string, set: Set<string>) => {
-    const children = getChildrenForParent(parentId);
+    const children = categoryChildrenCache.value[parentId] || [];
     children.forEach(child => {
       const childId = String(child.id);
       if (set.has(childId)) {
@@ -1118,122 +1073,20 @@ export const useCategoryService = () => {
     setNodeExpanded(id, false);
   };
 
-  const initializeRootExpansion = (roots: Category[]) => {
-    const updated = new Set(expandedCategoryIds.value);
-    roots.forEach(root => {
-      if (root && root.id !== undefined && root.id !== null) {
-        const rootId = String(root.id);
-        categoryParentMap.set(rootId, null);
-        const info = { id: rootId, slug: root.slug };
-        categoryRegistryMap.set(rootId, info);
-        if (root.slug) categoryRegistryMap.set(root.slug, info);
-
-        if (root.has_children !== false) {
-          updated.add(rootId);
-        }
-      }
-    });
-    expandedCategoryIds.value = updated;
-  };
-
-  const storeChildrenInCache = (
-    parentId: string | number,
-    children: Category[],
-    isMenuOnly = false
-  ) => {
+  const storeChildrenInCache = (parentId: string | number, children: Category[]) => {
     const key = String(parentId);
-    const keysToUpdate = new Set<string>([key]);
-    const registered = categoryRegistryMap.get(key);
-    if (registered) {
-      if (registered.id) keysToUpdate.add(String(registered.id));
-      if (registered.slug) keysToUpdate.add(String(registered.slug));
-    }
-
-    const updatedCache = { ...categoryChildrenCache.value };
-    const updatedFullSet = new Set(fullLoadedChildrenParentIds.value);
-    const updatedMenuSet = new Set(menuLoadedChildrenParentIds.value);
-
-    keysToUpdate.forEach(k => {
-      if (!isMenuOnly) {
-        updatedCache[k] = children;
-        updatedFullSet.add(k);
-      } else {
-        if (!updatedFullSet.has(k)) {
-          updatedCache[k] = children;
-        } else {
-          const existing = updatedCache[k] || [];
-          const menuSet = new Set(children.map(c => String(c.id)));
-          const updated = existing.map(c => {
-            if (menuSet.has(String(c.id))) {
-              return { ...c, show_in_menu: true, is_menu: true };
-            }
-            return c;
-          });
-          updatedCache[k] = updated;
-        }
-        updatedMenuSet.add(k);
-      }
-    });
-
-    categoryChildrenCache.value = updatedCache;
-    fullLoadedChildrenParentIds.value = updatedFullSet;
-    menuLoadedChildrenParentIds.value = updatedMenuSet;
-
+    categoryChildrenCache.value = {
+      ...categoryChildrenCache.value,
+      [key]: children
+    };
     children.forEach(child => {
       if (child.id) {
         categoryParentMap.set(String(child.id), key);
       }
     });
-  };
-
-  const fetchChildrenForSingleParent = async (
-    pId: string,
-    options: { is_menu?: boolean } = {}
-  ): Promise<Category[]> => {
-    const normalizedPId = String(pId);
-    const queryParams = new URLSearchParams();
-    queryParams.append('ids', normalizedPId);
-    if (options.is_menu !== undefined) {
-      queryParams.append('is_menu', options.is_menu.toString());
-    }
-    const endpoint = `/api/v1/categories/children/?${queryParams.toString()}`;
-
-    try {
-      const data = await apiClient.request<any>(endpoint, { method: 'GET' });
-
-      let rawItems: any[] = [];
-      if (Array.isArray(data)) {
-        rawItems = data;
-      } else if (data && typeof data === 'object') {
-        if (Array.isArray(data.results)) {
-          rawItems = data.results;
-        } else if (Array.isArray(data.data)) {
-          rawItems = data.data;
-        } else if (data[normalizedPId] && Array.isArray(data[normalizedPId])) {
-          rawItems = data[normalizedPId];
-        } else {
-          Object.values(data).forEach(val => {
-            if (Array.isArray(val)) {
-              rawItems.push(...val);
-            }
-          });
-        }
-      }
-
-      const fetchedChildren = rawItems.map(mapCategoryResponse);
-      fetchedChildren.forEach(child => {
-        if (!child.parentCategoryId) {
-          child.parentCategoryId = normalizedPId;
-        }
-      });
-
-      storeChildrenInCache(normalizedPId, fetchedChildren, Boolean(options.is_menu));
-      return fetchedChildren;
-    } catch (err: any) {
-      console.warn(`Failed to fetch category children for parent ${normalizedPId}:`, err?.message || err);
-      storeChildrenInCache(normalizedPId, [], Boolean(options.is_menu));
-      return [];
-    }
+    const updatedLoadedSet = new Set(loadedChildrenParentIds.value);
+    updatedLoadedSet.add(key);
+    loadedChildrenParentIds.value = updatedLoadedSet;
   };
 
   const getCategoryChildrenBatch = async (
@@ -1245,19 +1098,15 @@ export const useCategoryService = () => {
     const parentIdStrings = parentIds.map(String);
     const missingParentIds = options.force
       ? parentIdStrings
-      : parentIdStrings.filter(id => !hasChildrenLoaded(id, options) && !loadingParentIds.value.has(id));
+      : parentIdStrings.filter(id => !loadedChildrenParentIds.value.has(id));
 
     // If all requested parent IDs already have their direct children loaded and not forcing, return from cache immediately
     if (missingParentIds.length === 0 && !options.force) {
       const allCached: Category[] = [];
       parentIdStrings.forEach(pId => {
-        const cached = getChildrenForParent(pId);
+        const cached = categoryChildrenCache.value[pId];
         if (cached) {
-          if (options.is_menu) {
-            allCached.push(...cached.filter(c => c.show_in_menu === true || c.is_menu === true));
-          } else {
-            allCached.push(...cached);
-          }
+          allCached.push(...cached);
         }
       });
       return allCached;
@@ -1266,37 +1115,25 @@ export const useCategoryService = () => {
     // Mark parent IDs as currently loading
     missingParentIds.forEach(id => loadingParentIds.value.add(id));
 
+    const idsParam = missingParentIds.join(',');
+    const queryParams = new URLSearchParams();
+    queryParams.append('ids', idsParam);
+    if (options.is_menu !== undefined) {
+      queryParams.append('is_menu', options.is_menu.toString());
+    }
+    const endpoint = `/api/v1/categories/children/?${queryParams.toString()}`;
+
     if (checkMockMode()) {
       try {
         await new Promise(resolve => setTimeout(resolve, 150));
         const allMock = getMockCategories();
         missingParentIds.forEach(pId => {
-          const normalizedPId = String(pId);
-          const parentIdentifiers = new Set<string>([normalizedPId]);
-          const registered = categoryRegistryMap.get(normalizedPId);
-          if (registered) {
-            if (registered.id) parentIdentifiers.add(String(registered.id));
-            if (registered.slug) parentIdentifiers.add(String(registered.slug));
-          }
-
-          let children = allMock.filter(c => {
-            const rawP = c.parentCategoryId ?? (c as any).parent_category_id ?? (c as any).parent_id ?? (c as any).parent_slug ?? (c as any).parent;
-            if (rawP !== undefined && rawP !== null) {
-              if (typeof rawP === 'object') {
-                if (rawP.id !== undefined && parentIdentifiers.has(String(rawP.id))) return true;
-                if (rawP.slug && parentIdentifiers.has(String(rawP.slug))) return true;
-              } else if (parentIdentifiers.has(String(rawP))) {
-                return true;
-              }
-            }
-            return false;
-          });
-
+          let children = allMock.filter(c => String(c.parentCategoryId) === pId);
           if (options.is_menu) {
             children = children.filter(c => c.show_in_menu === true || c.is_menu === true);
           }
           const mapped = children.map(mapCategoryResponse);
-          storeChildrenInCache(normalizedPId, mapped, Boolean(options.is_menu));
+          storeChildrenInCache(pId, mapped);
         });
 
         const result: Category[] = [];
@@ -1310,9 +1147,59 @@ export const useCategoryService = () => {
     }
 
     try {
-      await Promise.all(
-        missingParentIds.map(pId => fetchChildrenForSingleParent(pId, options))
-      );
+      const data = await apiClient.request<any>(endpoint, {
+        method: 'GET'
+      });
+
+      let rawItems: any[] = [];
+      const processDictionary = (dict: Record<string, any>) => {
+        Object.entries(dict).forEach(([parentId, children]) => {
+          if (Array.isArray(children)) {
+            children.forEach(ch => {
+              rawItems.push({
+                ...ch,
+                parentCategoryId: ch.parentCategoryId ?? ch.parent_category_id ?? ch.parent_id ?? ch.parent_category ?? ch.parent_slug ?? ch.parent ?? parentId
+              });
+            });
+          }
+        });
+      };
+
+      if (Array.isArray(data)) {
+        rawItems = data;
+      } else if (data && typeof data === 'object') {
+        if (Array.isArray(data.results)) {
+          rawItems = data.results;
+        } else if (Array.isArray(data.data)) {
+          rawItems = data.data;
+        } else if (data.results && typeof data.results === 'object') {
+          processDictionary(data.results);
+        } else if (data.data && typeof data.data === 'object') {
+          processDictionary(data.data);
+        } else {
+          processDictionary(data);
+        }
+      }
+
+      const fetchedChildren = rawItems.map(mapCategoryResponse);
+
+      // Store fetched direct children in cache keyed by parent category ID
+      missingParentIds.forEach(pId => {
+        const normalizedPId = String(pId);
+        let childrenForParent = fetchedChildren.filter(
+          child => child.parentCategoryId !== undefined && String(child.parentCategoryId) === normalizedPId
+        );
+
+        // Fallback for single parent request if parentCategoryId was not explicitly returned on child objects
+        if (childrenForParent.length === 0 && missingParentIds.length === 1 && fetchedChildren.length > 0) {
+          fetchedChildren.forEach(child => {
+            child.parentCategoryId = normalizedPId;
+          });
+          childrenForParent = fetchedChildren;
+        }
+
+        storeChildrenInCache(normalizedPId, childrenForParent);
+      });
 
       const combinedResult: Category[] = [];
       parentIdStrings.forEach(pId => {
@@ -1348,9 +1235,7 @@ export const useCategoryService = () => {
     isChildrenLoading,
     storeChildrenInCache,
     categoryChildrenCache,
-    loadedChildrenParentIds: fullLoadedChildrenParentIds,
-    fullLoadedChildrenParentIds,
-    menuLoadedChildrenParentIds,
+    loadedChildrenParentIds,
     loadingParentIds,
     expandedCategoryIds,
     isNodeExpanded,
@@ -1358,7 +1243,6 @@ export const useCategoryService = () => {
     toggleNodeExpanded,
     expandNode,
     collapseNode,
-    initializeRootExpansion,
     getCategoryDetails,
     getCategoryUrl,
     createCategory,
