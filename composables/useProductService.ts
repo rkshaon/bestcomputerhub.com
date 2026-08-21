@@ -53,30 +53,75 @@ export const useProductService = () => {
       'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&h=600&fit=crop&q=80',
       'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=600&fit=crop&q=80'
     ];
-    const imageIndex = p.id ? (Number(p.id) % techImages.length) : 0;
+    const imageIndex = p.id ? (Math.abs(Number(p.id) || 0) % techImages.length) : 0;
     const fallbackImage = techImages[imageIndex] || techImages[0];
 
-    const priceVal = p.current_selling_price ? Number(p.current_selling_price) : Number(p.price ?? 149.99);
+    const priceVal = p.current_selling_price !== undefined && p.current_selling_price !== null 
+      ? Number(p.current_selling_price) 
+      : Number(p.price ?? 149.99);
+
+    let defaultImg: any = p.default_image || null;
+    let primaryImgUrl = fallbackImage;
+
+    if (defaultImg) {
+      if (typeof defaultImg === 'object' && defaultImg.image) {
+        primaryImgUrl = defaultImg.image;
+      } else if (typeof defaultImg === 'string') {
+        primaryImgUrl = defaultImg;
+      }
+    } else if (Array.isArray(p.images) && p.images.length > 0) {
+      primaryImgUrl = typeof p.images[0] === 'string' ? p.images[0] : (p.images[0]?.image || fallbackImage);
+    } else if (p.image) {
+      primaryImgUrl = typeof p.image === 'string' ? p.image : fallbackImage;
+    }
+
+    let originObj = p.origin || null;
+    let catName = 'General';
+    if (originObj) {
+      if (typeof originObj === 'object') {
+        catName = originObj.name || catName;
+      } else if (typeof originObj === 'string') {
+        catName = originObj;
+      }
+    } else if (p.category) {
+      if (typeof p.category === 'object') {
+        catName = p.category.name || catName;
+      } else if (typeof p.category === 'string') {
+        catName = p.category;
+      }
+    }
+
+    const avgRating = p.average_rating !== undefined && p.average_rating !== null
+      ? Number(p.average_rating)
+      : Number(p.rating ?? 0);
+
+    const totReviews = p.total_reviews !== undefined && p.total_reviews !== null
+      ? Number(p.total_reviews)
+      : Number(p.reviewCount ?? p.review_count ?? 0);
 
     return {
       id: String(p.id ?? ''),
       name: p.name ?? '',
       slug: p.slug || `product-${p.id || 'item'}`,
-      description: p.description ?? 'High-performance enterprise hardware component designed for 24/7 reliability.',
+      description: p.description ?? 'High-performance enterprise hardware component.',
       price: priceVal,
+      current_selling_price: priceVal,
       originalPrice: p.originalPrice ? Number(p.originalPrice) : (priceVal > 200 ? priceVal * 1.15 : undefined),
-      category: String(p.category ?? ''),
+      category: catName,
       subCategory: String(p.subCategory ?? p.sub_category ?? ''),
-      brand: p.brand || 'TechCore',
-      images: Array.isArray(p.images) && p.images.length ? p.images : (p.image ? [p.image] : [fallbackImage]),
-      stock: Number(p.stock ?? 15),
-      rating: Number(p.rating ?? 4.8),
-      reviewCount: Number(p.reviewCount ?? p.review_count ?? 12),
-      specifications: p.specifications ?? {
-        'Form Factor': 'Enterprise Node',
-        'Status': 'Certified'
-      },
-      features: Array.isArray(p.features) && p.features.length ? p.features : ['Enterprise Certified Node', '24/7 Workload Optimization'],
+      brand: typeof p.brand === 'object' ? (p.brand.name || 'TechCore') : String(p.brand || 'TechCore'),
+      images: Array.isArray(p.images) && p.images.length ? p.images.map((img: any) => typeof img === 'string' ? img : img.image) : [primaryImgUrl],
+      default_image: defaultImg || { image: primaryImgUrl, alt_text: p.name ?? '' },
+      origin: originObj || (typeof p.category === 'object' ? p.category : null),
+      average_rating: avgRating,
+      rating: avgRating,
+      total_reviews: totReviews,
+      reviewCount: totReviews,
+      wishlist: Boolean(p.wishlist),
+      in_cart: Boolean(p.in_cart),
+      stock: p.stock !== undefined && p.stock !== null ? Number(p.stock) : 15,
+      specifications: p.specifications ?? {},
+      features: Array.isArray(p.features) ? p.features : [],
       isNew: Boolean(p.isNew ?? p.is_new ?? false),
       isFeatured: Boolean(p.isFeatured ?? p.is_featured ?? false),
       onSale: Boolean(p.onSale ?? p.on_sale ?? false),

@@ -1,19 +1,40 @@
 // File: /types/product.ts
 
+export interface ProductImage {
+  id?: string | number;
+  image?: string;
+  alt_text?: string;
+  is_default?: boolean;
+}
+
+export interface CategoryOrigin {
+  id?: string | number;
+  slug?: string;
+  name?: string;
+  parent?: any;
+}
+
 export interface Product {
   id: string;
   name: string;
   slug: string;
   description: string;
   price: number;
+  current_selling_price?: number;
   originalPrice?: number;
   category: string;
-  subCategory: string;
+  subCategory?: string;
   brand: string;
   images: string[];
-  stock: number;
+  default_image?: ProductImage | string | null;
+  origin?: CategoryOrigin | null;
+  average_rating?: number;
   rating: number;
+  total_reviews?: number;
   reviewCount: number;
+  wishlist?: boolean;
+  in_cart?: boolean;
+  stock: number;
   specifications: Record<string, string>;
   features: string[];
   isNew?: boolean;

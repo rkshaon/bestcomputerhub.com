@@ -26,10 +26,10 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     route: '/admin/products',
     name: 'Products',
     iconKey: 'Package',
-    viewPermission: ['store.view_product', 'view_product', 'products.view_product'],
-    createPermission: ['store.add_product', 'add_product', 'products.add_product'],
-    editPermission: ['store.change_product', 'change_product', 'products.change_product'],
-    deletePermission: ['store.delete_product', 'delete_product', 'products.delete_product']
+    viewPermission: ['store.view_product', 'view_product', 'products.view_product', 'product_api.add_product', 'product_api.view_product'],
+    createPermission: ['store.add_product', 'add_product', 'products.add_product', 'product_api.add_product'],
+    editPermission: ['store.change_product', 'change_product', 'products.change_product', 'product_api.change_product'],
+    deletePermission: ['store.delete_product', 'delete_product', 'products.delete_product', 'product_api.delete_product']
   },
   categories: {
     key: 'categories',

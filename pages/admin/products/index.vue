@@ -1,184 +1,405 @@
 <!-- File: /pages/admin/products/index.vue -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { refDebounced } from '@vueuse/core';
 import { 
   Plus, 
   Search, 
   Filter, 
-  MoreVertical, 
   Edit2, 
   Trash2, 
   Eye, 
   Download,
   Package,
   Layers,
-  ArrowUpDown
+  Star,
+  RefreshCw,
+  AlertCircle,
+  Loader2,
+  Heart,
+  ShoppingCart
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
+import { useCategoryService } from '@/composables/useCategoryService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
 import { formatCurrency, cn } from '@/utils';
-import type { Product } from '@/types';
+import type { Product, Category } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
+import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 
 definePageMeta({
   layout: 'admin'
 });
 
 const tableColumns: UiTableColumn<Product>[] = [
-  { key: 'name', label: 'Product Details', sortable: true, headerClass: 'px-8', cellClass: 'px-8 py-5' },
-  { key: 'sku', label: 'SKU', headerClass: 'px-8', cellClass: 'px-8 py-5' },
-  { key: 'category', label: 'Category', headerClass: 'px-8', cellClass: 'px-8 py-5' },
-  { key: 'price', label: 'Price', align: 'right', headerClass: 'px-8', cellClass: 'px-8 py-5 text-right' },
-  { key: 'stock', label: 'Inventory', headerClass: 'px-8', cellClass: 'px-8 py-5' },
-  { key: 'status', label: 'Status', headerClass: 'px-8', cellClass: 'px-8 py-5' },
-  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8 py-5 text-right' },
+  { key: 'name', label: 'Product Details', headerClass: 'px-6 py-4', cellClass: 'px-6 py-4' },
+  { key: 'sku', label: 'SKU', headerClass: 'px-6 py-4', cellClass: 'px-6 py-4' },
+  { key: 'category', label: 'Category', headerClass: 'px-6 py-4', cellClass: 'px-6 py-4' },
+  { key: 'price', label: 'Price', align: 'right', headerClass: 'px-6 py-4 text-right', cellClass: 'px-6 py-4 text-right' },
+  { key: 'stock', label: 'Inventory', headerClass: 'px-6 py-4', cellClass: 'px-6 py-4' },
+  { key: 'status', label: 'Status', headerClass: 'px-6 py-4', cellClass: 'px-6 py-4' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-6 py-4 text-right', cellClass: 'px-6 py-4 text-right' },
 ];
 
 const productService = useProductService();
+const categoryService = useCategoryService();
 const { canCreateInModule, canEditInModule, canDeleteInModule } = useAdminPermissions();
+
+const route = useRoute();
+const router = useRouter();
 
 const canCreateProduct = computed(() => canCreateInModule('/admin/products'));
 const canEditProduct = computed(() => canEditInModule('/admin/products'));
 const canDeleteProduct = computed(() => canDeleteInModule('/admin/products'));
 
-const products = ref<Product[]>(productService.getProducts());
-const searchQuery = ref('');
+// State managers initialized from URL query parameters
+const productsList = ref<Product[]>([]);
+const totalCount = ref(0);
+const isLoading = ref(false);
+const fetchError = ref<string | null>(null);
+const isDeleting = ref<string | null>(null);
+
+const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
-const statusFilter = ref('all');
-const categoryFilter = ref('all');
+const categoryFilter = ref(route.query.category ? String(route.query.category) : 'all');
+const ordering = ref(route.query.ordering ? String(route.query.ordering) : '-id');
 
-const currentPage = ref(1);
-const itemsPerPage = ref(10);
+const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
+const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 
-const filteredProducts = computed(() => {
-  return products.value.filter((p: Product) => {
-    const query = debouncedSearchQuery.value.toLowerCase().trim();
-    const matchesSearch = !query || p.name.toLowerCase().includes(query) || 
-                         p.sku.toLowerCase().includes(query);
-    const matchesCategory = categoryFilter.value === 'all' || p.category === categoryFilter.value;
-    return matchesSearch && matchesCategory;
-  });
-});
+const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
 
-watch([debouncedSearchQuery, categoryFilter, statusFilter], () => {
-  currentPage.value = 1;
-});
+// Category filter dropdown options
+const availableCategories = ref<{ id: string | number; name: string; slug: string }[]>([]);
 
-const totalPages = computed(() => Math.ceil(filteredProducts.value.length / itemsPerPage.value) || 1);
+const loadCategories = async () => {
+  try {
+    const res = await categoryService.getCategoriesList({ page_size: 100 });
+    if (res && Array.isArray(res.results)) {
+      availableCategories.value = res.results.map(c => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug
+      }));
+    }
+  } catch {}
+};
 
-const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  return filteredProducts.value.slice(start, start + itemsPerPage.value);
-});
+// Fetch products page from API (GET /api/v1/products/)
+const fetchProductsPage = async () => {
+  isLoading.value = true;
+  fetchError.value = null;
 
-const categories = [...new Set(products.value.map((p: Product) => p.category))];
+  try {
+    const response = await productService.getProductsList({
+      page: currentPage.value,
+      page_size: itemsPerPage.value,
+      search: debouncedSearchQuery.value.trim() || undefined,
+      category: categoryFilter.value === 'all' ? undefined : categoryFilter.value,
+      ordering: ordering.value || undefined
+    });
 
-const handleDelete = (id: string) => {
-  if (confirm('Are you sure you want to delete this product?')) {
-    products.value = products.value.filter(p => p.id !== id);
+    productsList.value = response.results || [];
+    totalCount.value = response.count || 0;
+  } catch (err: any) {
+    fetchError.value = extractErrorMessage(err, 'Unable to retrieve matching catalog products.');
+  } finally {
+    isLoading.value = false;
   }
 };
+
+const updateRouteAndFetch = () => {
+  router.replace({
+    query: {
+      ...route.query,
+      page: currentPage.value > 1 ? currentPage.value : undefined,
+      pageSize: itemsPerPage.value !== 10 ? itemsPerPage.value : undefined,
+      search: debouncedSearchQuery.value.trim() || undefined,
+      category: categoryFilter.value !== 'all' ? categoryFilter.value : undefined,
+      ordering: ordering.value !== '-id' ? ordering.value : undefined
+    }
+  });
+  fetchProductsPage();
+};
+
+watch([debouncedSearchQuery, categoryFilter, ordering, itemsPerPage], () => {
+  if (currentPage.value !== 1) {
+    currentPage.value = 1;
+  } else {
+    updateRouteAndFetch();
+  }
+});
+
+watch(currentPage, () => {
+  updateRouteAndFetch();
+});
+
+// Image fallback handler
+const imageErrorMap = ref<Record<string, boolean>>({});
+
+const handleImageError = (productId: string) => {
+  imageErrorMap.value[productId] = true;
+};
+
+const getProductImageUrl = (product: Product): string => {
+  if (imageErrorMap.value[product.id]) {
+    return 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80';
+  }
+  if (product.default_image) {
+    if (typeof product.default_image === 'object' && product.default_image.image) {
+      return product.default_image.image;
+    }
+    if (typeof product.default_image === 'string') {
+      return product.default_image;
+    }
+  }
+  if (product.images && product.images.length > 0 && product.images[0]) {
+    return product.images[0];
+  }
+  return 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80';
+};
+
+const getProductImageAlt = (product: Product): string => {
+  if (product.default_image && typeof product.default_image === 'object' && product.default_image.alt_text) {
+    return product.default_image.alt_text;
+  }
+  return product.name || 'Product Image';
+};
+
+const getCategoryName = (product: Product): string => {
+  if (product.origin && typeof product.origin === 'object' && product.origin.name) {
+    return product.origin.name;
+  }
+  return product.category || 'General';
+};
+
+const getProductPrice = (product: Product): number => {
+  if (product.current_selling_price !== undefined && product.current_selling_price !== null) {
+    return Number(product.current_selling_price);
+  }
+  return Number(product.price ?? 0);
+};
+
+const getProductRating = (product: Product): number => {
+  if (product.average_rating !== undefined && product.average_rating !== null) {
+    return Number(product.average_rating);
+  }
+  return Number(product.rating ?? 0);
+};
+
+const getProductReviews = (product: Product): number => {
+  if (product.total_reviews !== undefined && product.total_reviews !== null) {
+    return Number(product.total_reviews);
+  }
+  return Number(product.reviewCount ?? 0);
+};
+
+const getStockStatus = (stock?: number) => {
+  const qty = Number(stock ?? 0);
+  if (qty <= 0) return { label: 'Out of Stock', class: 'bg-destructive/10 text-destructive border-destructive/20' };
+  if (qty < 10) return { label: 'Low Stock', class: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' };
+  return { label: 'In Stock', class: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' };
+};
+
+const handleDelete = async (product: Product) => {
+  if (!confirm(`Are you sure you want to delete product "${product.name}"?`)) return;
+  isDeleting.value = product.id;
+  try {
+    await productService.deleteProduct(product.id);
+    toastSuccess(`Product "${product.name}" deleted successfully.`);
+    await fetchProductsPage();
+  } catch (err: any) {
+    handleApiError(err, 'Failed to delete product.');
+  } finally {
+    isDeleting.value = null;
+  }
+};
+
+onMounted(() => {
+  fetchProductsPage();
+  loadCategories();
+});
 </script>
 
 <template>
   <div class="space-y-6">
-    <!-- Action Bar -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <!-- Single-Row Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-display font-extrabold tracking-tight">Catalog Management</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">Configure and manage your high-performance hardware inventory.</p>
+        <h1 class="text-2xl sm:text-3xl font-display font-extrabold tracking-tight text-foreground">Catalog Management</h1>
+        <p class="text-xs text-muted-foreground mt-0.5">Configure and manage hardware inventory assets.</p>
       </div>
-      <div class="flex items-center gap-3">
-        <button class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
-          <Download class="w-4 h-4" /> Export CSV
-        </button>
-        <button v-if="canCreateProduct" class="bg-primary text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95">
-          <Plus class="w-4 h-4" /> Add New Product
-        </button>
+      <div class="flex items-center gap-2.5 self-start sm:self-auto">
+        <NuxtLink 
+          v-if="canCreateProduct" 
+          to="/admin/products/new"
+          class="h-10 px-4 bg-primary text-primary-foreground rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm hover:opacity-95 transition-all"
+        >
+          <Plus class="w-4 h-4" />
+          <span>Add Product</span>
+        </NuxtLink>
       </div>
     </div>
 
     <!-- Filters Area -->
-    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-4 flex flex-wrap items-center gap-4 shadow-sm">
-      <div class="flex-1 min-w-[300px] relative group">
-        <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-        <input 
+    <div class="bg-card border border-border rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
+      <div class="flex-1 min-w-[260px]">
+        <UiSearchInput
           v-model="searchQuery"
-          type="text" 
-          placeholder="Search by name, SKU, or category..." 
-          class="w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+          placeholder="Search by product name, SKU..."
         />
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Category Filter -->
         <select 
           v-model="categoryFilter"
-          class="h-12 px-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 text-xs font-bold uppercase tracking-widest cursor-pointer appearance-none"
+          class="h-12 px-4 bg-muted/50 border border-input rounded-2xl text-xs font-bold uppercase tracking-wider text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
         >
           <option value="all">All Categories</option>
-          <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+          <option v-for="cat in availableCategories" :key="cat.id" :value="cat.slug || cat.id">
+            {{ cat.name }}
+          </option>
         </select>
 
-        <button class="h-12 w-12 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 hover:text-primary transition-all" title="Filter products" aria-label="Filter products">
-          <Filter class="w-5 h-5" />
+        <!-- Ordering Sort -->
+        <select 
+          v-model="ordering"
+          class="h-12 px-4 bg-muted/50 border border-input rounded-2xl text-xs font-bold uppercase tracking-wider text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+        >
+          <option value="-id">Newest First</option>
+          <option value="name">Name (A-Z)</option>
+          <option value="-name">Name (Z-A)</option>
+          <option value="price">Price (Low to High)</option>
+          <option value="-price">Price (High to Low)</option>
+        </select>
+
+        <!-- Items per page -->
+        <select 
+          v-model="itemsPerPage"
+          class="h-12 px-3 bg-muted/50 border border-input rounded-2xl text-xs font-bold uppercase tracking-wider text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+        >
+          <option :value="5">5 per page</option>
+          <option :value="10">10 per page</option>
+          <option :value="25">25 per page</option>
+          <option :value="50">50 per page</option>
+        </select>
+
+        <!-- Reload Button -->
+        <button 
+          type="button"
+          @click="fetchProductsPage"
+          :disabled="isLoading"
+          class="h-12 w-12 flex items-center justify-center bg-muted/50 border border-input rounded-2xl text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer disabled:opacity-50"
+          title="Refresh products list"
+          aria-label="Refresh products list"
+        >
+          <RefreshCw :class="['w-4 h-4', isLoading && 'animate-spin']" />
         </button>
       </div>
+    </div>
+
+    <!-- Error State Banner -->
+    <div v-if="fetchError" class="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-between gap-4 text-xs font-medium text-destructive">
+      <div class="flex items-center gap-2.5">
+        <AlertCircle class="w-4 h-4 shrink-0" />
+        <span>{{ fetchError }}</span>
+      </div>
+      <button 
+        type="button"
+        @click="fetchProductsPage"
+        class="px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground font-bold hover:opacity-90 transition-opacity cursor-pointer shrink-0"
+      >
+        Retry
+      </button>
     </div>
 
     <!-- Products Table -->
     <UiTable
       :columns="tableColumns"
-      :data="paginatedProducts"
+      :data="productsList"
+      :loading="isLoading"
       key-field="id"
+      empty-text="No Products Found"
+      empty-description="No items match your query or filter criteria. Try clearing search filters."
     >
       <!-- Product Details Column -->
       <template #cell-name="{ item: product }">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0">
-            <img :src="product.images[0]" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-xl bg-muted border border-border overflow-hidden shrink-0 flex items-center justify-center relative">
+            <img 
+              :src="getProductImageUrl(product)" 
+              :alt="getProductImageAlt(product)"
+              @error="handleImageError(product.id)"
+              class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
           </div>
-          <div class="min-w-0">
-            <p class="text-sm font-bold truncate group-hover:text-primary transition-colors">{{ product.name }}</p>
-            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{{ product.brand }}</p>
+          <div class="min-w-0 flex-1 space-y-0.5">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">
+                {{ product.name }}
+              </span>
+              <span v-if="product.wishlist" class="shrink-0 text-rose-500" title="In Wishlist">
+                <Heart class="w-3.5 h-3.5 fill-rose-500" />
+              </span>
+              <span v-if="product.in_cart" class="shrink-0 text-primary" title="In Cart">
+                <ShoppingCart class="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+              <span class="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground/80">
+                {{ product.brand }}
+              </span>
+              <span v-if="getProductRating(product) > 0" class="flex items-center gap-1 text-amber-500 font-bold text-[11px]">
+                <Star class="w-3 h-3 fill-amber-500" />
+                <span>{{ getProductRating(product).toFixed(1) }}</span>
+                <span class="text-muted-foreground font-normal text-[10px]">({{ getProductReviews(product) }})</span>
+              </span>
+            </div>
           </div>
         </div>
       </template>
 
       <!-- SKU Column -->
       <template #cell-sku="{ item: product }">
-        <span class="font-mono text-xs font-bold text-slate-500 tracking-tighter">{{ product.sku }}</span>
+        <span class="font-mono text-xs font-semibold text-muted-foreground">
+          {{ product.sku }}
+        </span>
       </template>
 
       <!-- Category Column -->
       <template #cell-category="{ item: product }">
-        <div class="flex items-center gap-2">
-          <Layers class="w-3 h-3 text-slate-400" />
-          <span class="text-xs font-medium">{{ product.category }}</span>
+        <div class="flex items-center gap-1.5 text-xs font-medium text-foreground">
+          <Layers class="w-3.5 h-3.5 text-muted-foreground" />
+          <span>{{ getCategoryName(product) }}</span>
         </div>
       </template>
 
       <!-- Price Column -->
       <template #cell-price="{ item: product }">
-        <div class="text-sm font-bold tracking-tight">{{ formatCurrency(product.price) }}</div>
-        <div v-if="product.originalPrice" class="text-[10px] text-rose-500 line-through font-bold">{{ formatCurrency(product.originalPrice) }}</div>
+        <div class="text-sm font-extrabold tracking-tight text-foreground">
+          {{ formatCurrency(getProductPrice(product)) }}
+        </div>
+        <div v-if="product.originalPrice && product.originalPrice > getProductPrice(product)" class="text-[10px] text-rose-500 line-through font-bold">
+          {{ formatCurrency(product.originalPrice) }}
+        </div>
       </template>
 
       <!-- Inventory Column -->
       <template #cell-stock="{ item: product }">
-        <div class="flex flex-col gap-1.5 min-w-[100px]">
-          <div class="flex justify-between text-[10px] font-bold">
-            <span :class="product.stock < 10 ? 'text-rose-500' : 'text-slate-500'">{{ product.stock }} units</span>
-            <span class="text-slate-400">/ 100</span>
+        <div class="flex flex-col gap-1 min-w-[100px]">
+          <div class="flex justify-between text-[11px] font-semibold text-muted-foreground">
+            <span>{{ product.stock ?? 0 }} units</span>
           </div>
-          <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden">
+          <div class="h-1.5 w-full bg-muted rounded-full overflow-hidden">
             <div 
               :class="cn(
-                'h-full rounded-full transition-all duration-500', 
-                product.stock < 10 ? 'bg-rose-500' : product.stock < 30 ? 'bg-amber-500' : 'bg-emerald-500'
+                'h-full rounded-full transition-all duration-300', 
+                (product.stock ?? 0) <= 0 ? 'bg-destructive' : (product.stock ?? 0) < 10 ? 'bg-amber-500' : 'bg-emerald-500'
               )"
-              :style="{ width: `${Math.min(product.stock, 100)}%` }"
+              :style="{ width: `${Math.min(product.stock ?? 0, 100)}%` }"
             ></div>
           </div>
         </div>
@@ -187,26 +408,38 @@ const handleDelete = (id: string) => {
       <!-- Status Column -->
       <template #cell-status="{ item: product }">
         <span :class="cn(
-          'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border',
-          product.stock > 0 ? 'bg-emerald-50/50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900' : 'bg-rose-50/50 text-rose-600 border-rose-100 dark:bg-rose-950/20 dark:border-rose-900'
+          'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-block',
+          getStockStatus(product.stock).class
         )">
-          {{ product.stock > 0 ? 'Active' : 'Out of Stock' }}
+          {{ getStockStatus(product.stock).label }}
         </span>
       </template>
 
       <!-- Actions Column -->
       <template #cell-actions="{ item: product }">
-        <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <NuxtLink v-if="canEditProduct" :to="`/admin/products/${product.id}`" class="p-2 text-slate-400 hover:text-primary transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm" title="Edit product" aria-label="Edit product">
-            <Edit2 class="w-3.5 h-3.5" />
+        <div class="flex items-center justify-end gap-1">
+          <NuxtLink 
+            v-if="canEditProduct" 
+            :to="`/admin/products/${product.id}`" 
+            class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors" 
+            title="Edit product" 
+            aria-label="Edit product"
+          >
+            <Edit2 class="w-4 h-4" />
           </NuxtLink>
-          <button v-if="canDeleteProduct" @click="handleDelete(product.id)" class="p-2 text-slate-400 hover:text-rose-600 transition-colors bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg shadow-sm cursor-pointer" title="Delete product" aria-label="Delete product">
-            <Trash2 class="w-3.5 h-3.5" />
+          <button 
+            v-if="canDeleteProduct" 
+            type="button"
+            @click="handleDelete(product)" 
+            :disabled="isDeleting === product.id"
+            class="p-2 text-muted-foreground hover:text-destructive hover:bg-muted rounded-lg transition-colors cursor-pointer disabled:opacity-50" 
+            title="Delete product" 
+            aria-label="Delete product"
+          >
+            <Loader2 v-if="isDeleting === product.id" class="w-4 h-4 animate-spin text-destructive" />
+            <Trash2 v-else class="w-4 h-4" />
           </button>
         </div>
-        <button class="p-2 text-slate-400 group-hover:hidden cursor-pointer" title="More options" aria-label="More options">
-          <MoreVertical class="w-4 h-4" />
-        </button>
       </template>
 
       <!-- Pagination -->
@@ -214,7 +447,7 @@ const handleDelete = (id: string) => {
         <UiPagination
           v-model:current-page="currentPage"
           :total-pages="totalPages"
-          :total-count="filteredProducts.length"
+          :total-count="totalCount"
           :items-per-page="itemsPerPage"
           item-label="products"
         />
