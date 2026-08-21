@@ -1,6 +1,7 @@
 <!-- File: /components/ui/UiTable.vue -->
 <script setup lang="ts" generic="T extends Record<string, any>">
-import { ArrowUpDown, Inbox } from 'lucide-vue-next';
+import { ref, onMounted, onUnmounted, useSlots } from 'vue';
+import { ArrowUpDown, Inbox, MoreVertical } from 'lucide-vue-next';
 import { cn } from '@/utils';
 
 export interface UiTableColumn<T = any> {
@@ -44,6 +45,9 @@ const emit = defineEmits<{
   (e: 'header-click', column: UiTableColumn<T>): void;
 }>();
 
+const slots = useSlots();
+const openMenuRowKey = ref<string | number | null>(null);
+
 function getRowKey(item: T, index: number): string | number {
   if (item && props.keyField in item && item[props.keyField] !== undefined && item[props.keyField] !== null) {
     return item[props.keyField];
@@ -78,6 +82,80 @@ function getAlignmentClass(align?: 'left' | 'center' | 'right'): string {
   if (align === 'center') return 'text-center';
   return 'text-left';
 }
+
+function isActionColumn(col: UiTableColumn<T>): boolean {
+  if (!col || !col.key) return false;
+  const key = col.key.toLowerCase();
+  const label = (col.label || '').toLowerCase();
+  return (
+    key === 'actions' ||
+    key === 'action' ||
+    key === 'operations' ||
+    key === 'operation' ||
+    key.endsWith('_actions') ||
+    key.endsWith('_action') ||
+    key.includes('action') ||
+    label === 'actions' ||
+    label === 'action' ||
+    label === 'operations'
+  );
+}
+
+function hasCellSlot(colKey: string): boolean {
+  return Boolean(
+    slots[`cell-${colKey}`] ||
+    slots[`cell(${colKey})`] ||
+    slots.cell
+  );
+}
+
+function toggleActionMenu(rowKey: string | number) {
+  if (openMenuRowKey.value === rowKey) {
+    openMenuRowKey.value = null;
+  } else {
+    openMenuRowKey.value = rowKey;
+  }
+}
+
+function closeActionMenu() {
+  openMenuRowKey.value = null;
+}
+
+function handleDropdownClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null;
+  if (target && target.closest('button, a, [role="button"], input, select')) {
+    closeActionMenu();
+  }
+}
+
+function onDocumentClick(event: MouseEvent) {
+  if (openMenuRowKey.value !== null) {
+    const target = event.target as HTMLElement | null;
+    if (target && !target.closest('.ui-table-action-trigger') && !target.closest('.ui-table-action-menu-dropdown')) {
+      closeActionMenu();
+    }
+  }
+}
+
+function onDocumentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    closeActionMenu();
+  }
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    document.addEventListener('click', onDocumentClick);
+    document.addEventListener('keydown', onDocumentKeydown);
+  }
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    document.removeEventListener('click', onDocumentClick);
+    document.removeEventListener('keydown', onDocumentKeydown);
+  }
+});
 </script>
 
 <template>
@@ -175,32 +253,98 @@ function getAlignmentClass(align?: 'left' | 'center' | 'right'): string {
                 :key="col.key"
                 :class="cn('px-8 py-5 text-sm', getAlignmentClass(col.align), col.cellClass)"
               >
-                <slot
-                  v-if="$slots[`cell-${col.key}`]"
-                  :name="`cell-${col.key}`"
-                  :item="item"
-                  :column="col"
-                  :index="index"
-                  :value="getItemValue(item, col.key)"
-                />
-                <slot
-                  v-else-if="$slots[`cell(${col.key})`]"
-                  :name="`cell(${col.key})`"
-                  :item="item"
-                  :column="col"
-                  :index="index"
-                  :value="getItemValue(item, col.key)"
-                />
-                <slot
-                  v-else-if="$slots.cell"
-                  name="cell"
-                  :item="item"
-                  :column="col"
-                  :index="index"
-                  :value="getItemValue(item, col.key)"
-                />
+                <!-- Actions Column with Overflow Menu -->
+                <template v-if="isActionColumn(col) && hasCellSlot(col.key)">
+                  <div class="relative inline-flex items-center justify-end" @click.stop>
+                    <button
+                      type="button"
+                      @click.stop="toggleActionMenu(getRowKey(item, index))"
+                      :class="cn(
+                        'p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors inline-flex items-center justify-center cursor-pointer ui-table-action-trigger',
+                        openMenuRowKey === getRowKey(item, index) && 'bg-muted text-foreground'
+                      )"
+                      title="Actions"
+                      aria-label="Actions"
+                      :aria-expanded="openMenuRowKey === getRowKey(item, index)"
+                    >
+                      <MoreVertical class="w-4 h-4" />
+                    </button>
+
+                    <!-- Dropdown Overflow Popover -->
+                    <Transition
+                      enter-active-class="transition duration-150 ease-out"
+                      enter-from-class="transform scale-95 opacity-0"
+                      enter-to-class="transform scale-100 opacity-100"
+                      leave-active-class="transition duration-100 ease-in"
+                      leave-from-class="transform scale-100 opacity-100"
+                      leave-to-class="transform scale-95 opacity-0"
+                    >
+                      <div
+                        v-if="openMenuRowKey === getRowKey(item, index)"
+                        :class="cn(
+                          'absolute right-0 z-50 bg-card text-card-foreground border border-border rounded-xl shadow-lg p-1.5 ui-table-action-menu-dropdown',
+                          index >= Math.max(1, (data?.length || 0) - 2) && (data?.length || 0) > 2 ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+                        )"
+                        @click="handleDropdownClick"
+                      >
+                        <slot
+                          v-if="$slots[`cell-${col.key}`]"
+                          :name="`cell-${col.key}`"
+                          :item="item"
+                          :column="col"
+                          :index="index"
+                          :value="getItemValue(item, col.key)"
+                        />
+                        <slot
+                          v-else-if="$slots[`cell(${col.key})`]"
+                          :name="`cell(${col.key})`"
+                          :item="item"
+                          :column="col"
+                          :index="index"
+                          :value="getItemValue(item, col.key)"
+                        />
+                        <slot
+                          v-else-if="$slots.cell"
+                          name="cell"
+                          :item="item"
+                          :column="col"
+                          :index="index"
+                          :value="getItemValue(item, col.key)"
+                        />
+                      </div>
+                    </Transition>
+                  </div>
+                </template>
+
+                <!-- Regular Data Column -->
                 <template v-else>
-                  {{ getItemValue(item, col.key) }}
+                  <slot
+                    v-if="$slots[`cell-${col.key}`]"
+                    :name="`cell-${col.key}`"
+                    :item="item"
+                    :column="col"
+                    :index="index"
+                    :value="getItemValue(item, col.key)"
+                  />
+                  <slot
+                    v-else-if="$slots[`cell(${col.key})`]"
+                    :name="`cell(${col.key})`"
+                    :item="item"
+                    :column="col"
+                    :index="index"
+                    :value="getItemValue(item, col.key)"
+                  />
+                  <slot
+                    v-else-if="$slots.cell"
+                    name="cell"
+                    :item="item"
+                    :column="col"
+                    :index="index"
+                    :value="getItemValue(item, col.key)"
+                  />
+                  <template v-else>
+                    {{ getItemValue(item, col.key) }}
+                  </template>
                 </template>
               </td>
             </tr>
@@ -211,3 +355,22 @@ function getAlignmentClass(align?: 'left' | 'center' | 'right'): string {
     <slot name="footer" />
   </div>
 </template>
+
+<style scoped>
+.ui-table-action-menu-dropdown :deep(*) {
+  opacity: 1 !important;
+  transform: none !important;
+  visibility: visible !important;
+}
+
+.ui-table-action-menu-dropdown :deep(.group-hover\:hidden) {
+  display: none !important;
+}
+
+.ui-table-action-menu-dropdown :deep(> div) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  white-space: nowrap !important;
+}
+</style>
