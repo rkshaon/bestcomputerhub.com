@@ -142,6 +142,9 @@ export const useProductService = () => {
     const pageSize = params.page_size || 10;
     const search = params.search || params.query || '';
     const categoryFilter = params.category;
+    const categoriesFilter = params.categories !== undefined && params.categories !== null
+      ? (Array.isArray(params.categories) ? params.categories.filter(Boolean).join(',') : String(params.categories).trim())
+      : undefined;
     const brandFilter = params.brand;
     const minPrice = params.minPrice;
     const maxPrice = params.maxPrice;
@@ -154,7 +157,17 @@ export const useProductService = () => {
 
       let filtered = [...getMockProducts()];
 
-      if (categoryFilter) {
+      if (categoriesFilter) {
+        const catIds = categoriesFilter.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        if (catIds.length > 0) {
+          filtered = filtered.filter(p => {
+            const origId = p.origin?.id !== undefined && p.origin?.id !== null ? String(p.origin.id).toLowerCase() : '';
+            const catName = String(p.category || '').toLowerCase();
+            const subName = String(p.subCategory || '').toLowerCase();
+            return (origId && catIds.includes(origId)) || catIds.includes(catName) || catIds.includes(subName);
+          });
+        }
+      } else if (categoryFilter) {
         const catStr = String(categoryFilter).toLowerCase();
         filtered = filtered.filter(p => 
           String(p.category).toLowerCase() === catStr || 
@@ -226,8 +239,10 @@ export const useProductService = () => {
       qParams.append('page', page.toString());
       qParams.append('page_size', pageSize.toString());
 
-      // Forward category filter - support both numeric ID and string slug formats
-      if (categoryFilter !== undefined && categoryFilter !== '') {
+      // Forward categories filter (comma-separated integer IDs)
+      if (categoriesFilter) {
+        qParams.append('categories', categoriesFilter);
+      } else if (categoryFilter !== undefined && categoryFilter !== '') {
         const isNumeric = /^\d+$/.test(categoryFilter.toString());
         if (isNumeric) {
           qParams.append('category', categoryFilter.toString());
@@ -238,11 +253,9 @@ export const useProductService = () => {
         }
       }
 
-      // Forward search/query keywords
+      // Forward search keywords
       if (search) {
         qParams.append('search', search);
-        qParams.append('query', search);
-        qParams.append('q', search);
       }
 
       // Forward brand filter

@@ -47,6 +47,7 @@ export interface ProductFilters {
   page?: number;
   page_size?: number;
   category?: string | number;
+  categories?: string | number | (string | number)[];
   query?: string;
   search?: string;
   brand?: string;
