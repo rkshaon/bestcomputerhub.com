@@ -25,7 +25,8 @@ import {
   Loader2,
   LayoutGrid,
   List,
-  FolderTree
+  FolderTree,
+  GripVertical
 } from 'lucide-vue-next';
 import CategoryTreeAdmin from '@/components/admin/CategoryTreeAdmin.vue';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -43,6 +44,7 @@ definePageMeta({
 });
 
 const tableColumns: UiTableColumn<Category>[] = [
+  { key: 'reorder', label: '', width: '36px', headerClass: 'w-9 px-2 py-3 text-center', cellClass: 'w-9 px-2 py-2.5 text-center' },
   { key: 'select', label: '', width: '48px', headerClass: 'w-12 px-4 py-3 text-center', cellClass: 'w-12 px-4 py-2.5 text-center' },
   { key: 'name', label: 'Classification', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'show_in_menu', label: 'Menu', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
@@ -248,6 +250,96 @@ const validateAndSetFile = (file: File) => {
   importSuccessCount.value = null;
   importErrors.value = [];
 };
+
+// Category Drag and Drop Reordering handlers
+const draggedCatId = ref<string | null>(null);
+const dragOverCatId = ref<string | null>(null);
+const isReordering = ref(false);
+
+const onCatDragStart = (e: DragEvent, cat: Category) => {
+  draggedCatId.value = String(cat.id);
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(cat.id));
+  }
+};
+
+const onCatDragOver = (e: DragEvent, cat: Category) => {
+  e.preventDefault();
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move';
+  }
+  if (draggedCatId.value && draggedCatId.value !== String(cat.id)) {
+    dragOverCatId.value = String(cat.id);
+  }
+};
+
+const onCatDragLeave = (_e: DragEvent, cat: Category) => {
+  if (dragOverCatId.value === String(cat.id)) {
+    dragOverCatId.value = null;
+  }
+};
+
+const onCatDragEnd = (_e: DragEvent) => {
+  draggedCatId.value = null;
+  dragOverCatId.value = null;
+};
+
+const onCatDrop = async (e: DragEvent, targetCat: Category) => {
+  e.preventDefault();
+  const sourceId = draggedCatId.value;
+  draggedCatId.value = null;
+  dragOverCatId.value = null;
+
+  if (!sourceId || sourceId === String(targetCat.id) || isReordering.value) return;
+
+  const currentList = [...categoriesList.value];
+  const draggedIdx = currentList.findIndex(c => String(c.id) === sourceId);
+  const targetIdx = currentList.findIndex(c => String(c.id) === String(targetCat.id));
+
+  if (draggedIdx === -1 || targetIdx === -1) return;
+
+  const draggedCat = currentList[draggedIdx];
+  if (!draggedCat) return;
+
+  if (draggedCat.parentCategoryId !== targetCat.parentCategoryId) {
+    toastError('Categories can only be reordered within the same parent level.');
+    return;
+  }
+
+  const [movedItem] = currentList.splice(draggedIdx, 1);
+  if (!movedItem) return;
+  currentList.splice(targetIdx, 0, movedItem);
+
+  categoriesList.value = currentList;
+
+  const newDisplayOrder = targetIdx + 1;
+
+  isReordering.value = true;
+  try {
+    await categoryService.reorderCategory(movedItem.slug, newDisplayOrder);
+    toastSuccess(`Category [${movedItem.name}] reordered successfully.`);
+  } catch (err: any) {
+    handleApiError(err, 'Failed to reorder category.');
+    await fetchCategoriesPage();
+  } finally {
+    isReordering.value = false;
+  }
+};
+
+const getTableRowAttrs = (cat: Category) => ({
+  draggable: true,
+  ondragstart: (e: DragEvent) => onCatDragStart(e, cat),
+  ondragover: (e: DragEvent) => onCatDragOver(e, cat),
+  ondragleave: (e: DragEvent) => onCatDragLeave(e, cat),
+  ondrop: (e: DragEvent) => onCatDrop(e, cat),
+  ondragend: (e: DragEvent) => onCatDragEnd(e),
+  class: cn(
+    'cursor-grab active:cursor-grabbing',
+    draggedCatId.value === String(cat.id) && 'opacity-40 bg-muted/50',
+    dragOverCatId.value === String(cat.id) && 'bg-primary/10 border-dashed border-primary'
+  )
+});
 
 const onDragOver = (e: DragEvent) => {
   e.preventDefault();
@@ -1284,12 +1376,23 @@ watch(viewMode, () => {
         <div 
           v-for="cat in categoriesList" 
           :key="cat.id"
-          class="bg-card text-card-foreground border border-border rounded-2xl p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+          draggable="true"
+          @dragstart="onCatDragStart($event, cat)"
+          @dragover.prevent="onCatDragOver($event, cat)"
+          @dragleave="onCatDragLeave($event, cat)"
+          @drop="onCatDrop($event, cat)"
+          @dragend="onCatDragEnd($event)"
+          :class="[
+            'bg-card text-card-foreground border rounded-2xl p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group cursor-grab active:cursor-grabbing',
+            draggedCatId === String(cat.id) ? 'opacity-40 scale-[0.98]' : '',
+            dragOverCatId === String(cat.id) ? 'border-primary/60 border-dashed bg-primary/5' : 'border-border'
+          ]"
         >
           <div class="space-y-4">
             <!-- Icon & Menu Status & Checkbox -->
             <div class="flex items-start justify-between gap-4">
               <div class="flex items-center gap-3">
+                <GripVertical class="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground/80 cursor-grab active:cursor-grabbing shrink-0" />
                 <input
                   type="checkbox"
                   :checked="selectedCategoryIds.includes(String(cat.id))"
@@ -1452,8 +1555,15 @@ watch(viewMode, () => {
       v-else-if="viewMode === 'list'"
       :columns="tableColumns"
       :data="categoriesList"
+      :row-attrs="getTableRowAttrs"
       key-field="id"
     >
+      <!-- Drag Reorder Handle Cell -->
+      <template #cell-reorder="{ item: cat }">
+        <div class="flex items-center justify-center text-muted-foreground/30 group-hover:text-muted-foreground/80 cursor-grab active:cursor-grabbing">
+          <GripVertical class="w-4 h-4" />
+        </div>
+      </template>
       <!-- Bulk Action Bar inside Table Header Slot -->
       <template #header>
         <div 

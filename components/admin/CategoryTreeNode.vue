@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, inject, type Ref } from 'vue';
 import { 
   ChevronRight, 
   ChevronDown, 
@@ -7,7 +7,8 @@ import {
   Info, 
   Edit2, 
   Trash2, 
-  Loader2 
+  Loader2,
+  GripVertical
 } from 'lucide-vue-next';
 import type { Category } from '@/types';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -34,9 +35,13 @@ const emit = defineEmits<{
   (e: 'view', cat: Category): void;
   (e: 'edit', cat: Category): void;
   (e: 'delete', cat: Category): void;
+  (e: 'reorder', payload: { source: Category; target: Category }): void;
 }>();
 
 const categoryService = useCategoryService();
+
+const draggedTreeNode = inject<Ref<Category | null>>('draggedTreeNode', ref(null));
+const dragOverTreeNodeId = inject<Ref<string | null>>('dragOverTreeNodeId', ref(null));
 
 const isExpanded = computed(() => categoryService.isNodeExpanded(props.node.id));
 const isSelected = computed(() => {
@@ -111,20 +116,78 @@ const hasSubNodes = computed(() => {
 
 const isCurrentlyMenu = computed(() => props.node.show_in_menu === true || props.node.is_menu === true);
 const isToggling = computed(() => props.togglingMenuSlug === props.node.slug);
+
+// Drag & Drop handlers for Tree node
+const onNodeDragStart = (e: DragEvent) => {
+  e.stopPropagation();
+  draggedTreeNode.value = props.node;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(props.node.id));
+  }
+};
+
+const onNodeDragOver = (e: DragEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move';
+  }
+  if (draggedTreeNode.value && String(draggedTreeNode.value.id) !== String(props.node.id)) {
+    dragOverTreeNodeId.value = String(props.node.id);
+  }
+};
+
+const onNodeDragLeave = (e: DragEvent) => {
+  e.stopPropagation();
+  if (dragOverTreeNodeId.value === String(props.node.id)) {
+    dragOverTreeNodeId.value = null;
+  }
+};
+
+const onNodeDragEnd = (e: DragEvent) => {
+  e.stopPropagation();
+  draggedTreeNode.value = null;
+  dragOverTreeNodeId.value = null;
+};
+
+const onNodeDrop = (e: DragEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+  const source = draggedTreeNode.value;
+  const target = props.node;
+  draggedTreeNode.value = null;
+  dragOverTreeNodeId.value = null;
+
+  if (!source || String(source.id) === String(target.id)) return;
+
+  emit('reorder', { source, target });
+};
 </script>
 
 <template>
   <div class="category-tree-node select-none">
     <!-- Node Row -->
     <div 
+      draggable="true"
+      @dragstart="onNodeDragStart"
+      @dragover="onNodeDragOver"
+      @dragleave="onNodeDragLeave"
+      @drop="onNodeDrop"
+      @dragend="onNodeDragEnd"
       :class="[
-        'group flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-muted/60 transition-colors border border-transparent hover:border-border/60',
-        depth > 0 && 'my-0.5'
+        'group flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-muted/60 transition-colors border cursor-grab active:cursor-grabbing',
+        depth > 0 && 'my-0.5',
+        draggedTreeNode?.id === node.id ? 'opacity-40 bg-muted/40' : '',
+        dragOverTreeNodeId === String(node.id) ? 'border-primary/60 border-dashed bg-primary/5' : 'border-transparent hover:border-border/60'
       ]"
-      :style="{ paddingLeft: `${depth * 20 + 12}px` }"
+      :style="{ paddingLeft: `${depth * 20 + 8}px` }"
     >
       <!-- Left side: Expand icon, Category Icon, Name, Slug, Status Badge -->
       <div class="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
+        <!-- Grip Handle Icon -->
+        <GripVertical class="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/80 cursor-grab active:cursor-grabbing shrink-0" />
+
         <!-- Expand / Collapse button -->
         <button
           v-if="hasSubNodes"
@@ -252,6 +315,7 @@ const isToggling = computed(() => props.togglingMenuSlug === props.node.slug);
         @view="$emit('view', $event)"
         @edit="$emit('edit', $event)"
         @delete="$emit('delete', $event)"
+        @reorder="$emit('reorder', $event)"
       />
     </div>
   </div>

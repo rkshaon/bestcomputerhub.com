@@ -11,6 +11,7 @@ export interface Category {
   parentCategoryId?: string;
   subCategories?: string[];
   order?: number;
+  display_order?: number;
   children?: Category[];
   has_children?: boolean;
   show_in_menu?: boolean;

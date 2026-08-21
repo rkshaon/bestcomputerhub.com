@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, provide } from 'vue';
 import { 
   FolderTree, 
   Menu, 
@@ -10,6 +10,7 @@ import {
 } from 'lucide-vue-next';
 import type { Category } from '@/types';
 import { useCategoryService } from '@/composables/useCategoryService';
+import { useToast, extractErrorMessage, handleApiError } from '@/composables/useToast';
 import CategoryTreeNode from './CategoryTreeNode.vue';
 
 const props = withDefaults(defineProps<{
@@ -34,12 +35,19 @@ const emit = defineEmits<{
   (e: 'delete', cat: Category): void;
 }>();
 
+const { toastSuccess, toastError } = useToast();
 const categoryService = useCategoryService();
 
 const treeMode = ref<'category' | 'menu'>('category');
 const rootCategories = ref<Category[]>([]);
 const isLoadingRoots = ref(false);
 const rootError = ref<string | null>(null);
+
+const draggedTreeNode = ref<Category | null>(null);
+const dragOverTreeNodeId = ref<string | null>(null);
+
+provide('draggedTreeNode', draggedTreeNode);
+provide('dragOverTreeNodeId', dragOverTreeNodeId);
 
 const fetchRoots = async () => {
   try {
@@ -52,6 +60,72 @@ const fetchRoots = async () => {
     rootError.value = err?.message || 'Failed to load root category hierarchy.';
   } finally {
     isLoadingRoots.value = false;
+  }
+};
+
+const handleTreeReorder = async ({ source, target }: { source: Category; target: Category }) => {
+  const sourceParentId = source.parentCategoryId ? String(source.parentCategoryId) : null;
+  const targetParentId = target.parentCategoryId ? String(target.parentCategoryId) : null;
+
+  if (sourceParentId !== targetParentId) {
+    toastError('Categories can only be reordered within the same parent level.');
+    return;
+  }
+
+  // Root level reordering
+  if (!sourceParentId) {
+    const list = [...rootCategories.value];
+    const draggedIdx = list.findIndex(c => String(c.id) === String(source.id));
+    const targetIdx = list.findIndex(c => String(c.id) === String(target.id));
+
+    if (draggedIdx === -1 || targetIdx === -1) return;
+
+    const [moved] = list.splice(draggedIdx, 1);
+    if (!moved) return;
+    list.splice(targetIdx, 0, moved);
+
+    // Permute array locally for instant UI update
+    rootCategories.value = list;
+
+    const newDisplayOrder = targetIdx + 1;
+    try {
+      await categoryService.reorderCategory(source.slug, newDisplayOrder);
+      toastSuccess(`Category [${source.name}] reordered successfully.`);
+    } catch (err: any) {
+      handleApiError(err, 'Failed to reorder category.');
+      await fetchRoots();
+    }
+    return;
+  }
+
+  // Sub-category level reordering
+  const parentKey = sourceParentId;
+  const cachedChildren = categoryService.categoryChildrenCache.value[parentKey];
+  if (!cachedChildren || !Array.isArray(cachedChildren)) return;
+
+  const list = [...cachedChildren];
+  const draggedIdx = list.findIndex(c => String(c.id) === String(source.id));
+  const targetIdx = list.findIndex(c => String(c.id) === String(target.id));
+
+  if (draggedIdx === -1 || targetIdx === -1) return;
+
+  const [moved] = list.splice(draggedIdx, 1);
+  if (!moved) return;
+  list.splice(targetIdx, 0, moved);
+
+  // Permute sub-category cache immediately
+  categoryService.categoryChildrenCache.value = {
+    ...categoryService.categoryChildrenCache.value,
+    [parentKey]: list
+  };
+
+  const newDisplayOrder = targetIdx + 1;
+  try {
+    await categoryService.reorderCategory(source.slug, newDisplayOrder);
+    toastSuccess(`Category [${source.name}] reordered successfully.`);
+  } catch (err: any) {
+    handleApiError(err, 'Failed to reorder category.');
+    await categoryService.refreshChildrenForParent(parentKey);
   }
 };
 
@@ -240,6 +314,7 @@ const displayRoots = computed(() => {
         @view="$emit('view', $event)"
         @edit="$emit('edit', $event)"
         @delete="$emit('delete', $event)"
+        @reorder="handleTreeReorder"
       />
     </div>
   </div>

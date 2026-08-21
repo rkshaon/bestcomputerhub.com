@@ -38,6 +38,8 @@ export const useCategoryService = () => {
       ...cat,
       id: String(cat.id),
       parentCategoryId: parentId,
+      order: cat.display_order !== undefined ? Number(cat.display_order) : (cat.order !== undefined ? Number(cat.order) : 0),
+      display_order: cat.display_order !== undefined ? Number(cat.display_order) : (cat.order !== undefined ? Number(cat.order) : 0),
       show_in_menu: cat.show_in_menu !== undefined ? Boolean(cat.show_in_menu) : (cat.is_menu !== undefined ? Boolean(cat.is_menu) : true),
       is_menu: cat.is_menu !== undefined ? Boolean(cat.is_menu) : (cat.show_in_menu !== undefined ? Boolean(cat.show_in_menu) : true),
       has_children: typeof cat.has_children === 'boolean'
@@ -1224,12 +1226,48 @@ export const useCategoryService = () => {
     return await getCategoryChildrenBatch([key], { force: true });
   };
 
+  const reorderCategory = async (slug: string, displayOrder: number): Promise<Category> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+
+      const categoriesList = getMockCategories();
+      const cat = categoriesList.find(c => c.slug === slug || String(c.id) === slug);
+      if (cat) {
+        cat.order = displayOrder;
+        cat.display_order = displayOrder;
+        saveMockCategories(categoriesList);
+        return mapCategoryResponse(cat);
+      }
+      throw new Error(`Category ${slug} not found.`);
+    }
+
+    try {
+      const data = await apiClient.request<any>(`/api/v1/categories/${slug}/reorder/`, {
+        method: 'POST',
+        body: {
+          display_order: displayOrder
+        }
+      });
+      isLoading.value = false;
+      return mapCategoryResponse(data);
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to reorder category.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   return {
     getCategoriesList,
     getCategorySummary,
     getRootCategories,
     getCategoryChildrenBatch,
     refreshChildrenForParent,
+    reorderCategory,
     getChildrenForParent,
     hasChildrenLoaded,
     isChildrenLoading,
