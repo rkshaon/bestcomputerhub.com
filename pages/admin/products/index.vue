@@ -1,6 +1,6 @@
 <!-- File: /pages/admin/products/index.vue -->
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { refDebounced } from '@vueuse/core';
 import { 
   Plus, 
@@ -18,19 +18,23 @@ import {
   ShoppingCart,
   ChevronDown,
   Check,
-  X
+  X,
+  Save,
+  Package
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
 import { formatCurrency, cn } from '@/utils';
-import type { Product, Category } from '@/types';
+import type { Product, Category, CreateProductPayload } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiSearchInput from '@/components/ui/UiSearchInput.vue';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -89,7 +93,18 @@ const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.page
 
 const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
 
-// Category search and infinite-scrolling picker options
+// URL-driven modal state infrastructure
+const modalState = useAdminModalState<Product>({
+  getItems: async (id) => {
+    return await productService.getProductDetails(String(id));
+  },
+  onResolveError: (id) => {
+    toastError(`Product #${id} could not be resolved.`);
+    modalState.closeModal({ replace: true });
+  }
+});
+
+// Category search and infinite-scrolling picker options for List filter
 const categorySearchQuery = ref('');
 const isCategoryDropdownOpen = ref(false);
 const categoryDropdownRef = ref<HTMLElement | null>(null);
@@ -154,6 +169,157 @@ const activeCategoriesButtonLabel = computed(() => {
   return `${selectedCategoryIds.value.length} Categories`;
 });
 
+// Create Product Modal State & Form Controls
+const createProductName = ref('');
+const createCurrentSellingPrice = ref<number | ''>('');
+const createSelectedCategoryIds = ref<number[]>([]);
+const isCreateSubmitting = ref(false);
+const createFormError = ref<string | null>(null);
+const createFieldErrors = ref<{
+  name?: string;
+  categories?: string;
+  price?: string;
+}>({});
+const createProductNameInputRef = ref<HTMLInputElement | null>(null);
+
+// Modal Category Picker State
+const isModalCategoryDropdownOpen = ref(false);
+const modalCategoryDropdownRef = ref<HTMLElement | null>(null);
+const modalCategorySearchQuery = ref('');
+
+const modalCategoryPagination = useInfinitePagination<Category>({
+  fetcher: async (params) => {
+    return await categoryService.getCategoriesList({
+      page: params.page,
+      page_size: 10,
+      search: params.search
+    });
+  },
+  search: modalCategorySearchQuery,
+  pageSize: 10,
+  dedupeKey: (c) => String(c.id),
+  autoFetch: false
+});
+
+const toggleModalCategoryDropdown = () => {
+  isModalCategoryDropdownOpen.value = !isModalCategoryDropdownOpen.value;
+  if (isModalCategoryDropdownOpen.value && modalCategoryPagination.items.value.length === 0) {
+    modalCategoryPagination.refresh();
+  }
+};
+
+const closeModalCategoryDropdown = () => {
+  isModalCategoryDropdownOpen.value = false;
+};
+
+const toggleModalCategorySelection = (categoryId: number | string) => {
+  const numId = Number(categoryId);
+  const index = createSelectedCategoryIds.value.indexOf(numId);
+  if (index > -1) {
+    createSelectedCategoryIds.value.splice(index, 1);
+  } else {
+    createSelectedCategoryIds.value.push(numId);
+  }
+  if (createFieldErrors.value.categories && createSelectedCategoryIds.value.length > 0) {
+    createFieldErrors.value.categories = undefined;
+  }
+};
+
+const removeModalCategorySelection = (categoryId: number) => {
+  const index = createSelectedCategoryIds.value.indexOf(categoryId);
+  if (index > -1) {
+    createSelectedCategoryIds.value.splice(index, 1);
+  }
+};
+
+const isModalCategorySelected = (categoryId: number | string) => {
+  return createSelectedCategoryIds.value.includes(Number(categoryId));
+};
+
+const clearModalCategorySelection = () => {
+  createSelectedCategoryIds.value = [];
+};
+
+const getModalCategoryNameById = (id: number): string => {
+  const found = modalCategoryPagination.items.value.find(c => Number(c.id) === id);
+  return found ? found.name : `Category #${id}`;
+};
+
+// Reset form when Create modal opens
+watch(() => modalState.isCreate.value, (isCreateOpen) => {
+  if (isCreateOpen) {
+    createProductName.value = '';
+    createCurrentSellingPrice.value = '';
+    createSelectedCategoryIds.value = [];
+    createFormError.value = null;
+    createFieldErrors.value = {};
+    modalCategorySearchQuery.value = '';
+    isModalCategoryDropdownOpen.value = false;
+    if (modalCategoryPagination.items.value.length === 0) {
+      modalCategoryPagination.refresh();
+    }
+    nextTick(() => {
+      createProductNameInputRef.value?.focus();
+    });
+  }
+});
+
+const validateCreateForm = (): boolean => {
+  createFieldErrors.value = {};
+  createFormError.value = null;
+  let isValid = true;
+
+  if (!createProductName.value || !createProductName.value.trim()) {
+    createFieldErrors.value.name = 'Product name is required.';
+    isValid = false;
+  }
+
+  if (createSelectedCategoryIds.value.length === 0) {
+    createFieldErrors.value.categories = 'At least one category must be selected.';
+    isValid = false;
+  }
+
+  if (createCurrentSellingPrice.value === '' || isNaN(Number(createCurrentSellingPrice.value)) || Number(createCurrentSellingPrice.value) < 0) {
+    createFieldErrors.value.price = 'Please enter a valid non-negative selling price.';
+    isValid = false;
+  }
+
+  return isValid;
+};
+
+const handleCreateProductSubmit = async () => {
+  if (!validateCreateForm()) {
+    createFormError.value = 'Please fix the validation errors before submitting.';
+    return;
+  }
+
+  if (!canCreateProduct.value) {
+    createFormError.value = 'You do not have permission to create products.';
+    return;
+  }
+
+  isCreateSubmitting.value = true;
+  createFormError.value = null;
+
+  const payload: CreateProductPayload = {
+    name: createProductName.value.trim(),
+    categories: createSelectedCategoryIds.value.map(id => Number(id)),
+    current_selling_price: Number(createCurrentSellingPrice.value)
+  };
+
+  try {
+    await productService.createProduct(payload);
+    toastSuccess(`Product "${payload.name}" created successfully.`);
+    modalState.closeModal();
+    await fetchProductsPage();
+  } catch (err: any) {
+    createFormError.value = extractErrorMessage(err, 'Failed to create product. Please check your inputs and try again.');
+    handleApiError(err, 'Failed to create product.');
+  } finally {
+    isCreateSubmitting.value = false;
+  }
+};
+
 // Fetch products page from API (GET /api/v1/products/)
 const fetchProductsPage = async () => {
   isLoading.value = true;
@@ -213,16 +379,22 @@ watch(currentPage, () => {
 
 // Document click / keyboard listeners for category popover dismiss
 const onDocumentClick = (e: MouseEvent) => {
-  if (!isCategoryDropdownOpen.value) return;
   const target = e.target as HTMLElement | null;
-  if (categoryDropdownRef.value && !categoryDropdownRef.value.contains(target)) {
+  if (isCategoryDropdownOpen.value && categoryDropdownRef.value && !categoryDropdownRef.value.contains(target)) {
     closeCategoryDropdown();
+  }
+  if (isModalCategoryDropdownOpen.value && modalCategoryDropdownRef.value && !modalCategoryDropdownRef.value.contains(target)) {
+    closeModalCategoryDropdown();
   }
 };
 
 const onDocumentKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && isCategoryDropdownOpen.value) {
-    closeCategoryDropdown();
+  if (e.key === 'Escape') {
+    if (isModalCategoryDropdownOpen.value) {
+      closeModalCategoryDropdown();
+    } else if (isCategoryDropdownOpen.value) {
+      closeCategoryDropdown();
+    }
   }
 };
 
@@ -335,14 +507,15 @@ onUnmounted(() => {
         <p class="text-xs text-muted-foreground mt-0.5">Configure and manage hardware inventory assets.</p>
       </div>
       <div class="flex items-center gap-2.5 self-start sm:self-auto">
-        <NuxtLink 
+        <button 
           v-if="canCreateProduct" 
-          to="/admin/products/new"
-          class="h-10 px-4 bg-primary text-primary-foreground rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm hover:opacity-95 transition-all"
+          type="button"
+          @click="modalState.openCreate()"
+          class="h-10 px-4 bg-primary text-primary-foreground rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm hover:opacity-95 transition-all cursor-pointer"
         >
           <Plus class="w-4 h-4" />
           <span>Add Product</span>
-        </NuxtLink>
+        </button>
       </div>
     </div>
 
@@ -653,5 +826,219 @@ onUnmounted(() => {
         />
       </template>
     </UiTable>
+
+    <!-- Create Product Modal -->
+    <UiAdminModal
+      :is-open="modalState.isCreate.value"
+      title="Add Product"
+      subtitle="Configure and register a new product in the catalog."
+      max-width="max-w-xl"
+      @close="modalState.closeModal"
+    >
+      <form @submit.prevent="handleCreateProductSubmit" class="flex flex-col">
+        <!-- Scrollable Modal Body -->
+        <div class="p-6 space-y-5 overflow-y-auto max-h-[65vh]">
+          <!-- Error Banner -->
+          <div v-if="createFormError" class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2.5 text-xs font-medium text-destructive">
+            <AlertCircle class="w-4 h-4 shrink-0" />
+            <span>{{ createFormError }}</span>
+          </div>
+
+          <!-- Product Name -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <span>Product Name <span class="text-destructive">*</span></span>
+              <span v-if="createFieldErrors.name" class="text-destructive font-normal normal-case text-xs">{{ createFieldErrors.name }}</span>
+            </label>
+            <input
+              ref="createProductNameInputRef"
+              v-model="createProductName"
+              type="text"
+              placeholder="e.g. GeForce RTX 4090 Gaming OC 24G"
+              :class="cn(
+                'w-full h-11 px-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2',
+                createFieldErrors.name ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
+              )"
+              :disabled="isCreateSubmitting"
+            />
+          </div>
+
+          <!-- Categories Selector -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <span>Categories <span class="text-destructive">*</span></span>
+              <span v-if="createFieldErrors.categories" class="text-destructive font-normal normal-case text-xs">{{ createFieldErrors.categories }}</span>
+            </label>
+
+            <!-- Selected Category Pills / Chips -->
+            <div v-if="createSelectedCategoryIds.length > 0" class="flex flex-wrap gap-1.5 mb-2">
+              <span 
+                v-for="catId in createSelectedCategoryIds" 
+                :key="catId"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-medium"
+              >
+                <Layers class="w-3 h-3" />
+                <span>{{ getModalCategoryNameById(catId) }}</span>
+                <button
+                  type="button"
+                  @click="removeModalCategorySelection(catId)"
+                  class="text-primary/70 hover:text-primary hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer"
+                  title="Remove category"
+                  aria-label="Remove category"
+                >
+                  <X class="w-3 h-3" />
+                </button>
+              </span>
+            </div>
+
+            <!-- Modal Category Dropdown Trigger -->
+            <div ref="modalCategoryDropdownRef" class="relative">
+              <button
+                type="button"
+                @click.stop="toggleModalCategoryDropdown"
+                :class="cn(
+                  'w-full h-11 px-3.5 bg-background border rounded-xl text-left text-sm font-medium transition-all flex items-center justify-between gap-2 cursor-pointer focus:ring-2',
+                  createFieldErrors.categories ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20',
+                  createSelectedCategoryIds.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                )"
+                :disabled="isCreateSubmitting"
+                aria-haspopup="listbox"
+                :aria-expanded="isModalCategoryDropdownOpen"
+              >
+                <div class="flex items-center gap-2 truncate">
+                  <Layers class="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span class="truncate">
+                    {{ createSelectedCategoryIds.length === 0 ? 'Select one or more categories...' : `${createSelectedCategoryIds.length} categories selected` }}
+                  </span>
+                </div>
+                <ChevronDown :class="cn('w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0', isModalCategoryDropdownOpen && 'rotate-180')" />
+              </button>
+
+              <!-- Category Dropdown Popover -->
+              <div 
+                v-if="isModalCategoryDropdownOpen"
+                @click.stop
+                class="absolute left-0 top-full z-50 mt-1.5 w-full bg-card border border-border rounded-xl shadow-xl p-2.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+              >
+                <!-- Category Search Input -->
+                <div class="relative mb-2">
+                  <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    v-model="modalCategorySearchQuery"
+                    type="text"
+                    placeholder="Search categories..."
+                    class="w-full h-8 pl-8 pr-2.5 text-xs bg-muted/50 border border-input rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring/20"
+                  />
+                </div>
+
+                <!-- Header & Clear Option -->
+                <div class="flex items-center justify-between px-1 py-1 mb-1 border-b border-border/60 text-[11px]">
+                  <span class="text-muted-foreground font-semibold">Available Categories</span>
+                  <button
+                    v-if="createSelectedCategoryIds.length > 0"
+                    type="button"
+                    @click="clearModalCategorySelection"
+                    class="text-primary hover:underline font-bold cursor-pointer"
+                  >
+                    Clear selection ({{ createSelectedCategoryIds.length }})
+                  </button>
+                </div>
+
+                <!-- Infinite Scroll List of Categories -->
+                <div class="max-h-52 overflow-y-auto space-y-0.5 p-0.5 scrollbar-thin">
+                  <button
+                    v-for="cat in modalCategoryPagination.items.value"
+                    :key="cat.id"
+                    type="button"
+                    @click="toggleModalCategorySelection(cat.id)"
+                    :class="[
+                      'w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer',
+                      isModalCategorySelected(cat.id) ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
+                    ]"
+                  >
+                    <div class="flex items-center gap-2 truncate">
+                      <span class="truncate">{{ cat.name }}</span>
+                      <span v-if="cat.slug" class="font-mono text-[10px] text-muted-foreground">/{{ cat.slug }}</span>
+                    </div>
+                    <div 
+                      class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
+                      :class="isModalCategorySelected(cat.id) ? 'bg-primary border-primary text-primary-foreground' : 'border-input bg-background'"
+                    >
+                      <Check v-if="isModalCategorySelected(cat.id)" class="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </button>
+
+                  <!-- Loading State -->
+                  <div v-if="modalCategoryPagination.isLoading.value && modalCategoryPagination.items.value.length === 0" class="py-4 text-center text-muted-foreground flex items-center justify-center gap-2 text-xs">
+                    <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+                    <span>Loading categories...</span>
+                  </div>
+
+                  <!-- Empty Category State -->
+                  <div v-if="!modalCategoryPagination.isLoading.value && modalCategoryPagination.items.value.length === 0" class="py-4 text-center text-muted-foreground text-xs">
+                    No matching categories found.
+                  </div>
+
+                  <!-- Infinite Scroll Sentinel -->
+                  <UiInfiniteScroll
+                    :has-more="modalCategoryPagination.hasMore.value"
+                    :is-loading="modalCategoryPagination.isFetchingNextPage.value"
+                    :error="modalCategoryPagination.error.value"
+                    @load-more="modalCategoryPagination.loadNextPage"
+                    @retry="modalCategoryPagination.loadNextPage"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Selling Price -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <span>Current Selling Price <span class="text-destructive">*</span></span>
+              <span v-if="createFieldErrors.price" class="text-destructive font-normal normal-case text-xs">{{ createFieldErrors.price }}</span>
+            </label>
+            <div class="relative">
+              <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm pointer-events-none">
+                $
+              </div>
+              <input
+                v-model.number="createCurrentSellingPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                :class="cn(
+                  'w-full h-11 pl-8 pr-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2 font-mono',
+                  createFieldErrors.price ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
+                )"
+                :disabled="isCreateSubmitting"
+              />
+            </div>
+            <p class="text-[11px] text-muted-foreground">Standard retail unit price for transactions in USD.</p>
+          </div>
+        </div>
+
+        <!-- Modal Footer Controls -->
+        <div class="px-6 py-4 border-t border-border flex items-center justify-end gap-3 bg-muted/20">
+          <button 
+            type="button"
+            @click="() => modalState.closeModal()"
+            class="h-10 px-5 border border-input bg-background hover:bg-muted text-foreground rounded-xl text-xs font-semibold flex items-center transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            :disabled="isCreateSubmitting || !canCreateProduct"
+            class="h-10 px-6 bg-primary text-primary-foreground rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs hover:opacity-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Loader2 v-if="isCreateSubmitting" class="w-4 h-4 animate-spin" />
+            <Save v-else class="w-4 h-4" />
+            <span>{{ isCreateSubmitting ? 'Creating Product...' : 'Create Product' }}</span>
+          </button>
+        </div>
+      </form>
+    </UiAdminModal>
   </div>
 </template>
