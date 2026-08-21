@@ -28,8 +28,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     } else {
       // Direct route permission check
       if (to.path !== '/admin/forbidden') {
-        const { canViewModule } = useAdminPermissions();
-        if (!canViewModule(to.path)) {
+        const { canViewModule, canCreateInModule, hasPermission } = useAdminPermissions();
+        if (to.path === '/admin/products/new') {
+          if (!hasPermission('product_api.add_product') && !canCreateInModule('/admin/products')) {
+            return navigateTo('/admin/forbidden');
+          }
+        } else if (!canViewModule(to.path)) {
           return navigateTo('/admin/forbidden');
         }
       }

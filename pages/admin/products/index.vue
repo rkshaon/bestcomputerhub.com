@@ -48,12 +48,12 @@ const tableColumns: UiTableColumn<Product>[] = [
 
 const productService = useProductService();
 const categoryService = useCategoryService();
-const { canCreateInModule, canEditInModule, canDeleteInModule } = useAdminPermissions();
+const { canCreateInModule, canEditInModule, canDeleteInModule, hasPermission } = useAdminPermissions();
 
 const route = useRoute();
 const router = useRouter();
 
-const canCreateProduct = computed(() => canCreateInModule('/admin/products'));
+const canCreateProduct = computed(() => hasPermission('product_api.add_product') || canCreateInModule('/admin/products'));
 const canEditProduct = computed(() => canEditInModule('/admin/products'));
 const canDeleteProduct = computed(() => canDeleteInModule('/admin/products'));
 

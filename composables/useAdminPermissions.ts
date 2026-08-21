@@ -208,7 +208,9 @@ export const useAdminPermissions = () => {
   const findModule = (keyOrRoute: string): AdminModuleConfig | undefined => {
     if (ADMIN_MODULES[keyOrRoute]) return ADMIN_MODULES[keyOrRoute];
     const norm = keyOrRoute.replace(/\/$/, '');
-    return Object.values(ADMIN_MODULES).find(m => m.route === norm || m.route === keyOrRoute);
+    const exact = Object.values(ADMIN_MODULES).find(m => m.route === norm || m.route === keyOrRoute);
+    if (exact) return exact;
+    return Object.values(ADMIN_MODULES).find(m => m.route !== '/admin' && (norm.startsWith(m.route + '/') || norm.startsWith(m.route)));
   };
 
   const canViewModule = (keyOrRoute: string): boolean => {

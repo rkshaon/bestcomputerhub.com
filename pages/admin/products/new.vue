@@ -29,10 +29,10 @@ definePageMeta({
 
 const productService = useProductService();
 const categoryService = useCategoryService();
-const { canCreateInModule } = useAdminPermissions();
+const { canCreateInModule, hasPermission } = useAdminPermissions();
 const router = useRouter();
 
-const canCreateProduct = computed(() => canCreateInModule('/admin/products'));
+const canCreateProduct = computed(() => hasPermission('product_api.add_product') || canCreateInModule('/admin/products'));
 
 // Form State
 const productName = ref('');
@@ -185,6 +185,10 @@ const onDocumentKeydown = (e: KeyboardEvent) => {
 };
 
 onMounted(() => {
+  if (!canCreateProduct.value) {
+    navigateTo('/admin/forbidden');
+    return;
+  }
   categoryPagination.refresh();
   nextTick(() => {
     productNameInputRef.value?.focus();
