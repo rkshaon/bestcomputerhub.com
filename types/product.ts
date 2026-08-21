@@ -43,6 +43,12 @@ export interface Product {
   sku: string;
 }
 
+export interface CreateProductPayload {
+  name: string;
+  categories: number[];
+  current_selling_price: number;
+}
+
 export interface ProductFilters {
   page?: number;
   page_size?: number;

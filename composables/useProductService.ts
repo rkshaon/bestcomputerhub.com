@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { products as initialProducts, categories, brands } from '@/mock/data';
-import type { Product, Category, Brand, PaginatedResponse, ProductFilters } from '@/types';
+import type { Product, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload } from '@/types';
 import { useRuntimeConfig } from '#app';
 
 const PRODUCTS_STORAGE_KEY = 'techcore_mock_products_registry';
@@ -357,7 +357,7 @@ export const useProductService = () => {
   };
 
   // Administrative / Vendor mutation endpoints
-  const createProduct = async (payload: Partial<Product>): Promise<Product> => {
+  const createProduct = async (payload: CreateProductPayload | Partial<Product>): Promise<Product> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -367,26 +367,28 @@ export const useProductService = () => {
       
       const list = getMockProducts();
       const generatedSlug = payload.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || `prod-${Date.now()}`;
+      const productPrice = Number((payload as any).current_selling_price ?? (payload as any).price ?? 0);
       const newProd: Product = {
         id: 'prod_' + Math.floor(Math.random() * 1000000),
         name: payload.name ?? 'Untitled Product',
         slug: generatedSlug,
-        description: payload.description ?? '',
-        price: Number(payload.price ?? 0),
-        originalPrice: payload.originalPrice ? Number(payload.originalPrice) : undefined,
-        category: payload.category ?? 'components',
-        subCategory: payload.subCategory ?? '',
-        brand: payload.brand ?? 'TechCore',
-        images: payload.images && payload.images.length ? payload.images : ['/images/placeholder.jpg'],
-        stock: Number(payload.stock ?? 10),
+        description: (payload as any).description ?? '',
+        price: productPrice,
+        current_selling_price: productPrice,
+        originalPrice: (payload as any).originalPrice ? Number((payload as any).originalPrice) : undefined,
+        category: (payload as any).category ?? 'components',
+        subCategory: (payload as any).subCategory ?? '',
+        brand: (payload as any).brand ?? 'TechCore',
+        images: (payload as any).images && (payload as any).images.length ? (payload as any).images : ['https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80'],
+        stock: Number((payload as any).stock ?? 10),
         rating: 5.0,
         reviewCount: 0,
-        specifications: payload.specifications ?? {},
-        features: payload.features ?? [],
-        sku: payload.sku ?? `SKU-${Math.floor(Math.random() * 900000 + 100000)}`,
+        specifications: (payload as any).specifications ?? {},
+        features: (payload as any).features ?? [],
+        sku: (payload as any).sku ?? `SKU-${Math.floor(Math.random() * 900000 + 100000)}`,
         isNew: true,
-        isFeatured: payload.isFeatured ?? false,
-        onSale: payload.onSale ?? false
+        isFeatured: (payload as any).isFeatured ?? false,
+        onSale: (payload as any).onSale ?? false
       };
       
       list.push(newProd);
