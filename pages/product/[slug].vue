@@ -437,12 +437,8 @@ const isItemInCart = computed(() => {
             </h1>
 
             <!-- Short Description -->
-            <p v-if="product.short_description" class="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed">
-              {{ product.short_description }}
-            </p>
-            <p v-else-if="product.description" class="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed line-clamp-3">
-              {{ product.description }}
-            </p>
+            <div v-if="product.short_description" class="prose prose-slate dark:prose-invert max-w-none text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed" v-html="product.short_description"></div>
+            <div v-else-if="product.description" class="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed line-clamp-3" v-html="product.description"></div>
             
             <!-- Metadata & Attributes -->
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3 border-t">
