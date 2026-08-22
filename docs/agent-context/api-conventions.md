@@ -16,6 +16,10 @@ POST   /api/v1/products/
 PATCH  /api/v1/products/{id}/
 DELETE /api/v1/products/{id}/
 
+## Storefront URL Route Convention (Trailing Slashes)
+
+Consistent with backend endpoints, all frontend Storefront routes, paths, static/dynamic links, breadcrumbs, and programmatically constructed storefront URLs must strictly include a **trailing slash `/`** (e.g., `/`, `/product/slug/`, `/product-category/slug/`). No storefront url-generating code may intentionally output paths missing a trailing slash.
+
 ## Pagination
 
 Use:

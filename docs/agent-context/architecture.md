@@ -60,6 +60,9 @@ Large UI sections should be extracted into appropriate feature or reusable compo
 
 Public storefront pages such as product, category, brand, and content pages must be designed with server rendering and SEO in mind.
 
+### Storefront URL Route Trailing Slash Convention
+All public Storefront links, static or dynamic routes, navigation menus, breadcrumbs, and programmatically constructed URL paths must strictly include a **trailing slash `/`** (e.g., `/`, `/product/`, `/product/slug/`, `/product-category/slug/`). No storefront link or route-generating code may intentionally generate URLs lacking a trailing slash. This ensures robust search visibility, prevents canonicalization redirects, and matches legacy WordPress URL patterns.
+
 Admin pages must follow the Admin UI Layout & Information Density Standards (combining breadcrumb, title, and actions on a single row where feasible, and optimizing container padding for high viewport density; see `/docs/agent-context/design-system.md`).
 
 ---

@@ -149,6 +149,22 @@ Integrate against the established backend contract.
 
 All shared HTTP communication must go through useApiClient.
 
+## Storefront URL Route Convention (Trailing Slashes)
+
+All public Storefront URLs, links, navigation paths, and routes must strictly use a **trailing slash `/`** at the end of the URL path. 
+
+This convention applies to:
+- **Homepage**: `/`
+- **Static Storefront Routes**: (e.g., `/about/`, `/sustainability/`, `/careers/`, `/privacy/`)
+- **Product URLs**: `/product/{slug}/` (e.g., `/product/dji-mavic-3-pro-fly-more-combo-4k-drone-with-remote-controller/`)
+- **Category URLs**: `/product-category/{slug}/` (e.g., `/product-category/gaming-component/laptop/msi-laptop/`)
+- **Dynamic segments / links**: Brand pages, blog archives, and posts (e.g., `/blog/{slug}/`, `/brand/{slug}/`)
+- **User experience navigation links**: (e.g., `/offers/`, `/new-arrivals/`)
+- **Breadcrumb links**: Every intermediate path in breadcrumb arrays must terminate with a trailing slash.
+- **Programmatically generated URLs**: Any URL resolved via services or composables (e.g. `categoryService.getCategoryPath()`, product dynamic links).
+
+New Storefront links, Nuxt page components, navigation handlers, and programmatically generated storefront routes must NOT intentionally generate URLs lacking the trailing slash. Maintaining trailing slashes is crucial to preserve original SEO juice, replicate the original WordPress URL patterns, and prevent canonicalization/duplicate content conflicts.
+
 ## SEO
 
 Public catalog and content pages are SEO-sensitive.

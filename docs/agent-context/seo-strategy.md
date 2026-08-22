@@ -297,6 +297,28 @@ The exact route structure should follow the final migration URL strategy.
 
 ---
 
+## 9a. Storefront URL Trailing Slash Convention
+
+To optimize SEO performance, ensure accurate search indexing, and maintain complete continuity with the legacy WordPress/WooCommerce site, all public-facing Storefront URLs must enforce a trailing slash (`/`) format.
+
+### Trailing Slash URL Standards
+All Storefront navigation links, programmatically constructed paths, breadcrumb nodes, and canonical declarations must adhere to the trailing slash format without exception:
+
+* **Homepage**: `/`
+* **Static Content Pages**: `/about/`, `/sustainability/`, `/careers/`, `/privacy/`
+* **Product Detail Pages**: `/product/{slug}/` (e.g., `/product/dji-mavic-3-pro-fly-more-combo-4k-drone-with-remote-controller/`)
+* **Category Archive Pages**: `/product-category/{slug}/` (e.g., `/product-category/gaming-component/laptop/msi-laptop/`)
+* **Dynamic Content Segments**: `/brand/{slug}/`, `/blog/{slug}/`
+* **Promotional & Dynamic Links**: `/offers/`, `/new-arrivals/`
+
+### Directives for New Storefront Routes & Links
+1. **No Slashless Links**: Never intentionally declare or output internal links (`<NuxtLink>`, router-driven triggers, anchor tags) without a trailing slash.
+2. **Breadcrumb Paths**: Construct breadcrumb arrays so that each URL strictly ends with a `/`.
+3. **Canonical and XML Sitemaps**: All self-referencing `<link rel="canonical">` meta headers and dynamic XML sitemap entries must terminate with a trailing slash.
+4. **Impact Mitigation**: Standardizing trailing slashes prevents search engine duplicate-content penalties, avoids unnecessary redirects from missing slashes, and matches original index history.
+
+---
+
 ## 10. WordPress Migration
 
 Best Computer Hub already exists as a WordPress/WooCommerce website.
