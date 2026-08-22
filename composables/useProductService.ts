@@ -147,7 +147,7 @@ export const useProductService = () => {
     const categoryFilter = params.category;
     const categoriesFilter = params.categories !== undefined && params.categories !== null
       ? (Array.isArray(params.categories) ? params.categories.filter(Boolean).join(',') : String(params.categories).trim())
-      : undefined;
+      : (params.category !== undefined && params.category !== null && params.category !== '' && /^\d+$/.test(String(params.category).trim()) ? String(params.category).trim() : undefined);
     const brandFilter = params.brand;
     const minPrice = params.minPrice;
     const maxPrice = params.maxPrice;
@@ -167,7 +167,8 @@ export const useProductService = () => {
             const origId = p.origin?.id !== undefined && p.origin?.id !== null ? String(p.origin.id).toLowerCase() : '';
             const catName = String(p.category || '').toLowerCase();
             const subName = String(p.subCategory || '').toLowerCase();
-            return (origId && catIds.includes(origId)) || catIds.includes(catName) || catIds.includes(subName);
+            const pCategories = Array.isArray(p.categories) ? p.categories.map(c => typeof c === 'object' ? String(c.id ?? c.slug ?? '').toLowerCase() : String(c).toLowerCase()) : [];
+            return (origId && catIds.includes(origId)) || catIds.includes(catName) || catIds.includes(subName) || pCategories.some(cid => catIds.includes(cid));
           });
         }
       } else if (categoryFilter) {
@@ -248,7 +249,7 @@ export const useProductService = () => {
       } else if (categoryFilter !== undefined && categoryFilter !== '') {
         const isNumeric = /^\d+$/.test(categoryFilter.toString());
         if (isNumeric) {
-          qParams.append('category', categoryFilter.toString());
+          qParams.append('categories', categoryFilter.toString());
         } else {
           // Append as category_slug and category to support any backend implementation
           qParams.append('category_slug', categoryFilter.toString());

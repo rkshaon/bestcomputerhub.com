@@ -3,9 +3,13 @@
 import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
+import { refDebounced } from '@vueuse/core';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
+import { cn } from '@/utils';
 import type { Category, Product } from '@/types';
+import UiPagination from '@/components/ui/UiPagination.vue';
+import CommerceProductCard from '@/components/commerce/ProductCard.vue';
 
 const route = useRoute();
 const productService = useProductService();
@@ -98,10 +102,9 @@ const resolveCategory = async () => {
   // Set local match immediately so user gets an instant layout & visual response
   if (match) {
     activeCategory.value = { ...match };
-    fetchProducts();
   }
 
-  // 3. Regardless of finding local match, ALWAYS call the Category Details API to load full rich content/description
+  // 3. Regardless of finding local match, call the Category Details API to load full rich content/description & ID
   try {
     const detail = await categoryService.getCategoryDetails(targetSlug);
     if (detail) {
@@ -111,7 +114,6 @@ const resolveCategory = async () => {
       } else {
         activeCategory.value = detail;
       }
-      fetchProducts();
       return;
     }
   } catch (e) {
@@ -195,12 +197,15 @@ const filters = reactive({
 });
 
 const searchQuery = ref('');
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
 
+const viewMode = ref<'grid' | 'list'>('grid');
 const loadedProducts = ref<Product[]>([]);
 const isProductsLoading = ref(false);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const totalCount = ref(0);
+const pageSize = ref(12);
 
 const fetchProducts = async () => {
   if (!category.value) {
@@ -212,14 +217,14 @@ const fetchProducts = async () => {
   isProductsLoading.value = true;
   try {
     const res = await productService.getProductsList({
-      category: category.value.id || category.value.slug,
-      query: searchQuery.value,
-      minPrice: filters.minPrice,
-      maxPrice: filters.maxPrice,
-      brand: filters.brand,
+      categories: category.value.id,
+      query: debouncedSearchQuery.value || undefined,
+      minPrice: filters.minPrice > 0 ? filters.minPrice : undefined,
+      maxPrice: filters.maxPrice < 10000 ? filters.maxPrice : undefined,
+      brand: filters.brand || undefined,
       sort: filters.sort,
       page: currentPage.value,
-      page_size: 10
+      page_size: pageSize.value
     });
     loadedProducts.value = res.results;
     totalCount.value = res.count;
@@ -228,7 +233,7 @@ const fetchProducts = async () => {
     // Fallback sync query
     const fallbackProducts = productService.getProducts({
       category: category.value.id || category.value.slug,
-      query: searchQuery.value,
+      query: debouncedSearchQuery.value,
       minPrice: filters.minPrice,
       maxPrice: filters.maxPrice,
       brand: filters.brand,
@@ -236,25 +241,33 @@ const fetchProducts = async () => {
     });
     loadedProducts.value = fallbackProducts;
     totalCount.value = fallbackProducts.length;
-    totalPages.value = 1;
+    totalPages.value = Math.ceil(fallbackProducts.length / pageSize.value) || 1;
   } finally {
     isProductsLoading.value = false;
   }
 };
-
-onMounted(() => {
-  fetchProducts();
-});
 
 watch(category, () => {
   currentPage.value = 1;
   fetchProducts();
 }, { deep: true });
 
-watch([searchQuery, () => filters.brand, () => filters.minPrice, () => filters.maxPrice, () => filters.sort], () => {
-  currentPage.value = 1;
+watch(
+  [debouncedSearchQuery, () => filters.brand, () => filters.minPrice, () => filters.maxPrice, () => filters.sort],
+  () => {
+    currentPage.value = 1;
+    fetchProducts();
+  }
+);
+
+const handlePageChange = (newPage: number) => {
+  if (newPage < 1 || newPage > totalPages.value || newPage === currentPage.value) return;
+  currentPage.value = newPage;
   fetchProducts();
-});
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+  }
+};
 
 const products = computed(() => loadedProducts.value);
 
@@ -401,8 +414,22 @@ const resetFilters = () => {
             
             <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
               <div class="flex items-center border rounded-lg overflow-hidden">
-                <button class="p-2.5 bg-muted text-foreground transition-all shrink-0" title="Grid view" aria-label="Grid view"><Grid class="w-4 h-4" /></button>
-                <button class="p-2.5 hover:bg-muted text-muted-foreground transition-all shrink-0" title="List view" aria-label="List view"><List class="w-4 h-4" /></button>
+                <button 
+                  @click="viewMode = 'grid'"
+                  :class="cn('p-2.5 transition-all shrink-0', viewMode === 'grid' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted')" 
+                  title="Grid view" 
+                  aria-label="Grid view"
+                >
+                  <Grid class="w-4 h-4" />
+                </button>
+                <button 
+                  @click="viewMode = 'list'"
+                  :class="cn('p-2.5 transition-all shrink-0', viewMode === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted')" 
+                  title="List view" 
+                  aria-label="List view"
+                >
+                  <List class="w-4 h-4" />
+                </button>
               </div>
               <select 
                 v-model="filters.sort"
@@ -417,7 +444,13 @@ const resetFilters = () => {
           </div>
 
           <!-- Grid of Products / Skeletons -->
-          <div v-if="isProductsLoading" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+          <div 
+            v-if="isProductsLoading" 
+            :class="cn(
+              'grid gap-8',
+              viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'
+            )"
+          >
             <div v-for="i in 6" :key="i" class="bg-card rounded-[2rem] border p-6 space-y-4 animate-pulse">
               <div class="aspect-video bg-muted rounded-2xl w-full"></div>
               <div class="space-y-2">
@@ -432,7 +465,12 @@ const resetFilters = () => {
           </div>
 
           <div v-else-if="products.length > 0" class="space-y-12">
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+            <div 
+              :class="cn(
+                'grid gap-8',
+                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'
+              )"
+            >
               <CommerceProductCard 
                 v-for="product in products" 
                 :key="product.id" 
@@ -450,7 +488,7 @@ const resetFilters = () => {
                   variant="outline" 
                   size="sm" 
                   :disabled="currentPage === 1" 
-                  @click="currentPage--; fetchProducts()"
+                  @click="handlePageChange(currentPage - 1)"
                   class="rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
                 >
                   Previous
@@ -459,7 +497,7 @@ const resetFilters = () => {
                   variant="outline" 
                   size="sm" 
                   :disabled="currentPage === totalPages" 
-                  @click="currentPage++; fetchProducts()"
+                  @click="handlePageChange(currentPage + 1)"
                   class="rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
                 >
                   Next
