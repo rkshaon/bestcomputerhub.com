@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { products as initialProducts, categories, brands } from '@/mock/data';
-import type { Product, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload } from '@/types';
+import type { Product, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload, UpdateProductPayload } from '@/types';
 import { useRuntimeConfig } from '#app';
 
 const PRODUCTS_STORAGE_KEY = 'techcore_mock_products_registry';
@@ -113,6 +113,9 @@ export const useProductService = () => {
       images: Array.isArray(p.images) && p.images.length ? p.images.map((img: any) => typeof img === 'string' ? img : img.image) : [primaryImgUrl],
       default_image: defaultImg || { image: primaryImgUrl, alt_text: p.name ?? '' },
       origin: originObj || (typeof p.category === 'object' ? p.category : null),
+      categories: Array.isArray(p.categories) 
+        ? p.categories 
+        : (originObj?.id ? [Number(originObj.id)] : (typeof p.category === 'number' ? [p.category] : [])),
       average_rating: avgRating,
       rating: avgRating,
       total_reviews: totReviews,
@@ -411,7 +414,7 @@ export const useProductService = () => {
     }
   };
 
-  const updateProduct = async (id: string, payload: Partial<Product>): Promise<Product> => {
+  const updateProduct = async (id: string | number, payload: UpdateProductPayload | Partial<Product>): Promise<Product> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -420,31 +423,20 @@ export const useProductService = () => {
       isLoading.value = false;
 
       const list = getMockProducts();
-      const idx = list.findIndex(p => p.id === id);
+      const idx = list.findIndex(p => String(p.id) === String(id) || p.slug === String(id));
       if (idx === -1) throw new Error('Product not registered.');
 
       const existing = list[idx]!;
+      const currentPrice = (payload as any).current_selling_price !== undefined 
+        ? Number((payload as any).current_selling_price)
+        : ((payload as any).price !== undefined ? Number((payload as any).price) : existing.price);
+
       const updated: Product = {
         ...existing,
-        id: existing.id,
-        name: payload.name !== undefined ? payload.name : existing.name,
-        slug: payload.slug !== undefined ? payload.slug : existing.slug,
-        description: payload.description !== undefined ? payload.description : existing.description,
-        category: payload.category !== undefined ? payload.category : existing.category,
-        subCategory: payload.subCategory !== undefined ? payload.subCategory : existing.subCategory,
-        brand: payload.brand !== undefined ? payload.brand : existing.brand,
-        price: payload.price !== undefined ? Number(payload.price) : existing.price,
-        originalPrice: payload.originalPrice !== undefined ? Number(payload.originalPrice) : existing.originalPrice,
-        stock: payload.stock !== undefined ? Number(payload.stock) : existing.stock,
-        rating: payload.rating !== undefined ? Number(payload.rating) : existing.rating,
-        reviewCount: payload.reviewCount !== undefined ? Number(payload.reviewCount) : existing.reviewCount,
-        specifications: payload.specifications !== undefined ? payload.specifications : existing.specifications,
-        features: payload.features !== undefined ? payload.features : existing.features,
-        sku: payload.sku !== undefined ? payload.sku : existing.sku,
-        images: payload.images !== undefined ? payload.images : existing.images,
-        isNew: payload.isNew !== undefined ? payload.isNew : existing.isNew,
-        isFeatured: payload.isFeatured !== undefined ? payload.isFeatured : existing.isFeatured,
-        onSale: payload.onSale !== undefined ? payload.onSale : existing.onSale
+        name: (payload as any).name !== undefined ? (payload as any).name : existing.name,
+        price: currentPrice,
+        current_selling_price: currentPrice,
+        categories: (payload as any).categories !== undefined ? (payload as any).categories : existing.categories
       };
 
       list[idx] = updated;
@@ -453,13 +445,10 @@ export const useProductService = () => {
     }
 
     try {
-      // Rule compliance: Always exclude slug/readonly fields on payload mutations as explicitly mandated
-      const { slug, sku, id: pId, rating, reviewCount, ...cleanPayload } = payload as any;
-
       // Backend Clarification: ALWAYS append trailing slash to PATCH requests
       const response = await apiClient.request<any>(`/api/v1/products/${id}/`, {
         method: 'PATCH',
-        body: cleanPayload
+        body: payload
       });
       isLoading.value = false;
       return mapProductResponse(response);

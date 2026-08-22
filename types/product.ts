@@ -28,6 +28,7 @@ export interface Product {
   images: string[];
   default_image?: ProductImage | string | null;
   origin?: CategoryOrigin | null;
+  categories?: number[] | any[];
   average_rating?: number;
   rating: number;
   total_reviews?: number;
@@ -47,6 +48,12 @@ export interface CreateProductPayload {
   name: string;
   categories: number[];
   current_selling_price: number;
+}
+
+export interface UpdateProductPayload {
+  name?: string;
+  categories?: number[];
+  current_selling_price?: number;
 }
 
 export interface ProductFilters {

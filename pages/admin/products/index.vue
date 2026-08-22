@@ -31,7 +31,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
 import { formatCurrency, cn } from '@/utils';
-import type { Product, Category, CreateProductPayload, PaginatedResponse } from '@/types';
+import type { Product, Category, CreateProductPayload, UpdateProductPayload, PaginatedResponse } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -49,7 +49,7 @@ const tableColumns: UiTableColumn<Product>[] = [
   { key: 'price', label: 'Price', align: 'right', headerClass: 'px-6 py-4 text-right whitespace-nowrap', cellClass: 'px-6 py-4 text-right whitespace-nowrap' },
   { key: 'stock', label: 'Inventory', headerClass: 'px-6 py-4 whitespace-nowrap', cellClass: 'px-6 py-4 whitespace-nowrap' },
   { key: 'status', label: 'Status', headerClass: 'px-6 py-4 whitespace-nowrap', cellClass: 'px-6 py-4 whitespace-nowrap' },
-  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-6 py-4 text-right whitespace-nowrap', cellClass: 'px-6 py-4 text-right whitespace-nowrap' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-6 py-4 text-right whitespace-nowrap', cellClass: 'px-6 py-4 text-right whitespace-nowrap' }
 ];
 
 const productService = useProductService();
@@ -60,8 +60,8 @@ const route = useRoute();
 const router = useRouter();
 
 const canCreateProduct = computed(() => hasPermission('product_api.add_product') || canCreateInModule('/admin/products'));
-const canEditProduct = computed(() => canEditInModule('/admin/products'));
-const canDeleteProduct = computed(() => canDeleteInModule('/admin/products'));
+const canEditProduct = computed(() => hasPermission('product_api.change_product') || canEditInModule('/admin/products'));
+const canDeleteProduct = computed(() => hasPermission('product_api.delete_product') || canDeleteInModule('/admin/products'));
 
 // State managers initialized from URL query parameters
 const viewMode = ref<'grid' | 'list'>((route.query.view === 'grid' ? 'grid' : 'list'));
@@ -150,13 +150,16 @@ const modalState = useAdminModalState<Product>({
 
 // Watch permission enforcement for URL modal triggers
 watch(
-  [() => modalState.activeMode.value, canDeleteProduct, canCreateProduct],
-  ([mode, deleteAllowed, createAllowed]) => {
+  [() => modalState.activeMode.value, canDeleteProduct, canCreateProduct, canEditProduct],
+  ([mode, deleteAllowed, createAllowed, editAllowed]) => {
     if (mode === 'delete' && !deleteAllowed) {
       toastError('You do not have permission to delete products.');
       modalState.closeModal({ replace: true });
     } else if (mode === 'create' && !createAllowed) {
       toastError('You do not have permission to create products.');
+      modalState.closeModal({ replace: true });
+    } else if (mode === 'edit' && !editAllowed) {
+      toastError('You do not have permission to edit products.');
       modalState.closeModal({ replace: true });
     }
   }
@@ -227,18 +230,18 @@ const activeCategoriesButtonLabel = computed(() => {
   return `${selectedCategoryIds.value.length} Categories`;
 });
 
-// Create Product Modal State & Form Controls
-const createProductName = ref('');
-const createCurrentSellingPrice = ref<number | ''>('');
-const createSelectedCategoryIds = ref<number[]>([]);
-const isCreateSubmitting = ref(false);
-const createFormError = ref<string | null>(null);
-const createFieldErrors = ref<{
+// Product Create / Edit Modal State & Form Controls
+const modalProductName = ref('');
+const modalCurrentSellingPrice = ref<number | ''>('');
+const modalSelectedCategoryIds = ref<number[]>([]);
+const isModalSubmitting = ref(false);
+const modalFormError = ref<string | null>(null);
+const modalFieldErrors = ref<{
   name?: string;
   categories?: string;
   price?: string;
 }>({});
-const createProductNameInputRef = ref<HTMLInputElement | null>(null);
+const modalProductNameInputRef = ref<HTMLInputElement | null>(null);
 
 // Modal Category Picker State
 const isModalCategoryDropdownOpen = ref(false);
@@ -272,30 +275,30 @@ const closeModalCategoryDropdown = () => {
 
 const toggleModalCategorySelection = (categoryId: number | string) => {
   const numId = Number(categoryId);
-  const index = createSelectedCategoryIds.value.indexOf(numId);
+  const index = modalSelectedCategoryIds.value.indexOf(numId);
   if (index > -1) {
-    createSelectedCategoryIds.value.splice(index, 1);
+    modalSelectedCategoryIds.value.splice(index, 1);
   } else {
-    createSelectedCategoryIds.value.push(numId);
+    modalSelectedCategoryIds.value.push(numId);
   }
-  if (createFieldErrors.value.categories && createSelectedCategoryIds.value.length > 0) {
-    createFieldErrors.value.categories = undefined;
+  if (modalFieldErrors.value.categories && modalSelectedCategoryIds.value.length > 0) {
+    modalFieldErrors.value.categories = undefined;
   }
 };
 
 const removeModalCategorySelection = (categoryId: number) => {
-  const index = createSelectedCategoryIds.value.indexOf(categoryId);
+  const index = modalSelectedCategoryIds.value.indexOf(categoryId);
   if (index > -1) {
-    createSelectedCategoryIds.value.splice(index, 1);
+    modalSelectedCategoryIds.value.splice(index, 1);
   }
 };
 
 const isModalCategorySelected = (categoryId: number | string) => {
-  return createSelectedCategoryIds.value.includes(Number(categoryId));
+  return modalSelectedCategoryIds.value.includes(Number(categoryId));
 };
 
 const clearModalCategorySelection = () => {
-  createSelectedCategoryIds.value = [];
+  modalSelectedCategoryIds.value = [];
 };
 
 const getModalCategoryNameById = (id: number): string => {
@@ -303,82 +306,150 @@ const getModalCategoryNameById = (id: number): string => {
   return found ? found.name : `Category #${id}`;
 };
 
-// Reset form when Create modal opens
+// Reset / initialize form when Create modal opens
 watch(() => modalState.isCreate.value, (isCreateOpen) => {
   if (isCreateOpen) {
-    createProductName.value = '';
-    createCurrentSellingPrice.value = '';
-    createSelectedCategoryIds.value = [];
-    createFormError.value = null;
-    createFieldErrors.value = {};
+    modalProductName.value = '';
+    modalCurrentSellingPrice.value = '';
+    modalSelectedCategoryIds.value = [];
+    modalFormError.value = null;
+    modalFieldErrors.value = {};
     modalCategorySearchQuery.value = '';
     isModalCategoryDropdownOpen.value = false;
     if (modalCategoryPagination.items.value.length === 0) {
       modalCategoryPagination.refresh();
     }
     nextTick(() => {
-      createProductNameInputRef.value?.focus();
+      modalProductNameInputRef.value?.focus();
     });
   }
 });
 
-const validateCreateForm = (): boolean => {
-  createFieldErrors.value = {};
-  createFormError.value = null;
+// Pre-populate form when Edit modal opens with active entity
+watch(
+  [() => modalState.isEdit.value, () => modalState.activeEntity.value],
+  ([isEditOpen, entity]) => {
+    if (isEditOpen && entity) {
+      modalProductName.value = entity.name || '';
+      modalCurrentSellingPrice.value = entity.current_selling_price !== undefined && entity.current_selling_price !== null
+        ? Number(entity.current_selling_price)
+        : (entity.price !== undefined ? Number(entity.price) : '');
+
+      if (Array.isArray(entity.categories) && entity.categories.length > 0) {
+        modalSelectedCategoryIds.value = entity.categories
+          .map((c: any) => (typeof c === 'object' && c !== null && 'id' in c ? Number(c.id) : Number(c)))
+          .filter((id: number) => !isNaN(id));
+      } else if (entity.origin && typeof entity.origin === 'object' && entity.origin.id) {
+        modalSelectedCategoryIds.value = [Number(entity.origin.id)];
+      } else if (typeof (entity as any).category === 'number') {
+        modalSelectedCategoryIds.value = [Number((entity as any).category)];
+      } else {
+        modalSelectedCategoryIds.value = [];
+      }
+
+      modalFormError.value = null;
+      modalFieldErrors.value = {};
+      modalCategorySearchQuery.value = '';
+      isModalCategoryDropdownOpen.value = false;
+      if (modalCategoryPagination.items.value.length === 0) {
+        modalCategoryPagination.refresh();
+      }
+      nextTick(() => {
+        modalProductNameInputRef.value?.focus();
+      });
+    }
+  },
+  { immediate: true }
+);
+
+const validateModalForm = (): boolean => {
+  modalFieldErrors.value = {};
+  modalFormError.value = null;
   let isValid = true;
 
-  if (!createProductName.value || !createProductName.value.trim()) {
-    createFieldErrors.value.name = 'Product name is required.';
+  if (!modalProductName.value || !modalProductName.value.trim()) {
+    modalFieldErrors.value.name = 'Product name is required.';
     isValid = false;
   }
 
-  if (createSelectedCategoryIds.value.length === 0) {
-    createFieldErrors.value.categories = 'At least one category must be selected.';
+  if (modalSelectedCategoryIds.value.length === 0) {
+    modalFieldErrors.value.categories = 'At least one category must be selected.';
     isValid = false;
   }
 
-  if (createCurrentSellingPrice.value === '' || isNaN(Number(createCurrentSellingPrice.value)) || Number(createCurrentSellingPrice.value) < 0) {
-    createFieldErrors.value.price = 'Please enter a valid non-negative selling price.';
+  if (modalCurrentSellingPrice.value === '' || isNaN(Number(modalCurrentSellingPrice.value)) || Number(modalCurrentSellingPrice.value) < 0) {
+    modalFieldErrors.value.price = 'Please enter a valid non-negative selling price.';
     isValid = false;
   }
 
   return isValid;
 };
 
-const handleCreateProductSubmit = async () => {
-  if (!validateCreateForm()) {
-    createFormError.value = 'Please fix the validation errors before submitting.';
+const handleModalProductSubmit = async () => {
+  if (!validateModalForm()) {
+    modalFormError.value = 'Please fix the validation errors before submitting.';
     return;
   }
 
-  if (!canCreateProduct.value) {
-    createFormError.value = 'You do not have permission to create products.';
-    return;
-  }
-
-  isCreateSubmitting.value = true;
-  createFormError.value = null;
-
-  const payload: CreateProductPayload = {
-    name: createProductName.value.trim(),
-    categories: createSelectedCategoryIds.value.map(id => Number(id)),
-    current_selling_price: Number(createCurrentSellingPrice.value)
-  };
-
-  try {
-    await productService.createProduct(payload);
-    toastSuccess(`Product "${payload.name}" created successfully.`);
-    modalState.closeModal();
-    if (viewMode.value === 'grid') {
-      await refreshGridPagination();
-    } else {
-      await fetchProductsPage();
+  if (modalState.isCreate.value) {
+    if (!canCreateProduct.value) {
+      modalFormError.value = 'You do not have permission to create products.';
+      return;
     }
-  } catch (err: any) {
-    createFormError.value = extractErrorMessage(err, 'Failed to create product. Please check your inputs and try again.');
-    handleApiError(err, 'Failed to create product.');
-  } finally {
-    isCreateSubmitting.value = false;
+
+    isModalSubmitting.value = true;
+    modalFormError.value = null;
+
+    const payload: CreateProductPayload = {
+      name: modalProductName.value.trim(),
+      categories: modalSelectedCategoryIds.value.map(id => Number(id)),
+      current_selling_price: Number(modalCurrentSellingPrice.value)
+    };
+
+    try {
+      await productService.createProduct(payload);
+      toastSuccess(`Product "${payload.name}" created successfully.`);
+      await modalState.closeModal();
+      await refreshActiveView();
+    } catch (err: any) {
+      modalFormError.value = extractErrorMessage(err, 'Failed to create product. Please check your inputs and try again.');
+      handleApiError(err, 'Failed to create product.');
+    } finally {
+      isModalSubmitting.value = false;
+    }
+  } else if (modalState.isEdit.value) {
+    if (!canEditProduct.value) {
+      modalFormError.value = 'You do not have permission to edit products.';
+      return;
+    }
+
+    const targetProduct = modalState.activeEntity.value;
+    const targetIdentifier = targetProduct?.id ?? targetProduct?.slug ?? modalState.activeId.value;
+    if (!targetIdentifier) {
+      modalFormError.value = 'Product identifier missing.';
+      return;
+    }
+
+    isModalSubmitting.value = true;
+    modalFormError.value = null;
+
+    const payload: UpdateProductPayload = {
+      name: modalProductName.value.trim(),
+      categories: modalSelectedCategoryIds.value.map(id => Number(id)),
+      current_selling_price: Number(modalCurrentSellingPrice.value)
+    };
+
+    try {
+      await productService.updateProduct(targetIdentifier, payload);
+      toastSuccess(`Product "${payload.name}" updated successfully.`);
+      await modalState.closeModal();
+      await refreshActiveView();
+    } catch (err: any) {
+      modalFormError.value = extractErrorMessage(err, 'Failed to update product. Please check your inputs and try again.');
+      handleApiError(err, 'Failed to update product.');
+    } finally {
+      isModalSubmitting.value = false;
+    }
   }
 };
 
@@ -944,15 +1015,16 @@ onUnmounted(() => {
                 ID: #{{ product.id }}
               </span>
               <div class="flex items-center gap-1">
-                <NuxtLink 
+                <button 
                   v-if="canEditProduct" 
-                  :to="`/admin/products/${product.id}`" 
+                  type="button"
+                  @click="modalState.openEdit(product.id)" 
                   class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer"
                   title="Edit Product"
                   aria-label="Edit product"
                 >
                   <Edit2 class="w-4 h-4" />
-                </NuxtLink>
+                </button>
                 <button 
                   v-if="canDeleteProduct" 
                   type="button"
@@ -1102,15 +1174,16 @@ onUnmounted(() => {
       <!-- Actions Column -->
       <template #cell-actions="{ item: product }">
         <div class="flex items-center justify-end gap-1">
-          <NuxtLink 
+          <button 
             v-if="canEditProduct" 
-            :to="`/admin/products/${product.id}`" 
-            class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors" 
+            type="button"
+            @click="modalState.openEdit(product.id)" 
+            class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer" 
             title="Edit product" 
             aria-label="Edit product"
           >
             <Edit2 class="w-4 h-4" />
-          </NuxtLink>
+          </button>
           <button 
             v-if="canDeleteProduct" 
             type="button"
@@ -1136,39 +1209,45 @@ onUnmounted(() => {
       </template>
     </UiTable>
 
-    <!-- Create Product Modal -->
+    <!-- Create / Edit Product Modal -->
     <UiAdminModal
-      :is-open="modalState.isCreate.value"
-      title="Add Product"
-      subtitle="Configure and register a new product in the catalog."
+      :is-open="modalState.isCreate.value || (modalState.isEdit.value && (!!modalState.activeEntity.value || modalState.isResolving.value))"
+      :title="modalState.isEdit.value ? 'Edit Product' : 'Add Product'"
+      :subtitle="modalState.isEdit.value ? 'Update product specifications, category classifications, and pricing.' : 'Configure and register a new product in the catalog.'"
       max-width="max-w-xl"
       @close="modalState.closeModal"
     >
-      <form @submit.prevent="handleCreateProductSubmit" class="flex flex-col">
+      <!-- Loading State during Edit entity resolution -->
+      <div v-if="modalState.isEdit.value && modalState.isResolving.value" class="p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
+        <Loader2 class="w-7 h-7 animate-spin text-primary" />
+        <span class="text-xs font-semibold">Loading product details...</span>
+      </div>
+
+      <form v-else @submit.prevent="handleModalProductSubmit" class="flex flex-col">
         <!-- Scrollable Modal Body -->
         <div class="p-6 space-y-5 overflow-y-auto max-h-[65vh]">
           <!-- Error Banner -->
-          <div v-if="createFormError" class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2.5 text-xs font-medium text-destructive">
+          <div v-if="modalFormError" class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2.5 text-xs font-medium text-destructive">
             <AlertCircle class="w-4 h-4 shrink-0" />
-            <span>{{ createFormError }}</span>
+            <span>{{ modalFormError }}</span>
           </div>
 
           <!-- Product Name -->
           <div class="space-y-1.5">
             <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Product Name <span class="text-destructive">*</span></span>
-              <span v-if="createFieldErrors.name" class="text-destructive font-normal normal-case text-xs">{{ createFieldErrors.name }}</span>
+              <span v-if="modalFieldErrors.name" class="text-destructive font-normal normal-case text-xs">{{ modalFieldErrors.name }}</span>
             </label>
             <input
-              ref="createProductNameInputRef"
-              v-model="createProductName"
+              ref="modalProductNameInputRef"
+              v-model="modalProductName"
               type="text"
               placeholder="e.g. GeForce RTX 4090 Gaming OC 24G"
               :class="cn(
                 'w-full h-11 px-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2',
-                createFieldErrors.name ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
+                modalFieldErrors.name ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
               )"
-              :disabled="isCreateSubmitting"
+              :disabled="isModalSubmitting"
             />
           </div>
 
@@ -1176,13 +1255,13 @@ onUnmounted(() => {
           <div class="space-y-1.5">
             <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Categories <span class="text-destructive">*</span></span>
-              <span v-if="createFieldErrors.categories" class="text-destructive font-normal normal-case text-xs">{{ createFieldErrors.categories }}</span>
+              <span v-if="modalFieldErrors.categories" class="text-destructive font-normal normal-case text-xs">{{ modalFieldErrors.categories }}</span>
             </label>
 
             <!-- Selected Category Pills / Chips -->
-            <div v-if="createSelectedCategoryIds.length > 0" class="flex flex-wrap gap-1.5 mb-2">
+            <div v-if="modalSelectedCategoryIds.length > 0" class="flex flex-wrap gap-1.5 mb-2">
               <span 
-                v-for="catId in createSelectedCategoryIds" 
+                v-for="catId in modalSelectedCategoryIds" 
                 :key="catId"
                 class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-medium"
               >
@@ -1207,17 +1286,17 @@ onUnmounted(() => {
                 @click.stop="toggleModalCategoryDropdown"
                 :class="cn(
                   'w-full h-11 px-3.5 bg-background border rounded-xl text-left text-sm font-medium transition-all flex items-center justify-between gap-2 cursor-pointer focus:ring-2',
-                  createFieldErrors.categories ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20',
-                  createSelectedCategoryIds.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                  modalFieldErrors.categories ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20',
+                  modalSelectedCategoryIds.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                 )"
-                :disabled="isCreateSubmitting"
+                :disabled="isModalSubmitting"
                 aria-haspopup="listbox"
                 :aria-expanded="isModalCategoryDropdownOpen"
               >
                 <div class="flex items-center gap-2 truncate">
                   <Layers class="w-4 h-4 text-muted-foreground shrink-0" />
                   <span class="truncate">
-                    {{ createSelectedCategoryIds.length === 0 ? 'Select one or more categories...' : `${createSelectedCategoryIds.length} categories selected` }}
+                    {{ modalSelectedCategoryIds.length === 0 ? 'Select one or more categories...' : `${modalSelectedCategoryIds.length} categories selected` }}
                   </span>
                 </div>
                 <ChevronDown :class="cn('w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0', isModalCategoryDropdownOpen && 'rotate-180')" />
@@ -1244,12 +1323,12 @@ onUnmounted(() => {
                 <div class="flex items-center justify-between px-1 py-1 mb-1 border-b border-border/60 text-[11px]">
                   <span class="text-muted-foreground font-semibold">Available Categories</span>
                   <button
-                    v-if="createSelectedCategoryIds.length > 0"
+                    v-if="modalSelectedCategoryIds.length > 0"
                     type="button"
                     @click="clearModalCategorySelection"
                     class="text-primary hover:underline font-bold cursor-pointer"
                   >
-                    Clear selection ({{ createSelectedCategoryIds.length }})
+                    Clear selection ({{ modalSelectedCategoryIds.length }})
                   </button>
                 </div>
 
@@ -1305,23 +1384,23 @@ onUnmounted(() => {
           <div class="space-y-1.5">
             <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Current Selling Price <span class="text-destructive">*</span></span>
-              <span v-if="createFieldErrors.price" class="text-destructive font-normal normal-case text-xs">{{ createFieldErrors.price }}</span>
+              <span v-if="modalFieldErrors.price" class="text-destructive font-normal normal-case text-xs">{{ modalFieldErrors.price }}</span>
             </label>
             <div class="relative">
               <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm pointer-events-none">
                 $
               </div>
               <input
-                v-model.number="createCurrentSellingPrice"
+                v-model.number="modalCurrentSellingPrice"
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="0.00"
                 :class="cn(
                   'w-full h-11 pl-8 pr-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2 font-mono',
-                  createFieldErrors.price ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
+                  modalFieldErrors.price ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
                 )"
-                :disabled="isCreateSubmitting"
+                :disabled="isModalSubmitting"
               />
             </div>
             <p class="text-[11px] text-muted-foreground">Standard retail unit price for transactions in USD.</p>
@@ -1339,12 +1418,12 @@ onUnmounted(() => {
           </button>
           <button
             type="submit"
-            :disabled="isCreateSubmitting || !canCreateProduct"
+            :disabled="isModalSubmitting || (modalState.isCreate.value && !canCreateProduct) || (modalState.isEdit.value && !canEditProduct)"
             class="h-10 px-6 bg-primary text-primary-foreground rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs hover:opacity-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Loader2 v-if="isCreateSubmitting" class="w-4 h-4 animate-spin" />
+            <Loader2 v-if="isModalSubmitting" class="w-4 h-4 animate-spin" />
             <Save v-else class="w-4 h-4" />
-            <span>{{ isCreateSubmitting ? 'Creating Product...' : 'Create Product' }}</span>
+            <span>{{ isModalSubmitting ? (modalState.isEdit.value ? 'Saving Changes...' : 'Creating Product...') : (modalState.isEdit.value ? 'Save Changes' : 'Create Product') }}</span>
           </button>
         </div>
       </form>
