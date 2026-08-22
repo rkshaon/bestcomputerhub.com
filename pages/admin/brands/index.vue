@@ -55,7 +55,7 @@ const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref<'all' | 'active' | 'inactive'>((route.query.status as 'all' | 'active' | 'inactive') || 'all');
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
-const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 5 : 5);
+const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 const viewMode = ref<'grid' | 'list'>('list');
 const isSubmitPending = ref(false);
 
@@ -325,7 +325,7 @@ watch([searchQuery, statusFilter, currentPage, itemsPerPage, viewMode], () => {
   if (viewMode.value === 'list' && currentPage.value !== 1) query.page = String(currentPage.value);
   else delete query.page;
 
-  if (itemsPerPage.value !== 5) query.pageSize = String(itemsPerPage.value);
+  if (viewMode.value === 'list' && itemsPerPage.value !== 10) query.pageSize = String(itemsPerPage.value);
   else delete query.pageSize;
 
   router.replace({ query });
@@ -342,7 +342,7 @@ watch(() => route.query, (newQuery) => {
   const newPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
   if (currentPage.value !== newPage) currentPage.value = newPage;
 
-  const newPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 5 : 5;
+  const newPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 10 : 10;
   if (itemsPerPage.value !== newPageSize) itemsPerPage.value = newPageSize;
 });
 
@@ -721,16 +721,32 @@ const getTableRowAttrs = (brand: Brand) => ({
           </div>
         </div>
 
-        <div class="flex items-center gap-2 self-end sm:self-center border-l border-border pl-3">
-          <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Status:</span>
-          <select 
-            v-model="statusFilter"
-            class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
-          >
-            <option value="all">All</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+        <div class="flex items-center gap-3 self-end sm:self-center">
+          <div class="flex items-center gap-2 border-l border-border pl-3">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Status:</span>
+            <select 
+              v-model="statusFilter"
+              class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
+            >
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          <!-- Items per page selector (List view only) -->
+          <div v-if="viewMode === 'list'" class="flex items-center gap-1.5 border-l border-border pl-2.5">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+            <select 
+              v-model="itemsPerPage"
+              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option :value="5">5 / page</option>
+              <option :value="10">10 / page</option>
+              <option :value="25">25 / page</option>
+              <option :value="50">50 / page</option>
+            </select>
+          </div>
         </div>
       </div>
 
