@@ -356,5 +356,38 @@ API errors across all status codes (`400`, `401`, `403`, `404`, `409`, `422`, `4
 - **Extraction Priority**: The centralized error handler extracts user-facing messages from backend API response payloads (e.g. `detail`, `message`, `error`, `non_field_errors`, or field error arrays).
 - **Fallback**: When the backend provides no specific message, the handler falls back to a friendly, generic error message (e.g. "An unexpected error occurred.").
 - **User Privacy & Cleanliness**: Raw request URLs, HTTP method names, status strings (such as `[POST] "...": 403 Forbidden`), or technical stack traces are never exposed in user-facing toasts or UI error messages.
+ 
+## 14. Admin List Page-Size & Numbered Pagination Architecture
+
+The Admin page-size selection mechanism operates within the established component, composable, and domain service layers without introducing bespoke abstractions:
+
+```text
+Page Layer (/pages/admin/*)
+  - Owns `itemsPerPage` state (initialized from `route.query.pageSize` || 10).
+  - Synchronizes `pageSize` in URL query parameters when !== 10.
+  - Watches `itemsPerPage` and resets `currentPage.value = 1`.
+  - Passes `itemsPerPage` to domain service as `page_size`.
+  - Passes `:items-per-page="itemsPerPage"` to `<UiPagination />`.
+        ↓
+Domain Service Layer (/composables/use*Service.ts)
+  - Accepts `page_size?: number` in list query parameters.
+  - Forwards `page_size` parameter to `useApiClient`.
+        ↓
+Central HTTP Client (/composables/useApiClient.ts)
+  - Attaches `page_size` query parameter to backend request: `GET /api/v1/{resource}/?page=1&page_size=10`.
+        ↓
+Django REST Framework Backend
+  - Returns standard `PaginatedResponse<T>` containing `count`, `page`, `pages`, `results`.
+        ↓
+Presentation Components (/components/ui/UiPagination.vue)
+  - Receives `:items-per-page="itemsPerPage"`, `:total-items="totalCount"`, and `:total-pages="totalPages"`.
+  - Renders exact range summary (`Showing 1–10 of 1,572`) and pagination button numbers.
+```
+
+### Key Architectural Rules
+- **No Duplicate Pagination Logic**: `<UiPagination />` and domain services remain the sole pagination primitives. Individual pages simply supply their active `itemsPerPage` to these existing structures.
+- **View Mode Decoupling**: Page size is relevant strictly to discrete numbered pagination (`List / Table` mode). Grid view uses `useInfinitePagination` and `<UiInfiniteScroll />` where items are streamed dynamically.
+
+
 
 

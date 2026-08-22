@@ -271,6 +271,27 @@ The Admin Categories Tree view must use **sibling-level accordion behavior**, no
 - **Menu Tree Parity**: The same hierarchical sibling-level expansion principle applies to Menu Tree views while preserving menu filtering behavior (`is_menu=true`).
 - **Full Guidance & Examples**: See `/docs/agent-context/design-system.md` Section 42.
 
+### 11. Standard Admin List Page-Size Selector ("Show: X / page")
+All Admin list pages displaying tabular data with numbered pagination (including Products, Categories, Brands, Users, Roles, and future Admin list views) must provide a standardized **Show / page-size selector** integrated directly into the list controls.
+
+- **Authoritative Reference Implementation**: Follow the reference implementation established on the Admin Products list page (`/pages/admin/products/index.vue`).
+- **Standardized Values & Default**:
+  - Allowed options: `5 / page`, `10 / page`, `25 / page`, and `50 / page` (numeric values: `5`, `10`, `25`, `50`).
+  - Standard default page size: `10`.
+  - Do not invent custom or arbitrary page-size increments.
+- **Visual Presentation & Placement**:
+  - Positioned inside the compact search/filter container on the right side, separated from preceding filter controls with a subtle left border delimiter (`border-l border-border pl-2.5`).
+  - Label: `<span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>`.
+  - Control: Standardized `<select>` using design tokens (`h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer`).
+  - View-Mode Gating: Rendered when the active view is List/Table view (`v-if="viewMode === 'list'"`). In Grid view, data loading follows infinite scrolling with `useInfinitePagination`.
+- **Architectural & State Patterns**:
+  - **URL Query Initialization**: `const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10)`.
+  - **URL Query Synchronization**: Synchronize state with route query `pageSize` when value differs from default (10), e.g. `pageSize: itemsPerPage.value !== 10 ? itemsPerPage.value : undefined`.
+  - **Pagination Reset on Change**: Changing `itemsPerPage` must reset `currentPage.value = 1` before dispatching API fetching (via reactive watcher on `itemsPerPage`).
+  - **API Contract**: Pass `page_size: itemsPerPage.value` into the domain service request parameters (e.g. `productService.getProductsList({ page, page_size, search, ... })`).
+  - **`<UiPagination />` Integration**: Pass `:items-per-page="itemsPerPage"` into `<UiPagination />` to maintain accurate `Showing X–Y of Z` summary rendering and compute `totalPages = Math.ceil(totalCount / itemsPerPage)`.
+- **Scope**: Products (reference), Categories, Brands, Users, Roles, and all future admin list pages.
+
 ## Structural Changes
 
 Agents may autonomously perform small, task-local,

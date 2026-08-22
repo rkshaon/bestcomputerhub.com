@@ -1207,5 +1207,47 @@ Gaming Component ▼
 ```
 *Expanding `Gaming Laptop` must keep both `Laptop` and `Gaming Component` expanded.*
 
+---
+
+## 43. Admin List Page-Size Selector Standard ("Show: X / page")
+
+All Admin list pages displaying tabular data with numbered pagination (including Products, Categories, Brands, Users, Roles, and future Admin modules) must provide a standard **Show / page-size selector** in the list filter controls.
+
+### Design Principles & Visual Hierarchy
+
+- **Contextual Placement**: Position the page-size selector inside the compact search/filter container on the right side, separated from preceding search or filter elements by a vertical hairline delimiter (`border-l border-border pl-2.5`).
+- **Compact & Single-Line**: Keep the label and select element strictly on a single horizontal row, aligned with adjacent filter buttons and search fields (`h-9` height).
+- **Responsive Labeling**: Use `<span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>` so that on narrow mobile viewports (`< 640px`) the label is hidden to prevent horizontal wrapping while the dropdown remains accessible.
+- **Design Tokens**: Style the selector with semantic tokens:
+  ```html
+  <select 
+    v-model="itemsPerPage"
+    class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+  >
+    <option :value="5">5 / page</option>
+    <option :value="10">10 / page</option>
+    <option :value="25">25 / page</option>
+    <option :value="50">50 / page</option>
+  </select>
+  ```
+
+### Standard Option Values
+
+- **Allowed Options**: `5 / page`, `10 / page`, `25 / page`, and `50 / page` (numeric values: `5`, `10`, `25`, `50`).
+- **Default Page Size**: `10`.
+- Do not invent custom or non-standard page-size options.
+
+### View-Mode Behavior (List vs. Grid)
+
+- **List / Table View**: Display the page-size selector when List/Table view is active (`v-if="viewMode === 'list'"`). The user navigates discrete pages using `<UiPagination />`.
+- **Grid View**: Hide the page-size selector when Grid view is active (`v-if="viewMode === 'list'"`), because Grid view uses continuous infinite scrolling via `useInfinitePagination` and `<UiInfiniteScroll />`.
+
+### Integration with Filters & Pagination
+
+- **Page Reset**: Changing the page size must immediately reset the active page number to 1 (`currentPage.value = 1`) so users do not land on an out-of-bounds page.
+- **`<UiPagination />` Summary**: The active `itemsPerPage` value must be bound to `<UiPagination :items-per-page="itemsPerPage" ... />` to ensure the `Showing 1–10 of 1,572` summary range accurately reflects the selected page size.
+- **URL Synchronization**: Persist the selection in the URL query (`?pageSize=25`) when non-default, and remove it when switching views or reverting to the default (10).
+
+
 
 

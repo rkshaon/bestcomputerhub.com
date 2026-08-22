@@ -25,6 +25,14 @@ PaginatedResponse<T>
 Do not create domain-specific pagination wrappers unless
 the backend contract genuinely differs.
 
+### Page Size Parameter Standard
+
+Admin list endpoints with numbered pagination support the `page_size` query parameter (e.g. `GET /api/v1/{resource}/?page=1&page_size=10`).
+- **Standard Values**: `5`, `10`, `25`, `50`
+- **Default Value**: `10`
+- Backend returns standard `PaginatedResponse<T>` containing `count`, `page`, `pages`, `results`, `next`, and `previous`.
+- When `page_size` changes on the frontend, request the dataset starting at `page=1`.
+
 ### Paginated Filter Options Standard
 
 All filter option endpoints across Admin, Storefront, and reusable filter components that return paginated responses (`PaginatedResponse<T>`) must follow the project-wide infinite-scroll filter standard:
