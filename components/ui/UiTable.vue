@@ -12,6 +12,7 @@ export interface UiTableColumn<T = any> {
   headerClass?: string;
   cellClass?: string;
   sortable?: boolean;
+  wrap?: boolean;
 }
 
 interface Props {
@@ -169,7 +170,7 @@ onUnmounted(() => {
               v-for="col in columns"
               :key="col.key"
               :style="col.width ? { width: col.width } : undefined"
-              :class="cn('px-8 py-5', getAlignmentClass(col.align), col.headerClass)"
+              :class="cn('px-8 py-5', getAlignmentClass(col.align), col.wrap ? 'whitespace-normal' : '', col.headerClass)"
               @click="emit('header-click', col)"
             >
               <slot
@@ -209,6 +210,7 @@ onUnmounted(() => {
               <td
                 v-for="col in columns"
                 :key="`skeleton-cell-${col.key}`"
+                :style="col.width ? { width: col.width } : undefined"
                 :class="cn('px-8 py-5', getAlignmentClass(col.align), col.cellClass)"
               >
                 <div
@@ -251,7 +253,8 @@ onUnmounted(() => {
               <td
                 v-for="col in columns"
                 :key="col.key"
-                :class="cn('px-8 py-5 text-sm', getAlignmentClass(col.align), col.cellClass)"
+                :style="col.width ? { width: col.width } : undefined"
+                :class="cn('px-8 py-5 text-sm', getAlignmentClass(col.align), col.wrap ? 'whitespace-normal break-words' : '', col.cellClass)"
               >
                 <!-- Actions Column with Overflow Menu -->
                 <template v-if="isActionColumn(col) && hasCellSlot(col.key)">

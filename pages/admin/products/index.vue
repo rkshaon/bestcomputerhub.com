@@ -41,13 +41,13 @@ definePageMeta({
 });
 
 const tableColumns: UiTableColumn<Product>[] = [
-  { key: 'name', label: 'Product Details', headerClass: 'px-6 py-4', cellClass: 'px-6 py-4' },
-  { key: 'sku', label: 'SKU', headerClass: 'px-6 py-4', cellClass: 'px-6 py-4' },
-  { key: 'category', label: 'Category', headerClass: 'px-6 py-4', cellClass: 'px-6 py-4' },
-  { key: 'price', label: 'Price', align: 'right', headerClass: 'px-6 py-4 text-right', cellClass: 'px-6 py-4 text-right' },
-  { key: 'stock', label: 'Inventory', headerClass: 'px-6 py-4', cellClass: 'px-6 py-4' },
-  { key: 'status', label: 'Status', headerClass: 'px-6 py-4', cellClass: 'px-6 py-4' },
-  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-6 py-4 text-right', cellClass: 'px-6 py-4 text-right' },
+  { key: 'name', label: 'Product Details', wrap: true, width: '320px', headerClass: 'px-6 py-4 min-w-[260px] max-w-[400px]', cellClass: 'px-6 py-4 min-w-[260px] max-w-[400px]' },
+  { key: 'sku', label: 'SKU', headerClass: 'px-6 py-4 whitespace-nowrap', cellClass: 'px-6 py-4 whitespace-nowrap' },
+  { key: 'category', label: 'Category', headerClass: 'px-6 py-4 whitespace-nowrap', cellClass: 'px-6 py-4 whitespace-nowrap' },
+  { key: 'price', label: 'Price', align: 'right', headerClass: 'px-6 py-4 text-right whitespace-nowrap', cellClass: 'px-6 py-4 text-right whitespace-nowrap' },
+  { key: 'stock', label: 'Inventory', headerClass: 'px-6 py-4 whitespace-nowrap', cellClass: 'px-6 py-4 whitespace-nowrap' },
+  { key: 'status', label: 'Status', headerClass: 'px-6 py-4 whitespace-nowrap', cellClass: 'px-6 py-4 whitespace-nowrap' },
+  { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-6 py-4 text-right whitespace-nowrap', cellClass: 'px-6 py-4 text-right whitespace-nowrap' },
 ];
 
 const productService = useProductService();
@@ -700,8 +700,8 @@ onUnmounted(() => {
     >
       <!-- Product Details Column -->
       <template #cell-name="{ item: product }">
-        <div class="flex items-center gap-3.5">
-          <div class="w-12 h-12 rounded-xl bg-muted border border-border overflow-hidden shrink-0 flex items-center justify-center relative">
+        <div class="flex items-start gap-3.5">
+          <div class="w-12 h-12 rounded-xl bg-muted border border-border overflow-hidden shrink-0 flex items-center justify-center relative mt-0.5">
             <img 
               :src="getProductImageUrl(product)" 
               :alt="getProductImageAlt(product)"
@@ -710,18 +710,18 @@ onUnmounted(() => {
             />
           </div>
           <div class="min-w-0 flex-1 space-y-0.5">
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">
+            <div class="flex items-start gap-2">
+              <span class="text-sm font-bold text-foreground group-hover:text-primary transition-colors leading-snug">
                 {{ product.name }}
               </span>
-              <span v-if="product.wishlist" class="shrink-0 text-rose-500" title="In Wishlist">
+              <span v-if="product.wishlist" class="shrink-0 text-rose-500 mt-0.5" title="In Wishlist">
                 <Heart class="w-3.5 h-3.5 fill-rose-500" />
               </span>
-              <span v-if="product.in_cart" class="shrink-0 text-primary" title="In Cart">
+              <span v-if="product.in_cart" class="shrink-0 text-primary mt-0.5" title="In Cart">
                 <ShoppingCart class="w-3.5 h-3.5" />
               </span>
             </div>
-            <div class="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+            <div class="flex items-center gap-2 flex-wrap text-xs text-muted-foreground pt-0.5">
               <span class="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground/80">
                 {{ product.brand }}
               </span>
