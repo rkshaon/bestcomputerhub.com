@@ -37,7 +37,7 @@ import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 
 definePageMeta({
-  layout: 'admin'
+  layout: false
 });
 
 const tableColumns: UiTableColumn<Product>[] = [
@@ -499,180 +499,182 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Single-Row Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-display font-extrabold tracking-tight text-foreground">Catalog Management</h1>
-        <p class="text-xs text-muted-foreground mt-0.5">Configure and manage hardware inventory assets.</p>
+  <NuxtLayout name="admin">
+    <template #header-title>
+      <div class="flex items-center gap-2">
+        <span class="text-muted-foreground/40 font-light select-none">/</span>
+        <h1 class="text-xl font-display font-extrabold tracking-tight text-foreground">
+          Products
+        </h1>
       </div>
-      <div class="flex items-center gap-2.5 self-start sm:self-auto">
-        <button 
-          v-if="canCreateProduct" 
-          type="button"
-          @click="modalState.openCreate()"
-          class="h-10 px-4 bg-primary text-primary-foreground rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm hover:opacity-95 transition-all cursor-pointer"
+    </template>
+
+    <template #header-actions>
+      <div class="flex flex-wrap items-center gap-2">
+        <UiButton 
+          variant="outline" 
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
+          @click="fetchProductsPage"
+          :disabled="isLoading"
         >
-          <Plus class="w-4 h-4" />
+          <RefreshCw :class="['w-3.5 h-3.5', isLoading && 'animate-spin']" />
+          <span>Refresh</span>
+        </UiButton>
+
+        <UiButton 
+          v-if="canCreateProduct"
+          class="rounded-xl h-9 px-4 gap-1.5 shadow-md shadow-primary/20 bg-primary text-primary-foreground font-bold text-xs"
+          @click="modalState.openCreate()"
+        >
+          <Plus class="w-3.5 h-3.5" />
           <span>Add Product</span>
-        </button>
+        </UiButton>
       </div>
-    </div>
+    </template>
 
-    <!-- Filters Area -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-        <UiSearchInput
-          v-model="searchQuery"
-          placeholder="Search by product name, SKU..."
-          class="w-full sm:w-80"
-        />
+    <div class="space-y-4 animate-in fade-in duration-500">
+      <!-- Filter Row -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <UiSearchInput
+            v-model="searchQuery"
+            placeholder="Search products by name, SKU..."
+            class="w-full sm:w-72"
+          />
 
-        <!-- Category Multi-Select Popover -->
-        <div ref="categoryDropdownRef" class="relative">
-          <button
-            type="button"
-            @click.stop="toggleCategoryDropdown"
-            class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs font-medium cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[170px]"
-            :class="selectedCategoryIds.length > 0 ? 'border-primary/50 text-foreground font-semibold' : 'text-muted-foreground'"
-          >
-            <div class="flex items-center gap-1.5 truncate">
-              <Filter class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <span class="truncate">{{ activeCategoriesButtonLabel }}</span>
-            </div>
-            <div class="flex items-center gap-1 shrink-0">
-              <span 
-                v-if="selectedCategoryIds.length > 0" 
-                class="px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full leading-none"
-              >
-                {{ selectedCategoryIds.length }}
-              </span>
-              <ChevronDown :class="['w-3.5 h-3.5 transition-transform duration-200', isCategoryDropdownOpen && 'rotate-180']" />
-            </div>
-          </button>
-
-          <!-- Category Options Popover Menu -->
-          <div 
-            v-if="isCategoryDropdownOpen"
-            @click.stop
-            class="absolute left-0 z-30 mt-1.5 w-72 bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
-          >
-            <!-- Category Search Input inside Popover -->
-            <div class="relative mb-2">
-              <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                v-model="categorySearchQuery"
-                type="text"
-                placeholder="Search categories..."
-                class="w-full h-8 pl-8 pr-2.5 text-xs bg-muted/50 border border-input rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring/20"
-              />
-            </div>
-
-            <!-- Clear / Select All action -->
-            <div class="flex items-center justify-between px-1 py-1 mb-1 border-b border-border/60 text-[11px]">
-              <span class="text-muted-foreground font-semibold">Filter by Category</span>
-              <button
-                v-if="selectedCategoryIds.length > 0"
-                type="button"
-                @click="clearCategorySelection"
-                class="text-primary hover:underline font-bold cursor-pointer"
-              >
-                Clear all ({{ selectedCategoryIds.length }})
-              </button>
-            </div>
-
-            <!-- Categories Infinite List -->
-            <div class="max-h-60 overflow-y-auto space-y-0.5 p-0.5 scrollbar-thin">
-              <button
-                type="button"
-                @click="clearCategorySelection"
-                :class="[
-                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
-                  selectedCategoryIds.length === 0 ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
-                ]"
-              >
-                <span>All Categories</span>
-                <Check v-if="selectedCategoryIds.length === 0" class="w-3.5 h-3.5 text-primary" />
-              </button>
-
-              <button
-                v-for="cat in categoryPagination.items.value"
-                :key="cat.id"
-                type="button"
-                @click="toggleCategorySelection(cat.id)"
-                :class="[
-                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
-                  isCategorySelected(cat.id) ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
-                ]"
-              >
-                <span class="truncate">{{ cat.name }}</span>
-                <div 
-                  class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
-                  :class="isCategorySelected(cat.id) ? 'bg-primary border-primary text-primary-foreground' : 'border-input bg-background'"
+          <!-- Category Multi-Select Popover -->
+          <div ref="categoryDropdownRef" class="relative">
+            <button
+              type="button"
+              @click.stop="toggleCategoryDropdown"
+              class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs font-medium cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[170px]"
+              :class="selectedCategoryIds.length > 0 ? 'border-primary/50 text-foreground font-semibold' : 'text-muted-foreground'"
+            >
+              <div class="flex items-center gap-1.5 truncate">
+                <Filter class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span class="truncate">{{ activeCategoriesButtonLabel }}</span>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <span 
+                  v-if="selectedCategoryIds.length > 0" 
+                  class="px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full leading-none"
                 >
-                  <Check v-if="isCategorySelected(cat.id)" class="w-3 h-3 stroke-[3]" />
-                </div>
-              </button>
+                  {{ selectedCategoryIds.length }}
+                </span>
+                <ChevronDown :class="['w-3.5 h-3.5 transition-transform duration-200', isCategoryDropdownOpen && 'rotate-180']" />
+              </div>
+            </button>
 
-              <!-- Loading spinner when initial loading -->
-              <div v-if="categoryPagination.isLoading.value && categoryPagination.items.value.length === 0" class="py-4 text-center text-muted-foreground flex items-center justify-center gap-2 text-xs">
-                <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-                <span>Loading categories...</span>
+            <!-- Category Options Popover Menu -->
+            <div 
+              v-if="isCategoryDropdownOpen"
+              @click.stop
+              class="absolute left-0 z-30 mt-1.5 w-72 bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+            >
+              <!-- Category Search Input inside Popover -->
+              <div class="relative mb-2">
+                <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  v-model="categorySearchQuery"
+                  type="text"
+                  placeholder="Search categories..."
+                  class="w-full h-8 pl-8 pr-2.5 text-xs bg-muted/50 border border-input rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring/20"
+                />
               </div>
 
-              <!-- Infinite Scroll Sentinel for Next Category Pages -->
-              <UiInfiniteScroll
-                :has-more="categoryPagination.hasMore.value"
-                :is-loading="categoryPagination.isFetchingNextPage.value"
-                :error="categoryPagination.error.value"
-                @load-more="categoryPagination.loadNextPage"
-                @retry="categoryPagination.loadNextPage"
-              />
+              <!-- Clear / Select All action -->
+              <div class="flex items-center justify-between px-1 py-1 mb-1 border-b border-border/60 text-[11px]">
+                <span class="text-muted-foreground font-semibold">Filter by Category</span>
+                <button
+                  v-if="selectedCategoryIds.length > 0"
+                  type="button"
+                  @click="clearCategorySelection"
+                  class="text-primary hover:underline font-bold cursor-pointer"
+                >
+                  Clear all ({{ selectedCategoryIds.length }})
+                </button>
+              </div>
+
+              <!-- Categories Infinite List -->
+              <div class="max-h-60 overflow-y-auto space-y-0.5 p-0.5 scrollbar-thin">
+                <button
+                  type="button"
+                  @click="clearCategorySelection"
+                  :class="[
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
+                    selectedCategoryIds.length === 0 ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
+                  ]"
+                >
+                  <span>All Categories</span>
+                  <Check v-if="selectedCategoryIds.length === 0" class="w-3.5 h-3.5 text-primary" />
+                </button>
+
+                <button
+                  v-for="cat in categoryPagination.items.value"
+                  :key="cat.id"
+                  type="button"
+                  @click="toggleCategorySelection(cat.id)"
+                  :class="[
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
+                    isCategorySelected(cat.id) ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
+                  ]"
+                >
+                  <span class="truncate">{{ cat.name }}</span>
+                  <div 
+                    class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
+                    :class="isCategorySelected(cat.id) ? 'bg-primary border-primary text-primary-foreground' : 'border-input bg-background'"
+                  >
+                    <Check v-if="isCategorySelected(cat.id)" class="w-3 h-3 stroke-[3]" />
+                  </div>
+                </button>
+
+                <!-- Loading spinner when initial loading -->
+                <div v-if="categoryPagination.isLoading.value && categoryPagination.items.value.length === 0" class="py-4 text-center text-muted-foreground flex items-center justify-center gap-2 text-xs">
+                  <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+                  <span>Loading categories...</span>
+                </div>
+
+                <!-- Infinite Scroll Sentinel for Next Category Pages -->
+                <UiInfiniteScroll
+                  :has-more="categoryPagination.hasMore.value"
+                  :is-loading="categoryPagination.isFetchingNextPage.value"
+                  :error="categoryPagination.error.value"
+                  @load-more="categoryPagination.loadNextPage"
+                  @retry="categoryPagination.loadNextPage"
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="flex items-center gap-2 self-end sm:self-center">
-        <!-- Clear Filters button when any filter active -->
-        <button
-          v-if="searchQuery || selectedCategoryIds.length > 0"
-          type="button"
-          @click="clearAllFilters"
-          class="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-          title="Clear all filters"
-        >
-          <X class="w-3.5 h-3.5" />
-          <span>Clear</span>
-        </button>
-
-        <!-- Items per page selector -->
-        <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
-          <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
-          <select 
-            v-model="itemsPerPage"
-            class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+        <div class="flex items-center gap-2 self-end sm:self-center">
+          <!-- Clear Filters button when any filter active -->
+          <button
+            v-if="searchQuery || selectedCategoryIds.length > 0"
+            type="button"
+            @click="clearAllFilters"
+            class="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+            title="Clear all filters"
           >
-            <option :value="5">5 / page</option>
-            <option :value="10">10 / page</option>
-            <option :value="25">25 / page</option>
-            <option :value="50">50 / page</option>
-          </select>
-        </div>
+            <X class="w-3.5 h-3.5" />
+            <span>Clear</span>
+          </button>
 
-        <!-- Reload Button -->
-        <button 
-          type="button"
-          @click="fetchProductsPage"
-          :disabled="isLoading"
-          class="h-9 w-9 flex items-center justify-center bg-background border border-input rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer disabled:opacity-50"
-          title="Refresh products list"
-          aria-label="Refresh products list"
-        >
-          <RefreshCw :class="['w-3.5 h-3.5', isLoading && 'animate-spin']" />
-        </button>
+          <!-- Items per page selector -->
+          <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+            <select 
+              v-model="itemsPerPage"
+              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option :value="5">5 / page</option>
+              <option :value="10">10 / page</option>
+              <option :value="25">25 / page</option>
+              <option :value="50">50 / page</option>
+            </select>
+          </div>
+        </div>
       </div>
-    </div>
 
     <!-- Error State Banner -->
     <div v-if="fetchError" class="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-between gap-4 text-xs font-medium text-destructive">
@@ -1040,5 +1042,6 @@ onUnmounted(() => {
         </div>
       </form>
     </UiAdminModal>
-  </div>
+    </div>
+  </NuxtLayout>
 </template>
