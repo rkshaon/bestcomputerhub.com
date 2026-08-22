@@ -1291,6 +1291,20 @@ watch(viewMode, () => {
             <option value="-slug">Slug (Z-A)</option>
           </select>
         </div>
+
+        <!-- Items per page selector (List view only) -->
+        <div v-if="viewMode === 'list'" class="flex items-center gap-1.5 border-l border-border pl-2.5">
+          <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+          <select 
+            v-model="itemsPerPage"
+            class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+          >
+            <option :value="5">5 / page</option>
+            <option :value="10">10 / page</option>
+            <option :value="25">25 / page</option>
+            <option :value="50">50 / page</option>
+          </select>
+        </div>
         
         <button 
           @click="loadCategoriesGrid" 
