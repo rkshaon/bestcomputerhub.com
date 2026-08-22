@@ -319,9 +319,9 @@ const resetFilters = () => {
 
     <!-- Main Section -->
     <div class="container mx-auto px-4 py-12">
-      <div class="flex flex-col lg:flex-row gap-12">
+      <div class="flex flex-col lg:flex-row gap-8 lg:gap-10 items-start">
         <!-- Sidebar Filters -->
-        <aside class="w-full lg:w-76 shrink-0 space-y-8">
+        <aside class="w-full lg:w-64 xl:w-72 shrink-0 space-y-8">
           <div class="flex items-center justify-between border-b pb-4">
             <h3 class="font-bold text-base flex items-center gap-2">
               <SlidersHorizontal class="w-4.5 h-4.5 text-primary" />
@@ -405,7 +405,7 @@ const resetFilters = () => {
         </aside>
 
         <!-- Product Grid Area -->
-        <div class="flex-grow space-y-8">
+        <div class="flex-1 min-w-0 w-full space-y-8">
           <!-- Toolbar -->
           <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b">
             <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -447,12 +447,12 @@ const resetFilters = () => {
           <div 
             v-if="isProductsLoading" 
             :class="cn(
-              'grid gap-8',
+              'grid gap-6',
               viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'
             )"
           >
-            <div v-for="i in 6" :key="i" class="bg-card rounded-[2rem] border p-6 space-y-4 animate-pulse">
-              <div class="aspect-video bg-muted rounded-2xl w-full"></div>
+            <div v-for="i in 6" :key="i" class="bg-card rounded-2xl border p-6 space-y-4 animate-pulse">
+              <div class="aspect-video bg-muted rounded-xl w-full"></div>
               <div class="space-y-2">
                 <div class="h-4 bg-muted rounded w-1/3"></div>
                 <div class="h-6 bg-muted rounded w-3/4"></div>
@@ -467,7 +467,7 @@ const resetFilters = () => {
           <div v-else-if="products.length > 0" class="space-y-12">
             <div 
               :class="cn(
-                'grid gap-8',
+                'grid gap-6',
                 viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'
               )"
             >
@@ -507,7 +507,7 @@ const resetFilters = () => {
           </div>
 
           <!-- Empty State -->
-          <div v-else class="py-24 flex flex-col items-center justify-center text-center space-y-6 bg-card border border-dashed rounded-[2rem] p-12 max-w-2xl mx-auto">
+          <div v-else class="py-24 flex flex-col items-center justify-center text-center space-y-6 bg-card border border-dashed rounded-2xl p-12 max-w-2xl mx-auto">
             <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
               <Search class="w-6 h-6 text-muted-foreground animate-pulse" />
             </div>
