@@ -99,18 +99,42 @@ const targetCategoryIdentifier = computed(() => {
     return null;
   }
 
-  const lastCategory = product.value.categories[product.value.categories.length - 1];
-  if (!lastCategory) return null;
+  // Iterate backwards to find the first category that is not the product itself
+  for (let i = product.value.categories.length - 1; i >= 0; i--) {
+    const cat = product.value.categories[i];
+    if (!cat) continue;
 
-  if (typeof lastCategory === 'object') {
-    if (lastCategory.id !== undefined && lastCategory.id !== null && lastCategory.id !== '') {
-      return lastCategory.id;
+    let catId = '';
+    let catSlug = '';
+
+    if (typeof cat === 'object') {
+      catId = cat.id !== undefined && cat.id !== null ? String(cat.id) : '';
+      catSlug = cat.slug ? String(cat.slug) : '';
+    } else if (typeof cat === 'number' || typeof cat === 'string') {
+      catId = String(cat);
+      catSlug = String(cat);
     }
-    if (lastCategory.slug) {
-      return lastCategory.slug;
+
+    // Ignore if this category represents the product itself
+    if (
+      (catSlug && catSlug.toLowerCase() === slug.value.toLowerCase()) ||
+      (product.value.slug && catSlug.toLowerCase() === product.value.slug.toLowerCase()) ||
+      (product.value.id && catId === String(product.value.id))
+    ) {
+      continue;
     }
-  } else if (typeof lastCategory === 'number' || typeof lastCategory === 'string') {
-    return lastCategory;
+
+    // Found a valid category that is not the product itself
+    if (typeof cat === 'object') {
+      if (cat.id !== undefined && cat.id !== null && cat.id !== '') {
+        return cat.id;
+      }
+      if (cat.slug) {
+        return cat.slug;
+      }
+    } else {
+      return cat;
+    }
   }
 
   return null;
