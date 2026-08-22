@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
 import { extractErrorMessage } from './useToast';
-import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse, CategorySummaryResponse, BulkMenuUpdateResponse } from '@/types';
+import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse, CategorySummaryResponse, BulkMenuUpdateResponse, CategoryPathItem, CategoryPathResponse } from '@/types';
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 
@@ -1261,6 +1261,88 @@ export const useCategoryService = () => {
     }
   };
 
+  const getCategoryPath = async (
+    identifier: { id?: number | string; slug?: string } | number | string
+  ): Promise<CategoryPathItem[]> => {
+    let paramKey = 'slug';
+    let paramVal = '';
+
+    if (typeof identifier === 'object' && identifier !== null) {
+      if (identifier.id !== undefined && identifier.id !== null && identifier.id !== '') {
+        paramKey = 'id';
+        paramVal = String(identifier.id);
+      } else if (identifier.slug) {
+        paramKey = 'slug';
+        paramVal = String(identifier.slug);
+      }
+    } else if (typeof identifier === 'number') {
+      paramKey = 'id';
+      paramVal = String(identifier);
+    } else if (typeof identifier === 'string') {
+      if (/^\d+$/.test(identifier.trim())) {
+        paramKey = 'id';
+        paramVal = identifier.trim();
+      } else {
+        paramKey = 'slug';
+        paramVal = identifier.trim();
+      }
+    }
+
+    if (!paramVal) return [];
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 150));
+      const categoriesList: Category[] = getMockCategories();
+      const targetCat: Category | undefined = categoriesList.find(c => String(c.id) === paramVal || c.slug === paramVal);
+      if (!targetCat) return [];
+
+      const trail: CategoryPathItem[] = [];
+      let current: Category | undefined = targetCat;
+      while (current) {
+        trail.unshift({
+          id: current.id,
+          slug: current.slug,
+          name: current.name
+        });
+        if (current.parentCategoryId) {
+          const parentIdToFind: string = String(current.parentCategoryId);
+          current = categoriesList.find((c: Category) => String(c.id) === parentIdToFind || c.slug === parentIdToFind);
+        } else {
+          break;
+        }
+      }
+      return trail;
+    }
+
+    try {
+      const endpoint = `/api/v1/categories/path/?${paramKey}=${encodeURIComponent(paramVal)}`;
+      const data = await apiClient.request<any>(endpoint, {
+        method: 'GET'
+      });
+
+      if (data && typeof data === 'object') {
+        if ('path' in data && Array.isArray(data.path)) {
+          return data.path.map((item: any) => ({
+            id: item.id !== undefined ? item.id : '',
+            slug: String(item.slug || ''),
+            name: String(item.name || '')
+          }));
+        }
+        if (Array.isArray(data)) {
+          return data.map((item: any) => ({
+            id: item.id !== undefined ? item.id : '',
+            slug: String(item.slug || ''),
+            name: String(item.name || '')
+          }));
+        }
+      }
+      return [];
+    } catch (err: any) {
+      console.warn('Failed to retrieve category path:', err?.message || err);
+      return [];
+    }
+  };
+
   return {
     getCategoriesList,
     getCategorySummary,
@@ -1268,6 +1350,7 @@ export const useCategoryService = () => {
     getCategoryChildrenBatch,
     refreshChildrenForParent,
     reorderCategory,
+    getCategoryPath,
     getChildrenForParent,
     hasChildrenLoaded,
     isChildrenLoading,

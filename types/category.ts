@@ -61,3 +61,13 @@ export interface BulkMenuUpdateResponse {
   updated_count: number;
   show_in_menu: boolean;
 }
+
+export interface CategoryPathItem {
+  id: number | string;
+  slug: string;
+  name: string;
+}
+
+export interface CategoryPathResponse {
+  path: CategoryPathItem[];
+}

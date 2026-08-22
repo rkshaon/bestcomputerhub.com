@@ -93,7 +93,98 @@ const originCategory = computed(() => {
   return null;
 });
 
+const targetCategoryIdentifier = computed(() => {
+  if (!product.value) return null;
+
+  // 1. Origin category object
+  if (product.value.origin && typeof product.value.origin === 'object') {
+    const orig = product.value.origin as any;
+    if (orig.id !== undefined && orig.id !== null && orig.id !== '') return orig.id;
+    if (orig.slug) return orig.slug;
+  }
+
+  // 2. Categories list
+  if (Array.isArray(product.value.categories) && product.value.categories.length > 0) {
+    const firstCat = product.value.categories[0];
+    if (typeof firstCat === 'object' && firstCat !== null) {
+      if (firstCat.id !== undefined && firstCat.id !== null && firstCat.id !== '') return firstCat.id;
+      if (firstCat.slug) return firstCat.slug;
+    } else if (firstCat !== undefined && firstCat !== null && firstCat !== '') {
+      return firstCat;
+    }
+  }
+
+  // 3. Category field
+  if (product.value.category) {
+    if (typeof product.value.category === 'object' && product.value.category !== null) {
+      const cat = product.value.category as any;
+      if (cat.id !== undefined && cat.id !== null && cat.id !== '') return cat.id;
+      if (cat.slug) return cat.slug;
+    } else if (typeof product.value.category === 'string' && product.value.category !== 'General') {
+      return product.value.category;
+    }
+  }
+
+  return null;
+});
+
+// Category path hierarchy fetched via Category Path API: GET /api/v1/categories/path/
+const { data: categoryPath } = await useAsyncData(
+  `product-category-path-${slug.value}`,
+  async () => {
+    const target = targetCategoryIdentifier.value;
+    if (!target) return [];
+    try {
+      return await categoryService.getCategoryPath(target);
+    } catch (e) {
+      console.warn('Failed to load category path for product:', e);
+      return [];
+    }
+  },
+  {
+    watch: [targetCategoryIdentifier]
+  }
+);
+
+interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
+const categoryBreadcrumbs = computed<BreadcrumbItem[]>(() => {
+  const items: BreadcrumbItem[] = [];
+  const path = categoryPath.value;
+
+  if (Array.isArray(path) && path.length > 0) {
+    // Render the returned path in its provided order:
+    // Parent Category → Sub Category → Current Category
+    path.forEach((catItem, idx) => {
+      const slugPath = path.slice(0, idx + 1).map(c => c.slug).filter(Boolean).join('/');
+      items.push({
+        name: catItem.name,
+        url: `/product-category/${slugPath}`
+      });
+    });
+  } else if (originCategory.value?.name) {
+    items.push({
+      name: originCategory.value.name,
+      url: originCategory.value.slug ? `/product-category/${originCategory.value.slug}` : '/products'
+    });
+  } else if (product.value?.category && typeof product.value.category === 'string' && product.value.category !== 'General') {
+    items.push({
+      name: product.value.category,
+      url: '/products'
+    });
+  }
+
+  return items;
+});
+
 const categoryName = computed(() => {
+  if (categoryPath.value && categoryPath.value.length > 0) {
+    const lastItem = categoryPath.value[categoryPath.value.length - 1];
+    if (lastItem?.name) return lastItem.name;
+  }
   if (originCategory.value?.name) return originCategory.value.name;
   if (product.value?.category && typeof product.value.category === 'string' && product.value.category !== 'General') {
     return product.value.category;
@@ -102,6 +193,10 @@ const categoryName = computed(() => {
 });
 
 const categoryUrl = computed(() => {
+  if (categoryBreadcrumbs.value.length > 0) {
+    const lastBc = categoryBreadcrumbs.value[categoryBreadcrumbs.value.length - 1];
+    if (lastBc?.url) return lastBc.url;
+  }
   if (originCategory.value?.slug) {
     return `/product-category/${originCategory.value.slug}`;
   }
@@ -189,12 +284,18 @@ const isItemInCart = computed(() => {
     <!-- Breadcrumbs -->
     <div class="bg-muted/30 border-b">
       <div class="container mx-auto px-4 py-3 sm:py-4">
-        <nav class="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium uppercase tracking-widest text-muted-foreground overflow-x-auto whitespace-nowrap custom-submenu-scrollbar">
+        <nav class="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium uppercase tracking-widest text-muted-foreground overflow-x-auto whitespace-nowrap custom-submenu-scrollbar" aria-label="Breadcrumb">
           <NuxtLink to="/" class="hover:text-primary transition-colors shrink-0">Home</NuxtLink>
+
+          <template v-for="bc in categoryBreadcrumbs" :key="bc.url">
+            <ChevronRight class="w-3 h-3 shrink-0" />
+            <NuxtLink :to="bc.url" class="hover:text-primary transition-colors shrink-0">
+              {{ bc.name }}
+            </NuxtLink>
+          </template>
+
           <ChevronRight class="w-3 h-3 shrink-0" />
-          <NuxtLink :to="categoryUrl" class="hover:text-primary transition-colors shrink-0">{{ categoryName }}</NuxtLink>
-          <ChevronRight class="w-3 h-3 shrink-0" />
-          <span class="text-foreground truncate max-w-[160px] sm:max-w-[260px] md:max-w-none">
+          <span class="text-foreground font-semibold truncate max-w-[160px] sm:max-w-[260px] md:max-w-none">
             {{ product?.name || slug }}
           </span>
         </nav>
