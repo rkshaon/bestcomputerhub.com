@@ -20,7 +20,9 @@ import {
   Check,
   X,
   Save,
-  Package
+  Package,
+  LayoutGrid,
+  List
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -29,7 +31,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
 import { formatCurrency, cn } from '@/utils';
-import type { Product, Category, CreateProductPayload } from '@/types';
+import type { Product, Category, CreateProductPayload, PaginatedResponse } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -62,6 +64,7 @@ const canEditProduct = computed(() => canEditInModule('/admin/products'));
 const canDeleteProduct = computed(() => canDeleteInModule('/admin/products'));
 
 // State managers initialized from URL query parameters
+const viewMode = ref<'grid' | 'list'>((route.query.view === 'grid' ? 'grid' : 'list'));
 const productsList = ref<Product[]>([]);
 const totalCount = ref(0);
 const isLoading = ref(false);
@@ -92,6 +95,43 @@ const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) ||
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 
 const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
+
+// Grid Mode Infinite Pagination State
+const {
+  items: gridProducts,
+  totalCount: gridTotalCount,
+  isLoading: isGridLoading,
+  isFetchingNextPage: isGridFetchingNext,
+  hasMore: gridHasMore,
+  error: gridError,
+  fetchFirstPage: fetchGridFirstPage,
+  loadNextPage: loadGridNextPage,
+  refresh: refreshGridPagination,
+  reset: resetGridPagination
+} = useInfinitePagination<Product>({
+  fetcher: async (params): Promise<PaginatedResponse<Product>> => {
+    if (viewMode.value !== 'grid') {
+      return { results: [], count: 0, page: 1, pages: 1, next: null, previous: null };
+    }
+    const categoriesParam = selectedCategoryIds.value.length > 0 
+      ? selectedCategoryIds.value.join(',') 
+      : undefined;
+
+    return await productService.getProductsList({
+      page: params.page,
+      page_size: 12,
+      search: (params.search !== undefined ? params.search : debouncedSearchQuery.value).trim() || undefined,
+      categories: categoriesParam
+    });
+  },
+  search: searchQuery,
+  extraParams: computed(() => ({
+    categories: selectedCategoryIds.value.join(',')
+  })),
+  pageSize: 12,
+  dedupeKey: (p) => String(p.id),
+  autoFetch: false
+});
 
 // URL-driven modal state infrastructure
 const modalState = useAdminModalState<Product>({
@@ -311,7 +351,11 @@ const handleCreateProductSubmit = async () => {
     await productService.createProduct(payload);
     toastSuccess(`Product "${payload.name}" created successfully.`);
     modalState.closeModal();
-    await fetchProductsPage();
+    if (viewMode.value === 'grid') {
+      await refreshGridPagination();
+    } else {
+      await fetchProductsPage();
+    }
   } catch (err: any) {
     createFormError.value = extractErrorMessage(err, 'Failed to create product. Please check your inputs and try again.');
     handleApiError(err, 'Failed to create product.');
@@ -320,7 +364,16 @@ const handleCreateProductSubmit = async () => {
   }
 };
 
-// Fetch products page from API (GET /api/v1/products/)
+// Refresh active view based on current viewMode
+const refreshActiveView = async () => {
+  if (viewMode.value === 'grid') {
+    await refreshGridPagination();
+  } else {
+    await fetchProductsPage();
+  }
+};
+
+// Fetch products page from API (GET /api/v1/products/) for List Mode
 const fetchProductsPage = async () => {
   isLoading.value = true;
   fetchError.value = null;
@@ -354,27 +407,57 @@ const updateRouteAndFetch = () => {
   router.replace({
     query: {
       ...route.query,
-      page: currentPage.value > 1 ? currentPage.value : undefined,
-      pageSize: itemsPerPage.value !== 10 ? itemsPerPage.value : undefined,
+      view: viewMode.value === 'grid' ? 'grid' : undefined,
+      page: (viewMode.value === 'list' && currentPage.value > 1) ? currentPage.value : undefined,
+      pageSize: (viewMode.value === 'list' && itemsPerPage.value !== 10) ? itemsPerPage.value : undefined,
       search: debouncedSearchQuery.value.trim() || undefined,
       categories: categoriesParam,
       category: undefined
     }
   });
-  fetchProductsPage();
+  if (viewMode.value === 'list') {
+    fetchProductsPage();
+  }
 };
 
-// Reset pagination to page 1 whenever filters change
-watch([debouncedSearchQuery, () => selectedCategoryIds.value.join(','), itemsPerPage], () => {
-  if (currentPage.value !== 1) {
-    currentPage.value = 1;
+// View mode switcher listener with URL query sync and data reset
+watch(viewMode, async (newMode) => {
+  const query: Record<string, any> = { ...route.query };
+  if (newMode === 'grid') {
+    query.view = 'grid';
+    delete query.page;
+    delete query.pageSize;
   } else {
-    updateRouteAndFetch();
+    delete query.view;
+    if (currentPage.value > 1) query.page = currentPage.value;
+    if (itemsPerPage.value !== 10) query.pageSize = itemsPerPage.value;
+  }
+  router.replace({ query });
+
+  if (newMode === 'grid') {
+    resetGridPagination();
+    await fetchGridFirstPage();
+  } else if (newMode === 'list') {
+    currentPage.value = 1;
+    await fetchProductsPage();
+  }
+});
+
+// Reset pagination to page 1 whenever filters change in list mode
+watch([debouncedSearchQuery, () => selectedCategoryIds.value.join(','), itemsPerPage], () => {
+  if (viewMode.value === 'list') {
+    if (currentPage.value !== 1) {
+      currentPage.value = 1;
+    } else {
+      updateRouteAndFetch();
+    }
   }
 });
 
 watch(currentPage, () => {
-  updateRouteAndFetch();
+  if (viewMode.value === 'list') {
+    updateRouteAndFetch();
+  }
 });
 
 // Document click / keyboard listeners for category popover dismiss
@@ -471,7 +554,11 @@ const handleDelete = async (product: Product) => {
   try {
     await productService.deleteProduct(product.id);
     toastSuccess(`Product "${product.name}" deleted successfully.`);
-    await fetchProductsPage();
+    if (viewMode.value === 'grid') {
+      await refreshGridPagination();
+    } else {
+      await fetchProductsPage();
+    }
   } catch (err: any) {
     handleApiError(err, 'Failed to delete product.');
   } finally {
@@ -479,8 +566,12 @@ const handleDelete = async (product: Product) => {
   }
 };
 
-onMounted(() => {
-  fetchProductsPage();
+onMounted(async () => {
+  if (viewMode.value === 'grid') {
+    await fetchGridFirstPage();
+  } else {
+    await fetchProductsPage();
+  }
   if (selectedCategoryIds.value.length > 0) {
     categoryPagination.refresh();
   }
@@ -514,10 +605,10 @@ onUnmounted(() => {
         <UiButton 
           variant="outline" 
           class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
-          @click="fetchProductsPage"
-          :disabled="isLoading"
+          @click="refreshActiveView"
+          :disabled="isLoading || isGridLoading"
         >
-          <RefreshCw :class="['w-3.5 h-3.5', isLoading && 'animate-spin']" />
+          <RefreshCw :class="['w-3.5 h-3.5', (isLoading || isGridLoading) && 'animate-spin']" />
           <span>Refresh</span>
         </UiButton>
 
@@ -541,6 +632,38 @@ onUnmounted(() => {
             placeholder="Search products by name, SKU..."
             class="w-full sm:w-72"
           />
+
+          <!-- View Toggle Buttons -->
+          <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-lg border border-border/80">
+            <button
+              type="button"
+              @click="viewMode = 'grid'"
+              :class="[
+                'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
+                viewMode === 'grid'
+                  ? 'bg-background text-primary shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              ]"
+              title="Grid View"
+              aria-label="Grid view"
+            >
+              <LayoutGrid class="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              @click="viewMode = 'list'"
+              :class="[
+                'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
+                viewMode === 'list'
+                  ? 'bg-background text-primary shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              ]"
+              title="List View"
+              aria-label="List view"
+            >
+              <List class="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           <!-- Category Multi-Select Popover -->
           <div ref="categoryDropdownRef" class="relative">
@@ -660,8 +783,8 @@ onUnmounted(() => {
             <span>Clear</span>
           </button>
 
-          <!-- Items per page selector -->
-          <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
+          <!-- Items per page selector (List view only) -->
+          <div v-if="viewMode === 'list'" class="flex items-center gap-1.5 border-l border-border pl-2.5">
             <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
             <select 
               v-model="itemsPerPage"
@@ -676,30 +799,194 @@ onUnmounted(() => {
         </div>
       </div>
 
-    <!-- Error State Banner -->
-    <div v-if="fetchError" class="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-between gap-4 text-xs font-medium text-destructive">
-      <div class="flex items-center gap-2.5">
-        <AlertCircle class="w-4 h-4 shrink-0" />
-        <span>{{ fetchError }}</span>
+      <!-- Error State Banner -->
+      <div v-if="(viewMode === 'list' && fetchError) || (viewMode === 'grid' && gridError && gridProducts.length === 0)" class="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-between gap-4 text-xs font-medium text-destructive">
+        <div class="flex items-center gap-2.5">
+          <AlertCircle class="w-4 h-4 shrink-0" />
+          <span>{{ viewMode === 'list' ? fetchError : gridError }}</span>
+        </div>
+        <button 
+          type="button"
+          @click="refreshActiveView"
+          class="px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground font-bold hover:opacity-90 transition-opacity cursor-pointer shrink-0"
+        >
+          Retry
+        </button>
       </div>
-      <button 
-        type="button"
-        @click="fetchProductsPage"
-        class="px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground font-bold hover:opacity-90 transition-opacity cursor-pointer shrink-0"
-      >
-        Retry
-      </button>
-    </div>
 
-    <!-- Products Table -->
-    <UiTable
-      :columns="tableColumns"
-      :data="productsList"
-      :loading="isLoading"
-      key-field="id"
-      empty-text="No Products Found"
-      empty-description="No items match your query or filter criteria. Try clearing search filters."
-    >
+      <!-- Grid View -->
+      <div v-if="viewMode === 'grid'" class="space-y-6">
+        <!-- Initial loading state for Grid View -->
+        <div v-if="isGridLoading && gridProducts.length === 0" class="h-64 flex flex-col items-center justify-center gap-3 bg-card border border-border rounded-2xl">
+          <Loader2 class="w-8 h-8 animate-spin text-primary" />
+          <p class="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Loading Products...</p>
+        </div>
+
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div
+            v-for="product in gridProducts"
+            :key="product.id"
+            class="bg-card text-card-foreground border border-border rounded-2xl p-4 sm:p-5 shadow-xs hover:border-primary/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+          >
+            <div class="space-y-3.5">
+              <!-- Top row: Image & Status Badges -->
+              <div class="flex items-start justify-between gap-3">
+                <div class="w-14 h-14 rounded-xl bg-muted border border-border overflow-hidden shrink-0 flex items-center justify-center relative">
+                  <img 
+                    :src="getProductImageUrl(product)" 
+                    :alt="getProductImageAlt(product)"
+                    @error="handleImageError(product.id)"
+                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                  />
+                </div>
+
+                <div class="flex flex-col items-end gap-1.5">
+                  <span :class="cn(
+                    'px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-block',
+                    getStockStatus(product.stock).class
+                  )">
+                    {{ getStockStatus(product.stock).label }}
+                  </span>
+                  <div v-if="product.wishlist || product.in_cart" class="flex items-center gap-1">
+                    <span v-if="product.wishlist" class="p-1 rounded-md bg-rose-500/10 text-rose-500" title="In Wishlist">
+                      <Heart class="w-3 h-3 fill-rose-500" />
+                    </span>
+                    <span v-if="product.in_cart" class="p-1 rounded-md bg-primary/10 text-primary" title="In Cart">
+                      <ShoppingCart class="w-3 h-3" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Brand & Category -->
+              <div class="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                <span class="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground/80 bg-muted/60 px-2 py-0.5 rounded border border-border/50">
+                  {{ product.brand }}
+                </span>
+                <span class="flex items-center gap-1 text-[11px] text-muted-foreground truncate max-w-[140px]">
+                  <Layers class="w-3 h-3 shrink-0" />
+                  <span class="truncate">{{ getCategoryName(product) }}</span>
+                </span>
+              </div>
+
+              <!-- Name -->
+              <h3 class="text-sm font-bold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
+                {{ product.name }}
+              </h3>
+
+              <!-- SKU & Rating -->
+              <div class="flex items-center justify-between gap-2 text-xs pt-0.5">
+                <span class="font-mono text-[11px] text-muted-foreground">
+                  {{ product.sku }}
+                </span>
+                <div v-if="getProductRating(product) > 0" class="flex items-center gap-1 text-amber-500 font-bold text-xs">
+                  <Star class="w-3 h-3 fill-amber-500" />
+                  <span>{{ getProductRating(product).toFixed(1) }}</span>
+                  <span class="text-muted-foreground font-normal text-[10px]">({{ getProductReviews(product) }})</span>
+                </div>
+              </div>
+
+              <!-- Price & Inventory Indicator -->
+              <div class="pt-3 border-t border-border/60 flex items-end justify-between gap-2">
+                <div>
+                  <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">Price</span>
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-base font-extrabold text-foreground tracking-tight">
+                      {{ formatCurrency(getProductPrice(product)) }}
+                    </span>
+                    <span v-if="product.originalPrice && product.originalPrice > getProductPrice(product)" class="text-[10px] text-rose-500 line-through font-bold">
+                      {{ formatCurrency(product.originalPrice) }}
+                    </span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[11px] font-semibold text-muted-foreground block">{{ product.stock ?? 0 }} units</span>
+                  <div class="w-16 h-1.5 bg-muted rounded-full overflow-hidden mt-1 ml-auto">
+                    <div 
+                      :class="cn(
+                        'h-full rounded-full transition-all duration-300', 
+                        (product.stock ?? 0) <= 0 ? 'bg-destructive' : (product.stock ?? 0) < 10 ? 'bg-amber-500' : 'bg-emerald-500'
+                      )"
+                      :style="{ width: `${Math.min(product.stock ?? 0, 100)}%` }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Actions Footer -->
+            <div class="mt-4 pt-3 border-t border-border/60 flex items-center justify-between">
+              <span class="text-[10px] font-mono font-semibold text-muted-foreground">
+                ID: #{{ product.id }}
+              </span>
+              <div class="flex items-center gap-1">
+                <NuxtLink 
+                  v-if="canEditProduct" 
+                  :to="`/admin/products/${product.id}`" 
+                  class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                  title="Edit Product"
+                  aria-label="Edit product"
+                >
+                  <Edit2 class="w-4 h-4" />
+                </NuxtLink>
+                <button 
+                  v-if="canDeleteProduct" 
+                  type="button"
+                  @click="handleDelete(product)" 
+                  :disabled="isDeleting === product.id"
+                  class="p-2 text-muted-foreground hover:text-destructive hover:bg-muted rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                  title="Delete Product"
+                  aria-label="Delete product"
+                >
+                  <Loader2 v-if="isDeleting === product.id" class="w-4 h-4 animate-spin text-destructive" />
+                  <Trash2 v-else class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State in Grid Mode -->
+          <div v-if="gridProducts.length === 0" class="col-span-full py-16 text-center bg-card border border-border rounded-2xl">
+            <div class="flex flex-col items-center justify-center gap-4 text-muted-foreground">
+              <div class="w-16 h-16 rounded-2xl bg-muted/50 border border-border flex items-center justify-center">
+                <Search class="w-7 h-7 text-muted-foreground" />
+              </div>
+              <div>
+                <p class="font-display font-medium text-lg text-foreground">No Products Found</p>
+                <p class="text-xs max-w-sm mx-auto mt-1">No items match your query or filter criteria. Try clearing search filters.</p>
+              </div>
+              <button
+                v-if="searchQuery || selectedCategoryIds.length > 0"
+                type="button"
+                @click="clearAllFilters"
+                class="px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Infinite Scroll Sentinel for Grid Mode -->
+        <UiInfiniteScroll
+          :has-more="gridHasMore"
+          :is-loading="isGridFetchingNext"
+          :error="gridError"
+          @load-more="loadGridNextPage"
+          @retry="loadGridNextPage"
+        />
+      </div>
+
+      <!-- Products Table (List View) -->
+      <UiTable
+        v-else-if="viewMode === 'list'"
+        :columns="tableColumns"
+        :data="productsList"
+        :loading="isLoading"
+        key-field="id"
+        empty-text="No Products Found"
+        empty-description="No items match your query or filter criteria. Try clearing search filters."
+      >
       <!-- Product Details Column -->
       <template #cell-name="{ item: product }">
         <div class="flex items-start gap-3.5">
