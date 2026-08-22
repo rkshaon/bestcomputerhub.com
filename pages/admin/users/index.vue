@@ -202,6 +202,11 @@ watch(debouncedSearchQuery, async () => {
   }
 });
 
+// Reset pagination on itemsPerPage change
+watch(itemsPerPage, () => {
+  currentPage.value = 1;
+});
+
 // Watch pagination state for List view
 watch([currentPage, itemsPerPage], async () => {
   if (viewMode.value === 'list') {
@@ -219,7 +224,7 @@ watch([searchQuery, currentPage, itemsPerPage, viewMode], () => {
   if (viewMode.value === 'list' && currentPage.value !== 1) query.page = String(currentPage.value);
   else delete query.page;
 
-  if (itemsPerPage.value !== 10) query.pageSize = String(itemsPerPage.value);
+  if (viewMode.value === 'list' && itemsPerPage.value !== 10) query.pageSize = String(itemsPerPage.value);
   else delete query.pageSize;
 
   router.replace({ query });
@@ -411,6 +416,20 @@ const staffAccountsCount = computed(() => {
               <List class="w-3.5 h-3.5" />
             </button>
           </div>
+        </div>
+
+        <!-- Items per page selector (List view only) -->
+        <div v-if="viewMode === 'list'" class="flex items-center gap-1.5 border-l border-border pl-2.5 self-end sm:self-center">
+          <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+          <select 
+            v-model="itemsPerPage"
+            class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+          >
+            <option :value="5">5 / page</option>
+            <option :value="10">10 / page</option>
+            <option :value="25">25 / page</option>
+            <option :value="50">50 / page</option>
+          </select>
         </div>
       </div>
 
