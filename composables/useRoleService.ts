@@ -46,7 +46,7 @@ export const useRoleService = () => {
   };
 
   // 1. Get Roles List
-  const getRoles = async (params?: { page?: number; search?: string }): Promise<PaginatedRoles> => {
+  const getRoles = async (params?: { page?: number; page_size?: number; search?: string }): Promise<PaginatedRoles> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -71,6 +71,7 @@ export const useRoleService = () => {
     try {
       const queryObj: Record<string, any> = {};
       if (params?.page) queryObj.page = params.page;
+      if (params?.page_size) queryObj.page_size = params.page_size;
       if (params?.search) queryObj.search = params.search;
 
       const data = await apiClient.request<PaginatedRoles | Role[]>('/api/v1/roles/', {

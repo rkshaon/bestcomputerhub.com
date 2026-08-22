@@ -83,6 +83,7 @@ const fetchListRoles = async () => {
   try {
     const res = await roleService.getRoles({
       page: currentPage.value,
+      page_size: itemsPerPage.value,
       search: searchQuery.value
     });
     listRoles.value = res.results;
@@ -183,6 +184,11 @@ watch(debouncedSearchQuery, async () => {
   }
 });
 
+// Reset pagination on itemsPerPage change
+watch(itemsPerPage, () => {
+  currentPage.value = 1;
+});
+
 // Watch pagination state for List view
 watch([currentPage, itemsPerPage], async () => {
   if (viewMode.value === 'list') {
@@ -200,10 +206,19 @@ watch([searchQuery, currentPage, itemsPerPage, viewMode], () => {
   if (viewMode.value === 'list' && currentPage.value !== 1) query.page = String(currentPage.value);
   else delete query.page;
 
-  if (itemsPerPage.value !== 10) query.pageSize = String(itemsPerPage.value);
+  if (viewMode.value === 'list' && itemsPerPage.value !== 10) query.pageSize = String(itemsPerPage.value);
   else delete query.pageSize;
 
   router.replace({ query });
+});
+
+// Watch route query changes (for browser Back/Forward navigation)
+watch(() => route.query, (newQuery) => {
+  const newPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
+  if (currentPage.value !== newPage) currentPage.value = newPage;
+
+  const newPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 10 : 10;
+  if (itemsPerPage.value !== newPageSize) itemsPerPage.value = newPageSize;
 });
 
 const refreshActiveView = async () => {
@@ -364,8 +379,22 @@ const avgPermissionsCount = computed(() => {
           </div>
         </div>
 
-        <div class="flex items-center gap-4 text-xs font-bold text-muted-foreground w-full sm:w-auto justify-between sm:justify-end">
-          <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3 self-end sm:self-center">
+          <!-- Items per page selector (List view only) -->
+          <div v-if="viewMode === 'list'" class="flex items-center gap-1.5 border-l border-border pl-2.5">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+            <select 
+              v-model="itemsPerPage"
+              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option :value="5">5 / page</option>
+              <option :value="10">10 / page</option>
+              <option :value="25">25 / page</option>
+              <option :value="50">50 / page</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs font-bold text-muted-foreground">
             <Key class="w-4 h-4 text-primary" />
             <span>{{ totalRolesCount }} Security Roles Defined</span>
           </div>
