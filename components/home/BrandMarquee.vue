@@ -16,7 +16,7 @@ defineProps<{
           <NuxtLink 
             v-for="brand in brands" 
             :key="brand.id + '-' + i" 
-            :to="'/products?brand=' + encodeURIComponent(brand.name)"
+            :to="'/products/?brand=' + encodeURIComponent(brand.name)"
             class="flex items-center gap-3.5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500 cursor-pointer py-1.5 group/brand"
           >
             <!-- Logo container -->

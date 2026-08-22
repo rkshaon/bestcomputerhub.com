@@ -45,7 +45,7 @@ const cartStore = useCartStore();
         </div>
       </div>
 
-      <NuxtLink :to="`/product/${product.slug}`" class="block group/link">
+      <NuxtLink :to="`/product/${product.slug}/`" class="block group/link">
         <h3 class="font-bold text-xs sm:text-sm line-clamp-2 min-h-[32px] sm:min-h-[40px] group-hover/link:text-primary transition-colors mb-2 sm:mb-3 leading-snug">
           {{ product.name }}
         </h3>

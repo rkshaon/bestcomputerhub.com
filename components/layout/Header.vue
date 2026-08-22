@@ -714,7 +714,7 @@ if (process.client) {
           <div class="hidden lg:flex items-center gap-1.5 shrink-0">
             <!-- Offers -->
             <NuxtLink 
-              to="/offers" 
+              to="/offers/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-destructive/40 hover:bg-destructive/10 text-muted-foreground hover:text-destructive text-xs font-semibold transition-all shrink-0 group"
               title="Offers"
               aria-label="Offers"
@@ -725,7 +725,7 @@ if (process.client) {
 
             <!-- New Arrivals -->
             <NuxtLink 
-              to="/new-arrivals" 
+              to="/new-arrivals/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-amber-500/40 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-500 text-xs font-semibold transition-all shrink-0"
               title="New Arrivals"
               aria-label="New Arrivals"
@@ -736,7 +736,7 @@ if (process.client) {
 
             <!-- Flash Sale -->
             <NuxtLink 
-              to="/offers" 
+              to="/offers/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-primary/10 text-muted-foreground hover:text-primary text-xs font-semibold transition-all shrink-0"
               title="Flash Sale"
               aria-label="Flash Sale"
@@ -747,7 +747,7 @@ if (process.client) {
 
             <!-- Happy Hours -->
             <NuxtLink 
-              to="/offers" 
+              to="/offers/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-sky-500/40 hover:bg-sky-500/10 text-muted-foreground hover:text-sky-500 text-xs font-semibold transition-all shrink-0"
               title="Happy Hours"
               aria-label="Happy Hours"
@@ -759,7 +759,7 @@ if (process.client) {
 
           <!-- PC Builder -->
           <NuxtLink 
-            to="/products"
+            to="/products/"
             class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
             title="PC Builder"
             aria-label="PC Builder"
@@ -890,7 +890,7 @@ if (process.client) {
               <NuxtLink
                 v-for="product in searchResults"
                 :key="product.id"
-                :to="`/product/${product.slug}`"
+                :to="`/product/${product.slug}/`"
                 @click="closeSearch"
                 class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-accent border border-transparent hover:border-border/60 transition-all group"
               >
@@ -1127,7 +1127,7 @@ if (process.client) {
           </div>
           
           <NuxtLink 
-            to="/products" 
+            to="/products/" 
             class="font-bold text-xs uppercase tracking-widest text-primary flex items-center gap-2"
             @click="uiStore.closeMobileMenu()"
           >
@@ -1205,7 +1205,7 @@ if (process.client) {
             <span>Admin Panel</span>
           </NuxtLink>
           <NuxtLink 
-            :to="authStore.isLoggedIn ? '/account' : '/login'" 
+            :to="authStore.isLoggedIn ? '/account/' : '/login/'" 
             class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
             @click="uiStore.closeMobileMenu()"
           >
@@ -1213,7 +1213,7 @@ if (process.client) {
             <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
           </NuxtLink>
           <NuxtLink 
-            to="/products" 
+            to="/products/" 
             class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
             @click="uiStore.closeMobileMenu()"
           >
@@ -1229,7 +1229,7 @@ if (process.client) {
             <span>Compare</span>
           </button>
           <NuxtLink 
-            to="/offers" 
+            to="/offers/" 
             class="font-bold text-xs uppercase tracking-widest text-destructive flex items-center gap-2 hover:translate-x-1 transition-transform"
             @click="uiStore.closeMobileMenu()"
           >
@@ -1237,7 +1237,7 @@ if (process.client) {
             <span>Offers</span>
           </NuxtLink>
           <NuxtLink 
-            to="/new-arrivals" 
+            to="/new-arrivals/" 
             class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-amber-500 transition-colors"
             @click="uiStore.closeMobileMenu()"
           >
@@ -1245,7 +1245,7 @@ if (process.client) {
             <span>New Arrivals</span>
           </NuxtLink>
           <NuxtLink 
-            to="/offers" 
+            to="/offers/" 
             class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
             @click="uiStore.closeMobileMenu()"
           >
@@ -1253,7 +1253,7 @@ if (process.client) {
             <span>Flash Sale</span>
           </NuxtLink>
           <NuxtLink 
-            to="/offers" 
+            to="/offers/" 
             class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-sky-500 transition-colors"
             @click="uiStore.closeMobileMenu()"
           >
@@ -1261,7 +1261,7 @@ if (process.client) {
             <span>Happy Hours</span>
           </NuxtLink>
           <NuxtLink 
-            to="/blog" 
+            to="/blog/" 
             class="font-bold text-xs uppercase tracking-widest block hover:text-primary hover:translate-x-1 transition-all duration-300"
             @click="uiStore.closeMobileMenu()"
           >

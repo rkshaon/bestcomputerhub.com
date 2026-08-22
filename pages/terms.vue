@@ -134,10 +134,10 @@ const sections = [
             <h3 class="text-3xl font-display font-bold">Ready to proceed?</h3>
             <p class="text-white/60 max-w-md mx-auto">By continuing to use our catalog and placing orders, you signify your agreement to these enterprise terms.</p>
             <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
-               <UiButton to="/category" class="rounded-full px-10 h-14 font-extrabold shadow-xl shadow-primary/20">
+               <UiButton to="/category/" class="rounded-full px-10 h-14 font-extrabold shadow-xl shadow-primary/20">
                  Explore Catalog
                </UiButton>
-               <UiButton to="/privacy" variant="outline" class="rounded-full px-10 h-14 font-extrabold text-white border-white/20 hover:bg-white/10">
+               <UiButton to="/privacy/" variant="outline" class="rounded-full px-10 h-14 font-extrabold text-white border-white/20 hover:bg-white/10">
                  Privacy Policy
                </UiButton>
             </div>

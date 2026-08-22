@@ -13,11 +13,11 @@ export const HERO_SLIDES: HeroSlideData[] = [
       image: 'https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?auto=format&fit=crop&q=80&w=2000',
       primaryAction: {
         label: 'Explore Catalog',
-        href: '/products'
+        href: '/products/'
       },
       secondaryAction: {
         label: 'View Special Offers',
-        href: '/offers'
+        href: '/offers/'
       }
     },
     secondary: [
@@ -28,7 +28,7 @@ export const HERO_SLIDES: HeroSlideData[] = [
         title: 'Advanced Server Architecture',
         description: 'Custom-configured enterprise server racks & high-density compute solutions for scale.',
         image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=1000',
-        href: '/products'
+        href: '/products/'
       },
       {
         badgeIcon: 'Cpu',
@@ -37,7 +37,7 @@ export const HERO_SLIDES: HeroSlideData[] = [
         title: 'Workstation Customization',
         description: 'Tailored multi-GPU rigs and precision liquid cooling built for professional creators.',
         image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&q=80&w=1000',
-        href: '/offers'
+        href: '/offers/'
       }
     ]
   },
@@ -52,11 +52,11 @@ export const HERO_SLIDES: HeroSlideData[] = [
       image: 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&q=80&w=2000',
       primaryAction: {
         label: 'Configure Rig',
-        href: '/products'
+        href: '/products/'
       },
       secondaryAction: {
         label: 'Gaming Deals',
-        href: '/offers'
+        href: '/offers/'
       }
     },
     secondary: [
@@ -67,7 +67,7 @@ export const HERO_SLIDES: HeroSlideData[] = [
         title: 'RTX & RX Series Available',
         description: 'In-stock high performance graphic cards with official brand warranty and instant dispatch.',
         image: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&q=80&w=1000',
-        href: '/products'
+        href: '/products/'
       },
       {
         badgeIcon: 'Trophy',
@@ -76,7 +76,7 @@ export const HERO_SLIDES: HeroSlideData[] = [
         title: 'Pro Gaming Peripherals',
         description: 'Low-latency mechanical keyboards, ultra-light mice, and high refresh rate gaming displays.',
         image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=1000',
-        href: '/products'
+        href: '/products/'
       }
     ]
   },
@@ -91,11 +91,11 @@ export const HERO_SLIDES: HeroSlideData[] = [
       image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&q=80&w=2000',
       primaryAction: {
         label: 'View Storage Systems',
-        href: '/products'
+        href: '/products/'
       },
       secondaryAction: {
         label: 'Enterprise Support',
-        href: '/support/help-center'
+        href: '/support/help-center/'
       }
     },
     secondary: [
@@ -106,7 +106,7 @@ export const HERO_SLIDES: HeroSlideData[] = [
         title: 'PCIe Gen5 NVMe Arrays',
         description: 'Unmatched IOPS performance for databases, virtualized servers, and AI training clusters.',
         image: 'https://images.unsplash.com/photo-1600267175161-cfaa711b4a81?auto=format&fit=crop&q=80&w=1000',
-        href: '/products'
+        href: '/products/'
       },
       {
         badgeIcon: 'Server',
@@ -115,7 +115,7 @@ export const HERO_SLIDES: HeroSlideData[] = [
         title: 'UPS & Infrastructure',
         description: 'Online double-conversion UPS units ensuring zero downtime for mission-critical setups.',
         image: 'https://images.unsplash.com/photo-1563770660941-20978e870e26?auto=format&fit=crop&q=80&w=1000',
-        href: '/products'
+        href: '/products/'
       }
     ]
   }

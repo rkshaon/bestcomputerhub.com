@@ -36,7 +36,7 @@ const authStore = useAuthStore();
 
         <!-- 1. Track Your Order -->
         <NuxtLink 
-          to="/account" 
+          to="/account/" 
           class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
         >
           <PackageSearch class="w-3 h-3 text-primary shrink-0" aria-hidden="true" />
@@ -45,7 +45,7 @@ const authStore = useAuthStore();
 
         <!-- 2. Insights -->
         <NuxtLink 
-          to="/blog" 
+          to="/blog/" 
           class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
         >
           <BookOpen class="w-3 h-3 text-primary shrink-0" aria-hidden="true" />
@@ -66,7 +66,7 @@ const authStore = useAuthStore();
 
         <!-- 4. Login / Sign Up or Account (Far Right) -->
         <NuxtLink 
-          :to="authStore.isLoggedIn ? '/account' : '/login'" 
+          :to="authStore.isLoggedIn ? '/account/' : '/login/'" 
           class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm"
         >
           <User class="w-3 h-3 text-primary shrink-0" aria-hidden="true" />

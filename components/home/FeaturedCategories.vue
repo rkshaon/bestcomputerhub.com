@@ -140,7 +140,7 @@ const getCategoryIcon = (slug: string, name: string): Component => {
       </div>
 
       <NuxtLink 
-        to="/products" 
+        to="/products/" 
         class="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-primary hover:text-primary/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm group"
       >
         <span>View All Categories</span>

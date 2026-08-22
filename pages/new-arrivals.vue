@@ -68,7 +68,7 @@ const addToCart = (product: any) => {
           :key="product.id"
           class="group bg-card border border-transparent rounded-[2.5rem] overflow-hidden flex flex-col hover:border-border transition-all duration-500 hover:shadow-2xl hover:shadow-black/5"
         >
-          <NuxtLink :to="`/product/${product.slug}`" class="relative aspect-[4/5] overflow-hidden bg-muted p-12 block">
+          <NuxtLink :to="`/product/${product.slug}/`" class="relative aspect-[4/5] overflow-hidden bg-muted p-12 block">
             <img 
               :src="product.images[0]" 
               :alt="product.name"
@@ -88,7 +88,7 @@ const addToCart = (product: any) => {
                 <span class="text-[10px] font-bold uppercase tracking-widest text-primary">{{ product.brand }}</span>
                 <span v-if="product.stock < 10" class="text-[9px] font-bold text-red-500 uppercase tracking-widest">Low Stock</span>
               </div>
-              <NuxtLink :to="`/product/${product.slug}`" class="block">
+              <NuxtLink :to="`/product/${product.slug}/`" class="block">
                 <h3 class="font-display font-bold text-2xl leading-[1.1] group-hover:text-primary transition-colors line-clamp-2">
                   {{ product.name }}
                 </h3>
@@ -110,7 +110,7 @@ const addToCart = (product: any) => {
                   <ShoppingCart class="w-4 h-4" />
                 </UiButton>
                 <NuxtLink 
-                  :to="`/product/${product.slug}`"
+                  :to="`/product/${product.slug}/`"
                   class="h-10 w-10 rounded-full border flex items-center justify-center hover:bg-black hover:text-white hover:border-black transition-all"
                 >
                   <ArrowRight class="w-4 h-4" />

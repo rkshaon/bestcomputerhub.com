@@ -104,7 +104,7 @@ onMounted(() => {
           :key="product.id"
           class="group bg-card border rounded-[2.5rem] overflow-hidden flex flex-col hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5"
         >
-          <NuxtLink :to="`/product/${product.slug}`" class="relative aspect-square overflow-hidden bg-muted p-8 block">
+          <NuxtLink :to="`/product/${product.slug}/`" class="relative aspect-square overflow-hidden bg-muted p-8 block">
             <img 
               :src="product.images[0]" 
               :alt="product.name"
@@ -127,7 +127,7 @@ onMounted(() => {
           <div class="p-8 flex-grow flex flex-col gap-4">
             <div class="space-y-1">
               <span class="text-[10px] font-bold uppercase tracking-widest text-primary">{{ product.brand }}</span>
-              <NuxtLink :to="`/product/${product.slug}`" class="block">
+              <NuxtLink :to="`/product/${product.slug}/`" class="block">
                 <h3 class="font-display font-bold text-xl leading-tight group-hover:text-primary transition-colors line-clamp-1">
                   {{ product.name }}
                 </h3>
@@ -154,7 +154,7 @@ onMounted(() => {
                 Add to Cart
               </UiButton>
               <NuxtLink 
-                :to="`/product/${product.slug}`"
+                :to="`/product/${product.slug}/`"
                 class="w-12 h-12 rounded-full border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all group/btn"
               >
                 <ArrowRight class="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />

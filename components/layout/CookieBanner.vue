@@ -59,7 +59,7 @@ const showBanner = computed(() => {
           </div>
           
           <NuxtLink 
-            to="/cookies" 
+            to="/cookies/" 
             class="text-[10px] uppercase font-bold tracking-widest text-center text-white/40 hover:text-primary transition-colors flex items-center justify-center gap-1.5 group"
             @click="cookieStore.isBannerVisible = false"
           >

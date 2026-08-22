@@ -156,7 +156,7 @@ const cookieCategories = [
            <p class="text-muted-foreground leading-relaxed max-w-2xl mx-auto">
              To provide an enterprise-grade experience, we need to understand how our users interact with our global distribution network. Cookies allow us to optimize server loads, remember your regional catalog preferences, and ensure that our security protocols remain robust against modern threats.
            </p>
-           <NuxtLink to="/privacy" class="text-primary font-bold inline-flex items-center gap-1 group">
+           <NuxtLink to="/privacy/" class="text-primary font-bold inline-flex items-center gap-1 group">
              Read Full Privacy Policy <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
            </NuxtLink>
         </div>

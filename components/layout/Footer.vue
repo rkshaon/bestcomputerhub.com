@@ -78,22 +78,22 @@ const socialLinks = [
         <div v-for="section in [
           { title: 'Categories', links: [
             { name: 'Graphics Cards', url: '/product-category/gpus/' },
-            { name: 'New Arrivals', url: '/new-arrivals' },
-            { name: 'Special Offers', url: '/offers' },
+            { name: 'New Arrivals', url: '/new-arrivals/' },
+            { name: 'Special Offers', url: '/offers/' },
             { name: 'Processors', url: '/product-category/processors/' }
           ] },
           { title: 'Support', links: [
-            { name: 'Help Center', url: '/support/help-center' },
-            { name: 'Shipping Info', url: '/support/shipping' },
-            { name: 'Returns', url: '/support/returns' },
-            { name: 'Warranty', url: '/support/warranty' },
-            { name: 'Payments & Billing', url: '/support/payments' }
+            { name: 'Help Center', url: '/support/help-center/' },
+            { name: 'Shipping Info', url: '/support/shipping/' },
+            { name: 'Returns', url: '/support/returns/' },
+            { name: 'Warranty', url: '/support/warranty/' },
+            { name: 'Payments & Billing', url: '/support/payments/' }
           ] },
           { title: 'Company', links: [
-            { name: 'About Us', url: '/about' },
-            { name: 'Tech Blog', url: '/blog' },
-            { name: 'Careers', url: '/careers' },
-            { name: 'Sustainability', url: '/sustainability' }
+            { name: 'About Us', url: '/about/' },
+            { name: 'Tech Blog', url: '/blog/' },
+            { name: 'Careers', url: '/careers/' },
+            { name: 'Sustainability', url: '/sustainability/' }
           ] }
         ]" :key="section.title" class="space-y-4 sm:space-y-6">
           <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground">{{ section.title }}</h4>
@@ -126,9 +126,9 @@ const socialLinks = [
       <div class="pt-10 border-t flex flex-col md:flex-row justify-between items-center gap-6">
         <div class="flex flex-wrap justify-center gap-6 text-xs font-medium text-muted-foreground">
           <span>&copy; {{ currentYear }} Best Computer Hub Ltd.</span>
-          <NuxtLink to="/privacy" class="hover:text-primary transition-colors">Privacy Policy</NuxtLink>
-          <NuxtLink to="/terms" class="hover:text-primary transition-colors">Terms of Service</NuxtLink>
-          <NuxtLink to="/cookies" class="hover:text-primary transition-colors">Cookie Settings</NuxtLink>
+          <NuxtLink to="/privacy/" class="hover:text-primary transition-colors">Privacy Policy</NuxtLink>
+          <NuxtLink to="/terms/" class="hover:text-primary transition-colors">Terms of Service</NuxtLink>
+          <NuxtLink to="/cookies/" class="hover:text-primary transition-colors">Cookie Settings</NuxtLink>
         </div>
         <div class="flex items-center gap-6 opacity-30 grayscale saturate-0">
           <img v-for="i in 5" :key="i" :src="`https://placehold.co/40x24/png?text=Card${i}`" class="h-6" />

@@ -61,7 +61,7 @@ const updateQty = (id: string, delta: number) => {
             </div>
 
             <div class="flex-1 text-center sm:text-left">
-              <NuxtLink :to="`/product/${item.product.slug}`" class="font-bold text-foreground hover:text-primary transition-colors line-clamp-2 text-sm sm:text-base">
+              <NuxtLink :to="`/product/${item.product.slug}/`" class="font-bold text-foreground hover:text-primary transition-colors line-clamp-2 text-sm sm:text-base">
                 {{ item.product.name }}
               </NuxtLink>
               <p class="text-xs text-muted-foreground mt-1 uppercase tracking-wider font-semibold">SKU: {{ item.product.sku }}</p>

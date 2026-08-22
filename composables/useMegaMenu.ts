@@ -133,7 +133,7 @@ export const useMegaMenu = () => {
    */
   const buildCategoryUrl = (ancestorSlugs: string[], category: Category): string => {
     const segments = [...ancestorSlugs, category.slug].filter(Boolean);
-    return `/product-category/${segments.join('/')}`;
+    return `/product-category/${segments.join('/')}/`;
   };
 
   const logCategoryChildren = (_category: Category, _children: Category[]) => {

@@ -54,7 +54,7 @@ onMounted(async () => {
       title="Flash Sale"
       title-highlight="Sale"
       subtitle="Limited time enterprise hardware deals & promotional prices."
-      view-all-route="/offers"
+      view-all-route="/offers/"
       view-all-text="View All Deals"
       :products="flashSaleProducts"
     />
@@ -64,7 +64,7 @@ onMounted(async () => {
       title="Best Sellers"
       title-highlight="Sellers"
       subtitle="Top performing hardware & enterprise solutions chosen by our clients."
-      view-all-route="/products"
+      view-all-route="/products/"
       view-all-text="Explore All Products"
       :products="bestSellerProducts"
     />

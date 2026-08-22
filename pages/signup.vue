@@ -203,14 +203,14 @@ const handleSignUp = async () => {
 
           <p class="text-center mt-8 text-xs text-muted-foreground">
             By signing up, you agree to our 
-            <NuxtLink to="/terms" class="text-primary hover:underline">Terms of Service</NuxtLink> and 
-            <NuxtLink to="/privacy" class="text-primary hover:underline">Privacy Policy</NuxtLink>
+            <NuxtLink to="/terms/" class="text-primary hover:underline">Terms of Service</NuxtLink> and 
+            <NuxtLink to="/privacy/" class="text-primary hover:underline">Privacy Policy</NuxtLink>
           </p>
         </div>
 
         <p class="text-center mt-10 text-sm text-muted-foreground">
           Already have an account? 
-          <NuxtLink to="/login" class="text-primary font-bold hover:underline">Sign in instead</NuxtLink>
+          <NuxtLink to="/login/" class="text-primary font-bold hover:underline">Sign in instead</NuxtLink>
         </p>
       </div>
     </div>

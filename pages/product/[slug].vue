@@ -175,18 +175,18 @@ const categoryBreadcrumbs = computed<BreadcrumbItem[]>(() => {
       const slugPath = path.slice(0, idx + 1).map(c => c.slug).filter(Boolean).join('/');
       items.push({
         name: catItem.name,
-        url: `/product-category/${slugPath}`
+        url: `/product-category/${slugPath}/`
       });
     });
   } else if (originCategory.value?.name) {
     items.push({
       name: originCategory.value.name,
-      url: originCategory.value.slug ? `/product-category/${originCategory.value.slug}` : '/products'
+      url: originCategory.value.slug ? `/product-category/${originCategory.value.slug}/` : '/products/'
     });
   } else if (product.value?.category && typeof product.value.category === 'string' && product.value.category !== 'General') {
     items.push({
       name: product.value.category,
-      url: '/products'
+      url: '/products/'
     });
   }
 
@@ -211,9 +211,9 @@ const categoryUrl = computed(() => {
     if (lastBc?.url) return lastBc.url;
   }
   if (originCategory.value?.slug) {
-    return `/product-category/${originCategory.value.slug}`;
+    return `/product-category/${originCategory.value.slug}/`;
   }
-  return '/products';
+  return '/products/';
 });
 
 // Normalized specifications for display
@@ -351,7 +351,7 @@ const isItemInCart = computed(() => {
           <UiButton variant="outline" @click="refresh" class="w-full sm:w-auto gap-2">
             <RefreshCw class="w-4 h-4" /> Retry Query
           </UiButton>
-          <UiButton to="/products" class="w-full sm:w-auto gap-2">
+          <UiButton to="/products/" class="w-full sm:w-auto gap-2">
             <ArrowLeft class="w-4 h-4" /> Browse Catalog
           </UiButton>
         </div>
