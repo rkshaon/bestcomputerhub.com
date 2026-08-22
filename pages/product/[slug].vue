@@ -20,7 +20,8 @@ import {
   AlertCircle, 
   RefreshCw,
   Layers,
-  Clock
+  Clock,
+  Home
 } from 'lucide-vue-next';
 import { formatCurrency, cn } from '@/utils';
 import { useCartStore } from '@/stores/cart';
@@ -297,7 +298,9 @@ const isItemInCart = computed(() => {
     <div class="bg-muted/30 border-b">
       <div class="container mx-auto px-4 py-3 sm:py-4">
         <nav class="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium uppercase tracking-widest text-muted-foreground overflow-x-auto whitespace-nowrap custom-submenu-scrollbar" aria-label="Breadcrumb">
-          <NuxtLink to="/" class="hover:text-primary transition-colors shrink-0">Home</NuxtLink>
+          <NuxtLink to="/" class="hover:text-primary transition-colors shrink-0 flex items-center" aria-label="Home">
+            <Home class="w-3.5 h-3.5 shrink-0" />
+          </NuxtLink>
 
           <template v-for="bc in categoryBreadcrumbs" :key="bc.url">
             <ChevronRight class="w-3 h-3 shrink-0" />
