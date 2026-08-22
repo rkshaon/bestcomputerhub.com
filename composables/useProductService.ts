@@ -470,7 +470,7 @@ export const useProductService = () => {
     }
   };
 
-  const deleteProduct = async (id: string): Promise<{ success: boolean; message: string }> => {
+  const deleteProduct = async (id: string | number): Promise<{ success: boolean; message: string }> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -479,10 +479,10 @@ export const useProductService = () => {
       isLoading.value = false;
 
       const list = getMockProducts();
-      const filtered = list.filter(p => p.id !== id);
+      const filtered = list.filter(p => String(p.id) !== String(id) && p.slug !== String(id));
       if (filtered.length === list.length) throw new Error('Asset not registered.');
       saveMockProducts(filtered);
-      return { success: true, message: 'Asset deleted successfully.' };
+      return { success: true, message: 'Product deleted successfully.' };
     }
 
     try {
@@ -491,7 +491,7 @@ export const useProductService = () => {
         method: 'DELETE'
       });
       isLoading.value = false;
-      return { success: true, message: 'Registry item dropped successfully.' };
+      return { success: true, message: 'Product deleted successfully.' };
     } catch (err: any) {
       errorMsg.value = err.data?.message || err.message || 'Operation failed: Network error during rejection.';
       isLoading.value = false;

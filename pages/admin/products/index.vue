@@ -136,13 +136,31 @@ const {
 // URL-driven modal state infrastructure
 const modalState = useAdminModalState<Product>({
   getItems: async (id) => {
-    return await productService.getProductDetails(String(id));
+    const idStr = String(id);
+    const existing = productsList.value.find(p => String(p.id) === idStr || p.slug === idStr) 
+      || gridProducts.value.find(p => String(p.id) === idStr || p.slug === idStr);
+    if (existing) return existing;
+    return await productService.getProductDetails(idStr);
   },
   onResolveError: (id) => {
     toastError(`Product #${id} could not be resolved.`);
     modalState.closeModal({ replace: true });
   }
 });
+
+// Watch permission enforcement for URL modal triggers
+watch(
+  [() => modalState.activeMode.value, canDeleteProduct, canCreateProduct],
+  ([mode, deleteAllowed, createAllowed]) => {
+    if (mode === 'delete' && !deleteAllowed) {
+      toastError('You do not have permission to delete products.');
+      modalState.closeModal({ replace: true });
+    } else if (mode === 'create' && !createAllowed) {
+      toastError('You do not have permission to create products.');
+      modalState.closeModal({ replace: true });
+    }
+  }
+);
 
 // Category search and infinite-scrolling picker options for List filter
 const categorySearchQuery = ref('');
@@ -548,17 +566,23 @@ const getStockStatus = (stock?: number) => {
   return { label: 'In Stock', class: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' };
 };
 
-const handleDelete = async (product: Product) => {
-  if (!confirm(`Are you sure you want to delete product "${product.name}"?`)) return;
-  isDeleting.value = product.id;
+const executeDeleteProduct = async () => {
+  if (!modalState.activeEntity.value) return;
+  const targetProduct = modalState.activeEntity.value;
+
+  if (!canDeleteProduct.value) {
+    toastError('You do not have permission to delete products.');
+    await modalState.closeModal();
+    return;
+  }
+
+  isDeleting.value = String(targetProduct.id);
   try {
-    await productService.deleteProduct(product.id);
-    toastSuccess(`Product "${product.name}" deleted successfully.`);
-    if (viewMode.value === 'grid') {
-      await refreshGridPagination();
-    } else {
-      await fetchProductsPage();
-    }
+    const targetIdentifier = targetProduct.id ?? targetProduct.slug;
+    await productService.deleteProduct(targetIdentifier);
+    toastSuccess(`Product "${targetProduct.name}" deleted successfully.`);
+    await modalState.closeModal();
+    await refreshActiveView();
   } catch (err: any) {
     handleApiError(err, 'Failed to delete product.');
   } finally {
@@ -932,14 +956,12 @@ onUnmounted(() => {
                 <button 
                   v-if="canDeleteProduct" 
                   type="button"
-                  @click="handleDelete(product)" 
-                  :disabled="isDeleting === product.id"
-                  class="p-2 text-muted-foreground hover:text-destructive hover:bg-muted rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                  @click="modalState.openDelete(product.id)" 
+                  class="p-2 text-muted-foreground hover:text-destructive hover:bg-muted rounded-lg transition-colors cursor-pointer"
                   title="Delete Product"
                   aria-label="Delete product"
                 >
-                  <Loader2 v-if="isDeleting === product.id" class="w-4 h-4 animate-spin text-destructive" />
-                  <Trash2 v-else class="w-4 h-4" />
+                  <Trash2 class="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -1092,14 +1114,12 @@ onUnmounted(() => {
           <button 
             v-if="canDeleteProduct" 
             type="button"
-            @click="handleDelete(product)" 
-            :disabled="isDeleting === product.id"
-            class="p-2 text-muted-foreground hover:text-destructive hover:bg-muted rounded-lg transition-colors cursor-pointer disabled:opacity-50" 
+            @click="modalState.openDelete(product.id)" 
+            class="p-2 text-muted-foreground hover:text-destructive hover:bg-muted rounded-lg transition-colors cursor-pointer" 
             title="Delete product" 
             aria-label="Delete product"
           >
-            <Loader2 v-if="isDeleting === product.id" class="w-4 h-4 animate-spin text-destructive" />
-            <Trash2 v-else class="w-4 h-4" />
+            <Trash2 class="w-4 h-4" />
           </button>
         </div>
       </template>
@@ -1328,6 +1348,52 @@ onUnmounted(() => {
           </button>
         </div>
       </form>
+    </UiAdminModal>
+
+    <!-- Delete Confirmation Modal -->
+    <UiAdminModal 
+      :is-open="modalState.isDelete.value && (!!modalState.activeEntity.value || modalState.isResolving.value)"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="modalState.closeModal()"
+    >
+      <div class="p-6 space-y-6">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold text-foreground">Confirm Product Deletion</h3>
+          <p v-if="modalState.isResolving.value" class="text-xs text-muted-foreground mt-1.5 flex items-center gap-2">
+            <Loader2 class="w-3.5 h-3.5 animate-spin" />
+            <span>Resolving product details...</span>
+          </p>
+          <p v-else class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            Are you sure you want to delete the product <span class="font-bold text-foreground">"{{ modalState.activeEntity.value?.name }}"</span>? This product record will be permanently removed from the catalog.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <UiButton 
+            variant="outline" 
+            class="rounded-xl h-10 px-5 text-xs font-bold"
+            @click="modalState.closeModal()"
+            :disabled="!!isDeleting || modalState.isResolving.value"
+          >
+            Cancel
+          </UiButton>
+
+          <UiButton 
+            class="rounded-xl h-10 px-5 text-xs font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            @click="executeDeleteProduct"
+            :disabled="!!isDeleting || modalState.isResolving.value || !modalState.activeEntity.value"
+          >
+            <Loader2 v-if="!!isDeleting" class="w-4 h-4 animate-spin" />
+            <Trash2 v-else class="w-3.5 h-3.5" />
+            <span>Delete Product</span>
+          </UiButton>
+        </div>
+      </div>
     </UiAdminModal>
     </div>
   </NuxtLayout>
