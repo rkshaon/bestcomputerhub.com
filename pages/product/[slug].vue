@@ -93,36 +93,24 @@ const originCategory = computed(() => {
   return null;
 });
 
+// Extract the leaf/actual category from product.categories (the last object in the hierarchical array)
 const targetCategoryIdentifier = computed(() => {
-  if (!product.value) return null;
-
-  // 1. Origin category object
-  if (product.value.origin && typeof product.value.origin === 'object') {
-    const orig = product.value.origin as any;
-    if (orig.id !== undefined && orig.id !== null && orig.id !== '') return orig.id;
-    if (orig.slug) return orig.slug;
+  if (!product.value || !Array.isArray(product.value.categories) || product.value.categories.length === 0) {
+    return null;
   }
 
-  // 2. Categories list
-  if (Array.isArray(product.value.categories) && product.value.categories.length > 0) {
-    const firstCat = product.value.categories[0];
-    if (typeof firstCat === 'object' && firstCat !== null) {
-      if (firstCat.id !== undefined && firstCat.id !== null && firstCat.id !== '') return firstCat.id;
-      if (firstCat.slug) return firstCat.slug;
-    } else if (firstCat !== undefined && firstCat !== null && firstCat !== '') {
-      return firstCat;
-    }
-  }
+  const lastCategory = product.value.categories[product.value.categories.length - 1];
+  if (!lastCategory) return null;
 
-  // 3. Category field
-  if (product.value.category) {
-    if (typeof product.value.category === 'object' && product.value.category !== null) {
-      const cat = product.value.category as any;
-      if (cat.id !== undefined && cat.id !== null && cat.id !== '') return cat.id;
-      if (cat.slug) return cat.slug;
-    } else if (typeof product.value.category === 'string' && product.value.category !== 'General') {
-      return product.value.category;
+  if (typeof lastCategory === 'object') {
+    if (lastCategory.id !== undefined && lastCategory.id !== null && lastCategory.id !== '') {
+      return lastCategory.id;
     }
+    if (lastCategory.slug) {
+      return lastCategory.slug;
+    }
+  } else if (typeof lastCategory === 'number' || typeof lastCategory === 'string') {
+    return lastCategory;
   }
 
   return null;
