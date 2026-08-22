@@ -1,6 +1,6 @@
 <!-- File: /components/commerce/ProductCard.vue -->
 <script setup lang="ts">
-import { Star, ShoppingCart } from 'lucide-vue-next';
+import { Star, ShoppingCart, Package } from 'lucide-vue-next';
 import type { Product } from '@/types';
 import { formatCurrency } from '@/utils';
 import { useCartStore } from '@/stores/cart';
@@ -15,13 +15,18 @@ const cartStore = useCartStore();
 <template>
   <div class="group relative bg-card border rounded-2xl overflow-hidden hover:shadow-2xl hover:border-primary/20 transition-all duration-300">
     <!-- Image -->
-    <div class="aspect-square overflow-hidden bg-muted/30 relative">
+    <div class="aspect-square overflow-hidden bg-muted/30 relative flex items-center justify-center">
       <img 
+        v-if="product.images && product.images.length > 0 && product.images[0]"
         :src="product.images[0]" 
         :alt="product.name"
         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         loading="lazy"
       />
+      <div v-else class="w-full h-full flex flex-col items-center justify-center p-6 text-muted-foreground/50">
+        <Package class="w-10 h-10 stroke-1 mb-2 text-muted-foreground/40" />
+        <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 text-center line-clamp-1">{{ product.brand || 'Tech Hardware' }}</span>
+      </div>
       
       <!-- Badges -->
       <div class="absolute top-3 left-3 flex flex-col gap-2">

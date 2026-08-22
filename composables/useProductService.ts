@@ -58,10 +58,10 @@ export const useProductService = () => {
 
     const priceVal = p.current_selling_price !== undefined && p.current_selling_price !== null 
       ? Number(p.current_selling_price) 
-      : Number(p.price ?? 149.99);
+      : Number(p.price ?? 0);
 
     let defaultImg: any = p.default_image || null;
-    let primaryImgUrl = fallbackImage;
+    let primaryImgUrl = '';
 
     if (defaultImg) {
       if (typeof defaultImg === 'object' && defaultImg.image) {
@@ -70,9 +70,9 @@ export const useProductService = () => {
         primaryImgUrl = defaultImg;
       }
     } else if (Array.isArray(p.images) && p.images.length > 0) {
-      primaryImgUrl = typeof p.images[0] === 'string' ? p.images[0] : (p.images[0]?.image || fallbackImage);
+      primaryImgUrl = typeof p.images[0] === 'string' ? p.images[0] : (p.images[0]?.image || '');
     } else if (p.image) {
-      primaryImgUrl = typeof p.image === 'string' ? p.image : fallbackImage;
+      primaryImgUrl = typeof p.image === 'string' ? p.image : '';
     }
 
     let originObj = p.origin || null;
@@ -99,36 +99,48 @@ export const useProductService = () => {
       ? Number(p.total_reviews)
       : Number(p.reviewCount ?? p.review_count ?? 0);
 
+    const mappedImages = Array.isArray(p.images) && p.images.length
+      ? p.images.map((img: any) => typeof img === 'string' ? img : (img?.image || '')).filter(Boolean)
+      : (primaryImgUrl ? [primaryImgUrl] : []);
+
+    const brandName = typeof p.brand === 'object' && p.brand !== null
+      ? (p.brand.name || '')
+      : (p.brand ? String(p.brand) : (p.specifications?.['Brand'] || p.specifications?.['brand'] || ''));
+
     return {
       id: String(p.id ?? ''),
       name: p.name ?? '',
       slug: p.slug || `product-${p.id || 'item'}`,
-      description: p.description ?? 'High-performance enterprise hardware component.',
+      description: p.description !== undefined && p.description !== null ? String(p.description) : '',
+      short_description: p.short_description !== undefined && p.short_description !== null ? String(p.short_description) : '',
       price: priceVal,
       current_selling_price: priceVal,
-      originalPrice: p.originalPrice ? Number(p.originalPrice) : (priceVal > 200 ? priceVal * 1.15 : undefined),
+      originalPrice: p.originalPrice ? Number(p.originalPrice) : (p.original_price ? Number(p.original_price) : undefined),
       category: catName,
       subCategory: String(p.subCategory ?? p.sub_category ?? ''),
-      brand: typeof p.brand === 'object' ? (p.brand.name || 'TechCore') : String(p.brand || 'TechCore'),
-      images: Array.isArray(p.images) && p.images.length ? p.images.map((img: any) => typeof img === 'string' ? img : img.image) : [primaryImgUrl],
-      default_image: defaultImg || { image: primaryImgUrl, alt_text: p.name ?? '' },
+      brand: brandName,
+      images: mappedImages,
+      default_image: defaultImg || (primaryImgUrl ? { image: primaryImgUrl, alt_text: p.name ?? '' } : null),
       origin: originObj || (typeof p.category === 'object' ? p.category : null),
       categories: Array.isArray(p.categories) 
         ? p.categories 
-        : (originObj?.id ? [Number(originObj.id)] : (typeof p.category === 'number' ? [p.category] : [])),
+        : (originObj?.id ? [originObj] : (typeof p.category === 'number' ? [p.category] : [])),
+      price_histories: Array.isArray(p.price_histories) ? p.price_histories : [],
       average_rating: avgRating,
       rating: avgRating,
       total_reviews: totReviews,
       reviewCount: totReviews,
       wishlist: Boolean(p.wishlist),
       in_cart: Boolean(p.in_cart),
-      stock: p.stock !== undefined && p.stock !== null ? Number(p.stock) : 15,
+      stock: p.stock !== undefined && p.stock !== null ? Number(p.stock) : 0,
       specifications: p.specifications ?? {},
       features: Array.isArray(p.features) ? p.features : [],
       isNew: Boolean(p.isNew ?? p.is_new ?? false),
       isFeatured: Boolean(p.isFeatured ?? p.is_featured ?? false),
       onSale: Boolean(p.onSale ?? p.on_sale ?? false),
-      sku: p.sku || `SKU-${p.id || 'N/A'}`
+      sku: p.sku || `SKU-${p.id || 'N/A'}`,
+      created_at: p.created_at || '',
+      updated_at: p.updated_at || ''
     };
   };
 

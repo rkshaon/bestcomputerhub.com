@@ -19,6 +19,7 @@ export interface Product {
   name: string;
   slug: string;
   description: string;
+  short_description?: string;
   price: number;
   current_selling_price?: number;
   originalPrice?: number;
@@ -29,6 +30,7 @@ export interface Product {
   default_image?: ProductImage | string | null;
   origin?: CategoryOrigin | null;
   categories?: number[] | any[];
+  price_histories?: any[];
   average_rating?: number;
   rating: number;
   total_reviews?: number;
@@ -36,12 +38,14 @@ export interface Product {
   wishlist?: boolean;
   in_cart?: boolean;
   stock: number;
-  specifications: Record<string, string>;
+  specifications: Record<string, any>;
   features: string[];
   isNew?: boolean;
   isFeatured?: boolean;
   onSale?: boolean;
   sku: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateProductPayload {
