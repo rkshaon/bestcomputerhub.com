@@ -821,44 +821,204 @@ Do not depend exclusively on sitemap discovery for important pages.
 
 ---
 
-## 31. Sitemap
+## 31. Sitemap & SEO Architecture
 
-The production application should provide XML sitemap support.
+The production application utilizes a decoupled Sitemap and SEO architecture between the Nuxt frontend and the Django REST Framework backend.
 
-Sitemap content should reflect canonical public pages.
+### Core Principle
+> **Frontend knows how a page is accessed. Backend knows which pages should be available to search engines.**
 
-Potential sitemap entities include:
+### Responsibility Split
 
-* products
-* categories
-* brands
-* blog articles
-* important static pages
-
-Do not include:
-
-* admin pages
-* authenticated account pages
-* cart
-* checkout
-* arbitrary search results
-* unwanted filter combinations
-
-The sitemap should use production canonical URLs.
+| Domain | Owner | Key Responsibilities |
+| :--- | :--- | :--- |
+| **Frontend / Nuxt** | Presentation & Rendering | • Public storefront routing and page rendering (`/product/{slug}/`, `/product-category/{slug}/`, `/blog/{slug}/`)<br>• `<title>` and Meta Descriptions<br>• Self-referencing and cross-page Canonical URLs (`<link rel="canonical">`)<br>• Open Graph (`og:*`) & Twitter Cards (`twitter:*`) metadata<br>• Entity-specific JSON-LD Structured Data (`Product`, `Offer`, `BreadcrumbList`, `Article`, `Organization`)<br>• Public `/robots.txt` hosting and sitemap reference<br>• Frontend-specific SEO rendering and Core Web Vitals optimization |
+| **Backend / Django** | Authority & Eligibility | • XML Sitemap Generation & Sitemap Index orchestration<br>• Entity-specific Sub-Sitemaps (`products`, `categories`, `blogs`, future `brands`/`pages`)<br>• Indexability & eligibility rules (active, published, non-deleted, indexed entities)<br>• Accurate entity timestamp derivation (`lastmod`)<br>• Canonical and `noindex` source data<br>• Centralized Public URL pattern configuration (`SITE_URL`, `PRODUCT_URL_PATTERN`, etc.) |
 
 ---
 
-## 32. Robots
+## 31a. Sitemap Structure & Sitemap Index
 
-The application should provide a deliberate `robots.txt` configuration.
+The sitemap architecture employs a **Sitemap Index** pattern rather than a single monolithic XML sitemap file. This scales to hundreds of thousands of catalog items, avoids search engine file size/URL count limits (50k URLs / 50MB per sitemap), and isolates distinct catalog domains for targeted crawler indexing.
 
-Production robots behavior must differ appropriately from staging/development environments.
+```text
+/sitemap.xml (Sitemap Index)
+    ├── /sitemap-products.xml   (Indexable products & lastmod)
+    ├── /sitemap-categories.xml (Active category hierarchy & lastmod)
+    ├── /sitemap-blogs.xml      (Published blog articles & lastmod)
+    └── [future sitemap types]  (e.g., /sitemap-brands.xml, /sitemap-pages.xml)
+```
 
-Staging environments should not accidentally become indexed.
+Do not design one giant unpartitioned sitemap as the primary architecture.
 
-Production configuration must not accidentally block important catalog pages.
+---
 
-Changes to robots rules should be treated as SEO-sensitive changes.
+## 31b. Sitemap Eligibility & Indexability Rules
+
+The backend serves as the single source of truth for whether an entity is eligible to appear in an XML sitemap.
+
+Eligibility rules apply consistently across all entity types (products, categories, blogs, brands, pages, collections):
+
+1. **Product Eligibility Concepts**:
+   - Active state (entity is enabled and visible in the catalog).
+   - Publication state (entity is published, not draft or scheduled for future embargo).
+   - Deletion state (soft-deleted or archived items are strictly excluded).
+   - Explicit `noindex` status (items marked with `noindex` or `is_seo_indexed: false` must not enter sitemaps).
+   - Canonical status (items canonicalized to another product are excluded unless specifically designated).
+   - Valid public URL (item can resolve to a valid frontend route).
+2. **Category Eligibility Concepts**:
+   - Must be active and have indexable status.
+   - Excludes hidden, internal-only, or disabled utility categories.
+3. **Blog / Content Eligibility Concepts**:
+   - Status must be `published`.
+   - Publication timestamp must be in the past (`published_at <= now()`).
+4. **General Principle**:
+   - Eligibility concepts must be mapped directly to actual backend model attributes and business rules during implementation without inventing unsupported fields ahead of time.
+
+---
+
+## 31c. Public URL Configuration & Centralization
+
+To prevent hardcoded frontend routes from being scattered across backend code, backend sitemap generation must centralize public URL generation through explicit, environment-aware configuration.
+
+### Conceptual Configuration Schema
+```python
+# Conceptual Centralized URL Patterns
+SITE_URL = "https://bestcomputerhub.com"
+PRODUCT_URL_PATTERN = "/product/{slug}/"
+CATEGORY_URL_PATTERN = "/product-category/{slug}/"
+BLOG_URL_PATTERN = "/blog/{slug}/"
+BRAND_URL_PATTERN = "/brand/{slug}/"
+PAGE_URL_PATTERN = "/{slug}/"
+```
+
+### Multi-Storefront Architecture Protection
+Because the Django REST Framework backend may serve multiple storefront consumers or environments, backend code must not hardcode one storefront's domain or route structure into generic domain/model logic. Public URL resolution for sitemaps must operate through a configurable provider or settings layer that enforces the storefront's established URL conventions (including trailing slashes `/`).
+
+---
+
+## 31d. Sitemap vs. On-Page SEO Separation
+
+Keep sitemap generation and on-page frontend SEO strictly separated conceptually and architecturally:
+
+* **Sitemap answers**: *"What URLs should search engines know about?"* (Discovered via backend-generated XML indexes based on catalog eligibility and freshness).
+* **Frontend SEO answers**: *"What should search engines see when they visit that URL?"* (Rendered via Nuxt SSR with page metadata, canonical tags, Open Graph, and JSON-LD schemas).
+
+The backend provides the authoritative data and indexability status; the frontend delivers the rendered presentation, semantic HTML, and structured document metadata.
+
+---
+
+## 31e. URLs Excluded from Sitemaps
+
+To protect crawl budget and prevent duplicate-content indexing, the following URL types must **never** enter XML sitemaps:
+
+* **Administrative & Staff Routes**: (`/admin/*`, `/admin/orders/`, `/admin/categories/`, etc.)
+* **API Endpoints**: (`/api/v1/*`)
+* **Internal Search Results**: (`/search?q=...`)
+* **Facet / Filter Combinations**: (e.g., `/product-category/laptops/?brand=msi&sort=price_desc&min_price=1000`)
+* **Sort & Ordering Variants**: (`?ordering=created_at`, `?sort=name`)
+* **Non-Canonical Pagination**: Deep or redundant pagination variations.
+* **Customer Account & Checkout**: (`/cart/`, `/checkout/`, `/account/`, `/login/`, `/signup/`, `/forgot-password/`)
+* **Internal Utility & Static Tool Pages**: Modal dialogs, session endpoints.
+* **Deleted, Draft, or Inactive Content**: Soft-deleted or unpublished products/blogs.
+* **Explicit `noindex` Pages**: Any entity or route configured with `noindex`.
+* **Non-Canonical / Duplicate Pages**: Variant URLs pointing to an alternate canonical.
+* **URLs Without Valid Public Routes**: Entities lacking a reachable public storefront route.
+
+---
+
+## 32. Robots Configuration (`robots.txt`)
+
+The public Nuxt frontend owns `/robots.txt` and is responsible for serving it at the site root.
+
+### Standard Production Directive
+The frontend `robots.txt` must explicitly point crawlers to the backend-generated public sitemap index:
+
+```text
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /account/
+Disallow: /cart/
+Disallow: /checkout/
+Disallow: /search
+
+Sitemap: https://bestcomputerhub.com/sitemap.xml
+```
+
+* **Staging / Preview Environments**: Must serve `Disallow: /` with `X-Robots-Tag: noindex, nofollow` to prevent accidental indexing of non-production builds.
+* **Production Environment**: Must allow public crawling of catalog routes while safeguarding crawl budget by disallowing private, administrative, and faceted search URLs.
+
+---
+
+## 32a. WordPress Migration SEO & Redirect Strategy
+
+Because Best Computer Hub is being migrated from an established WordPress/WooCommerce storefront, existing indexed URLs carry significant historical search equity, backlinks, and organic ranking signals.
+
+### Migration Mapping Architecture
+```text
+Existing WordPress URL
+        ↓
+Can URL be preserved identically?
+   ├── YES ──→ Retain exact route (enforce trailing slash `/`)
+   └── NO  ──→ Map to closest replacement
+                    ↓
+              301 Permanent Redirect
+                    ↓
+              New Nuxt Storefront URL
+```
+
+### Key Migration Considerations:
+1. **Preservation Priority**: Preserve original WordPress URL slugs and patterns wherever practical (e.g., `/product/{slug}/`, `/product-category/{slug}/`, `/blog/{slug}/`).
+2. **301 Redirect Mapping**:
+   - Changed product slugs → Target active product URL.
+   - Merged / restructured categories → Closest equivalent category archive.
+   - Renamed blog posts → New blog article URL.
+   - Discontinued items with direct successors → Successor product URL.
+3. **Removed Content Handling**: Products or articles removed without direct replacement must return an intentional HTTP 404 (or 410 Gone) rather than blanket-redirecting to the homepage (which creates soft-404 penalties).
+4. **Sitemap Independence**: XML sitemaps list only active, canonical 200 OK URLs; 301 redirects are handled via routing/middleware and never included as sitemap target entries.
+
+---
+
+## 32b. Planned SEO & Sitemap Implementation Phases
+
+The roadmap for SEO and sitemap execution across Best Computer Hub consists of 5 sequential phases:
+
+### Phase 1 — URL & SEO Inventory
+* Audit all public entities (products, categories, blog posts, brands, static pages).
+* Map all public frontend Nuxt routes and trailing-slash requirements.
+* Define backend indexability, activation, publication, and deletion criteria.
+* Audit existing DRF and model fields for SEO attributes (`seo_title`, `seo_description`, `is_indexed`).
+* Establish canonicalization and `noindex` rules.
+* Compile an inventory of legacy WordPress/WooCommerce URL structures.
+
+### Phase 2 — Backend Sitemap Implementation
+* Build backend Sitemap Service and generation commands/views.
+* Implement main `/sitemap.xml` Sitemap Index.
+* Implement `/sitemap-products.xml` with active product querysets and `lastmod`.
+* Implement `/sitemap-categories.xml` with active category hierarchy.
+* Implement `/sitemap-blogs.xml` with published blog posts.
+* Support future sitemap expansion (`/sitemap-brands.xml`, `/sitemap-pages.xml`) via modular sitemap providers.
+
+### Phase 3 — Frontend SEO & Metadata Verification
+* Verify server-side rendering (SSR) of primary indexable content.
+* Implement dynamic page `<title>` and `<meta name="description">` via `useSeoMeta()`.
+* Enforce self-referencing canonical URLs with production domain origin.
+* Implement Open Graph and Twitter Card tags with fallback logic.
+* Implement validated JSON-LD structured data (`Product`, `Offer`, `BreadcrumbList`, `Article`, `Organization`).
+* Configure public `/robots.txt` referencing `Sitemap: https://bestcomputerhub.com/sitemap.xml`.
+
+### Phase 4 — SEO Migration & Redirect Execution
+* Implement and verify 301 permanent redirects for legacy WordPress URLs that could not be preserved identically.
+* Validate slug-change redirect handlers.
+* Configure clean 404 handling for permanently removed content without replacements.
+* Test redirect chains to ensure 1-hop direct 301 resolutions.
+
+### Phase 5 — Search Engine Verification & Crawl Auditing
+* Validate XML sitemaps against official schema specifications.
+* Submit Sitemap Index to Google Search Console and Bing Webmaster Tools.
+* Monitor URL coverage, indexation rate, and crawl statistics.
+* Audit server logs and Search Console reports for crawl errors, soft 404s, or canonical mismatches.
 
 ---
 
