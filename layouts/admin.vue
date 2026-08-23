@@ -26,7 +26,8 @@ import {
   Sun,
   Monitor,
   Boxes,
-  ExternalLink
+  ExternalLink,
+  Globe
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
@@ -68,6 +69,7 @@ const navigation = [
 const secondaryNavigation = [
   { name: 'Profile', iconKey: 'UserIcon', href: '/admin/profile' },
   { name: 'Security', iconKey: 'ShieldAlert', href: '/admin/security' },
+  { name: 'SEO & Sitemap', iconKey: 'Globe', href: '/admin/seo' },
   { name: 'Notifications', iconKey: 'Bell', href: '/admin/notifications' },
   { name: 'Settings', iconKey: 'Settings', href: '/admin/settings' },
 ];
@@ -93,7 +95,8 @@ const iconMap = {
   BarChart3,
   Bell,
   Settings,
-  UserIcon
+  UserIcon,
+  Globe
 };
 
 const toggleSidebar = () => {

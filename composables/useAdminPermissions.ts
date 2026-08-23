@@ -131,6 +131,13 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     iconKey: 'Bell',
     viewPermission: ['notifications.view_notification', 'view_notification']
   },
+  seo: {
+    key: 'seo',
+    route: '/admin/seo',
+    name: 'SEO & Sitemap',
+    iconKey: 'Globe',
+    viewPermission: null
+  },
   settings: {
     key: 'settings',
     route: '/admin/settings',
