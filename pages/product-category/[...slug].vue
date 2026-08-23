@@ -1,11 +1,14 @@
 <!-- File: /pages/product-category/[...slug].vue -->
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted, watch } from 'vue';
-import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft } from 'lucide-vue-next';
+import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft, Menu, Loader2 } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
 import { refDebounced } from '@vueuse/core';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
+import { useAuthStore } from '@/stores/auth';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { useToast } from '@/composables/useToast';
 import { cn } from '@/utils';
 import type { Category, Product } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
@@ -14,6 +17,60 @@ import CommerceProductCard from '@/components/commerce/ProductCard.vue';
 const route = useRoute();
 const productService = useProductService();
 const categoryService = useCategoryService();
+const authStore = useAuthStore();
+const { hasPermission } = useAdminPermissions();
+const { toastSuccess, handleApiError } = useToast();
+
+const isOwnerOrStaff = computed(() => {
+  if (!authStore.isLoggedIn || !authStore.user) return false;
+  const roleUpper = (authStore.user.role || '').toString().trim().toUpperCase();
+  if (roleUpper === 'OWNER' || roleUpper === 'STAFF') return true;
+  if (Boolean(authStore.user.is_staff || authStore.user.is_superuser || authStore.user.is_superadmin)) return true;
+  return false;
+});
+
+const canRemoveFromMenu = computed(() => {
+  if (!isOwnerOrStaff.value) return false;
+  if (!hasPermission('category_api.remove_category_from_menu')) return false;
+  const isCurrentlyMenu = activeCategory.value?.show_in_menu === true || activeCategory.value?.is_menu === true;
+  return isCurrentlyMenu;
+});
+
+const isRemovingFromMenu = ref(false);
+
+const handleRemoveFromMenu = async () => {
+  if (!activeCategory.value?.slug || isRemovingFromMenu.value || !canRemoveFromMenu.value) return;
+
+  isRemovingFromMenu.value = true;
+  const targetCat = activeCategory.value;
+  try {
+    const updatedCategory = await categoryService.removeFromMenu(targetCat.slug);
+    toastSuccess(`Category [${targetCat.name}] removed from menu.`);
+
+    if (activeCategory.value) {
+      activeCategory.value = {
+        ...activeCategory.value,
+        ...updatedCategory,
+        show_in_menu: false,
+        is_menu: false
+      };
+    }
+
+    const idx = allCategoriesList.value.findIndex(c => c.id === targetCat.id || c.slug === targetCat.slug);
+    if (idx !== -1) {
+      allCategoriesList.value[idx] = {
+        ...allCategoriesList.value[idx],
+        ...updatedCategory,
+        show_in_menu: false,
+        is_menu: false
+      };
+    }
+  } catch (err: any) {
+    handleApiError(err, 'Failed to remove category from menu.');
+  } finally {
+    isRemovingFromMenu.value = false;
+  }
+};
 
 const slugs = computed(() => {
   const s = route.params.slug;
@@ -306,13 +363,31 @@ const resetFilters = () => {
         </nav>
 
         <!-- Category Title & Info -->
-        <div class="max-w-4xl space-y-4">
-          <h1 class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all">
-            {{ category?.name || 'Hardware Collection' }}
-          </h1>
-          <p class="text-muted-foreground text-sm md:text-base max-w-2xl leading-relaxed">
-            {{ cleanShortDescription }}
-          </p>
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+          <div class="max-w-4xl space-y-4">
+            <h1 class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all">
+              {{ category?.name || 'Hardware Collection' }}
+            </h1>
+            <p class="text-muted-foreground text-sm md:text-base max-w-2xl leading-relaxed">
+              {{ cleanShortDescription }}
+            </p>
+          </div>
+
+          <!-- Remove from Menu Action for Authorized Owner/Staff -->
+          <div v-if="canRemoveFromMenu" class="shrink-0 flex items-center pt-1">
+            <button
+              type="button"
+              @click="handleRemoveFromMenu"
+              :disabled="isRemovingFromMenu"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm whitespace-nowrap"
+              title="Remove from Menu"
+              aria-label="Remove from Menu"
+            >
+              <Loader2 v-if="isRemovingFromMenu" class="w-4 h-4 animate-spin shrink-0" />
+              <Menu v-else class="w-4 h-4 shrink-0" />
+              <span>Remove from Menu</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
