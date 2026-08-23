@@ -636,7 +636,13 @@ const isItemInCart = computed(() => {
 
             <!-- Specification Tab -->
             <div v-if="activeTab === 'specification'" class="space-y-6 sm:space-y-10">
-              <div v-if="normalizedSpecs.length > 0" class="bg-card border rounded-2xl sm:rounded-[2.5rem] overflow-hidden">
+              <!-- Render HTML specifications if string -->
+              <div v-if="typeof product.specifications === 'string' && product.specifications.trim()" class="prose prose-slate dark:prose-invert max-w-none">
+                <div v-html="product.specifications" class="text-base text-muted-foreground bg-card border rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-8 overflow-x-auto"></div>
+              </div>
+
+              <!-- Fallback to normalized specs if it's an array/object -->
+              <div v-else-if="normalizedSpecs.length > 0" class="bg-card border rounded-2xl sm:rounded-[2.5rem] overflow-hidden">
                 <div class="grid grid-cols-1">
                   <div 
                     v-for="(spec, idx) in normalizedSpecs" 
