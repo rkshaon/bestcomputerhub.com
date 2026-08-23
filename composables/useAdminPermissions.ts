@@ -136,7 +136,7 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     route: '/admin/seo',
     name: 'SEO & Sitemap',
     iconKey: 'Globe',
-    viewPermission: null
+    viewPermission: ['seo.view_seo', 'view_seo']
   },
   settings: {
     key: 'settings',

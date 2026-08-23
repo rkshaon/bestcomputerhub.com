@@ -186,6 +186,7 @@ function getFallbackPermissions(): Permission[] {
     { id: 25, codename: 'add_logentry', name: 'Can add log entry' },
     { id: 26, codename: 'change_logentry', name: 'Can change log entry' },
     { id: 27, codename: 'delete_logentry', name: 'Can delete log entry' },
-    { id: 28, codename: 'view_logentry', name: 'Can view log entry' }
+    { id: 28, codename: 'view_logentry', name: 'Can view log entry' },
+    { id: 29, codename: 'view_seo', name: 'Can view SEO' }
   ];
 }

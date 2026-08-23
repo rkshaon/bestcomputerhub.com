@@ -131,6 +131,7 @@ const getPermissionCategory = (codename: string): string => {
   if (codename.includes('order')) return 'Orders';
   if (codename.includes('group') || codename.includes('role')) return 'Roles';
   if (codename.includes('logentry')) return 'Audit Logs';
+  if (codename.includes('seo')) return 'SEO';
   return 'General';
 };
 
