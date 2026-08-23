@@ -246,7 +246,23 @@ const loadSimilarProducts = async () => {
   if (!product.value) return;
   isSimilarLoading.value = true;
   try {
-    const catFilter = originCategory.value?.id || product.value.category;
+    let catFilter: string | number | undefined;
+
+    // Use the last object in product.categories as the leaf category
+    if (Array.isArray(product.value.categories) && product.value.categories.length > 0) {
+      const lastCat = product.value.categories[product.value.categories.length - 1];
+      if (lastCat && typeof lastCat === 'object') {
+        catFilter = lastCat.id ?? lastCat.pk;
+      } else if (typeof lastCat === 'number' || typeof lastCat === 'string') {
+        catFilter = lastCat;
+      }
+    }
+
+    // Preserve existing safe fallback if product.categories is empty or unavailable
+    if (catFilter === undefined || catFilter === '') {
+      catFilter = originCategory.value?.id || product.value.category;
+    }
+
     const res = await productService.getProductsList({
       category: catFilter,
       page_size: 4
