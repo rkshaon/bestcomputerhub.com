@@ -128,6 +128,10 @@ useSeoMeta({
 });
 
 const resolveCategory = async () => {
+  // Prevent category resolution when navigating to other routes (e.g. product details)
+  if (!route.path.startsWith('/product-category/')) {
+    return;
+  }
   const targetSlug = categorySlug.value ? categorySlug.value.toLowerCase() : '';
   if (!targetSlug) {
     activeCategory.value = null;
