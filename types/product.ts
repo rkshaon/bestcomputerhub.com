@@ -14,10 +14,30 @@ export interface CategoryOrigin {
   parent?: any;
 }
 
+export interface ProductCategoryRef {
+  id: number | string;
+  name: string;
+  slug: string;
+}
+
+export interface ProductOriginRef {
+  id: number | string;
+  slug: string;
+  name: string;
+  parent?: string | null;
+}
+
+export interface ProductPriceHistoryItem {
+  price: string | number;
+  changed_at: string;
+  changed_by?: string | number | null;
+}
+
 export interface Product {
   id: string;
   name: string;
   slug: string;
+  legacy_id?: number | string | null;
   description: string;
   short_description?: string;
   price: number;
@@ -28,17 +48,18 @@ export interface Product {
   brand: string;
   images: string[];
   default_image?: ProductImage | string | null;
-  origin?: CategoryOrigin | null;
-  categories?: number[] | any[];
-  price_histories?: any[];
+  origin?: ProductOriginRef | CategoryOrigin | null;
+  categories?: (ProductCategoryRef | number | any)[];
+  price_histories?: ProductPriceHistoryItem[];
   average_rating?: number;
   rating: number;
   total_reviews?: number;
   reviewCount: number;
   wishlist?: boolean;
   in_cart?: boolean;
+  is_active?: boolean;
   stock: number;
-  specifications: Record<string, any>;
+  specifications: string | Record<string, any>;
   features: string[];
   isNew?: boolean;
   isFeatured?: boolean;
@@ -46,6 +67,9 @@ export interface Product {
   sku: string;
   created_at?: string;
   updated_at?: string;
+  deleted_at?: string | null;
+  created_by?: number | string | null;
+  updated_by?: number | string | null;
 }
 
 export interface CreateProductPayload {
@@ -76,3 +100,4 @@ export interface ProductFilters {
   isNew?: boolean;
   onSale?: boolean;
 }
+

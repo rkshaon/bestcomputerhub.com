@@ -111,6 +111,7 @@ export const useProductService = () => {
       id: String(p.id ?? ''),
       name: p.name ?? '',
       slug: p.slug || `product-${p.id || 'item'}`,
+      legacy_id: p.legacy_id !== undefined ? p.legacy_id : null,
       description: p.description !== undefined && p.description !== null ? String(p.description) : '',
       short_description: p.short_description !== undefined && p.short_description !== null ? String(p.short_description) : '',
       price: priceVal,
@@ -132,6 +133,7 @@ export const useProductService = () => {
       reviewCount: totReviews,
       wishlist: Boolean(p.wishlist),
       in_cart: Boolean(p.in_cart),
+      is_active: p.is_active !== undefined ? Boolean(p.is_active) : true,
       stock: p.stock !== undefined && p.stock !== null ? Number(p.stock) : 0,
       specifications: p.specifications ?? {},
       features: Array.isArray(p.features) ? p.features : [],
@@ -140,7 +142,10 @@ export const useProductService = () => {
       onSale: Boolean(p.onSale ?? p.on_sale ?? false),
       sku: p.sku || `SKU-${p.id || 'N/A'}`,
       created_at: p.created_at || '',
-      updated_at: p.updated_at || ''
+      updated_at: p.updated_at || '',
+      deleted_at: p.deleted_at !== undefined ? p.deleted_at : null,
+      created_by: p.created_by !== undefined ? p.created_by : null,
+      updated_by: p.updated_by !== undefined ? p.updated_by : null
     };
   };
 
