@@ -37,6 +37,7 @@ import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
+import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 
 definePageMeta({
   layout: false
@@ -301,6 +302,9 @@ const activeCategoriesButtonLabel = computed(() => {
 const modalProductName = ref('');
 const modalCurrentSellingPrice = ref<number | ''>('');
 const modalSelectedCategoryIds = ref<number[]>([]);
+const modalShortDescription = ref('');
+const modalDescription = ref('');
+const modalSpecifications = ref('');
 const isModalSubmitting = ref(false);
 const modalFormError = ref<string | null>(null);
 const modalFieldErrors = ref<{
@@ -379,6 +383,9 @@ watch(() => modalState.isCreate.value, (isCreateOpen) => {
     modalProductName.value = '';
     modalCurrentSellingPrice.value = '';
     modalSelectedCategoryIds.value = [];
+    modalShortDescription.value = '';
+    modalDescription.value = '';
+    modalSpecifications.value = '';
     modalFormError.value = null;
     modalFieldErrors.value = {};
     modalCategorySearchQuery.value = '';
@@ -401,6 +408,25 @@ watch(
       modalCurrentSellingPrice.value = entity.current_selling_price !== undefined && entity.current_selling_price !== null
         ? Number(entity.current_selling_price)
         : (entity.price !== undefined ? Number(entity.price) : '');
+
+      modalShortDescription.value = entity.short_description || '';
+      modalDescription.value = entity.description || '';
+
+      if (typeof entity.specifications === 'string') {
+        modalSpecifications.value = entity.specifications;
+      } else if (typeof entity.specifications === 'object' && entity.specifications !== null) {
+        const entries = Object.entries(entity.specifications);
+        if (entries.length > 0) {
+          const rows = entries
+            .map(([k, v]) => `<tr><td class="font-bold border border-border p-2">${k}</td><td class="border border-border p-2">${v}</td></tr>`)
+            .join('');
+          modalSpecifications.value = `<table class="w-full border-collapse border border-border"><thead><tr class="bg-muted/50"><th class="border border-border p-2 text-left font-bold">Attribute</th><th class="border border-border p-2 text-left font-bold">Specification</th></tr></thead><tbody>${rows}</tbody></table>`;
+        } else {
+          modalSpecifications.value = '';
+        }
+      } else {
+        modalSpecifications.value = '';
+      }
 
       if (Array.isArray(entity.categories) && entity.categories.length > 0) {
         modalSelectedCategoryIds.value = entity.categories
@@ -503,7 +529,10 @@ const handleModalProductSubmit = async () => {
     const payload: UpdateProductPayload = {
       name: modalProductName.value.trim(),
       categories: modalSelectedCategoryIds.value.map(id => Number(id)),
-      current_selling_price: Number(modalCurrentSellingPrice.value)
+      current_selling_price: Number(modalCurrentSellingPrice.value),
+      short_description: modalShortDescription.value,
+      description: modalDescription.value,
+      specifications: modalSpecifications.value
     };
 
     try {
@@ -1323,8 +1352,8 @@ onUnmounted(() => {
     <UiAdminModal
       :is-open="modalState.isCreate.value || (modalState.isEdit.value && (!!modalState.activeEntity.value || modalState.isResolving.value))"
       :title="modalState.isEdit.value ? 'Edit Product' : 'Add Product'"
-      :subtitle="modalState.isEdit.value ? 'Update product specifications, category classifications, and pricing.' : 'Configure and register a new product in the catalog.'"
-      max-width="max-w-xl"
+      :subtitle="modalState.isEdit.value ? 'Update product specifications, category classifications, descriptions, and pricing.' : 'Configure and register a new product in the catalog.'"
+      :max-width="modalState.isEdit.value ? 'max-w-3xl' : 'max-w-xl'"
       @close="modalState.closeModal"
     >
       <!-- Loading State during Edit entity resolution -->
@@ -1335,7 +1364,7 @@ onUnmounted(() => {
 
       <form v-else @submit.prevent="handleModalProductSubmit" class="flex flex-col">
         <!-- Scrollable Modal Body -->
-        <div class="p-6 space-y-5 overflow-y-auto max-h-[65vh]">
+        <div class="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
           <!-- Error Banner -->
           <div v-if="modalFormError" class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2.5 text-xs font-medium text-destructive">
             <AlertCircle class="w-4 h-4 shrink-0" />
@@ -1515,6 +1544,46 @@ onUnmounted(() => {
             </div>
             <p class="text-[11px] text-muted-foreground">Standard retail unit price for transactions in USD.</p>
           </div>
+
+          <!-- Rich-Text HTML Fields in Edit Mode -->
+          <template v-if="modalState.isEdit.value">
+            <!-- Short Description -->
+            <div class="space-y-1.5 pt-2 border-t border-border/60">
+              <UiRichTextEditor
+                v-model="modalShortDescription"
+                label="Short Description"
+                placeholder="Enter brief product highlights / summary..."
+                min-height="min-h-[100px]"
+                :disabled="isModalSubmitting"
+                helper-text="Concise summary displayed on product cards and catalog overviews."
+              />
+            </div>
+
+            <!-- Full Description -->
+            <div class="space-y-1.5 pt-2 border-t border-border/60">
+              <UiRichTextEditor
+                v-model="modalDescription"
+                label="Description"
+                placeholder="Enter comprehensive product description, features, and marketing content..."
+                min-height="min-h-[160px]"
+                :disabled="isModalSubmitting"
+                helper-text="Full product details with headings, bullet points, formatting, and paragraphs."
+              />
+            </div>
+
+            <!-- Technical Specifications -->
+            <div class="space-y-1.5 pt-2 border-t border-border/60">
+              <UiRichTextEditor
+                v-model="modalSpecifications"
+                label="Specifications"
+                placeholder="Enter technical specifications (insert table using toolbar)..."
+                min-height="min-h-[180px]"
+                :disabled="isModalSubmitting"
+                :allow-tables="true"
+                helper-text="HTML specification table containing structured technical hardware parameters."
+              />
+            </div>
+          </template>
         </div>
 
         <!-- Modal Footer Controls -->

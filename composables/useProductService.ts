@@ -454,7 +454,10 @@ export const useProductService = () => {
         name: (payload as any).name !== undefined ? (payload as any).name : existing.name,
         price: currentPrice,
         current_selling_price: currentPrice,
-        categories: (payload as any).categories !== undefined ? (payload as any).categories : existing.categories
+        categories: (payload as any).categories !== undefined ? (payload as any).categories : existing.categories,
+        description: (payload as any).description !== undefined ? (payload as any).description : existing.description,
+        short_description: (payload as any).short_description !== undefined ? (payload as any).short_description : existing.short_description,
+        specifications: (payload as any).specifications !== undefined ? (payload as any).specifications : existing.specifications
       };
 
       list[idx] = updated;

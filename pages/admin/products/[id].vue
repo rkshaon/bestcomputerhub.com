@@ -19,6 +19,7 @@ import {
 import { useProductService } from '@/composables/useProductService';
 import { formatCurrency, cn } from '@/utils';
 import type { Product } from '@/types';
+import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 
 definePageMeta({
   layout: 'admin'
@@ -100,8 +101,32 @@ const removeImage = (index: number) => {
               <input v-model="product.brand" type="text" class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-sm" />
             </div>
             <div class="md:col-span-2 space-y-3">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Mission Description</label>
-              <textarea v-model="product.description" rows="5" class="w-full p-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm"></textarea>
+              <UiRichTextEditor
+                v-model="product.short_description"
+                label="Short Description"
+                placeholder="Enter brief product highlights / summary..."
+                min-height="min-h-[100px]"
+                helper-text="Brief summary displayed on product cards and catalog overviews."
+              />
+            </div>
+            <div class="md:col-span-2 space-y-3">
+              <UiRichTextEditor
+                v-model="product.description"
+                label="Full Description"
+                placeholder="Enter comprehensive product description..."
+                min-height="min-h-[160px]"
+                helper-text="Full product details with formatting, headings, and bullet points."
+              />
+            </div>
+            <div class="md:col-span-2 space-y-3">
+              <UiRichTextEditor
+                v-model="product.specifications"
+                label="Specifications"
+                placeholder="Enter technical specifications (HTML table)..."
+                min-height="min-h-[180px]"
+                :allow-tables="true"
+                helper-text="HTML specification table containing structured technical hardware parameters."
+              />
             </div>
           </div>
         </div>

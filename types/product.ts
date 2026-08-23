@@ -76,12 +76,18 @@ export interface CreateProductPayload {
   name: string;
   categories: number[];
   current_selling_price: number;
+  description?: string;
+  short_description?: string;
+  specifications?: string | Record<string, any>;
 }
 
 export interface UpdateProductPayload {
   name?: string;
   categories?: number[];
   current_selling_price?: number;
+  description?: string;
+  short_description?: string;
+  specifications?: string | Record<string, any>;
 }
 
 export interface ProductFilters {
