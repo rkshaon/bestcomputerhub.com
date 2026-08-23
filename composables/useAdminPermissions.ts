@@ -36,10 +36,10 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     route: '/admin/categories',
     name: 'Categories',
     iconKey: 'Layers',
-    viewPermission: ['store.view_category', 'view_category', 'categories.view_category'],
-    createPermission: ['store.add_category', 'add_category', 'categories.add_category'],
-    editPermission: ['store.change_category', 'change_category', 'categories.change_category'],
-    deletePermission: ['store.delete_category', 'delete_category', 'categories.delete_category']
+    viewPermission: ['store.view_category', 'view_category', 'categories.view_category', 'category_api.view_category'],
+    createPermission: ['store.add_category', 'add_category', 'categories.add_category', 'category_api.add_category'],
+    editPermission: ['store.change_category', 'change_category', 'categories.change_category', 'category_api.change_category'],
+    deletePermission: ['store.delete_category', 'delete_category', 'categories.delete_category', 'category_api.delete_category']
   },
   brands: {
     key: 'brands',

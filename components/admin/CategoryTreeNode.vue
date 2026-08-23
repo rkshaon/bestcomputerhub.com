@@ -12,6 +12,7 @@ import {
 } from 'lucide-vue-next';
 import type { Category } from '@/types';
 import { useCategoryService } from '@/composables/useCategoryService';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { cn } from '@/utils';
 
 const props = withDefaults(defineProps<{
@@ -116,6 +117,11 @@ const hasSubNodes = computed(() => {
 
 const isCurrentlyMenu = computed(() => props.node.show_in_menu === true || props.node.is_menu === true);
 const isToggling = computed(() => props.togglingMenuSlug === props.node.slug);
+
+const { hasPermission } = useAdminPermissions();
+const canMarkCategoryAsMenu = computed(() => hasPermission('category_api.mark_category_as_menu'));
+const canRemoveCategoryFromMenu = computed(() => hasPermission('category_api.remove_category_from_menu'));
+const canToggleMenu = computed(() => isCurrentlyMenu.value ? canRemoveCategoryFromMenu.value : canMarkCategoryAsMenu.value);
 
 // Drag & Drop handlers for Tree node
 const onNodeDragStart = (e: DragEvent) => {
@@ -248,6 +254,7 @@ const onNodeDrop = (e: DragEvent) => {
       <div class="flex items-center gap-1 shrink-0">
         <!-- Mark / Remove from Menu Button -->
         <button
+          v-if="canToggleMenu"
           type="button"
           @click.stop="$emit('toggle-menu', node)"
           :disabled="isToggling"

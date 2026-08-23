@@ -32,6 +32,7 @@ import CategoryTreeAdmin from '@/components/admin/CategoryTreeAdmin.vue';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import { cn } from '@/utils';
 import { refDebounced } from '@vueuse/core';
@@ -53,6 +54,15 @@ const tableColumns: UiTableColumn<Category>[] = [
 
 const categoryService = useCategoryService();
 const productService = useProductService();
+const { hasPermission } = useAdminPermissions();
+
+const canMarkCategoryAsMenu = computed(() => hasPermission('category_api.mark_category_as_menu'));
+const canRemoveCategoryFromMenu = computed(() => hasPermission('category_api.remove_category_from_menu'));
+
+const canToggleCategoryMenu = (cat: Category): boolean => {
+  const isCurrentlyMenu = cat.show_in_menu === true || cat.is_menu === true;
+  return isCurrentlyMenu ? canRemoveCategoryFromMenu.value : canMarkCategoryAsMenu.value;
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -776,8 +786,11 @@ const treeRef = ref<any>(null);
 const toggleCategoryMenu = async (cat: Category) => {
   if (!cat.slug || togglingMenuSlug.value === cat.slug) return;
 
-  togglingMenuSlug.value = cat.slug;
   const isCurrentlyMenu = cat.show_in_menu === true || cat.is_menu === true;
+  if (isCurrentlyMenu && !canRemoveCategoryFromMenu.value) return;
+  if (!isCurrentlyMenu && !canMarkCategoryAsMenu.value) return;
+
+  togglingMenuSlug.value = cat.slug;
   const parentId = cat.parentCategoryId ? String(cat.parentCategoryId) : undefined;
   const isRoot = !parentId;
 
@@ -1477,6 +1490,7 @@ watch(viewMode, () => {
 
             <div class="flex items-center gap-1">
               <button 
+                v-if="canToggleCategoryMenu(cat)"
                 type="button"
                 @click="toggleCategoryMenu(cat)" 
                 :disabled="togglingMenuSlug === cat.slug"
@@ -1687,6 +1701,7 @@ watch(viewMode, () => {
       <template #cell-actions="{ item: cat }">
         <div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
           <button 
+            v-if="canToggleCategoryMenu(cat)"
             type="button"
             @click="toggleCategoryMenu(cat)" 
             :disabled="togglingMenuSlug === cat.slug"
