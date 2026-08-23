@@ -1718,23 +1718,28 @@ onUnmounted(() => {
           <!-- Short Description -->
           <div v-if="selectedProduct.short_description" class="space-y-1.5">
             <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Short Description</span>
-            <div class="text-xs text-foreground bg-muted/30 p-3.5 rounded-xl border border-border font-medium leading-relaxed">
-              {{ selectedProduct.short_description }}
+            <div class="prose prose-sm prose-slate dark:prose-invert max-w-none text-xs text-foreground bg-muted/30 p-3.5 rounded-xl border border-border font-medium leading-relaxed" v-html="selectedProduct.short_description">
             </div>
           </div>
 
           <!-- Full Description -->
           <div class="space-y-1.5">
             <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</span>
-            <div class="text-xs text-foreground bg-muted/20 p-4 rounded-xl border border-border font-normal leading-relaxed whitespace-pre-line max-h-48 overflow-y-auto">
-              {{ selectedProduct.description || 'No product description provided.' }}
+            <div class="prose prose-sm prose-slate dark:prose-invert max-w-none text-xs text-foreground bg-muted/20 p-4 rounded-xl border border-border font-normal leading-relaxed max-h-48 overflow-y-auto">
+              <div v-if="selectedProduct.description" v-html="selectedProduct.description"></div>
+              <p v-else class="text-xs text-muted-foreground italic m-0">No product description provided.</p>
             </div>
           </div>
 
           <!-- Specifications Section -->
           <div class="space-y-2">
             <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Technical Specifications</span>
-            <div v-if="parsedSpecifications.length > 0" class="border border-border rounded-xl overflow-hidden divide-y divide-border text-xs">
+            <!-- If raw HTML specifications -->
+            <div v-if="typeof selectedProduct.specifications === 'string' && (selectedProduct.specifications.includes('<') && selectedProduct.specifications.includes('>'))" class="prose prose-sm prose-slate dark:prose-invert max-w-none">
+              <div v-html="selectedProduct.specifications" class="text-xs text-foreground bg-card border rounded-xl p-4 overflow-x-auto"></div>
+            </div>
+            <!-- Else fallback to parsedSpecifications if we have any -->
+            <div v-else-if="parsedSpecifications.length > 0" class="border border-border rounded-xl overflow-hidden divide-y divide-border text-xs">
               <div 
                 v-for="(spec, idx) in parsedSpecifications" 
                 :key="idx"
