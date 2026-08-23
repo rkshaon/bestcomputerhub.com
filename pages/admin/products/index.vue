@@ -54,11 +54,12 @@ const tableColumns: UiTableColumn<Product>[] = [
 
 const productService = useProductService();
 const categoryService = useCategoryService();
-const { canCreateInModule, canEditInModule, canDeleteInModule, hasPermission } = useAdminPermissions();
+const { canCreateInModule, canEditInModule, canDeleteInModule, canViewModule, hasPermission } = useAdminPermissions();
 
 const route = useRoute();
 const router = useRouter();
 
+const canViewProduct = computed(() => hasPermission('product_api.view_product') || canViewModule('/admin/products'));
 const canCreateProduct = computed(() => hasPermission('product_api.add_product') || canCreateInModule('/admin/products'));
 const canEditProduct = computed(() => hasPermission('product_api.change_product') || canEditInModule('/admin/products'));
 const canDeleteProduct = computed(() => hasPermission('product_api.delete_product') || canDeleteInModule('/admin/products'));
@@ -1015,6 +1016,15 @@ onUnmounted(() => {
                 ID: #{{ product.id }}
               </span>
               <div class="flex items-center gap-1">
+                <NuxtLink
+                  v-if="canViewProduct"
+                  :to="`/admin/products/${product.id}`"
+                  class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
+                  title="View Product Details"
+                  aria-label="View product details"
+                >
+                  <Eye class="w-4 h-4" />
+                </NuxtLink>
                 <button 
                   v-if="canEditProduct" 
                   type="button"
@@ -1174,6 +1184,15 @@ onUnmounted(() => {
       <!-- Actions Column -->
       <template #cell-actions="{ item: product }">
         <div class="flex items-center justify-end gap-1">
+          <NuxtLink
+            v-if="canViewProduct"
+            :to="`/admin/products/${product.id}`"
+            class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
+            title="View Product Details"
+            aria-label="View product details"
+          >
+            <Eye class="w-4 h-4" />
+          </NuxtLink>
           <button 
             v-if="canEditProduct" 
             type="button"
