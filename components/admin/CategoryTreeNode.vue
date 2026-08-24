@@ -8,7 +8,8 @@ import {
   Edit2, 
   Trash2, 
   Loader2,
-  GripVertical
+  GripVertical,
+  ExternalLink
 } from 'lucide-vue-next';
 import type { Category } from '@/types';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -252,6 +253,19 @@ const onNodeDrop = (e: DragEvent) => {
 
       <!-- Right side: Actions -->
       <div class="flex items-center gap-1 shrink-0">
+        <!-- View on Storefront -->
+        <NuxtLink
+          :to="categoryService.getCategoryUrl(node)"
+          target="_blank"
+          rel="noopener noreferrer"
+          @click.stop
+          class="p-1.5 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all cursor-pointer inline-flex items-center justify-center"
+          title="View on Storefront"
+          aria-label="View category on storefront"
+        >
+          <ExternalLink class="w-3.5 h-3.5" />
+        </NuxtLink>
+
         <!-- Mark / Remove from Menu Button -->
         <button
           v-if="canToggleMenu"

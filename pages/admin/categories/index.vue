@@ -438,6 +438,12 @@ const getParentName = (parentId?: string): string => {
   return matched ? matched.name : parentId;
 };
 
+// Construct canonical Storefront category URL using full path/hierarchy
+const getCategoryStorefrontUrl = (cat: Category): string => {
+  const list = allCategoriesList.value.length ? allCategoriesList.value : categoriesList.value;
+  return categoryService.getCategoryUrl(cat, list);
+};
+
 // Fetch categories with server-side pagination, filters and queries
 const fetchCategoriesPage = async () => {
   isLoading.value = true;
@@ -1491,6 +1497,18 @@ watch(viewMode, () => {
             </span>
 
             <div class="flex items-center gap-1">
+              <!-- View on Storefront -->
+              <NuxtLink
+                :to="getCategoryStorefrontUrl(cat)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all cursor-pointer inline-flex items-center justify-center"
+                title="View on Storefront"
+                aria-label="View category on storefront"
+              >
+                <ExternalLink class="w-4 h-4" />
+              </NuxtLink>
+
               <button 
                 v-if="canToggleCategoryMenu(cat)"
                 type="button"
@@ -1702,6 +1720,18 @@ watch(viewMode, () => {
       <!-- Action button overrides -->
       <template #cell-actions="{ item: cat }">
         <div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+          <!-- View on Storefront -->
+          <NuxtLink
+            :to="getCategoryStorefrontUrl(cat)"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="p-1.5 text-muted-foreground hover:text-primary hover:bg-muted rounded-md transition-all cursor-pointer inline-flex items-center justify-center"
+            title="View on Storefront"
+            aria-label="View category on storefront"
+          >
+            <ExternalLink class="w-3.5 h-3.5" />
+          </NuxtLink>
+
           <button 
             v-if="canToggleCategoryMenu(cat)"
             type="button"
