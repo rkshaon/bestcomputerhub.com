@@ -416,17 +416,30 @@ export const useCategoryService = () => {
     }
   };
 
-  const updateCategory = async (id: string, payload: { name: string; slug: string; description: string; parentCategoryId?: string; icon?: string; image?: string; order?: number }): Promise<Category> => {
+  const updateCategory = async (
+    id: string,
+    payload: Partial<{
+      name: string;
+      slug: string;
+      description: string;
+      parentCategoryId: string;
+      icon: string;
+      image: string;
+      order: number;
+      show_in_menu: boolean;
+      is_menu: boolean;
+    }>
+  ): Promise<Category> => {
     isLoading.value = true;
     errorMsg.value = null;
 
-    if (!payload.name?.trim()) {
+    if (payload.name !== undefined && !payload.name.trim()) {
       const err = new Error('Category name designation is required.');
       errorMsg.value = err.message;
       isLoading.value = false;
       throw err;
     }
-    if (!payload.slug?.trim()) {
+    if (payload.slug !== undefined && !payload.slug.trim()) {
       const err = new Error('Category slug identifier is required.');
       errorMsg.value = err.message;
       isLoading.value = false;
@@ -443,7 +456,7 @@ export const useCategoryService = () => {
         throw new Error('Category node not found.');
       }
 
-      if (categoriesList.some((c, i) => i !== idx && c.slug.toLowerCase() === payload.slug.toLowerCase())) {
+      if (payload.slug !== undefined && categoriesList.some((c, i) => i !== idx && c.slug.toLowerCase() === payload.slug!.toLowerCase())) {
         const err = new Error(`Protocol Violation: Category slug "${payload.slug}" is already registered.`);
         errorMsg.value = err.message;
         throw err;
@@ -456,19 +469,20 @@ export const useCategoryService = () => {
       const oldParent = existingCategory.parentCategoryId;
 
       const updatedCategory: Category = {
-        id: existingCategory.id,
-        name: payload.name.trim(),
-        slug: payload.slug.trim().toLowerCase(),
-        description: payload.description?.trim() || '',
-        parentCategoryId: payload.parentCategoryId || undefined,
-        icon: payload.icon || undefined,
-        image: payload.image || undefined,
-        subCategories: existingCategory.subCategories || [],
-        order: payload.order !== undefined ? Number(payload.order) : 0
+        ...existingCategory,
+        ...(payload.name !== undefined ? { name: payload.name.trim() } : {}),
+        ...(payload.slug !== undefined ? { slug: payload.slug.trim().toLowerCase() } : {}),
+        ...(payload.description !== undefined ? { description: payload.description.trim() } : {}),
+        ...(payload.parentCategoryId !== undefined ? { parentCategoryId: payload.parentCategoryId || undefined } : {}),
+        ...(payload.icon !== undefined ? { icon: payload.icon || undefined } : {}),
+        ...(payload.image !== undefined ? { image: payload.image || undefined } : {}),
+        ...(payload.order !== undefined ? { order: Number(payload.order) || 0 } : {}),
+        ...(payload.show_in_menu !== undefined ? { show_in_menu: Boolean(payload.show_in_menu) } : {}),
+        ...(payload.is_menu !== undefined ? { is_menu: Boolean(payload.is_menu) } : {})
       };
 
       // Handle custom parent transitions in mock storage
-      if (oldParent !== payload.parentCategoryId) {
+      if (payload.parentCategoryId !== undefined && oldParent !== payload.parentCategoryId) {
         // Remove from old parent
         if (oldParent) {
           const oldParentCat = categoriesList.find(c => c.id === oldParent);
@@ -495,12 +509,14 @@ export const useCategoryService = () => {
 
     try {
       const { parentCategoryId, ...rest } = payload;
-      const apiPayload = {
-        ...rest,
-        parent: parentCategoryId || null
+      const apiPayload: any = {
+        ...rest
       };
+      if (parentCategoryId !== undefined) {
+        apiPayload.parent = parentCategoryId || null;
+      }
       const data = await apiClient.request<any>(`/api/v1/categories/${id}/`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: apiPayload
       });
       isLoading.value = false;

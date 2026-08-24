@@ -428,8 +428,20 @@ const formPayload = ref({
   parentCategoryId: '',
   icon: '',
   image: '',
-  order: 0
+  order: 0,
+  show_in_menu: true
 });
+
+const originalCategoryDetails = ref<{
+  name: string;
+  slug: string;
+  description: string;
+  parentCategoryId: string;
+  icon: string;
+  image: string;
+  order: number;
+  show_in_menu: boolean;
+} | null>(null);
 
 // Retrieve parent category name by ID (Local state resolution)
 const getParentName = (parentId?: string): string => {
@@ -671,7 +683,8 @@ const triggerCreateModal = () => {
     parentCategoryId: '',
     icon: '📁',
     image: '',
-    order: 0
+    order: 0,
+    show_in_menu: true
   };
   formError.value = null;
   isCreateModalOpen.value = true;
@@ -687,7 +700,18 @@ const triggerEditModal = async (cat: Category) => {
     parentCategoryId: cat.parentCategoryId || '',
     icon: cat.icon || '📁',
     image: cat.image || '',
-    order: cat.order ?? 0
+    order: cat.order ?? 0,
+    show_in_menu: cat.show_in_menu ?? true
+  };
+  originalCategoryDetails.value = {
+    name: cat.name || '',
+    slug: cat.slug || '',
+    description: cat.description || '',
+    parentCategoryId: cat.parentCategoryId || '',
+    icon: cat.icon || '📁',
+    image: cat.image || '',
+    order: cat.order ?? 0,
+    show_in_menu: cat.show_in_menu ?? true
   };
   formError.value = null;
   isEditModalOpen.value = true;
@@ -707,7 +731,18 @@ const triggerEditModal = async (cat: Category) => {
         parentCategoryId: details.parentCategoryId || '',
         icon: details.icon || '📁',
         image: details.image || '',
-        order: details.order ?? 0
+        order: details.order ?? 0,
+        show_in_menu: details.show_in_menu ?? true
+      };
+      originalCategoryDetails.value = {
+        name: details.name || '',
+        slug: details.slug || '',
+        description: details.description || '',
+        parentCategoryId: details.parentCategoryId || '',
+        icon: details.icon || '📁',
+        image: details.image || '',
+        order: details.order ?? 0,
+        show_in_menu: details.show_in_menu ?? true
       };
     }
   } catch (err: any) {
@@ -788,16 +823,86 @@ const submitUpdateCategory = async () => {
   }
 
   isSubmitPending.value = true;
+
+  const payload: any = {};
+  if (originalCategoryDetails.value) {
+    const orig = originalCategoryDetails.value;
+
+    // name
+    const currentName = formPayload.value.name.trim();
+    if (currentName !== orig.name.trim()) {
+      payload.name = currentName;
+    }
+
+    // slug
+    const currentSlug = formPayload.value.slug.trim().toLowerCase();
+    if (currentSlug !== orig.slug.trim().toLowerCase()) {
+      payload.slug = currentSlug;
+    }
+
+    // description
+    const currentDesc = formPayload.value.description;
+    if (currentDesc !== orig.description) {
+      payload.description = currentDesc;
+    }
+
+    // parentCategoryId
+    const currentParent = formPayload.value.parentCategoryId || '';
+    const origParent = orig.parentCategoryId || '';
+    if (currentParent !== origParent) {
+      payload.parentCategoryId = currentParent || '';
+    }
+
+    // icon
+    const currentIcon = formPayload.value.icon || '';
+    const origIcon = orig.icon || '';
+    if (currentIcon !== origIcon) {
+      payload.icon = currentIcon || '';
+    }
+
+    // image
+    const currentImage = formPayload.value.image || '';
+    const origImage = orig.image || '';
+    if (currentImage !== origImage) {
+      payload.image = currentImage || '';
+    }
+
+    // order
+    const currentOrder = Number(formPayload.value.order) || 0;
+    const origOrder = Number(orig.order) || 0;
+    if (currentOrder !== origOrder) {
+      payload.order = currentOrder;
+    }
+
+    // show_in_menu
+    const currentShow = formPayload.value.show_in_menu !== undefined ? Boolean(formPayload.value.show_in_menu) : true;
+    const origShow = orig.show_in_menu !== undefined ? Boolean(orig.show_in_menu) : true;
+    if (currentShow !== origShow) {
+      payload.show_in_menu = currentShow;
+    }
+  } else {
+    // Fallback if no reference state exists
+    payload.name = formPayload.value.name;
+    payload.slug = formPayload.value.slug;
+    payload.description = formPayload.value.description;
+    payload.parentCategoryId = formPayload.value.parentCategoryId || undefined;
+    payload.icon = formPayload.value.icon || undefined;
+    payload.image = formPayload.value.image || undefined;
+    payload.order = Number(formPayload.value.order) || 0;
+    payload.show_in_menu = formPayload.value.show_in_menu;
+  }
+
+  if (Object.keys(payload).length === 0) {
+    // If nothing changed, do not send an unnecessary PATCH request; follow the existing form behavior for an unchanged submission.
+    isEditModalOpen.value = false;
+    toastSuccess(`Category [${formPayload.value.name}] updated successfully.`);
+    await fetchAllCategoriesRawList();
+    isSubmitPending.value = false;
+    return;
+  }
+
   try {
-    await categoryService.updateCategory(formPayload.value.id, {
-      name: formPayload.value.name,
-      slug: formPayload.value.slug,
-      description: formPayload.value.description,
-      parentCategoryId: formPayload.value.parentCategoryId || undefined,
-      icon: formPayload.value.icon || undefined,
-      image: formPayload.value.image || undefined,
-      order: Number(formPayload.value.order) || 0
-    });
+    await categoryService.updateCategory(formPayload.value.id, payload);
 
     isEditModalOpen.value = false;
     toastSuccess(`Category [${formPayload.value.name}] updated successfully.`);
