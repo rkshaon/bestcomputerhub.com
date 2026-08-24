@@ -339,6 +339,59 @@ DRF must enforce actual access control.
 
 In administrative modules, user permissions returned from `GET /api/v1/users/me/` are processed by `useAdminPermissions()`. The frontend consumes this composable to filter sidebar navigation in `/layouts/admin.vue`, guard direct route access in `/middleware/auth.global.ts`, and conditionally hide action controls (Create/Edit/Delete buttons) in admin pages. DRF remains the authoritative security boundary.
 
+#### Admin Access & Action-Authorization Model
+
+Admin panel routing (`/admin/*`) and CRUD actions are restricted by a triple-gated authorization model:
+
+```text
+Authenticated user
+        AND
+User type is Owner OR Staff
+        AND
+User has the required action-specific permission
+```
+
+The system resolves access according to these precise definitions:
+
+*   **Unauthenticated User**:
+    *   Cannot access `/admin/*`.
+    *   Must be redirected to the existing login flow automatically.
+*   **Owner**:
+    *   Has access to the `/admin/*` router.
+    *   Action-level access is determined by the permission system. Users flagged with `is_superuser` or `is_superadmin` (typically Owners) bypass specific checks via the standard permission override.
+*   **Staff**:
+    *   Has access to the `/admin/*` router.
+    *   Must possess the specific permission required for each individual CRUD action.
+    *   Being Staff alone does not grant default CRUD or feature-level permissions.
+*   **Other User Types (e.g., Customer)**:
+    *   Cannot access Admin. Attempted routing results in a redirection to `/admin/forbidden`.
+
+#### Permission Rules: Action-Specific and Non-Transitive
+
+Permissions are strictly action-specific and non-transitive. Having one permission must never implicitly grant another. The project uses standard backend/frontend permission naming conventions:
+
+*   **View Permission** (e.g., `product_api.view_product`): Grants read-only visibility to the data view and sidebar nodes.
+*   **Create Permission** (e.g., `product_api.add_product`): Required to trigger creation actions or view creation forms/modals.
+*   **Edit Permission** (e.g., `product_api.change_product`): Required to trigger update actions or view edit forms/modals.
+*   **Delete Permission** (e.g., `product_api.delete_product`): Required to execute deletion operations.
+
+#### Frontend vs Backend Responsibilities
+
+*   **Frontend**: Permission checks control component visibility and user experience. The frontend must prevent unauthorized actions from being triggered or initiated in the UI. Frontend authorization is **not the security boundary**.
+*   **Backend**: Django REST Framework (DRF) backend permissions remain the authoritative security boundary.
+
+#### Centralized Permission Checking
+
+All Admin permission checks must use the existing `useAdminPermissions` pattern/utilities to manage:
+*   Sidebar visibility.
+*   Route/module access (such as global route guards).
+*   Page-level visibility.
+*   View, Create, Edit, and Delete action controls.
+*   Feature-specific validation checks.
+
+Never create separate custom permission or role logic for individual Admin features. Use only `useAdminPermissions`.
+
+
 
 ---
 
