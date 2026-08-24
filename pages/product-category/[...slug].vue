@@ -1,7 +1,7 @@
 <!-- File: /pages/product-category/[...slug].vue -->
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, watch } from 'vue';
-import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft, Menu, Loader2 } from 'lucide-vue-next';
+import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue';
+import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft, Menu, Loader2, Edit2, Save } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
 import { refDebounced } from '@vueuse/core';
 import { useProductService } from '@/composables/useProductService';
@@ -13,6 +13,7 @@ import { cn } from '@/utils';
 import type { Category, Product } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import CommerceProductCard from '@/components/commerce/ProductCard.vue';
+import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 
 const route = useRoute();
 const productService = useProductService();
@@ -28,6 +29,144 @@ const isOwnerOrStaff = computed(() => {
   if (Boolean(authStore.user.is_staff || authStore.user.is_superuser || authStore.user.is_superadmin)) return true;
   return false;
 });
+
+const canEditCategoryFromStorefront = computed(() => {
+  return isOwnerOrStaff.value && hasPermission('category_api.change_category');
+});
+
+// Inline editing state
+const editingField = ref<'name' | 'description' | null>(null);
+const isFieldSaving = ref<'name' | 'description' | null>(null);
+
+const editNameValue = ref('');
+const editDescValue = ref('');
+
+const nameInputRef = ref<HTMLInputElement | null>(null);
+
+const cleanHtmlForComparison = (html: string): string => {
+  if (!html) return '';
+  let cleaned = html
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+
+  const emptyParagraphPattern = /^(<p>\s*(<br\s*\/?>)?\s*<\/p>|<br\s*\/?>|\s*)+$/gi;
+  if (emptyParagraphPattern.test(cleaned)) {
+    return '';
+  }
+
+  cleaned = cleaned
+    .replace(/\s+/g, ' ')
+    .replace(/>\s+</g, '><')
+    .trim();
+
+  return cleaned;
+};
+
+const isHtmlEquivalent = (h1: string, h2: string): boolean => {
+  return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
+};
+
+const startEditing = (field: 'name' | 'description') => {
+  if (!canEditCategoryFromStorefront.value) return;
+  
+  editingField.value = field;
+  
+  if (field === 'name') {
+    editNameValue.value = activeCategory.value?.name || '';
+    nextTick(() => {
+      nameInputRef.value?.focus();
+    });
+  } else if (field === 'description') {
+    editDescValue.value = activeCategory.value?.description || '';
+  }
+};
+
+const cancelEditing = () => {
+  editingField.value = null;
+  isFieldSaving.value = null;
+};
+
+const saveField = async (field: 'name' | 'description') => {
+  if (isFieldSaving.value === field) return; // Prevent duplicate submissions
+  
+  const targetCategory = activeCategory.value;
+  if (!targetCategory) return;
+  
+  const targetIdentifier = targetCategory.id;
+  if (!targetIdentifier) return;
+
+  let hasChanged = false;
+  const payload: any = {};
+
+  if (field === 'name') {
+    const newVal = editNameValue.value.trim();
+    const oldVal = (targetCategory.name || '').trim();
+    if (newVal && newVal !== oldVal) {
+      payload.name = newVal;
+      hasChanged = true;
+    }
+  } else if (field === 'description') {
+    const newVal = editDescValue.value;
+    const oldVal = targetCategory.description || '';
+    if (!isHtmlEquivalent(newVal, oldVal)) {
+      payload.description = newVal;
+      hasChanged = true;
+    }
+  }
+
+  if (!hasChanged) {
+    editingField.value = null;
+    return;
+  }
+
+  isFieldSaving.value = field;
+
+  try {
+    const updated = await categoryService.updateCategory(String(targetIdentifier), payload);
+    toastSuccess('Category updated successfully.');
+    
+    if (activeCategory.value) {
+      if (field === 'name') {
+        activeCategory.value.name = updated.name;
+      } else if (field === 'description') {
+        activeCategory.value.description = updated.description;
+      }
+    }
+    
+    // Update in allCategoriesList if present
+    const idx = allCategoriesList.value.findIndex(c => c.id === targetIdentifier);
+    if (idx !== -1) {
+      const catToUpdate = allCategoriesList.value[idx];
+      if (catToUpdate) {
+        if (field === 'name') {
+          catToUpdate.name = updated.name;
+        } else if (field === 'description') {
+          catToUpdate.description = updated.description;
+        }
+      }
+    }
+
+    editingField.value = null;
+  } catch (err: any) {
+    handleApiError(err, 'Failed to update category.');
+  } finally {
+    isFieldSaving.value = null;
+  }
+};
+
+const handleFocusOut = (event: FocusEvent, field: 'description') => {
+  const container = event.currentTarget as HTMLElement | null;
+  const relatedTarget = event.relatedTarget as HTMLElement | null;
+  
+  if (container && relatedTarget && container.contains(relatedTarget)) {
+    return;
+  }
+  
+  saveField(field);
+};
 
 const canRemoveFromMenu = computed(() => {
   if (!isOwnerOrStaff.value) return false;
@@ -369,9 +508,39 @@ const resetFilters = () => {
         <!-- Category Title & Info -->
         <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
           <div class="max-w-4xl space-y-4">
-            <h1 class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all">
-              {{ category?.name || 'Hardware Collection' }}
-            </h1>
+            <!-- Category Name Heading / Editor -->
+            <div class="relative group/edit">
+              <template v-if="editingField === 'name'">
+                <div class="flex items-center gap-2">
+                  <input 
+                    v-model="editNameValue"
+                    ref="nameInputRef"
+                    type="text"
+                    @blur="saveField('name')"
+                    @keydown.enter="saveField('name')"
+                    @keydown.esc="cancelEditing"
+                    :disabled="isFieldSaving === 'name'"
+                    class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                  <div v-if="isFieldSaving === 'name'" class="shrink-0">
+                    <Loader2 class="w-5 h-5 animate-spin text-primary" />
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <h1 class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all flex items-center gap-2.5">
+                  <span>{{ category?.name || 'Hardware Collection' }}</span>
+                  <button 
+                    v-if="canEditCategoryFromStorefront" 
+                    @click="startEditing('name')"
+                    class="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
+                    title="Edit Category Name"
+                  >
+                    <Edit2 class="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                </h1>
+              </template>
+            </div>
             <p class="text-muted-foreground text-sm md:text-base max-w-2xl leading-relaxed">
               {{ cleanShortDescription }}
             </p>
@@ -603,16 +772,50 @@ const resetFilters = () => {
 
       <!-- Bottom Rich Category Details Section -->
       <div 
-        v-if="category?.description && (category.description.includes('<') || category.description.length > 200)" 
+        v-if="canEditCategoryFromStorefront || (category?.description && (category.description.includes('<') || category.description.length > 200))" 
         class="mt-16 bg-card border border-border/80 rounded-[2rem] p-8 md:p-12 space-y-6 shadow-sm"
       >
-        <h2 class="text-2xl font-display font-black tracking-tight text-foreground border-b pb-4">
-          Detailed Guide to {{ category.name }}
-        </h2>
-        <div 
-          class="prose prose-slate dark:prose-invert max-w-none"
-          v-html="category.description"
-        />
+        <div class="flex items-center justify-between border-b pb-4">
+          <h2 class="text-2xl font-display font-black tracking-tight text-foreground">
+            Detailed Guide to {{ category?.name || 'this Category' }}
+          </h2>
+          
+          <div v-if="canEditCategoryFromStorefront" class="shrink-0">
+            <button 
+              v-if="editingField !== 'description'"
+              @click="startEditing('description')"
+              class="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+              title="Edit Description"
+            >
+              <Edit2 class="w-3.5 h-3.5" />
+              <span>Edit Description</span>
+            </button>
+            <div v-else-if="isFieldSaving === 'description'" class="flex items-center gap-1.5 text-xs text-amber-500 font-bold uppercase tracking-wider">
+              <Loader2 class="w-3.5 h-3.5 animate-spin" /> Saving...
+            </div>
+          </div>
+        </div>
+
+        <div v-if="editingField === 'description'">
+          <div @focusout="handleFocusOut($event, 'description')" class="w-full">
+            <UiRichTextEditor 
+              v-model="editDescValue"
+              min-height="min-h-[220px]"
+              :disabled="isFieldSaving === 'description'"
+              placeholder="Enter category detailed description..."
+            />
+          </div>
+        </div>
+        <div v-else>
+          <div 
+            v-if="category?.description"
+            class="prose prose-slate dark:prose-invert max-w-none"
+            v-html="category.description"
+          />
+          <p v-else class="text-sm text-muted-foreground italic">
+            No detailed description available. Click "Edit Description" to add one.
+          </p>
+        </div>
       </div>
     </div>
   </div>
