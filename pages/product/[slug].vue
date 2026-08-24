@@ -1,5 +1,6 @@
 <!-- File: /pages/product/[slug].vue -->
 <script setup lang="ts">
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { 
   ChevronRight, 
   ArrowLeft, 
@@ -21,15 +22,27 @@ import {
   RefreshCw,
   Layers,
   Clock,
-  Home
+  Home,
+  Edit2,
+  Loader2,
+  Save,
+  X,
+  ChevronDown,
+  Search
 } from 'lucide-vue-next';
 import { formatCurrency, cn } from '@/utils';
 import { useCartStore } from '@/stores/cart';
 import { useUIStore } from '@/stores/ui';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
-import { toastSuccess } from '@/composables/useToast';
-import type { Product } from '@/types';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { useAuthStore } from '@/stores/auth';
+import { useInfinitePagination } from '@/composables/useInfinitePagination';
+import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
+import type { Product, Category, UpdateProductPayload } from '@/types';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
+import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
+import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 
 const route = useRoute();
 const productService = useProductService();
@@ -306,6 +319,346 @@ const isItemInCart = computed(() => {
   if (!product.value) return false;
   return cartStore.items.some(item => String(item.productId) === String(product.value?.id));
 });
+
+// Storefront Product Editing state & permission-checks
+const authStore = useAuthStore();
+const { hasPermission, canEditInModule } = useAdminPermissions();
+
+const canEditProductFromStorefront = computed(() => {
+  if (!authStore.isLoggedIn || !authStore.user) return false;
+  
+  const userRole = authStore.user.role;
+  const isOwnerOrStaff = userRole === 'OWNER' || userRole === 'STAFF' || authStore.user.is_staff || authStore.user.is_superuser || authStore.user.is_superadmin;
+  if (!isOwnerOrStaff) return false;
+  
+  return hasPermission('product_api.change_product') || canEditInModule('/admin/products');
+});
+
+// Edit Product Form State
+const isEditModalOpen = ref(false);
+const isModalSubmitting = ref(false);
+const modalFormError = ref<string | null>(null);
+const modalFieldErrors = ref<{
+  name?: string;
+  categories?: string;
+  price?: string;
+}>({});
+
+const modalProductName = ref('');
+const modalCurrentSellingPrice = ref<number | ''>('');
+const modalSelectedCategoryIds = ref<number[]>([]);
+const modalShortDescription = ref('');
+const modalDescription = ref('');
+const modalSpecifications = ref('');
+
+const originalFormValues = ref<{
+  name: string;
+  categories: number[];
+  current_selling_price: string | number;
+  short_description: string;
+  description: string;
+  specifications: string;
+} | null>(null);
+
+// Modal Category Picker State
+const isModalCategoryDropdownOpen = ref(false);
+const modalCategoryDropdownRef = ref<HTMLElement | null>(null);
+const modalCategorySearchQuery = ref('');
+
+const modalCategoryPagination = useInfinitePagination<Category>({
+  fetcher: async (params) => {
+    return await categoryService.getCategoriesList({
+      page: params.page,
+      page_size: 10,
+      search: params.search
+    });
+  },
+  search: modalCategorySearchQuery,
+  pageSize: 10,
+  dedupeKey: (c) => String(c.id),
+  autoFetch: false
+});
+
+const toggleModalCategoryDropdown = () => {
+  isModalCategoryDropdownOpen.value = !isModalCategoryDropdownOpen.value;
+  if (isModalCategoryDropdownOpen.value && modalCategoryPagination.items.value.length === 0) {
+    modalCategoryPagination.refresh();
+  }
+};
+
+const closeModalCategoryDropdown = () => {
+  isModalCategoryDropdownOpen.value = false;
+};
+
+const toggleModalCategorySelection = (categoryId: number | string) => {
+  const numId = Number(categoryId);
+  const index = modalSelectedCategoryIds.value.indexOf(numId);
+  if (index > -1) {
+    modalSelectedCategoryIds.value.splice(index, 1);
+  } else {
+    modalSelectedCategoryIds.value.push(numId);
+  }
+  if (modalFieldErrors.value.categories && modalSelectedCategoryIds.value.length > 0) {
+    modalFieldErrors.value.categories = undefined;
+  }
+};
+
+const removeModalCategorySelection = (categoryId: number) => {
+  const index = modalSelectedCategoryIds.value.indexOf(categoryId);
+  if (index > -1) {
+    modalSelectedCategoryIds.value.splice(index, 1);
+  }
+};
+
+const isModalCategorySelected = (categoryId: number | string) => {
+  return modalSelectedCategoryIds.value.includes(Number(categoryId));
+};
+
+const clearModalCategorySelection = () => {
+  modalSelectedCategoryIds.value = [];
+};
+
+const getModalCategoryNameById = (id: number): string => {
+  const found = modalCategoryPagination.items.value.find(c => Number(c.id) === id);
+  return found ? found.name : `Category #${id}`;
+};
+
+const cleanHtmlForComparison = (html: string): string => {
+  if (!html) return '';
+  let cleaned = html
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+
+  const emptyParagraphPattern = /^(<p>\s*(<br\s*\/?>)?\s*<\/p>|<br\s*\/?>|\s*)+$/gi;
+  if (emptyParagraphPattern.test(cleaned)) {
+    return '';
+  }
+
+  cleaned = cleaned
+    .replace(/\s+/g, ' ')
+    .replace(/>\s+</g, '><')
+    .trim();
+
+  return cleaned;
+};
+
+const isHtmlEquivalent = (h1: string, h2: string): boolean => {
+  return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
+};
+
+const openEditModal = () => {
+  if (!canEditProductFromStorefront.value) {
+    toastError('You do not have permission to edit products.');
+    return;
+  }
+  
+  const entity = product.value;
+  if (!entity) return;
+
+  modalProductName.value = entity.name || '';
+  modalCurrentSellingPrice.value = entity.current_selling_price !== undefined && entity.current_selling_price !== null
+    ? Number(entity.current_selling_price)
+    : (entity.price !== undefined ? Number(entity.price) : '');
+
+  modalShortDescription.value = entity.short_description || '';
+  modalDescription.value = entity.description || '';
+
+  if (typeof entity.specifications === 'string') {
+    modalSpecifications.value = entity.specifications;
+  } else if (typeof entity.specifications === 'object' && entity.specifications !== null) {
+    const entries = Object.entries(entity.specifications);
+    if (entries.length > 0) {
+      const rows = entries
+        .map(([k, v]) => `<tr><td class="font-bold border border-border p-2">${k}</td><td class="border border-border p-2">${v}</td></tr>`)
+        .join('');
+      modalSpecifications.value = `<table class="w-full border-collapse border border-border"><thead><tr class="bg-muted/50"><th class="border border-border p-2 text-left font-bold">Attribute</th><th class="border border-border p-2 text-left font-bold">Specification</th></tr></thead><tbody>${rows}</tbody></table>`;
+    } else {
+      modalSpecifications.value = '';
+    }
+  } else {
+    modalSpecifications.value = '';
+  }
+
+  if (Array.isArray(entity.categories) && entity.categories.length > 0) {
+    modalSelectedCategoryIds.value = entity.categories
+      .map((c: any) => (typeof c === 'object' && c !== null && 'id' in c ? Number(c.id) : Number(c)))
+      .filter((id: number) => !isNaN(id));
+  } else if (entity.origin && typeof entity.origin === 'object' && entity.origin.id) {
+    modalSelectedCategoryIds.value = [Number(entity.origin.id)];
+  } else if (typeof (entity as any).category === 'number') {
+    modalSelectedCategoryIds.value = [Number((entity as any).category)];
+  } else {
+    modalSelectedCategoryIds.value = [];
+  }
+
+  modalFormError.value = null;
+  modalFieldErrors.value = {};
+  modalCategorySearchQuery.value = '';
+  isModalCategoryDropdownOpen.value = false;
+  if (modalCategoryPagination.items.value.length === 0) {
+    modalCategoryPagination.refresh();
+  }
+
+  originalFormValues.value = {
+    name: modalProductName.value,
+    categories: [...modalSelectedCategoryIds.value],
+    current_selling_price: modalCurrentSellingPrice.value,
+    short_description: modalShortDescription.value,
+    description: modalDescription.value,
+    specifications: modalSpecifications.value
+  };
+
+  isEditModalOpen.value = true;
+};
+
+const validateModalForm = (): boolean => {
+  modalFieldErrors.value = {};
+  modalFormError.value = null;
+  let isValid = true;
+
+  if (!modalProductName.value || !modalProductName.value.trim()) {
+    modalFieldErrors.value.name = 'Product name is required.';
+    isValid = false;
+  }
+
+  if (modalSelectedCategoryIds.value.length === 0) {
+    modalFieldErrors.value.categories = 'At least one category must be selected.';
+    isValid = false;
+  }
+
+  if (modalCurrentSellingPrice.value === '' || isNaN(Number(modalCurrentSellingPrice.value)) || Number(modalCurrentSellingPrice.value) < 0) {
+    modalFieldErrors.value.price = 'Please enter a valid non-negative selling price.';
+    isValid = false;
+  }
+
+  return isValid;
+};
+
+const handleModalProductSubmit = async () => {
+  if (!validateModalForm()) {
+    modalFormError.value = 'Please fix the validation errors before submitting.';
+    return;
+  }
+
+  if (!canEditProductFromStorefront.value) {
+    modalFormError.value = 'You do not have permission to edit products.';
+    return;
+  }
+
+  const targetProduct = product.value;
+  const targetIdentifier = targetProduct?.id ?? targetProduct?.slug ?? slug.value;
+  if (!targetIdentifier) {
+    modalFormError.value = 'Product identifier missing.';
+    return;
+  }
+
+  isModalSubmitting.value = true;
+  modalFormError.value = null;
+
+  const payload: Partial<UpdateProductPayload> = {};
+
+  if (originalFormValues.value) {
+    const orig = originalFormValues.value;
+
+    // 1. name
+    const currentName = modalProductName.value.trim();
+    if (currentName !== orig.name.trim()) {
+      payload.name = currentName;
+    }
+
+    // 2. categories
+    const currentCats = modalSelectedCategoryIds.value.map(id => Number(id)).sort((a, b) => a - b);
+    const originalCats = orig.categories.map(id => Number(id)).sort((a, b) => a - b);
+    const isCategoriesModified = currentCats.length !== originalCats.length || currentCats.some((val, idx) => val !== originalCats[idx]);
+    if (isCategoriesModified) {
+      payload.categories = modalSelectedCategoryIds.value.map(id => Number(id));
+    }
+
+    // 3. current_selling_price
+    const currentPrice = modalCurrentSellingPrice.value;
+    const originalPrice = orig.current_selling_price;
+    const isPriceModified = (!currentPrice && !originalPrice)
+      ? false
+      : Number(currentPrice) !== Number(originalPrice);
+    if (isPriceModified) {
+      payload.current_selling_price = currentPrice === '' ? 0 : Number(currentPrice);
+    }
+
+    // 4. short_description
+    if (!isHtmlEquivalent(modalShortDescription.value, orig.short_description)) {
+      payload.short_description = modalShortDescription.value;
+    }
+
+    // 5. description
+    if (!isHtmlEquivalent(modalDescription.value, orig.description)) {
+      payload.description = modalDescription.value;
+    }
+
+    // 6. specifications
+    if (!isHtmlEquivalent(modalSpecifications.value, orig.specifications)) {
+      payload.specifications = modalSpecifications.value;
+    }
+  } else {
+    // Fallback
+    payload.name = modalProductName.value.trim();
+    payload.categories = modalSelectedCategoryIds.value.map(id => Number(id));
+    payload.current_selling_price = Number(modalCurrentSellingPrice.value);
+    payload.short_description = modalShortDescription.value;
+    payload.description = modalDescription.value;
+    payload.specifications = modalSpecifications.value;
+  }
+
+  if (Object.keys(payload).length === 0) {
+    toastSuccess(`Product "${modalProductName.value.trim()}" updated successfully.`);
+    isEditModalOpen.value = false;
+    isModalSubmitting.value = false;
+    return;
+  }
+
+  try {
+    await productService.updateProduct(String(targetIdentifier), payload);
+    toastSuccess(`Product "${modalProductName.value.trim()}" updated successfully.`);
+    isEditModalOpen.value = false;
+    await refresh();
+  } catch (err: any) {
+    modalFormError.value = extractErrorMessage(err, 'Failed to update product. Please check your inputs and try again.');
+    handleApiError(err, 'Failed to update product.');
+  } finally {
+    isModalSubmitting.value = false;
+  }
+};
+
+const onDocumentClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement | null;
+  if (isModalCategoryDropdownOpen.value && modalCategoryDropdownRef.value && !modalCategoryDropdownRef.value.contains(target)) {
+    closeModalCategoryDropdown();
+  }
+};
+
+const onDocumentKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    if (isModalCategoryDropdownOpen.value) {
+      closeModalCategoryDropdown();
+    }
+  }
+};
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    document.addEventListener('click', onDocumentClick);
+    document.addEventListener('keydown', onDocumentKeydown);
+  }
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    document.removeEventListener('click', onDocumentClick);
+    document.removeEventListener('keydown', onDocumentKeydown);
+  }
+});
 </script>
 
 <template>
@@ -432,6 +785,25 @@ const isItemInCart = computed(() => {
 
         <!-- Info & Actions -->
         <div class="space-y-6 sm:space-y-8 lg:space-y-10">
+          <!-- Admin Edit Banner -->
+          <div v-if="canEditProductFromStorefront" class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2.5">
+              <ShieldCheck class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div>
+                <h4 class="text-xs font-bold text-slate-950 dark:text-slate-50">Admin Workspace</h4>
+                <p class="text-[10px] text-muted-foreground leading-snug">You have permission to modify this product catalog record.</p>
+              </div>
+            </div>
+            <button 
+              type="button"
+              @click="openEditModal"
+              class="h-9 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-amber-600/20 cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <Edit2 class="w-3.5 h-3.5" />
+              <span>Edit Product</span>
+            </button>
+          </div>
+
           <div class="space-y-3 sm:space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <span v-if="product.brand" class="text-xs sm:text-sm font-bold text-primary uppercase tracking-widest">
@@ -718,5 +1090,256 @@ const isItemInCart = computed(() => {
         </main>
       </div>
     </div>
+
+    <!-- Edit Product Modal -->
+    <UiAdminModal
+      :is-open="isEditModalOpen"
+      title="Edit Product"
+      subtitle="Update product specifications, category classifications, descriptions, and pricing."
+      max-width="max-w-3xl"
+      @close="isEditModalOpen = false"
+    >
+      <form @submit.prevent="handleModalProductSubmit" class="flex flex-col">
+        <!-- Scrollable Modal Body -->
+        <div class="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
+          <!-- Error Banner -->
+          <div v-if="modalFormError" class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2.5 text-xs font-medium text-destructive">
+            <AlertCircle class="w-4 h-4 shrink-0" />
+            <span>{{ modalFormError }}</span>
+          </div>
+
+          <!-- Product Name -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <span>Product Name <span class="text-destructive">*</span></span>
+              <span v-if="modalFieldErrors.name" class="text-destructive font-normal normal-case text-xs">{{ modalFieldErrors.name }}</span>
+            </label>
+            <input
+              v-model="modalProductName"
+              type="text"
+              placeholder="e.g. GeForce RTX 4090 Gaming OC 24G"
+              :class="cn(
+                'w-full h-11 px-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2',
+                modalFieldErrors.name ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
+              )"
+              :disabled="isModalSubmitting"
+            />
+          </div>
+
+          <!-- Categories Selector -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <span>Categories <span class="text-destructive">*</span></span>
+              <span v-if="modalFieldErrors.categories" class="text-destructive font-normal normal-case text-xs">{{ modalFieldErrors.categories }}</span>
+            </label>
+
+            <!-- Selected Category Pills / Chips -->
+            <div v-if="modalSelectedCategoryIds.length > 0" class="flex flex-wrap gap-1.5 mb-2">
+              <span 
+                v-for="catId in modalSelectedCategoryIds" 
+                :key="catId"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-medium"
+              >
+                <Layers class="w-3 h-3" />
+                <span>{{ getModalCategoryNameById(catId) }}</span>
+                <button
+                  type="button"
+                  @click="removeModalCategorySelection(catId)"
+                  class="text-primary/70 hover:text-primary hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer"
+                  title="Remove category"
+                  aria-label="Remove category"
+                >
+                  <X class="w-3 h-3" />
+                </button>
+              </span>
+            </div>
+
+            <!-- Modal Category Dropdown Trigger -->
+            <div ref="modalCategoryDropdownRef" class="relative">
+              <button
+                type="button"
+                @click.stop="toggleModalCategoryDropdown"
+                :class="cn(
+                  'w-full h-11 px-3.5 bg-background border rounded-xl text-left text-sm font-medium transition-all flex items-center justify-between gap-2 cursor-pointer focus:ring-2',
+                  modalFieldErrors.categories ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20',
+                  modalSelectedCategoryIds.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                )"
+                :disabled="isModalSubmitting"
+                aria-haspopup="listbox"
+                :aria-expanded="isModalCategoryDropdownOpen"
+              >
+                <div class="flex items-center gap-2 truncate">
+                  <Layers class="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span class="truncate">
+                    {{ modalSelectedCategoryIds.length === 0 ? 'Select one or more categories...' : `${modalSelectedCategoryIds.length} categories selected` }}
+                  </span>
+                </div>
+                <ChevronDown :class="cn('w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0', isModalCategoryDropdownOpen && 'rotate-180')" />
+              </button>
+
+              <!-- Category Dropdown Popover -->
+              <div 
+                v-if="isModalCategoryDropdownOpen"
+                @click.stop
+                class="absolute left-0 top-full z-50 mt-1.5 w-full bg-card border border-border rounded-xl shadow-xl p-2.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+              >
+                <!-- Category Search Input -->
+                <div class="relative mb-2">
+                  <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    v-model="modalCategorySearchQuery"
+                    type="text"
+                    placeholder="Search categories..."
+                    class="w-full h-8 pl-8 pr-2.5 text-xs bg-muted/50 border border-input rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring/20"
+                  />
+                </div>
+
+                <!-- Header & Clear Option -->
+                <div class="flex items-center justify-between px-1 py-1 mb-1 border-b border-border/60 text-[11px]">
+                  <span class="text-muted-foreground font-semibold">Available Categories</span>
+                  <button
+                    v-if="modalSelectedCategoryIds.length > 0"
+                    type="button"
+                    @click="clearModalCategorySelection"
+                    class="text-primary hover:underline font-bold cursor-pointer"
+                  >
+                    Clear selection ({{ modalSelectedCategoryIds.length }})
+                  </button>
+                </div>
+
+                <!-- Infinite Scroll List of Categories -->
+                <div class="max-h-52 overflow-y-auto space-y-0.5 p-0.5 scrollbar-thin">
+                  <button
+                    v-for="cat in modalCategoryPagination.items.value"
+                    :key="cat.id"
+                    type="button"
+                    @click="toggleModalCategorySelection(cat.id)"
+                    :class="[
+                      'w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer',
+                      isModalCategorySelected(cat.id) ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
+                    ]"
+                  >
+                    <div class="flex items-center gap-2 truncate">
+                      <span class="truncate">{{ cat.name }}</span>
+                      <span v-if="cat.slug" class="font-mono text-[10px] text-muted-foreground">/{{ cat.slug }}</span>
+                    </div>
+                    <div 
+                      class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
+                      :class="isModalCategorySelected(cat.id) ? 'bg-primary border-primary text-primary-foreground' : 'border-input bg-background'"
+                    >
+                      <Check v-if="isModalCategorySelected(cat.id)" class="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </button>
+
+                  <!-- Loading State -->
+                  <div v-if="modalCategoryPagination.isLoading.value && modalCategoryPagination.items.value.length === 0" class="py-4 text-center text-muted-foreground flex items-center justify-center gap-2 text-xs">
+                    <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+                    <span>Loading categories...</span>
+                  </div>
+
+                  <!-- Empty Category State -->
+                  <div v-if="!modalCategoryPagination.isLoading.value && modalCategoryPagination.items.value.length === 0" class="py-4 text-center text-muted-foreground text-xs">
+                    No matching categories found.
+                  </div>
+
+                  <!-- Infinite Scroll Sentinel -->
+                  <UiInfiniteScroll
+                    :has-more="modalCategoryPagination.hasMore.value"
+                    :is-loading="modalCategoryPagination.isFetchingNextPage.value"
+                    :error="modalCategoryPagination.error.value"
+                    @load-more="modalCategoryPagination.loadNextPage"
+                    @retry="modalCategoryPagination.loadNextPage"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Selling Price -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <span>Current Selling Price <span class="text-destructive">*</span></span>
+              <span v-if="modalFieldErrors.price" class="text-destructive font-normal normal-case text-xs">{{ modalFieldErrors.price }}</span>
+            </label>
+            <div class="relative">
+              <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm pointer-events-none">
+                $
+              </div>
+              <input
+                v-model.number="modalCurrentSellingPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                :class="cn(
+                  'w-full h-11 pl-8 pr-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2 font-mono',
+                  modalFieldErrors.price ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
+                )"
+                :disabled="isModalSubmitting"
+              />
+            </div>
+            <p class="text-[11px] text-muted-foreground">Standard retail unit price for transactions in USD.</p>
+          </div>
+
+          <!-- Rich-Text HTML Fields in Edit Mode -->
+          <!-- Short Description -->
+          <div class="space-y-1.5 pt-2 border-t border-border/60">
+            <UiRichTextEditor
+              v-model="modalShortDescription"
+              label="Short Description"
+              placeholder="Enter brief product highlights / summary..."
+              min-height="min-h-[100px]"
+              :disabled="isModalSubmitting"
+              helper-text="Concise summary displayed on product cards and catalog overviews."
+            />
+          </div>
+
+          <!-- Full Description -->
+          <div class="space-y-1.5 pt-2 border-t border-border/60">
+            <UiRichTextEditor
+              v-model="modalDescription"
+              label="Description"
+              placeholder="Enter comprehensive product description, features, and marketing content..."
+              min-height="min-h-[160px]"
+              :disabled="isModalSubmitting"
+              helper-text="Full product details with headings, bullet points, formatting, and paragraphs."
+            />
+          </div>
+
+          <!-- Technical Specifications -->
+          <div class="space-y-1.5 pt-2 border-t border-border/60">
+            <UiRichTextEditor
+              v-model="modalSpecifications"
+              label="Specifications"
+              placeholder="Enter technical specifications (insert table using toolbar)..."
+              min-height="min-h-[180px]"
+              :disabled="isModalSubmitting"
+              :allow-tables="true"
+              helper-text="HTML specification table containing structured technical hardware parameters."
+            />
+          </div>
+        </div>
+
+        <!-- Modal Footer Controls -->
+        <div class="px-6 py-4 border-t border-border flex items-center justify-end gap-3 bg-muted/20">
+          <button 
+            type="button"
+            @click="isEditModalOpen = false"
+            class="h-10 px-5 border border-input bg-background hover:bg-muted text-foreground rounded-xl text-xs font-semibold flex items-center transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            :disabled="isModalSubmitting"
+            class="h-10 px-6 bg-primary text-primary-foreground rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs hover:opacity-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Loader2 v-if="isModalSubmitting" class="w-4 h-4 animate-spin" />
+            <Save v-else class="w-4 h-4" />
+            <span>{{ isModalSubmitting ? 'Saving Changes...' : 'Save Changes' }}</span>
+          </button>
+        </div>
+      </form>
+    </UiAdminModal>
   </div>
 </template>
