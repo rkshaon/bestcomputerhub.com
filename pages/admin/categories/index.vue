@@ -192,7 +192,7 @@ const isSubmitPending = ref(false);
 const isDetailsLoading = ref(false);
 const selectedCategory = ref<Category | null>(null);
 
-// URL-driven modal state infrastructure for Category View
+// URL-driven modal state infrastructure for Category View and Edit
 const categoryModalState = useAdminModalState<Category>({
   getItems: async (id) => {
     isDetailsLoading.value = true;
@@ -225,13 +225,51 @@ watch(() => categoryModalState.isView.value, (isOpen) => {
   }
 }, { immediate: true });
 
+watch(() => categoryModalState.isEdit.value, (isOpen) => {
+  isEditModalOpen.value = isOpen;
+}, { immediate: true });
+
 watch(() => categoryModalState.activeEntity.value, (newEntity) => {
   if (newEntity) {
     selectedCategory.value = newEntity;
+
+    if (categoryModalState.isEdit.value) {
+      if (!canEditCategory.value) {
+        toastError('You do not have permission to edit categories.');
+        categoryModalState.closeModal({ replace: true });
+        return;
+      }
+      formPayload.value = {
+        id: newEntity.id,
+        name: newEntity.name,
+        slug: newEntity.slug,
+        description: newEntity.description || '',
+        parentCategoryId: newEntity.parentCategoryId || '',
+        icon: newEntity.icon || '📁',
+        image: newEntity.image || '',
+        order: newEntity.order ?? 0,
+        show_in_menu: newEntity.show_in_menu ?? true
+      };
+      originalCategoryDetails.value = {
+        name: newEntity.name || '',
+        slug: newEntity.slug || '',
+        description: newEntity.description || '',
+        parentCategoryId: newEntity.parentCategoryId || '',
+        icon: newEntity.icon || '📁',
+        image: newEntity.image || '',
+        order: newEntity.order ?? 0,
+        show_in_menu: newEntity.show_in_menu ?? true
+      };
+      formError.value = null;
+    }
   }
 }, { immediate: true });
 
 const closeViewModal = async () => {
+  await categoryModalState.closeModal();
+};
+
+const closeEditModal = async () => {
   await categoryModalState.closeModal();
 };
 
@@ -772,44 +810,7 @@ const triggerEditModal = async (cat: Category) => {
     show_in_menu: cat.show_in_menu ?? true
   };
   formError.value = null;
-  isEditModalOpen.value = true;
-  isDetailsLoading.value = true;
-
-  try {
-    const details = await categoryService.getCategoryDetails(cat.id);
-    if (categoryService.errorMsg.value) {
-      formError.value = categoryService.errorMsg.value;
-      toastError(categoryService.errorMsg.value);
-    } else if (details) {
-      formPayload.value = {
-        id: details.id,
-        name: details.name,
-        slug: details.slug,
-        description: details.description || '',
-        parentCategoryId: details.parentCategoryId || '',
-        icon: details.icon || '📁',
-        image: details.image || '',
-        order: details.order ?? 0,
-        show_in_menu: details.show_in_menu ?? true
-      };
-      originalCategoryDetails.value = {
-        name: details.name || '',
-        slug: details.slug || '',
-        description: details.description || '',
-        parentCategoryId: details.parentCategoryId || '',
-        icon: details.icon || '📁',
-        image: details.image || '',
-        order: details.order ?? 0,
-        show_in_menu: details.show_in_menu ?? true
-      };
-    }
-  } catch (err: any) {
-    const msg = extractErrorMessage(err, 'Failed to fetch category details.');
-    formError.value = msg;
-    toastError(msg);
-  } finally {
-    isDetailsLoading.value = false;
-  }
+  await categoryModalState.openEdit(cat.id);
 };
 
 const triggerViewModal = async (cat: Category) => {
@@ -941,7 +942,7 @@ const submitUpdateCategory = async () => {
 
   if (Object.keys(payload).length === 0) {
     // If nothing changed, do not send an unnecessary PATCH request; follow the existing form behavior for an unchanged submission.
-    isEditModalOpen.value = false;
+    await closeEditModal();
     toastSuccess(`Category [${formPayload.value.name}] updated successfully.`);
     await fetchAllCategoriesRawList();
     isSubmitPending.value = false;
@@ -951,7 +952,7 @@ const submitUpdateCategory = async () => {
   try {
     await categoryService.updateCategory(formPayload.value.id, payload);
 
-    isEditModalOpen.value = false;
+    await closeEditModal();
     toastSuccess(`Category [${formPayload.value.name}] updated successfully.`);
     await fetchAllCategoriesRawList();
   } catch (err: any) {
@@ -2131,7 +2132,7 @@ watch(viewMode, () => {
     </div>
 
     <!-- MODAL 2: Edit Custom Category Details -->
-    <div v-if="isEditModalOpen" @click.self="isEditModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
+    <div v-if="isEditModalOpen" @click.self="closeEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
       <form @submit.prevent="submitUpdateCategory" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
         
         <!-- Loading overlay inside modal -->
@@ -2147,7 +2148,7 @@ watch(viewMode, () => {
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-amber-500">Authorized Admin Override</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Modify Class Properties</h3>
           </div>
-          <button type="button" @click="isEditModalOpen = false" aria-label="Close modal" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button type="button" @click="closeEditModal" aria-label="Close modal" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -2239,7 +2240,7 @@ watch(viewMode, () => {
         <div class="p-8 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50">
           <button 
             type="button"
-            @click="isEditModalOpen = false" 
+            @click="closeEditModal" 
             class="px-5 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
             Cancel
