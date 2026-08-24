@@ -292,7 +292,7 @@ All Admin list pages displaying tabular data with numbered pagination (including
 
 - **Authoritative Reference Implementation**: Follow the reference implementation established on the Admin Products list page (`/pages/admin/products/index.vue`).
 - **Standardized Values & Default**:
-  - Allowed options: `5 / page`, `10 / page`, `25 / page`, `50 / page`, and `100 / page` (numeric values: `5`, `10`, `25`, `50`, `100`).
+  - Allowed options: `5 / page`, `10 / page`, `25 / page`, `50 / page`, `100 / page`, and `1000 / page` (numeric values: `5`, `10`, `25`, `50`, `100`, `1000`).
   - Standard default page size: `10`.
   - Do not invent custom or arbitrary page-size increments.
 - **Visual Presentation & Placement**:

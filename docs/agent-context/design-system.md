@@ -1229,12 +1229,13 @@ All Admin list pages displaying tabular data with numbered pagination (including
     <option :value="25">25 / page</option>
     <option :value="50">50 / page</option>
     <option :value="100">100 / page</option>
+    <option :value="1000">1000 / page</option>
   </select>
   ```
 
 ### Standard Option Values
 
-- **Allowed Options**: `5 / page`, `10 / page`, `25 / page`, `50 / page`, and `100 / page` (numeric values: `5`, `10`, `25`, `50`, `100`).
+- **Allowed Options**: `5 / page`, `10 / page`, `25 / page`, `50 / page`, `100 / page`, and `1000 / page` (numeric values: `5`, `10`, `25`, `50`, `100`, `1000`).
 - **Default Page Size**: `10`.
 - Do not invent custom or non-standard page-size options.
 

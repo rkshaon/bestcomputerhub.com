@@ -430,6 +430,7 @@ const staffAccountsCount = computed(() => {
             <option :value="25">25 / page</option>
             <option :value="50">50 / page</option>
             <option :value="100">100 / page</option>
+            <option :value="1000">1000 / page</option>
           </select>
         </div>
       </div>
