@@ -378,6 +378,42 @@ const getModalCategoryNameById = (id: number): string => {
   return found ? found.name : `Category #${id}`;
 };
 
+
+const originalFormValues = ref<{
+  name: string;
+  categories: number[];
+  current_selling_price: string | number;
+  short_description: string;
+  description: string;
+  specifications: string;
+} | null>(null);
+
+const cleanHtmlForComparison = (html: string): string => {
+  if (!html) return '';
+  let cleaned = html
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+
+  const emptyParagraphPattern = /^(<p>\s*(<br\s*\/?>)?\s*<\/p>|<br\s*\/?>|\s*)+$/gi;
+  if (emptyParagraphPattern.test(cleaned)) {
+    return '';
+  }
+
+  cleaned = cleaned
+    .replace(/\s+/g, ' ')
+    .replace(/>\s+</g, '><')
+    .trim();
+
+  return cleaned;
+};
+
+const isHtmlEquivalent = (h1: string, h2: string): boolean => {
+  return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
+};
+
 // Reset / initialize form when Create modal opens
 watch(() => modalState.isCreate.value, (isCreateOpen) => {
   if (isCreateOpen) {
@@ -391,6 +427,7 @@ watch(() => modalState.isCreate.value, (isCreateOpen) => {
     modalFieldErrors.value = {};
     modalCategorySearchQuery.value = '';
     isModalCategoryDropdownOpen.value = false;
+    originalFormValues.value = null;
     if (modalCategoryPagination.items.value.length === 0) {
       modalCategoryPagination.refresh();
     }
@@ -448,9 +485,22 @@ watch(
       if (modalCategoryPagination.items.value.length === 0) {
         modalCategoryPagination.refresh();
       }
+
+      // Capture original values of the form for PATCH comparison
+      originalFormValues.value = {
+        name: modalProductName.value,
+        categories: [...modalSelectedCategoryIds.value],
+        current_selling_price: modalCurrentSellingPrice.value,
+        short_description: modalShortDescription.value,
+        description: modalDescription.value,
+        specifications: modalSpecifications.value
+      };
+
       nextTick(() => {
         modalProductNameInputRef.value?.focus();
       });
+    } else if (!isEditOpen) {
+      originalFormValues.value = null;
     }
   },
   { immediate: true }
@@ -527,18 +577,71 @@ const handleModalProductSubmit = async () => {
     isModalSubmitting.value = true;
     modalFormError.value = null;
 
-    const payload: UpdateProductPayload = {
-      name: modalProductName.value.trim(),
-      categories: modalSelectedCategoryIds.value.map(id => Number(id)),
-      current_selling_price: Number(modalCurrentSellingPrice.value),
-      short_description: modalShortDescription.value,
-      description: modalDescription.value,
-      specifications: modalSpecifications.value
-    };
+    const payload: Partial<UpdateProductPayload> = {};
+
+    if (originalFormValues.value) {
+      const orig = originalFormValues.value;
+
+      // 1. name
+      const currentName = modalProductName.value.trim();
+      if (currentName !== orig.name.trim()) {
+        payload.name = currentName;
+      }
+
+      // 2. categories
+      const currentCats = modalSelectedCategoryIds.value.map(id => Number(id)).sort((a, b) => a - b);
+      const originalCats = orig.categories.map(id => Number(id)).sort((a, b) => a - b);
+      const isCategoriesModified = currentCats.length !== originalCats.length || currentCats.some((val, idx) => val !== originalCats[idx]);
+      if (isCategoriesModified) {
+        payload.categories = modalSelectedCategoryIds.value.map(id => Number(id));
+      }
+
+      // 3. current_selling_price
+      const currentPrice = modalCurrentSellingPrice.value;
+      const originalPrice = orig.current_selling_price;
+      const isPriceModified = (!currentPrice && !originalPrice)
+        ? false
+        : Number(currentPrice) !== Number(originalPrice);
+      if (isPriceModified) {
+        payload.current_selling_price = currentPrice === '' ? 0 : Number(currentPrice);
+      }
+
+      // 4. short_description
+      if (!isHtmlEquivalent(modalShortDescription.value, orig.short_description)) {
+        payload.short_description = modalShortDescription.value;
+      }
+
+      // 5. description
+      if (!isHtmlEquivalent(modalDescription.value, orig.description)) {
+        payload.description = modalDescription.value;
+      }
+
+      // 6. specifications
+      if (!isHtmlEquivalent(modalSpecifications.value, orig.specifications)) {
+        payload.specifications = modalSpecifications.value;
+      }
+    } else {
+      // Fallback
+      payload.name = modalProductName.value.trim();
+      payload.categories = modalSelectedCategoryIds.value.map(id => Number(id));
+      payload.current_selling_price = Number(modalCurrentSellingPrice.value);
+      payload.short_description = modalShortDescription.value;
+      payload.description = modalDescription.value;
+      payload.specifications = modalSpecifications.value;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      // If nothing was modified, do not send a PATCH request; follow the existing form behavior for an unchanged submission.
+      toastSuccess(`Product "${modalProductName.value.trim()}" updated successfully.`);
+      await modalState.closeModal();
+      await refreshActiveView();
+      isModalSubmitting.value = false;
+      return;
+    }
 
     try {
       await productService.updateProduct(targetIdentifier, payload);
-      toastSuccess(`Product "${payload.name}" updated successfully.`);
+      toastSuccess(`Product "${modalProductName.value.trim()}" updated successfully.`);
       await modalState.closeModal();
       await refreshActiveView();
     } catch (err: any) {
