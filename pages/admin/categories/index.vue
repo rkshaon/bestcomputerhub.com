@@ -34,6 +34,7 @@ import { useProductService } from '@/composables/useProductService';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
+import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 import { cn } from '@/utils';
 import { refDebounced } from '@vueuse/core';
 import type { Category, CategorySummaryResponse, CategoryFilters } from '@/types';
@@ -2040,13 +2041,14 @@ watch(viewMode, () => {
             </div>
 
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Operational Description / Memo</label>
-              <textarea 
-                v-model="formPayload.description" 
-                rows="4" 
-                placeholder="Enterprise utility scope and catalog organization guidelines..." 
-                class="w-full p-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-medium leading-relaxed"
-              ></textarea>
+              <UiRichTextEditor
+                v-model="formPayload.description"
+                label="Operational Description / Memo"
+                placeholder="Enterprise utility scope and catalog organization guidelines..."
+                min-height="min-h-[140px]"
+                :disabled="isSubmitPending"
+                helper-text="Full category details with headings, bullet points, formatting, and paragraphs."
+              />
             </div>
           </div>
         </div>
@@ -2165,12 +2167,14 @@ watch(viewMode, () => {
             </div>
 
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Operational Description / Memo</label>
-              <textarea 
-                v-model="formPayload.description" 
-                rows="4" 
-                class="w-full p-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-medium leading-relaxed"
-              ></textarea>
+              <UiRichTextEditor
+                v-model="formPayload.description"
+                label="Operational Description / Memo"
+                placeholder="Enterprise utility scope and catalog organization guidelines..."
+                min-height="min-h-[140px]"
+                :disabled="isSubmitPending"
+                helper-text="Full category details with headings, bullet points, formatting, and paragraphs."
+              />
             </div>
           </div>
         </div>
@@ -2233,9 +2237,12 @@ watch(viewMode, () => {
 
           <div class="space-y-4">
             <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Taxonomy Registry Overview</p>
-            <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium bg-slate-50/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-900 italic">
-              "{{ selectedCategory.description || 'No database memo recorded for this hardware classification node.' }}"
-            </p>
+            <div 
+              class="prose prose-sm prose-slate dark:prose-invert max-w-none text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium bg-slate-50/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-900 overflow-x-auto"
+            >
+              <div v-if="selectedCategory.description" v-html="selectedCategory.description" class="space-y-2"></div>
+              <p v-else class="italic font-medium text-xs text-slate-400">"No database memo recorded for this hardware classification node."</p>
+            </div>
 
             <div class="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-900">
               <div class="flex items-center justify-between">
