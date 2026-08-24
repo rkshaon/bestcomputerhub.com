@@ -33,6 +33,7 @@ import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { useAdminModalState } from '@/composables/useAdminModalState';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 import { cn } from '@/utils';
@@ -190,6 +191,49 @@ const isImportModalOpen = ref(false);
 const isSubmitPending = ref(false);
 const isDetailsLoading = ref(false);
 const selectedCategory = ref<Category | null>(null);
+
+// URL-driven modal state infrastructure for Category View
+const categoryModalState = useAdminModalState<Category>({
+  getItems: async (id) => {
+    isDetailsLoading.value = true;
+    try {
+      const details = await categoryService.getCategoryDetails(String(id));
+      if (categoryService.errorMsg.value) {
+        toastError(categoryService.errorMsg.value);
+        return null;
+      }
+      return details;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve category details.');
+      toastError(msg);
+      return null;
+    } finally {
+      isDetailsLoading.value = false;
+    }
+  },
+  onResolveError: (id) => {
+    toastError(`Category #${id} could not be resolved.`);
+    categoryModalState.closeModal({ replace: true });
+  }
+});
+
+// Synchronize our existing state flags with categoryModalState
+watch(() => categoryModalState.isView.value, (isOpen) => {
+  isViewModalOpen.value = isOpen;
+  if (!isOpen) {
+    selectedCategory.value = null;
+  }
+}, { immediate: true });
+
+watch(() => categoryModalState.activeEntity.value, (newEntity) => {
+  if (newEntity) {
+    selectedCategory.value = newEntity;
+  }
+}, { immediate: true });
+
+const closeViewModal = async () => {
+  await categoryModalState.closeModal();
+};
 
 // Form element focus refs for keyboard accessibility
 const categoryNameInput = ref<HTMLInputElement | null>(null);
@@ -774,22 +818,7 @@ const triggerViewModal = async (cat: Category) => {
     return;
   }
   selectedCategory.value = cat; // Populate fallback
-  isViewModalOpen.value = true;
-  isDetailsLoading.value = true;
-
-  try {
-    const details = await categoryService.getCategoryDetails(cat.id);
-    if (categoryService.errorMsg.value) {
-      toastError(categoryService.errorMsg.value);
-    } else if (details) {
-      selectedCategory.value = details;
-    }
-  } catch (err: any) {
-    const msg = extractErrorMessage(err, 'Failed to retrieve category details.');
-    toastError(msg);
-  } finally {
-    isDetailsLoading.value = false;
-  }
+  await categoryModalState.openView(cat.id);
 };
 
 // CREATE CATEGORY
@@ -2228,7 +2257,7 @@ watch(viewMode, () => {
     </div>
 
     <!-- MODAL 3: Detailed Category Properties Read-Only View -->
-    <div v-if="isViewModalOpen && selectedCategory" @click.self="isViewModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
+    <div v-if="isViewModalOpen && selectedCategory" @click.self="closeViewModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
       <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-lg shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
         
         <!-- Loading overlay inside modal -->
@@ -2244,7 +2273,7 @@ watch(viewMode, () => {
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Taxonomy Inspector Viewer</span>
             <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Classification Audit Node</h3>
           </div>
-          <button @click="isViewModalOpen = false" aria-label="Close modal" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
+          <button @click="closeViewModal" aria-label="Close modal" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -2295,7 +2324,7 @@ watch(viewMode, () => {
 
         <div class="p-8 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end bg-slate-50/50 dark:bg-slate-900/50">
           <button 
-            @click="isViewModalOpen = false" 
+            @click="closeViewModal" 
             class="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 px-6 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer"
           >
             Acknowledge & Close
