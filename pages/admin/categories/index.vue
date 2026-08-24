@@ -182,6 +182,7 @@ const isEditModalOpen = ref(false);
 const isViewModalOpen = ref(false);
 const isImportModalOpen = ref(false);
 const isSubmitPending = ref(false);
+const isDetailsLoading = ref(false);
 const selectedCategory = ref<Category | null>(null);
 
 // Form element focus refs for keyboard accessibility
@@ -676,7 +677,8 @@ const triggerCreateModal = () => {
   isCreateModalOpen.value = true;
 };
 
-const triggerEditModal = (cat: Category) => {
+const triggerEditModal = async (cat: Category) => {
+  // Populate existing list-row fallback in case API loading fails or takes time
   formPayload.value = {
     id: cat.id,
     name: cat.name,
@@ -689,11 +691,52 @@ const triggerEditModal = (cat: Category) => {
   };
   formError.value = null;
   isEditModalOpen.value = true;
+  isDetailsLoading.value = true;
+
+  try {
+    const details = await categoryService.getCategoryDetails(cat.id);
+    if (categoryService.errorMsg.value) {
+      formError.value = categoryService.errorMsg.value;
+      toastError(categoryService.errorMsg.value);
+    } else if (details) {
+      formPayload.value = {
+        id: details.id,
+        name: details.name,
+        slug: details.slug,
+        description: details.description || '',
+        parentCategoryId: details.parentCategoryId || '',
+        icon: details.icon || '📁',
+        image: details.image || '',
+        order: details.order ?? 0
+      };
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to fetch category details.');
+    formError.value = msg;
+    toastError(msg);
+  } finally {
+    isDetailsLoading.value = false;
+  }
 };
 
-const triggerViewModal = (cat: Category) => {
-  selectedCategory.value = cat;
+const triggerViewModal = async (cat: Category) => {
+  selectedCategory.value = cat; // Populate fallback
   isViewModalOpen.value = true;
+  isDetailsLoading.value = true;
+
+  try {
+    const details = await categoryService.getCategoryDetails(cat.id);
+    if (categoryService.errorMsg.value) {
+      toastError(categoryService.errorMsg.value);
+    } else if (details) {
+      selectedCategory.value = details;
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to retrieve category details.');
+    toastError(msg);
+  } finally {
+    isDetailsLoading.value = false;
+  }
 };
 
 // CREATE CATEGORY
@@ -1927,6 +1970,14 @@ watch(viewMode, () => {
     <div v-if="isEditModalOpen" @click.self="isEditModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
       <form @submit.prevent="submitUpdateCategory" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
         
+        <!-- Loading overlay inside modal -->
+        <div v-if="isDetailsLoading" class="absolute inset-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm z-40 flex items-center justify-center">
+          <div class="flex flex-col items-center justify-center gap-3">
+            <Loader2 class="w-8 h-8 animate-spin text-primary" />
+            <p class="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Loading classification specs...</p>
+          </div>
+        </div>
+
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
           <div>
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-amber-500">Authorized Admin Override</span>
@@ -2043,6 +2094,14 @@ watch(viewMode, () => {
     <div v-if="isViewModalOpen && selectedCategory" @click.self="isViewModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
       <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-lg shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
         
+        <!-- Loading overlay inside modal -->
+        <div v-if="isDetailsLoading" class="absolute inset-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm z-40 flex items-center justify-center">
+          <div class="flex flex-col items-center justify-center gap-3">
+            <Loader2 class="w-8 h-8 animate-spin text-primary" />
+            <p class="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Loading classification details...</p>
+          </div>
+        </div>
+
         <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
           <div>
             <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Taxonomy Inspector Viewer</span>
