@@ -48,6 +48,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
+  (e: 'blur'): void;
+  (e: 'focus'): void;
 }>();
 
 const editorRef = ref<HTMLDivElement | null>(null);
@@ -396,8 +398,8 @@ const clearFormatting = () => {
             '[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5'
           )"
           @input="handleInput"
-          @focus="isFocused = true"
-          @blur="isFocused = false"
+          @focus="isFocused = true; emit('focus')"
+          @blur="isFocused = false; emit('blur')"
         ></div>
 
         <!-- Raw HTML Source Editor Area -->
@@ -410,6 +412,8 @@ const clearFormatting = () => {
           )"
           placeholder="Enter raw HTML content (e.g. <table>, <p>, <ul>)..."
           @input="handleRawHtmlInput"
+          @focus="isFocused = true; emit('focus')"
+          @blur="isFocused = false; emit('blur')"
         ></textarea>
       </div>
     </div>
