@@ -65,6 +65,11 @@ const canToggleCategoryMenu = (cat: Category): boolean => {
   return isCurrentlyMenu ? canRemoveCategoryFromMenu.value : canMarkCategoryAsMenu.value;
 };
 
+const canViewCategory = computed(() => hasPermission(['store.view_category', 'view_category', 'categories.view_category', 'category_api.view_category']));
+const canCreateCategory = computed(() => hasPermission(['store.add_category', 'add_category', 'categories.add_category', 'category_api.add_category']));
+const canEditCategory = computed(() => hasPermission(['store.change_category', 'change_category', 'categories.change_category', 'category_api.change_category']));
+const canDeleteCategory = computed(() => hasPermission(['store.delete_category', 'delete_category', 'categories.delete_category', 'category_api.delete_category']));
+
 const route = useRoute();
 const router = useRouter();
 
@@ -676,6 +681,10 @@ const generateCustomSlug = () => {
 
 // Modal toggles
 const triggerCreateModal = () => {
+  if (!canCreateCategory.value) {
+    toastError('You do not have permission to create categories.');
+    return;
+  }
   formPayload.value = {
     id: '',
     name: '',
@@ -692,6 +701,10 @@ const triggerCreateModal = () => {
 };
 
 const triggerEditModal = async (cat: Category) => {
+  if (!canEditCategory.value) {
+    toastError('You do not have permission to edit categories.');
+    return;
+  }
   // Populate existing list-row fallback in case API loading fails or takes time
   formPayload.value = {
     id: cat.id,
@@ -756,6 +769,10 @@ const triggerEditModal = async (cat: Category) => {
 };
 
 const triggerViewModal = async (cat: Category) => {
+  if (!canViewCategory.value) {
+    toastError('You do not have permission to view categories.');
+    return;
+  }
   selectedCategory.value = cat; // Populate fallback
   isViewModalOpen.value = true;
   isDetailsLoading.value = true;
@@ -919,6 +936,10 @@ const submitUpdateCategory = async () => {
 
 // DELETE CATEGORY
 const deleteCategoryNode = async (cat: Category) => {
+  if (!canDeleteCategory.value) {
+    toastError('You do not have permission to delete categories.');
+    return;
+  }
   const confirmMsg = `Verify Decommissoning: Are you sure you want to delete Category [${cat.name}]? Unlinking from nested classes might occur automatically.`;
   if (confirm(confirmMsg)) {
     try {
@@ -1142,6 +1163,7 @@ watch(viewMode, () => {
         </UiButton>
 
         <UiButton 
+          v-if="canCreateCategory"
           class="rounded-xl h-9 px-4 gap-1.5 shadow-md shadow-primary/20 bg-primary text-primary-foreground font-bold text-xs"
           @click="triggerCreateModal"
         >
@@ -1676,6 +1698,7 @@ watch(viewMode, () => {
                 <Menu v-else class="w-4 h-4" />
               </button>
               <button 
+                v-if="canViewCategory"
                 @click="triggerViewModal(cat)" 
                 class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all cursor-pointer"
                 title="Inspect Node Properties"
@@ -1684,6 +1707,7 @@ watch(viewMode, () => {
                 <Info class="w-4 h-4" />
               </button>
               <button 
+                v-if="canEditCategory"
                 @click="triggerEditModal(cat)" 
                 class="p-2 text-muted-foreground hover:text-yellow-500 hover:bg-muted rounded-lg transition-all cursor-pointer"
                 title="Modify Class Configurations"
@@ -1692,6 +1716,7 @@ watch(viewMode, () => {
                 <Edit2 class="w-4 h-4" />
               </button>
               <button 
+                v-if="canDeleteCategory"
                 @click="deleteCategoryNode(cat)" 
                 class="p-2 text-muted-foreground hover:text-destructive hover:bg-muted rounded-lg transition-all cursor-pointer"
                 title="Deregister Node"
@@ -1899,6 +1924,7 @@ watch(viewMode, () => {
             <Menu v-else class="w-3.5 h-3.5" />
           </button>
           <button 
+            v-if="canViewCategory"
             @click="triggerViewModal(cat)" 
             class="p-1.5 text-muted-foreground hover:text-primary hover:bg-muted rounded-md transition-all cursor-pointer"
             title="Inspect Node Properties"
@@ -1907,6 +1933,7 @@ watch(viewMode, () => {
             <Info class="w-3.5 h-3.5" />
           </button>
           <button 
+            v-if="canEditCategory"
             @click="triggerEditModal(cat)" 
             class="p-1.5 text-muted-foreground hover:text-yellow-500 hover:bg-muted rounded-md transition-all cursor-pointer"
             title="Modify Class Configurations"
@@ -1915,6 +1942,7 @@ watch(viewMode, () => {
             <Edit2 class="w-3.5 h-3.5" />
           </button>
           <button 
+            v-if="canDeleteCategory"
             @click="deleteCategoryNode(cat)" 
             class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-muted rounded-md transition-all cursor-pointer"
             title="Deregister Node"

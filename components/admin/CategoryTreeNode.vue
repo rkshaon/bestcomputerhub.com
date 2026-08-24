@@ -124,6 +124,10 @@ const canMarkCategoryAsMenu = computed(() => hasPermission('category_api.mark_ca
 const canRemoveCategoryFromMenu = computed(() => hasPermission('category_api.remove_category_from_menu'));
 const canToggleMenu = computed(() => isCurrentlyMenu.value ? canRemoveCategoryFromMenu.value : canMarkCategoryAsMenu.value);
 
+const canViewCategory = computed(() => hasPermission(['store.view_category', 'view_category', 'categories.view_category', 'category_api.view_category']));
+const canEditCategory = computed(() => hasPermission(['store.change_category', 'change_category', 'categories.change_category', 'category_api.change_category']));
+const canDeleteCategory = computed(() => hasPermission(['store.delete_category', 'delete_category', 'categories.delete_category', 'category_api.delete_category']));
+
 // Drag & Drop handlers for Tree node
 const onNodeDragStart = (e: DragEvent) => {
   e.stopPropagation();
@@ -287,6 +291,7 @@ const onNodeDrop = (e: DragEvent) => {
 
         <!-- View / Inspect Button -->
         <button
+          v-if="canViewCategory"
           type="button"
           @click.stop="$emit('view', node)"
           class="p-1.5 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all cursor-pointer"
@@ -298,6 +303,7 @@ const onNodeDrop = (e: DragEvent) => {
 
         <!-- Edit Button -->
         <button
+          v-if="canEditCategory"
           type="button"
           @click.stop="$emit('edit', node)"
           class="p-1.5 text-muted-foreground hover:text-yellow-500 hover:bg-muted rounded-lg transition-all cursor-pointer"
@@ -309,6 +315,7 @@ const onNodeDrop = (e: DragEvent) => {
 
         <!-- Delete Button -->
         <button
+          v-if="canDeleteCategory"
           type="button"
           @click.stop="$emit('delete', node)"
           class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-muted rounded-lg transition-all cursor-pointer"
