@@ -9,6 +9,7 @@ import {
   Edit2, 
   Trash2, 
   Eye, 
+  ExternalLink,
   Layers, 
   Star, 
   RefreshCw, 
@@ -733,6 +734,11 @@ const getStockStatus = (stock?: number) => {
   return { label: 'In Stock', class: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' };
 };
 
+const getStorefrontProductUrl = (product: Product): string => {
+  const slug = product.slug || String(product.id);
+  return `/product/${slug}/`;
+};
+
 const executeDeleteProduct = async () => {
   if (!modalState.activeEntity.value) return;
   const targetProduct = modalState.activeEntity.value;
@@ -1113,6 +1119,16 @@ onUnmounted(() => {
                 ID: #{{ product.id }}
               </span>
               <div class="flex items-center gap-1">
+                <NuxtLink
+                  :to="getStorefrontProductUrl(product)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
+                  title="View on Storefront"
+                  aria-label="View on Storefront"
+                >
+                  <ExternalLink class="w-4 h-4" />
+                </NuxtLink>
                 <button
                   v-if="canViewProduct"
                   type="button"
@@ -1305,6 +1321,16 @@ onUnmounted(() => {
       <!-- Actions Column -->
       <template #cell-actions="{ item: product }">
         <div class="flex items-center justify-end gap-1">
+          <NuxtLink
+            :to="getStorefrontProductUrl(product)"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
+            title="View on Storefront"
+            aria-label="View on Storefront"
+          >
+            <ExternalLink class="w-4 h-4" />
+          </NuxtLink>
           <button
             v-if="canViewProduct"
             type="button"
@@ -1627,6 +1653,17 @@ onUnmounted(() => {
             </h3>
           </div>
           <div class="flex items-center gap-2">
+            <NuxtLink 
+              v-if="!modalState.isResolving.value && selectedProduct"
+              :to="getStorefrontProductUrl(selectedProduct)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="h-9 px-3.5 border border-input bg-background hover:bg-muted text-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="View on Storefront"
+            >
+              <ExternalLink class="w-3.5 h-3.5" />
+              <span>Storefront</span>
+            </NuxtLink>
             <button 
               v-if="!modalState.isResolving.value && selectedProduct && canEditProduct"
               type="button"
