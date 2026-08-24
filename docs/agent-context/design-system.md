@@ -1251,5 +1251,55 @@ All Admin list pages displaying tabular data with numbered pagination (including
 - **URL Synchronization**: Persist the selection in the URL query (`?pageSize=25`) when non-default, and remove it when switching views or reverting to the default (10).
 
 
+---
+
+## 44. Storefront Inline Editing Pattern
+
+The storefront must remain a customer-facing, high-performance experience. Even for authorized administrative users, the system must avoid disruptive administrative elements such as large banner warnings, prominent "Admin Workspace" panels, or intrusive action buttons. Instead, when administrative users need to manage catalog or content resources, they must do so contextually using **Storefront Inline Editing**.
+
+### Core Philosophy
+
+Storefront Inline Editing aligns administrative controls directly with the content being viewed, keeping the layout completely clean for normal customers, and providing a subtle, context-aware editing interface for authorized personnel.
+
+```text
+Normal content view
+     │
+     └── subtle edit/pencil icon (visible only to authorized users)
+              ↓
+        Inline edit mode (replaces read-only element with field input or rich-text editor)
+              ↓
+        User modifies value in-place
+              ↓
+        Save on focus loss (blur) / Auto-save
+              ↓
+        Return to normal display (with reactive UI updates)
+```
+
+### Authorization Requirements
+
+Inline editing features must be triple-gated using the centralized permission and auth registry (`useAdminPermissions`):
+
+1. **Authentication**: User must be logged in.
+2. **User Type**: User must be of type `Owner` or `Staff`.
+3. **Specific Permission**: User must possess the exact action/edit permission (e.g., `product_api.change_product` for product editing, `category_api.change_category` for categories).
+
+Any visitor who does not satisfy all three gates must see the exact customer-facing read-only view, with zero trace or indication of editing elements.
+
+### UI & Presentation Standards
+
+- **Subtle Triggers**: Place a small, compact edit icon (e.g., `<Edit2 class="w-3.5 h-3.5" />` or similar) beside the heading or content block.
+- **Contextual Isolation**: When clicked, only the relevant field or text element enters edit mode. Surrounding content must remain in its standard read-only presentation.
+- **Preserved Layout and Typographic Math**: The editor inputs or rich text areas must adapt to the page's existing layout and grid to prevent layout shift or container overflow.
+- **Aesthetic Cleanliness**: Avoid highlight backgrounds, neon outlines, or decorative badges indicating that a field is editable. Let the small icon be the sole interactive indicator.
+
+### Save Behavior
+
+- **Save-on-Blur**: Commit the change to the backend automatically when the input or editor container loses focus (focus loss/blur event).
+- **Change Detection**: Prior to dispatching any PATCH API request, perform a strict comparison (using HTML equivalency checks for rich text fields). If the content has not changed, return to the read-only view without making an API request.
+- **Independent Field PATCH**: Only send the specifically modified field in the request payload. Do not submit the entire entity object.
+- **No Page Refreshes**: Update the reactive state of the affected field locally to reflect the backend's response immediately, maintaining high perceived performance.
+
+
+
 
 

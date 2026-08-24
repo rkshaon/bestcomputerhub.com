@@ -361,6 +361,14 @@ All Admin list pages displaying tabular data with numbered pagination (including
   - **`<UiPagination />` Integration**: Pass `:items-per-page="itemsPerPage"` into `<UiPagination />` to maintain accurate `Showing X–Y of Z` summary rendering and compute `totalPages = Math.ceil(totalCount / itemsPerPage)`.
 - **Scope**: Products (reference), Categories, Brands, Users, Roles, and all future admin list pages.
 
+### 12. Storefront Inline Editing Standard
+All storefront-level edit capabilities provided to administrative users (Owners or Staff) must follow the **Storefront Inline Editing** pattern rather than redirecting to full admin views or using large decorative edit modules/banners.
+- **Authority**: Must be triple-gated using the centralized permission and auth registry (`useAdminPermissions`). Unprivileged visitors or guests must see a clean, standard read-only storefront.
+- **UI Presentation**: Add a small, context-aware edit icon beside editable elements (such as product name, short description, full description, technical specifications). When clicked, only that specific target field shifts into edit mode.
+- **Save on Focus Loss (Blur)**: Modifications must save automatically upon input field blur or when focusing out of a rich-text editor wrapper container.
+- **Minimal Request Payload**: Send only the modified field in an HTTP PATCH request to prevent content clobbering. Perform pre-flight HTML clean comparisons to avoid redundant API saves.
+- **Full Guidance**: See `/docs/agent-context/design-system.md` Section 44 and the custom skill `/skills/storefront-inline-editing/SKILL.md` for complete design conventions and code implementations.
+
 ## Structural Changes
 
 Agents may autonomously perform small, task-local,
