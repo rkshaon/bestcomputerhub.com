@@ -64,6 +64,15 @@ export interface CreateKeywordRulePayload {
   match_type: KeywordMatchType;
 }
 
+export interface UpdateKeywordRulePayload {
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  is_enabled?: boolean;
+  description?: string;
+  keyword?: string;
+  match_type?: KeywordMatchType;
+}
+
 export interface KeywordRulesQueryParams {
   search?: string;
   category?: KeywordCategory;

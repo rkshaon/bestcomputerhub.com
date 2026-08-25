@@ -54,7 +54,15 @@ import { refDebounced } from '@vueuse/core';
 import { useContentSecurityService } from '@/composables/useContentSecurityService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
-import type { KeywordRule, KeywordRuleDetail, KeywordCategory, KeywordMatchType, KeywordSeverity, CreateKeywordRulePayload } from '@/types';
+import type { 
+  KeywordRule, 
+  KeywordRuleDetail, 
+  KeywordCategory, 
+  KeywordMatchType, 
+  KeywordSeverity, 
+  CreateKeywordRulePayload,
+  UpdateKeywordRulePayload 
+} from '@/types';
 
 definePageMeta({
   layout: 'admin'
@@ -118,6 +126,7 @@ const rulesSubTab = ref<'keywords' | 'domains' | 'html' | 'attributes' | 'redire
 const { hasPermission } = useAdminPermissions();
 const canViewKeywords = computed(() => hasPermission('content_security.view_keywordrule'));
 const canAddKeywordRule = computed(() => hasPermission('content_security.add_keywordrule'));
+const canEditKeywordRule = computed(() => hasPermission('content_security.change_keywordrule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -805,10 +814,37 @@ const runFullScan = () => {
 };
 
 // ==========================================
-// Modal State: Keyword Rule Details (View)
+// Modal State: Keyword Rule Details (View & Edit)
 // ==========================================
 const isKeywordDetailsLoading = ref(false);
 const selectedKeywordRule = ref<KeywordRuleDetail | null>(null);
+const editingKeywordRuleId = ref<number | null>(null);
+const isSubmittingKeywordEdit = ref(false);
+
+const keywordEditForm = ref<{
+  keyword: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  match_type: KeywordMatchType;
+  is_enabled: boolean;
+  description: string;
+}>({
+  keyword: '',
+  category: 'SPAM',
+  severity: 'HIGH',
+  match_type: 'WORD',
+  is_enabled: true,
+  description: ''
+});
+
+const originalKeywordRuleData = ref<{
+  keyword: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  match_type: KeywordMatchType;
+  is_enabled: boolean;
+  description: string;
+} | null>(null);
 
 const keywordModalState = useAdminModalState<KeywordRuleDetail>({
   getItems: async (id) => {
@@ -833,12 +869,44 @@ const keywordModalState = useAdminModalState<KeywordRuleDetail>({
 watch(() => keywordModalState.activeEntity.value, (newEntity) => {
   if (newEntity) {
     selectedKeywordRule.value = newEntity;
+
+    if (keywordModalState.isEdit.value) {
+      if (!canEditKeywordRule.value) {
+        toastError('You do not have permission to edit keyword rules.');
+        keywordModalState.closeModal({ replace: true });
+        return;
+      }
+      editingKeywordRuleId.value = newEntity.id;
+      keywordEditForm.value = {
+        keyword: newEntity.keyword || '',
+        category: newEntity.category || 'SPAM',
+        severity: newEntity.severity || 'HIGH',
+        match_type: newEntity.match_type || 'WORD',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+      originalKeywordRuleData.value = {
+        keyword: newEntity.keyword || '',
+        category: newEntity.category || 'SPAM',
+        severity: newEntity.severity || 'HIGH',
+        match_type: newEntity.match_type || 'WORD',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+    }
   }
 }, { immediate: true });
 
 watch(() => keywordModalState.isView.value, (isView) => {
-  if (!isView) {
+  if (!isView && !keywordModalState.isEdit.value) {
     selectedKeywordRule.value = null;
+  }
+}, { immediate: true });
+
+watch(() => keywordModalState.isEdit.value, (isEdit) => {
+  if (!isEdit) {
+    editingKeywordRuleId.value = null;
+    originalKeywordRuleData.value = null;
   }
 }, { immediate: true });
 
@@ -852,6 +920,93 @@ const openKeywordViewModal = (id: number | string) => {
 
 const closeKeywordViewModal = () => {
   keywordModalState.closeModal();
+};
+
+const openEditKeywordRuleModal = async (id: number | string) => {
+  if (!canEditKeywordRule.value) {
+    toastError('You do not have permission to edit keyword rules.');
+    return;
+  }
+  await keywordModalState.openEdit(id);
+};
+
+const closeKeywordEditModal = async () => {
+  await keywordModalState.closeModal();
+};
+
+const submitUpdateKeywordRule = async () => {
+  if (!canEditKeywordRule.value) {
+    toastError('You do not have permission to edit keyword rules.');
+    return;
+  }
+
+  if (!editingKeywordRuleId.value) {
+    toastError('Keyword rule identifier missing.');
+    return;
+  }
+
+  const trimmedKeyword = keywordEditForm.value.keyword.trim();
+  if (!trimmedKeyword) {
+    toastError('Keyword is required.');
+    return;
+  }
+
+  const payload: UpdateKeywordRulePayload = {};
+  const orig = originalKeywordRuleData.value;
+  const current = keywordEditForm.value;
+
+  if (orig) {
+    if (trimmedKeyword !== orig.keyword.trim()) {
+      payload.keyword = trimmedKeyword;
+    }
+    if (current.category !== orig.category) {
+      payload.category = current.category;
+    }
+    if (current.severity !== orig.severity) {
+      payload.severity = current.severity;
+    }
+    if (current.match_type !== orig.match_type) {
+      payload.match_type = current.match_type;
+    }
+    if (Boolean(current.is_enabled) !== Boolean(orig.is_enabled)) {
+      payload.is_enabled = current.is_enabled;
+    }
+    const currentDesc = current.description.trim();
+    const origDesc = (orig.description || '').trim();
+    if (currentDesc !== origDesc) {
+      payload.description = currentDesc;
+    }
+  } else {
+    payload.keyword = trimmedKeyword;
+    payload.category = current.category;
+    payload.severity = current.severity;
+    payload.match_type = current.match_type;
+    payload.is_enabled = current.is_enabled;
+    payload.description = current.description.trim();
+  }
+
+  if (Object.keys(payload).length === 0) {
+    toastInfo('No changes detected.');
+    await closeKeywordEditModal();
+    return;
+  }
+
+  isSubmittingKeywordEdit.value = true;
+  try {
+    const updated = await contentSecurityService.updateKeywordRule(editingKeywordRuleId.value, payload);
+    toastSuccess('Keyword rule updated successfully.');
+    await closeKeywordEditModal();
+    await fetchKeywordRules();
+
+    if (selectedKeywordRule.value && String(selectedKeywordRule.value.id) === String(updated.id)) {
+      selectedKeywordRule.value = updated;
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to update keyword rule.');
+    toastError(msg);
+  } finally {
+    isSubmittingKeywordEdit.value = false;
+  }
 };
 
 const formatUserInfo = (userVal: any): string => {
@@ -1935,11 +2090,11 @@ const getSeverityBadge = (severity: string) => {
                     <Eye class="w-4 h-4" />
                   </button>
                   <button 
-                    v-if="hasPermission('content_security.change_keywordrule')"
-                    @click.stop="openEditRuleModal(item as any)"
+                    v-if="canEditKeywordRule"
+                    @click.stop="openEditKeywordRuleModal(item.id)"
                     class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                    title="Edit rule"
-                    aria-label="Edit rule"
+                    title="Edit keyword rule"
+                    aria-label="Edit keyword rule"
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
@@ -2599,6 +2754,133 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: EDIT KEYWORD RULE -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="keywordModalState.isEdit.value"
+      :title="isKeywordDetailsLoading ? 'Loading Keyword Rule...' : (editingKeywordRuleId ? `Edit Keyword Rule #${editingKeywordRuleId}` : 'Edit Keyword Rule')"
+      subtitle="Update pattern heuristics and classification parameters for this keyword rule."
+      max-width="max-w-lg"
+      @close="closeKeywordEditModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isKeywordDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving keyword rule details for editing...</p>
+      </div>
+
+      <!-- Form -->
+      <form v-else @submit.prevent="submitUpdateKeywordRule" class="p-6 space-y-4">
+        <!-- Keyword -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Keyword <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="keywordEditForm.keyword"
+            type="text" 
+            placeholder="e.g. free crypto giveaway, telegram @, etc."
+            required
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+          />
+        </div>
+
+        <!-- Category & Match Type Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Category <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="keywordEditForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="SPAM">Spam</option>
+              <option value="SCAM">Scam</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="MALWARE">Malware</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="GAMBLING">Gambling</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="INJECTION">Injection</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="REDIRECT">Redirect</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Match Type <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="keywordEditForm.match_type"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="WORD">Word</option>
+              <option value="SUBSTRING">Substring</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Severity -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Severity <span class="text-rose-500">*</span></label>
+          <select 
+            v-model="keywordEditForm.severity"
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+          >
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+            <option value="INFO">Info</option>
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Description</label>
+          <textarea 
+            v-model="keywordEditForm.description"
+            rows="2"
+            placeholder="Explain why this keyword is blocked..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div>
+            <p class="text-xs font-bold text-foreground">Rule Enabled</p>
+            <p class="text-[10px] text-muted-foreground">Active rules are evaluated during content security scans</p>
+          </div>
+          <input 
+            v-model="keywordEditForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingKeywordEdit"
+            @click="closeKeywordEditModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingKeywordEdit"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isSubmittingKeywordEdit" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingKeywordEdit ? 'Saving Changes...' : 'Save Changes' }}</span>
+          </button>
+        </div>
+      </form>
     </UiAdminModal>
   </div>
 </template>

@@ -6,6 +6,7 @@ import type {
   KeywordRule, 
   KeywordRuleDetail,
   CreateKeywordRulePayload,
+  UpdateKeywordRulePayload,
   KeywordRulesQueryParams, 
   PaginatedKeywordRules 
 } from '@/types';
@@ -287,11 +288,64 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const updateKeywordRule = async (
+    id: string | number,
+    payload: UpdateKeywordRulePayload
+  ): Promise<KeywordRuleDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      isLoading.value = false;
+      const fallbackList = getFallbackKeywordRules();
+      const idx = fallbackList.findIndex((r) => String(r.id) === String(id));
+      if (idx === -1) {
+        throw new Error('Keyword rule not found.');
+      }
+      const existing = fallbackList[idx]!;
+      const updated: KeywordRule = {
+        ...existing,
+        keyword: payload.keyword !== undefined ? payload.keyword : existing.keyword,
+        category: payload.category !== undefined ? payload.category : existing.category,
+        severity: payload.severity !== undefined ? payload.severity : existing.severity,
+        match_type: payload.match_type !== undefined ? payload.match_type : existing.match_type,
+        is_enabled: payload.is_enabled !== undefined ? payload.is_enabled : existing.is_enabled
+      };
+      fallbackList[idx] = updated;
+      return {
+        ...updated,
+        description: payload.description !== undefined ? payload.description : 'Updated keyword rule.',
+        updated_at: new Date().toISOString(),
+        created_by: 'Security Admin',
+        updated_by: 'Security Admin'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<KeywordRuleDetail>(
+        `/api/v1/content-security/keyword-rules/${id}/`,
+        {
+          method: 'PATCH',
+          body: payload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to update keyword rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
     getKeywordRules,
     createKeywordRule,
-    getKeywordRuleDetails
+    getKeywordRuleDetails,
+    updateKeywordRule
   };
 };
