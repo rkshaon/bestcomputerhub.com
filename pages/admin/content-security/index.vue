@@ -1,6 +1,7 @@
 <!-- File: /pages/admin/content-security/index.vue -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from '#app';
 import { 
   Shield, 
   ShieldAlert, 
@@ -41,6 +42,9 @@ import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiBadge from '@/components/ui/UiBadge.vue';
 import UiButton from '@/components/ui/Button.vue';
 import { refDebounced } from '@vueuse/core';
+import { useContentSecurityService } from '@/composables/useContentSecurityService';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import type { KeywordRule, KeywordCategory, KeywordMatchType, KeywordSeverity } from '@/types';
 
 definePageMeta({
   layout: 'admin'
@@ -100,6 +104,185 @@ export interface DetectionRule {
 // ==========================================
 const mainTab = ref<'overview' | 'results' | 'rules'>('overview');
 const rulesSubTab = ref<'keywords' | 'domains' | 'html' | 'attributes' | 'redirects'>('keywords');
+
+const { hasPermission } = useAdminPermissions();
+const canViewKeywords = computed(() => hasPermission('content_security.view_keywordrule'));
+
+const contentSecurityService = useContentSecurityService();
+const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
+const keywordsError = computed(() => contentSecurityService.error.value);
+
+// Keyword Rules Query/Data States
+const keywordSearchQuery = ref('');
+const debouncedKeywordSearch = refDebounced(keywordSearchQuery, 300);
+const keywordCategory = ref<string>('all');
+const keywordSeverity = ref<string>('all');
+const keywordMatchType = ref<string>('all');
+const keywordIsActive = ref<string>('all');
+const keywordIsEnabled = ref<string>('all');
+const keywordOrdering = ref<string>('-created_at');
+const keywordPage = ref(1);
+const keywordPageSize = ref(10);
+const keywordRulesData = ref<KeywordRule[]>([]);
+const keywordRulesCount = ref(0);
+const keywordRulesPages = ref(1);
+
+const keywordRuleColumns: UiTableColumn<KeywordRule>[] = [
+  { key: 'keyword', label: 'Keyword', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-sm font-bold text-foreground' },
+  { key: 'category', label: 'Category', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'match_type', label: 'Match Type', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs' },
+  { key: 'severity', label: 'Severity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'is_enabled', label: 'Enabled', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'is_active', label: 'Active', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' },
+  { key: 'actions', label: 'Actions', align: 'right' as const, width: '100px', headerClass: 'px-4 py-3 text-right whitespace-nowrap', cellClass: 'px-4 py-3 text-right whitespace-nowrap' }
+];
+
+const resetKeywordFilters = () => {
+  keywordSearchQuery.value = '';
+  keywordCategory.value = 'all';
+  keywordSeverity.value = 'all';
+  keywordMatchType.value = 'all';
+  keywordIsActive.value = 'all';
+  keywordIsEnabled.value = 'all';
+  keywordPage.value = 1;
+};
+
+const fetchKeywordRules = async () => {
+  if (!canViewKeywords.value) return;
+  
+  const params: any = {
+    page: keywordPage.value,
+    page_size: keywordPageSize.value,
+    ordering: keywordOrdering.value
+  };
+
+  if (debouncedKeywordSearch.value.trim()) {
+    params.search = debouncedKeywordSearch.value.trim();
+  }
+  if (keywordCategory.value !== 'all') {
+    params.category = keywordCategory.value;
+  }
+  if (keywordSeverity.value !== 'all') {
+    params.severity = keywordSeverity.value;
+  }
+  if (keywordMatchType.value !== 'all') {
+    params.match_type = keywordMatchType.value;
+  }
+  if (keywordIsActive.value !== 'all') {
+    params.is_active = keywordIsActive.value === 'true';
+  }
+  if (keywordIsEnabled.value !== 'all') {
+    params.is_enabled = keywordIsEnabled.value === 'true';
+  }
+
+  const response = await contentSecurityService.getKeywordRules(params);
+  keywordRulesData.value = response.results;
+  keywordRulesCount.value = response.count;
+  keywordRulesPages.value = response.pages;
+};
+
+// URL Routing/Query Management
+const route = useRoute();
+const router = useRouter();
+
+const syncFromRoute = () => {
+  if (route.query.mainTab) mainTab.value = route.query.mainTab as any;
+  if (route.query.subTab) rulesSubTab.value = route.query.subTab as any;
+  if (route.query.search) keywordSearchQuery.value = String(route.query.search);
+  if (route.query.category) keywordCategory.value = String(route.query.category);
+  if (route.query.severity) keywordSeverity.value = String(route.query.severity);
+  if (route.query.match_type) keywordMatchType.value = String(route.query.match_type);
+  if (route.query.is_active) keywordIsActive.value = String(route.query.is_active);
+  if (route.query.is_enabled) keywordIsEnabled.value = String(route.query.is_enabled);
+  if (route.query.ordering) keywordOrdering.value = String(route.query.ordering);
+  if (route.query.page) keywordPage.value = parseInt(String(route.query.page)) || 1;
+  if (route.query.page_size) keywordPageSize.value = parseInt(String(route.query.page_size)) || 10;
+};
+
+const updateRouteQuery = () => {
+  const query: Record<string, any> = { ...route.query };
+
+  query.mainTab = mainTab.value !== 'overview' ? mainTab.value : undefined;
+  query.subTab = mainTab.value === 'rules' && rulesSubTab.value !== 'keywords' ? rulesSubTab.value : undefined;
+
+  if (mainTab.value === 'rules' && rulesSubTab.value === 'keywords') {
+    query.search = keywordSearchQuery.value || undefined;
+    query.category = keywordCategory.value !== 'all' ? keywordCategory.value : undefined;
+    query.severity = keywordSeverity.value !== 'all' ? keywordSeverity.value : undefined;
+    query.match_type = keywordMatchType.value !== 'all' ? keywordMatchType.value : undefined;
+    query.is_active = keywordIsActive.value !== 'all' ? keywordIsActive.value : undefined;
+    query.is_enabled = keywordIsEnabled.value !== 'all' ? keywordIsEnabled.value : undefined;
+    query.ordering = keywordOrdering.value !== '-created_at' ? keywordOrdering.value : undefined;
+    query.page = keywordPage.value !== 1 ? String(keywordPage.value) : undefined;
+    query.page_size = keywordPageSize.value !== 10 ? String(keywordPageSize.value) : undefined;
+  } else {
+    delete query.search;
+    delete query.category;
+    delete query.severity;
+    delete query.match_type;
+    delete query.is_active;
+    delete query.is_enabled;
+    delete query.ordering;
+    delete query.page;
+    delete query.page_size;
+  }
+
+  router.replace({ query });
+};
+
+// Initial Sync
+onMounted(() => {
+  syncFromRoute();
+  fetchKeywordRules();
+});
+
+// Reactively watch filters & trigger fetch
+watch(
+  [
+    debouncedKeywordSearch,
+    keywordCategory,
+    keywordSeverity,
+    keywordMatchType,
+    keywordIsActive,
+    keywordIsEnabled,
+    keywordOrdering,
+    keywordPageSize
+  ],
+  () => {
+    keywordPage.value = 1;
+    updateRouteQuery();
+    fetchKeywordRules();
+  }
+);
+
+watch(keywordPage, () => {
+  updateRouteQuery();
+  fetchKeywordRules();
+});
+
+watch([mainTab, rulesSubTab], () => {
+  updateRouteQuery();
+  if (mainTab.value === 'rules' && rulesSubTab.value === 'keywords') {
+    fetchKeywordRules();
+  }
+});
+
+// Formatting helpers
+const formatDate = (dateStr?: string | null): string => {
+  if (!dateStr) return 'N/A';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(d);
+  } catch {
+    return String(dateStr);
+  }
+};
 
 // Scan State
 const isScanning = ref(false);
@@ -400,6 +583,20 @@ const rules = ref<DetectionRule[]>([
   { id: 'R-RD-02', type: 'redirect', pattern: 'window.location', category: 'DOM Redirection', severity: 'Critical', description: 'Detects JavaScript navigation hijacking attempts', enabled: true, matchCount: 1, updatedAt: '2026-08-18' },
   { id: 'R-RD-03', type: 'redirect', pattern: 'bit.ly/|tinyurl.com/', category: 'URL Shorteners', severity: 'Medium', description: 'Flags obfuscated shortener URLs that hide actual destinations', enabled: true, matchCount: 18, updatedAt: '2026-08-14' }
 ]);
+
+const visibleSubTabs = computed(() => {
+  const tabs = [];
+  if (canViewKeywords.value) {
+    tabs.push({ id: 'keywords', label: 'Keywords', count: keywordRulesCount.value });
+  }
+  tabs.push(
+    { id: 'domains', label: 'Domains', count: rules.value.filter(r => r.type === 'domain').length },
+    { id: 'html', label: 'Dangerous HTML', count: rules.value.filter(r => r.type === 'html').length },
+    { id: 'attributes', label: 'Dangerous Attributes', count: rules.value.filter(r => r.type === 'attribute').length },
+    { id: 'redirects', label: 'Redirect Rules', count: rules.value.filter(r => r.type === 'redirect').length }
+  );
+  return tabs;
+});
 
 // ==========================================
 // Filter State for Scan Results
@@ -720,12 +917,15 @@ const getStatusBadge = (status: SecurityStatus) => {
   }
 };
 
-const getSeverityBadge = (severity: SecuritySeverity) => {
-  switch (severity) {
-    case 'Critical': return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30';
-    case 'High': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
-    case 'Medium': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
-    case 'Low': return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
+const getSeverityBadge = (severity: string) => {
+  const val = severity?.toUpperCase();
+  switch (val) {
+    case 'CRITICAL': return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30';
+    case 'HIGH': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
+    case 'MEDIUM': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
+    case 'LOW': return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
+    case 'INFO': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
+    default: return 'bg-slate-500/10 text-slate-600 border-slate-500/30';
   }
 };
 </script>
@@ -1314,13 +1514,7 @@ const getSeverityBadge = (severity: SecuritySeverity) => {
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-3">
         <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
           <button 
-            v-for="sub in [
-              { id: 'keywords', label: 'Keywords', count: rules.filter(r => r.type === 'keyword').length },
-              { id: 'domains', label: 'Domains', count: rules.filter(r => r.type === 'domain').length },
-              { id: 'html', label: 'Dangerous HTML', count: rules.filter(r => r.type === 'html').length },
-              { id: 'attributes', label: 'Dangerous Attributes', count: rules.filter(r => r.type === 'attribute').length },
-              { id: 'redirects', label: 'Redirect Rules', count: rules.filter(r => r.type === 'redirect').length }
-            ]"
+            v-for="sub in visibleSubTabs"
             :key="sub.id"
             @click="rulesSubTab = sub.id as any"
             :class="cn(
@@ -1343,6 +1537,7 @@ const getSeverityBadge = (severity: SecuritySeverity) => {
         </div>
 
         <UiButton 
+          v-if="rulesSubTab !== 'keywords' || hasPermission('content_security.add_keywordrule')"
           @click="openAddRuleModal(
             rulesSubTab === 'keywords' ? 'keyword' :
             rulesSubTab === 'domains' ? 'domain' :
@@ -1362,8 +1557,263 @@ const getSeverityBadge = (severity: SecuritySeverity) => {
         </UiButton>
       </div>
 
-      <!-- Rules Table -->
-      <div class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+      <!-- Keywords Subtab Specific Filters & Table -->
+      <div v-if="rulesSubTab === 'keywords'" class="space-y-4">
+        <!-- Keyword Rules Filters Toolbar -->
+        <div class="bg-card border border-border rounded-2xl p-3.5 shadow-xs space-y-3">
+          <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+            <!-- Search Box -->
+            <div class="relative flex-1">
+              <Search class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input 
+                v-model="keywordSearchQuery"
+                type="text" 
+                placeholder="Search keywords..." 
+                class="w-full h-9 pl-9 pr-4 bg-background border border-input rounded-lg text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+              />
+              <button 
+                v-if="keywordSearchQuery" 
+                @click="keywordSearchQuery = ''"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X class="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <!-- Filters Dropdowns Row -->
+            <div class="flex items-center gap-2 flex-wrap lg:flex-nowrap">
+              <!-- Category Filter -->
+              <select 
+                v-model="keywordCategory"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Categories</option>
+                <option value="ADULT">Adult</option>
+                <option value="DRUG">Drug</option>
+                <option value="GAMBLING">Gambling</option>
+                <option value="HIDDEN_CONTENT">Hidden Content</option>
+                <option value="INJECTION">Injection</option>
+                <option value="MALWARE">Malware</option>
+                <option value="OBFUSCATION">Obfuscation</option>
+                <option value="PHISHING">Phishing</option>
+                <option value="REDIRECT">Redirect</option>
+                <option value="SCAM">Scam</option>
+                <option value="SPAM">Spam</option>
+              </select>
+
+              <!-- Severity Filter -->
+              <select 
+                v-model="keywordSeverity"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Severities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+                <option value="INFO">Info</option>
+              </select>
+
+              <!-- Match Type Filter -->
+              <select 
+                v-model="keywordMatchType"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Match Types</option>
+                <option value="SUBSTRING">Substring</option>
+                <option value="WORD">Word</option>
+              </select>
+
+              <!-- Is Active Filter -->
+              <select 
+                v-model="keywordIsActive"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Active Status</option>
+                <option value="true">Active Only</option>
+                <option value="false">Inactive Only</option>
+              </select>
+
+              <!-- Is Enabled Filter -->
+              <select 
+                v-model="keywordIsEnabled"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Enabled Status</option>
+                <option value="true">Enabled Only</option>
+                <option value="false">Disabled Only</option>
+              </select>
+
+              <!-- Ordering Filter -->
+              <select 
+                v-model="keywordOrdering"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="-created_at">Newest First</option>
+                <option value="created_at">Oldest First</option>
+                <option value="keyword">Keyword (A-Z)</option>
+                <option value="-keyword">Keyword (Z-A)</option>
+              </select>
+
+              <!-- Page Size Selector -->
+              <div class="flex items-center gap-1.5 border-l border-border pl-2.5 shrink-0">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+                <select 
+                  v-model="keywordPageSize"
+                  class="h-9 px-2 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+                >
+                  <option :value="5">5 / page</option>
+                  <option :value="10">10 / page</option>
+                  <option :value="25">25 / page</option>
+                  <option :value="50">50 / page</option>
+                  <option :value="100">100 / page</option>
+                </select>
+              </div>
+
+              <!-- Reset Button -->
+              <button 
+                v-if="keywordSearchQuery || keywordCategory !== 'all' || keywordSeverity !== 'all' || keywordMatchType !== 'all' || keywordIsActive !== 'all' || keywordIsEnabled !== 'all'"
+                @click="resetKeywordFilters"
+                class="h-9 px-3 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors shrink-0"
+                title="Reset keyword filters"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Keyword Rules Table Wrapper -->
+        <div v-if="!canViewKeywords" class="p-8 text-center text-rose-500 bg-rose-500/5 border border-rose-500/20 rounded-2xl space-y-2">
+          <ShieldAlert class="w-8 h-8 mx-auto text-rose-500" />
+          <p class="text-sm font-semibold">Access Denied</p>
+          <p class="text-xs text-muted-foreground">You do not have permission to view content security keyword rules.</p>
+        </div>
+        <div v-else class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+          <!-- Loading state -->
+          <div v-if="isKeywordsLoading" class="p-12 text-center space-y-3">
+            <RefreshCw class="w-8 h-8 animate-spin mx-auto text-primary" />
+            <p class="text-xs text-muted-foreground">Loading keyword rules from security registry...</p>
+          </div>
+          <!-- Error state -->
+          <div v-else-if="keywordsError" class="p-12 text-center space-y-3 text-rose-500">
+            <ShieldAlert class="w-8 h-8 mx-auto" />
+            <p class="text-sm font-semibold">Failed to Retrieve Keyword Rules</p>
+            <p class="text-xs text-muted-foreground">{{ keywordsError }}</p>
+            <UiButton size="sm" @click="fetchKeywordRules" class="mt-2">Retry</UiButton>
+          </div>
+          <!-- Table state -->
+          <div v-else>
+            <UiTable 
+              :columns="keywordRuleColumns" 
+              :data="keywordRulesData"
+              empty-text="No keyword rules found"
+              empty-description="No items match your active rules query."
+            >
+              <!-- Keyword Cell -->
+              <template #cell-keyword="{ item }">
+                <span class="font-mono text-sm font-bold text-foreground bg-muted px-2.5 py-1 rounded-lg border border-border">
+                  {{ item.keyword }}
+                </span>
+              </template>
+
+              <!-- Category Cell -->
+              <template #cell-category="{ item }">
+                <span class="text-xs font-semibold text-muted-foreground">
+                  {{ item.category }}
+                </span>
+              </template>
+
+              <!-- Match Type Cell -->
+              <template #cell-match_type="{ item }">
+                <span class="px-2 py-0.5 rounded bg-muted text-[11px] font-mono text-muted-foreground border border-border/50">
+                  {{ item.match_type }}
+                </span>
+              </template>
+
+              <!-- Severity Cell -->
+              <template #cell-severity="{ item }">
+                <span :class="cn('px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border', getSeverityBadge(item.severity))">
+                  {{ item.severity }}
+                </span>
+              </template>
+
+              <!-- Enabled Cell -->
+              <template #cell-is_enabled="{ item }">
+                <span 
+                  :class="cn(
+                    'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5 w-fit',
+                    item.is_enabled 
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                      : 'bg-muted text-muted-foreground border-border'
+                  )"
+                >
+                  <span :class="cn('w-1.5 h-1.5 rounded-full', item.is_enabled ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                  <span>{{ item.is_enabled ? 'Enabled' : 'Disabled' }}</span>
+                </span>
+              </template>
+
+              <!-- Active Cell -->
+              <template #cell-is_active="{ item }">
+                <span 
+                  :class="cn(
+                    'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5 w-fit',
+                    item.is_active 
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                      : 'bg-muted text-muted-foreground border-border'
+                  )"
+                >
+                  <span :class="cn('w-1.5 h-1.5 rounded-full', item.is_active ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                  <span>{{ item.is_active ? 'Active' : 'Inactive' }}</span>
+                </span>
+              </template>
+
+              <!-- Created At Cell -->
+              <template #cell-created_at="{ item }">
+                <span class="text-xs text-muted-foreground font-mono">
+                  {{ formatDate(item.created_at) }}
+                </span>
+              </template>
+
+              <!-- Actions Cell -->
+              <template #cell-actions="{ item }">
+                <div class="flex items-center justify-end gap-2">
+                  <button 
+                    v-if="hasPermission('content_security.change_keywordrule')"
+                    @click.stop="openEditRuleModal(item as any)"
+                    class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    title="Edit rule"
+                  >
+                    <Edit3 class="w-4 h-4" />
+                  </button>
+                  <button 
+                    v-if="hasPermission('content_security.delete_keywordrule')"
+                    @click.stop="deleteRule(item as any)"
+                    class="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
+                    title="Delete rule"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+              </template>
+            </UiTable>
+
+            <!-- Pagination Controls -->
+            <UiPagination 
+              v-if="keywordRulesCount > 0"
+              :current-page="keywordPage"
+              :total-pages="keywordRulesPages"
+              :total-count="keywordRulesCount"
+              :items-per-page="keywordPageSize"
+              item-label="keyword rules"
+              @update:current-page="keywordPage = $event"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Non-Keywords Rules (Domains, HTML, Attributes, Redirects) original fallback -->
+      <div v-else class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
         <div class="divide-y divide-border">
           <div 
             v-for="rule in filteredRules" 
