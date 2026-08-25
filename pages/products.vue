@@ -355,7 +355,7 @@ const activeFiltersCount = computed(() => {
                     filters.category === cat.slug ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 border-transparent hover:bg-muted'
                   )"
                 >
-                  {{ cat.name }}
+                  {{ decodeHtmlEntities(cat.name) }}
                 </button>
               </div>
             </div>
@@ -388,7 +388,7 @@ const activeFiltersCount = computed(() => {
                     filters.brand === brand ? 'bg-primary border-primary text-white font-bold' : 'bg-muted/30 border-transparent hover:bg-muted text-foreground'
                   )"
                 >
-                   {{ brand }}
+                   {{ decodeHtmlEntities(brand) }}
                 </button>
               </div>
             </div>

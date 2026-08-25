@@ -77,7 +77,7 @@ const handleCheckout = () => {
           </div>
           <div class="flex-grow space-y-1">
             <div class="flex justify-between items-start gap-2">
-              <h4 class="font-bold text-sm line-clamp-1 truncate flex-1 min-w-0">{{ item.product.name }}</h4>
+              <h4 class="font-bold text-sm line-clamp-1 truncate flex-1 min-w-0">{{ decodeHtmlEntities(item.product.name) }}</h4>
               <button 
                 @click="cartStore.removeFromCart(item.productId)"
                 class="text-muted-foreground hover:text-destructive transition-colors"
@@ -87,7 +87,7 @@ const handleCheckout = () => {
                 <Trash2 class="w-4 h-4" />
               </button>
             </div>
-            <p class="text-xs text-muted-foreground">{{ item.product.brand }}</p>
+            <p class="text-xs text-muted-foreground">{{ decodeHtmlEntities(item.product.brand) }}</p>
             <div class="flex items-center justify-between mt-3">
               <div class="flex items-center gap-3 bg-muted rounded-lg p-1">
                 <button 

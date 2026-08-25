@@ -858,7 +858,7 @@ if (process.client) {
                   @click="closeSearch"
                   class="p-2.5 rounded-xl bg-muted/40 hover:bg-accent border border-border/30 hover:border-primary/30 transition-all text-xs font-bold text-foreground hover:text-primary flex items-center justify-between group"
                 >
-                  <span class="truncate">{{ cat.name }}</span>
+                  <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
                   <ChevronRight class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary shrink-0 transition-transform group-hover:translate-x-0.5" />
                 </NuxtLink>
               </div>
@@ -895,16 +895,16 @@ if (process.client) {
                 class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-accent border border-transparent hover:border-border/60 transition-all group"
               >
                 <div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border/50">
-                  <img :src="product.images[0]" :alt="product.name" class="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform" />
+                  <img :src="product.images[0]" :alt="decodeHtmlEntities(product.name)" class="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform" />
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                    {{ product.name }}
+                    {{ decodeHtmlEntities(product.name) }}
                   </p>
                   <div class="flex items-center gap-2 mt-0.5">
                     <span class="text-xs font-extrabold text-primary">${{ product.price }}</span>
                     <span v-if="product.brand" class="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                      {{ product.brand }}
+                      {{ decodeHtmlEntities(product.brand) }}
                     </span>
                   </div>
                 </div>
@@ -965,7 +965,7 @@ if (process.client) {
                 activeMegaMenuId === String(cat.id) ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
               )"
             >
-              {{ cat.name }}
+              {{ decodeHtmlEntities(cat.name) }}
             </NuxtLink>
             
             <!-- Mega Menu Dropdown -->
@@ -1032,7 +1032,7 @@ if (process.client) {
                   )"
                   @click="isMoreOpen = false; activeMegaMenuId = null"
                 >
-                  <span class="truncate">{{ cat.name }}</span>
+                  <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
                   <ChevronRight v-if="hasChildren(cat)" class="w-3.5 h-3.5 text-muted-foreground group-hover/moreitem:text-primary shrink-0 ml-2" />
                 </NuxtLink>
 
@@ -1065,12 +1065,12 @@ if (process.client) {
 
         <div 
           v-for="(cat, idx) in categories" 
-          :key="cat.id"
+          :key="cat.id" 
           :ref="el => setMeasureItemRef(el, idx)"
           class="font-semibold py-1.5 px-0.5 whitespace-nowrap"
           :class="isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]')"
         >
-          {{ cat.name }}
+          {{ decodeHtmlEntities(cat.name) }}
         </div>
 
         <div ref="measureMoreRef" class="font-semibold py-1.5 px-1.5 flex items-center gap-1 whitespace-nowrap" :class="isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]')">
@@ -1149,7 +1149,7 @@ if (process.client) {
                   class="font-bold text-xs uppercase tracking-wider block hover:text-primary transition-colors py-1"
                   @click="uiStore.closeMobileMenu()"
                 >
-                  {{ cat.name }}
+                  {{ decodeHtmlEntities(cat.name) }}
                 </NuxtLink>
 
                 <button 
@@ -1184,7 +1184,7 @@ if (process.client) {
                       class="text-[11px] font-semibold tracking-wide text-muted-foreground hover:text-primary block py-1 px-1.5 rounded hover:bg-muted/50 transition-colors"
                       @click="uiStore.closeMobileMenu()"
                     >
-                      {{ subCat.name }}
+                      {{ decodeHtmlEntities(subCat.name) }}
                     </NuxtLink>
                   </li>
                 </ul>

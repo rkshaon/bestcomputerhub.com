@@ -71,7 +71,7 @@ const addToCart = (product: any) => {
           <NuxtLink :to="`/product/${product.slug}/`" class="relative aspect-[4/5] overflow-hidden bg-muted p-12 block">
             <img 
               :src="product.images[0]" 
-              :alt="product.name"
+              :alt="decodeHtmlEntities(product.name)"
               class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
             />
             
@@ -85,12 +85,12 @@ const addToCart = (product: any) => {
           <div class="p-8 flex-grow flex flex-col gap-6">
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-primary">{{ product.brand }}</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-primary">{{ decodeHtmlEntities(product.brand) }}</span>
                 <span v-if="product.stock < 10" class="text-[9px] font-bold text-red-500 uppercase tracking-widest">Low Stock</span>
               </div>
               <NuxtLink :to="`/product/${product.slug}/`" class="block">
                 <h3 class="font-display font-bold text-2xl leading-[1.1] group-hover:text-primary transition-colors line-clamp-2">
-                  {{ product.name }}
+                  {{ decodeHtmlEntities(product.name) }}
                 </h3>
               </NuxtLink>
             </div>

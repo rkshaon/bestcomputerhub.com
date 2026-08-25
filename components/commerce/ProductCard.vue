@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { Star, ShoppingCart, Package } from 'lucide-vue-next';
 import type { Product } from '@/types';
-import { formatCurrency } from '@/utils';
+import { formatCurrency, decodeHtmlEntities } from '@/utils';
 import { useCartStore } from '@/stores/cart';
 
 const props = defineProps<{
@@ -19,13 +19,13 @@ const cartStore = useCartStore();
       <img 
         v-if="product.images && product.images.length > 0 && product.images[0]"
         :src="product.images[0]" 
-        :alt="product.name"
+        :alt="decodeHtmlEntities(product.name)"
         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         loading="lazy"
       />
       <div v-else class="w-full h-full flex flex-col items-center justify-center p-6 text-muted-foreground/50">
         <Package class="w-10 h-10 stroke-1 mb-2 text-muted-foreground/40" />
-        <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 text-center line-clamp-1">{{ product.brand || 'Tech Hardware' }}</span>
+        <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 text-center line-clamp-1">{{ decodeHtmlEntities(product.brand) || 'Tech Hardware' }}</span>
       </div>
       
       <!-- Badges -->
@@ -38,7 +38,7 @@ const cartStore = useCartStore();
     <!-- Content -->
     <div class="p-3.5 sm:p-5">
       <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-        <span class="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate max-w-[100px] sm:max-w-none">{{ product.brand }}</span>
+        <span class="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate max-w-[100px] sm:max-w-none">{{ decodeHtmlEntities(product.brand) }}</span>
         <div class="flex items-center gap-1 text-yellow-500 shrink-0">
           <Star class="w-3 h-3 fill-current" />
           <span class="text-[10px] sm:text-xs font-bold text-foreground">{{ product.rating }}</span>
@@ -47,7 +47,7 @@ const cartStore = useCartStore();
 
       <NuxtLink :to="`/product/${product.slug}/`" class="block group/link">
         <h3 class="font-bold text-xs sm:text-sm line-clamp-2 min-h-[32px] sm:min-h-[40px] group-hover/link:text-primary transition-colors mb-2 sm:mb-3 leading-snug">
-          {{ product.name }}
+          {{ decodeHtmlEntities(product.name) }}
         </h3>
       </NuxtLink>
 

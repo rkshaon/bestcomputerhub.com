@@ -28,7 +28,7 @@ import {
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useBrandService } from '@/composables/useBrandService';
-import { cn } from '@/utils';
+import { cn, decodeHtmlEntities } from '@/utils';
 import type { Brand } from '@/types';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import { toastSuccess, toastError, toastInfo, extractErrorMessage } from '@/composables/useToast';
@@ -819,7 +819,7 @@ const getTableRowAttrs = (brand: Brand) => ({
             <!-- Name and Slug -->
             <div>
               <h3 class="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
-                {{ brand.name }}
+                {{ decodeHtmlEntities(brand.name) }}
               </h3>
               <div class="mt-1 flex items-center gap-2">
                 <span class="font-mono text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border/60 uppercase tracking-wider font-semibold">
@@ -919,10 +919,10 @@ const getTableRowAttrs = (brand: Brand) => ({
         <div class="flex items-center gap-3">
           <GripVertical class="w-3.5 h-3.5 text-muted-foreground/40 cursor-grab active:cursor-grabbing hover:text-muted-foreground transition-colors shrink-0" />
           <div class="w-8 h-8 bg-card border border-border rounded-lg flex items-center justify-center p-1 shadow-2xs overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-200">
-            <img :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" :alt="brand.name" class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" />
+            <img :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" :alt="decodeHtmlEntities(brand.name)" class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" />
           </div>
           <div class="min-w-0">
-            <h4 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors leading-tight truncate">{{ brand.name }}</h4>
+            <h4 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors leading-tight truncate">{{ decodeHtmlEntities(brand.name) }}</h4>
             <p class="text-[10px] text-muted-foreground line-clamp-1 max-w-[280px] mt-0.5 leading-relaxed">{{ brand.description || 'No description recorded.' }}</p>
           </div>
         </div>

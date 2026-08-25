@@ -163,7 +163,7 @@ const getCategoryIcon = (slug: string, name: string): Component => {
 
         <!-- Category Name -->
         <h3 class="text-xs sm:text-[13px] font-semibold text-foreground/90 group-hover:text-primary transition-colors line-clamp-2 leading-tight px-1">
-          {{ cat.name }}
+          {{ decodeHtmlEntities(cat.name) }}
         </h3>
       </NuxtLink>
     </div>

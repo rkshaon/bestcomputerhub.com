@@ -36,7 +36,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
-import { cn } from '@/utils';
+import { cn, decodeHtmlEntities } from '@/utils';
 import { refDebounced } from '@vueuse/core';
 import type { Category, CategorySummaryResponse, CategoryFilters } from '@/types';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -1404,7 +1404,7 @@ watch(viewMode, () => {
                   parentFilter === String(parentCat.id) ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                 ]"
               >
-                <span class="truncate">Sub of {{ parentCat.name }}</span>
+                <span class="truncate">Sub of {{ decodeHtmlEntities(parentCat.name) }}</span>
                 <span v-if="parentFilter === String(parentCat.id)" class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
               </button>
 
@@ -1479,7 +1479,7 @@ watch(viewMode, () => {
                 ]"
               >
                 <div class="flex flex-col min-w-0 pr-2">
-                  <span class="truncate font-semibold">{{ menuCat.name }}</span>
+                  <span class="truncate font-semibold">{{ decodeHtmlEntities(menuCat.name) }}</span>
                   <span class="text-[10px] text-muted-foreground font-mono truncate">/{{ menuCat.slug }}</span>
                 </div>
                 <span v-if="menuFilter === String(menuCat.id)" class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
@@ -1657,7 +1657,7 @@ watch(viewMode, () => {
             <!-- Name and Slug -->
             <div>
               <h3 class="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
-                {{ cat.name }}
+                {{ decodeHtmlEntities(cat.name) }}
               </h3>
               <div class="mt-1 flex items-center gap-2 flex-wrap">
                 <span class="font-mono text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border/60 uppercase tracking-wider font-semibold">
@@ -1665,7 +1665,7 @@ watch(viewMode, () => {
                 </span>
                 <span v-if="cat.parentCategoryId" class="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
                   <span class="w-1 h-1 rounded-full bg-muted-foreground/60"></span>
-                  {{ getParentName(cat.parentCategoryId) }}
+                  {{ decodeHtmlEntities(getParentName(cat.parentCategoryId)) }}
                 </span>
               </div>
             </div>
@@ -1888,7 +1888,7 @@ watch(viewMode, () => {
             :checked="selectedCategoryIds.includes(String(cat.id))"
             @change="toggleSelectCategory(cat.id)"
             class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer accent-primary"
-            :aria-label="`Select ${cat.name}`"
+            :aria-label="`Select ${decodeHtmlEntities(cat.name)}`"
           />
         </div>
       </template>
@@ -1900,7 +1900,7 @@ watch(viewMode, () => {
             <span>{{ cat.icon || '📁' }}</span>
           </div>
           <div class="min-w-0">
-            <h4 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors leading-tight truncate">{{ cat.name }}</h4>
+            <h4 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors leading-tight truncate">{{ decodeHtmlEntities(cat.name) }}</h4>
             <p class="text-[10px] text-muted-foreground font-mono tracking-wider mt-0.5 truncate">{{ cat.id }}</p>
           </div>
         </div>

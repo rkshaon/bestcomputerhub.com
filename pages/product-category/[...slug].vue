@@ -247,7 +247,7 @@ const activeCategory = ref<Category | null>(null);
 
 const pageTitle = computed(() => {
   if (activeCategory.value?.name) {
-    return activeCategory.value.name;
+    return decodeHtmlEntities(activeCategory.value.name);
   }
   return categorySlug.value ? categorySlug.value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Products';
 });
@@ -499,9 +499,9 @@ const resetFilters = () => {
               :to="bc.url" 
               class="hover:text-primary transition-colors"
             >
-              {{ bc.name }}
+              {{ decodeHtmlEntities(bc.name) }}
             </NuxtLink>
-            <span v-else class="text-foreground font-extrabold truncate">{{ bc.name }}</span>
+            <span v-else class="text-foreground font-extrabold truncate">{{ decodeHtmlEntities(bc.name) }}</span>
           </template>
         </nav>
 
@@ -529,7 +529,7 @@ const resetFilters = () => {
               </template>
               <template v-else>
                 <h1 class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all flex items-center gap-2.5">
-                  <span>{{ category?.name || 'Hardware Collection' }}</span>
+                  <span>{{ decodeHtmlEntities(category?.name) || 'Hardware Collection' }}</span>
                   <button 
                     v-if="canEditCategoryFromStorefront" 
                     @click="startEditing('name')"

@@ -28,7 +28,7 @@ defineProps<{
               />
             </div>
             <!-- Brand name -->
-            <span class="text-xl font-display font-medium tracking-tight text-foreground group-hover/brand:text-primary transition-colors">{{ brand.name }}</span>
+            <span class="text-xl font-display font-medium tracking-tight text-foreground group-hover/brand:text-primary transition-colors">{{ decodeHtmlEntities(brand.name) }}</span>
           </NuxtLink>
         </div>
       </div>

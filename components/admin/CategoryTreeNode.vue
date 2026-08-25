@@ -14,7 +14,7 @@ import {
 import type { Category } from '@/types';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
-import { cn } from '@/utils';
+import { cn, decodeHtmlEntities } from '@/utils';
 
 const props = withDefaults(defineProps<{
   node: Category;
@@ -223,7 +223,7 @@ const onNodeDrop = (e: DragEvent) => {
           @click.stop
           @change="$emit('toggle-select', node.id)"
           class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer accent-primary shrink-0 mr-0.5"
-          :aria-label="`Select ${node.name}`"
+          :aria-label="`Select ${decodeHtmlEntities(node.name)}`"
         />
 
         <!-- Category Emoji/Icon -->
@@ -234,7 +234,7 @@ const onNodeDrop = (e: DragEvent) => {
         <!-- Title & Slug -->
         <div class="flex items-center gap-2 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
           <span class="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">
-            {{ node.name }}
+            {{ decodeHtmlEntities(node.name) }}
           </span>
           <span class="font-mono text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 uppercase tracking-wider font-semibold shrink-0">
             /{{ node.slug }}

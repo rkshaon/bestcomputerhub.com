@@ -92,9 +92,9 @@ watch(
 
 // Dynamic SEO metadata
 useSeoMeta({
-  title: () => product.value ? `${product.value.name} | Best Computer Hub` : 'Product Details | Best Computer Hub',
+  title: () => product.value ? `${decodeHtmlEntities(product.value.name)} | Best Computer Hub` : 'Product Details | Best Computer Hub',
   description: () => product.value?.short_description || product.value?.description || 'Authentic hardware and computing components at Best Computer Hub. Official warranty and express fulfillment.',
-  ogTitle: () => product.value?.name || 'Product Details',
+  ogTitle: () => decodeHtmlEntities(product.value?.name) || 'Product Details',
   ogDescription: () => product.value?.short_description || product.value?.description || 'Shop authentic computer components with official warranty at Best Computer Hub.',
   ogImage: () => selectedImage.value || '/logo.svg'
 });
@@ -521,13 +521,13 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
           <template v-for="bc in categoryBreadcrumbs" :key="bc.url">
             <ChevronRight class="w-3 h-3 shrink-0" />
             <NuxtLink :to="bc.url" class="hover:text-primary transition-colors shrink-0">
-              {{ bc.name }}
+              {{ decodeHtmlEntities(bc.name) }}
             </NuxtLink>
           </template>
 
           <ChevronRight class="w-3 h-3 shrink-0" />
           <span class="text-foreground font-semibold truncate max-w-[160px] sm:max-w-[260px] md:max-w-none">
-            {{ product?.name || slug }}
+            {{ decodeHtmlEntities(product?.name) || slug }}
           </span>
         </nav>
       </div>
@@ -583,13 +583,13 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             <img 
               v-if="selectedImage" 
               :src="selectedImage" 
-              :alt="product.name" 
+              :alt="decodeHtmlEntities(product.name)" 
               class="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" 
             />
             <div v-else class="w-full h-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground/60 space-y-3">
               <Package class="w-16 h-16 stroke-1 text-muted-foreground/40" />
               <div class="space-y-1">
-                <p class="font-bold text-sm text-foreground uppercase tracking-wider">{{ product.brand || 'Authentic Hardware' }}</p>
+                <p class="font-bold text-sm text-foreground uppercase tracking-wider">{{ decodeHtmlEntities(product.brand) || 'Authentic Hardware' }}</p>
                 <p class="text-xs text-muted-foreground">Standard Specification Unit</p>
               </div>
             </div>
@@ -625,7 +625,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               ]"
               :aria-label="`View product image ${idx + 1}`"
             >
-              <img :src="img" :alt="`${product.name} thumbnail ${idx + 1}`" class="w-full h-full object-contain" />
+              <img :src="img" :alt="`${decodeHtmlEntities(product.name)} thumbnail ${idx + 1}`" class="w-full h-full object-contain" />
             </button>
           </div>
         </div>
@@ -635,10 +635,10 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
           <div class="space-y-3 sm:space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <span v-if="product.brand" class="text-xs sm:text-sm font-bold text-primary uppercase tracking-widest">
-                {{ product.brand }}
+                {{ decodeHtmlEntities(product.brand) }}
               </span>
               <span v-else class="text-xs sm:text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                {{ categoryName }}
+                {{ decodeHtmlEntities(categoryName) }}
               </span>
 
               <div v-if="product.rating" class="flex items-center gap-1.5 px-2.5 py-1 bg-muted/80 rounded-full">
@@ -669,7 +669,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               </template>
               <template v-else>
                 <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold tracking-tight leading-tight break-words flex items-center gap-2.5">
-                  <span>{{ product.name }}</span>
+                  <span>{{ decodeHtmlEntities(product.name) }}</span>
                   <button 
                     v-if="canEditProductFromStorefront" 
                     @click="startEditing('name')"
@@ -728,7 +728,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               <div class="p-3 bg-muted/20 rounded-xl border border-border/50 space-y-1">
                 <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Category</span>
                 <NuxtLink :to="categoryUrl" class="text-xs font-semibold text-primary hover:underline block truncate">
-                  {{ categoryName }}
+                  {{ decodeHtmlEntities(categoryName) }}
                 </NuxtLink>
               </div>
 

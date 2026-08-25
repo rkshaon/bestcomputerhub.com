@@ -223,7 +223,7 @@ const handlePlaceOrder = () => {
                   <img :src="item.product.images[0]" class="w-full h-full object-cover" />
                 </div>
                 <div class="flex-grow">
-                  <p class="font-bold text-sm line-clamp-1">{{ item.product.name }}</p>
+                  <p class="font-bold text-sm line-clamp-1">{{ decodeHtmlEntities(item.product.name) }}</p>
                   <p class="text-xs text-muted-foreground">Qty: {{ item.quantity }}</p>
                 </div>
                 <span class="font-bold text-sm">{{ formatCurrency(item.product.price * item.quantity) }}</span>

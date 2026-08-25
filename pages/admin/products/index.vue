@@ -31,7 +31,7 @@ import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
-import { formatCurrency, cn } from '@/utils';
+import { formatCurrency, cn, decodeHtmlEntities } from '@/utils';
 import type { Product, Category, ProductCategoryRef, CreateProductPayload, UpdateProductPayload, PaginatedResponse } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
@@ -1042,7 +1042,7 @@ onUnmounted(() => {
                     isCategorySelected(cat.id) ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
                   ]"
                 >
-                  <span class="truncate">{{ cat.name }}</span>
+                  <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
                   <div 
                     class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
                     :class="isCategorySelected(cat.id) ? 'bg-primary border-primary text-primary-foreground' : 'border-input bg-background'"
@@ -1163,17 +1163,17 @@ onUnmounted(() => {
               <!-- Brand & Category -->
               <div class="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                 <span class="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground/80 bg-muted/60 px-2 py-0.5 rounded border border-border/50">
-                  {{ product.brand }}
+                  {{ decodeHtmlEntities(product.brand) }}
                 </span>
                 <span class="flex items-center gap-1 text-[11px] text-muted-foreground truncate max-w-[140px]">
                   <Layers class="w-3 h-3 shrink-0" />
-                  <span class="truncate">{{ getCategoryName(product) }}</span>
+                  <span class="truncate">{{ decodeHtmlEntities(getCategoryName(product)) }}</span>
                 </span>
               </div>
 
               <!-- Name -->
               <h3 class="text-sm font-bold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
-                {{ product.name }}
+                {{ decodeHtmlEntities(product.name) }}
               </h3>
 
               <!-- SKU & Rating -->
@@ -1342,10 +1342,10 @@ onUnmounted(() => {
                 class="text-sm font-bold text-foreground hover:text-primary transition-colors leading-snug text-left cursor-pointer"
                 title="View Product Details"
               >
-                {{ product.name }}
+                {{ decodeHtmlEntities(product.name) }}
               </button>
               <span v-else class="text-sm font-bold text-foreground leading-snug">
-                {{ product.name }}
+                {{ decodeHtmlEntities(product.name) }}
               </span>
               <span v-if="product.wishlist" class="shrink-0 text-rose-500 mt-0.5" title="In Wishlist">
                 <Heart class="w-3.5 h-3.5 fill-rose-500" />
@@ -1356,7 +1356,7 @@ onUnmounted(() => {
             </div>
             <div class="flex items-center gap-2 flex-wrap text-xs text-muted-foreground pt-0.5">
               <span class="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground/80">
-                {{ product.brand }}
+                {{ decodeHtmlEntities(product.brand) }}
               </span>
               <span v-if="getProductRating(product) > 0" class="flex items-center gap-1 text-amber-500 font-bold text-[11px]">
                 <Star class="w-3 h-3 fill-amber-500" />
@@ -1379,7 +1379,7 @@ onUnmounted(() => {
       <template #cell-category="{ item: product }">
         <div class="flex items-center gap-1.5 text-xs font-medium text-foreground">
           <Layers class="w-3.5 h-3.5 text-muted-foreground" />
-          <span>{{ getCategoryName(product) }}</span>
+          <span>{{ decodeHtmlEntities(getCategoryName(product)) }}</span>
         </div>
       </template>
 

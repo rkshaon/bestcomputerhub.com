@@ -107,7 +107,7 @@ onMounted(() => {
           <NuxtLink :to="`/product/${product.slug}/`" class="relative aspect-square overflow-hidden bg-muted p-8 block">
             <img 
               :src="product.images[0]" 
-              :alt="product.name"
+              :alt="decodeHtmlEntities(product.name)"
               class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700"
             />
             
@@ -126,10 +126,10 @@ onMounted(() => {
 
           <div class="p-8 flex-grow flex flex-col gap-4">
             <div class="space-y-1">
-              <span class="text-[10px] font-bold uppercase tracking-widest text-primary">{{ product.brand }}</span>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-primary">{{ decodeHtmlEntities(product.brand) }}</span>
               <NuxtLink :to="`/product/${product.slug}/`" class="block">
                 <h3 class="font-display font-bold text-xl leading-tight group-hover:text-primary transition-colors line-clamp-1">
-                  {{ product.name }}
+                  {{ decodeHtmlEntities(product.name) }}
                 </h3>
               </NuxtLink>
             </div>

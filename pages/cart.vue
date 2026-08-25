@@ -57,12 +57,12 @@ const updateQty = (id: string, delta: number) => {
             class="bg-card border border-border rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-4 shadow-sm hover:border-primary/30 transition-all"
           >
             <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-muted/50 p-2 shrink-0 flex items-center justify-center overflow-hidden">
-              <img :src="item.product.images[0]" :alt="item.product.name" class="max-w-full max-h-full object-contain" />
+              <img :src="item.product.images[0]" :alt="decodeHtmlEntities(item.product.name)" class="max-w-full max-h-full object-contain" />
             </div>
 
             <div class="flex-1 text-center sm:text-left">
               <NuxtLink :to="`/product/${item.product.slug}/`" class="font-bold text-foreground hover:text-primary transition-colors line-clamp-2 text-sm sm:text-base">
-                {{ item.product.name }}
+                {{ decodeHtmlEntities(item.product.name) }}
               </NuxtLink>
               <p class="text-xs text-muted-foreground mt-1 uppercase tracking-wider font-semibold">SKU: {{ item.product.sku }}</p>
               <div class="text-primary font-black text-base sm:text-lg mt-2">

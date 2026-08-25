@@ -257,7 +257,7 @@ watch(
               @focus="handleItemEnter(item, $event)"
               @click="handleLinkClick"
             >
-              <span class="truncate">{{ item.name }}</span>
+              <span class="truncate">{{ decodeHtmlEntities(item.name) }}</span>
               <ChevronRight
                 v-if="mayHaveChildren(item)"
                 :class="cn(
