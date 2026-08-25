@@ -4,6 +4,7 @@ import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
 import type { 
   KeywordRule, 
+  CreateKeywordRulePayload,
   KeywordRulesQueryParams, 
   PaginatedKeywordRules 
 } from '@/types';
@@ -181,9 +182,69 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const createKeywordRule = async (
+    payload: CreateKeywordRulePayload
+  ): Promise<KeywordRule> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    const trimmedKeyword = payload.keyword?.trim();
+    if (!trimmedKeyword) {
+      const err = new Error('Keyword is required.');
+      errorMsg.value = err.message;
+      isLoading.value = false;
+      throw err;
+    }
+
+    const cleanPayload: CreateKeywordRulePayload = {
+      keyword: trimmedKeyword,
+      category: payload.category,
+      severity: payload.severity,
+      match_type: payload.match_type,
+      is_enabled: Boolean(payload.is_enabled),
+      ...(payload.description !== undefined && payload.description !== null
+        ? { description: payload.description.trim() }
+        : {})
+    };
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const newRule: KeywordRule = {
+        id: Math.floor(1000 + Math.random() * 9000),
+        keyword: cleanPayload.keyword,
+        category: cleanPayload.category,
+        severity: cleanPayload.severity,
+        match_type: cleanPayload.match_type,
+        is_enabled: cleanPayload.is_enabled,
+        is_active: cleanPayload.is_enabled,
+        created_at: new Date().toISOString()
+      };
+      isLoading.value = false;
+      return newRule;
+    }
+
+    try {
+      const data = await apiClient.request<KeywordRule>(
+        '/api/v1/content-security/keyword-rules/',
+        {
+          method: 'POST',
+          body: cleanPayload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to create keyword rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
-    getKeywordRules
+    getKeywordRules,
+    createKeywordRule
   };
 };

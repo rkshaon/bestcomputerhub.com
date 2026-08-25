@@ -28,6 +28,15 @@ export interface KeywordRule {
   match_type: KeywordMatchType;
 }
 
+export interface CreateKeywordRulePayload {
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description?: string;
+  keyword: string;
+  match_type: KeywordMatchType;
+}
+
 export interface KeywordRulesQueryParams {
   search?: string;
   category?: KeywordCategory;

@@ -44,7 +44,7 @@ import UiButton from '@/components/ui/Button.vue';
 import { refDebounced } from '@vueuse/core';
 import { useContentSecurityService } from '@/composables/useContentSecurityService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
-import type { KeywordRule, KeywordCategory, KeywordMatchType, KeywordSeverity } from '@/types';
+import type { KeywordRule, KeywordCategory, KeywordMatchType, KeywordSeverity, CreateKeywordRulePayload } from '@/types';
 
 definePageMeta({
   layout: 'admin'
@@ -107,6 +107,7 @@ const rulesSubTab = ref<'keywords' | 'domains' | 'html' | 'attributes' | 'redire
 
 const { hasPermission } = useAdminPermissions();
 const canViewKeywords = computed(() => hasPermission('content_security.view_keywordrule'));
+const canAddKeywordRule = computed(() => hasPermission('content_security.add_keywordrule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -798,6 +799,24 @@ const runFullScan = () => {
 // ==========================================
 const isRuleModalOpen = ref(false);
 const editingRule = ref<DetectionRule | null>(null);
+const isSubmittingKeywordRule = ref(false);
+
+const keywordCreateForm = ref<{
+  keyword: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  match_type: KeywordMatchType;
+  is_enabled: boolean;
+  description: string;
+}>({
+  keyword: '',
+  category: 'SPAM',
+  severity: 'HIGH',
+  match_type: 'WORD',
+  is_enabled: true,
+  description: ''
+});
+
 const ruleForm = ref({
   type: 'keyword' as DetectionRule['type'],
   pattern: '',
@@ -809,6 +828,20 @@ const ruleForm = ref({
 
 const openAddRuleModal = (type: DetectionRule['type']) => {
   editingRule.value = null;
+  if (type === 'keyword') {
+    if (!canAddKeywordRule.value) {
+      toastError('You do not have permission to add keyword rules.');
+      return;
+    }
+    keywordCreateForm.value = {
+      keyword: '',
+      category: 'SPAM',
+      severity: 'HIGH',
+      match_type: 'WORD',
+      is_enabled: true,
+      description: ''
+    };
+  }
   ruleForm.value = {
     type,
     pattern: '',
@@ -833,7 +866,46 @@ const openEditRuleModal = (rule: DetectionRule) => {
   isRuleModalOpen.value = true;
 };
 
-const saveRule = () => {
+const saveRule = async () => {
+  // Handle Real Keyword Rule Creation via API
+  if (ruleForm.value.type === 'keyword' && !editingRule.value) {
+    if (!canAddKeywordRule.value) {
+      toastError('You do not have permission to add keyword rules.');
+      return;
+    }
+
+    const trimmedKeyword = keywordCreateForm.value.keyword.trim();
+    if (!trimmedKeyword) {
+      toastError('Keyword is required.');
+      return;
+    }
+
+    try {
+      isSubmittingKeywordRule.value = true;
+      const payload: CreateKeywordRulePayload = {
+        keyword: trimmedKeyword,
+        category: keywordCreateForm.value.category,
+        severity: keywordCreateForm.value.severity,
+        match_type: keywordCreateForm.value.match_type,
+        is_enabled: keywordCreateForm.value.is_enabled,
+        ...(keywordCreateForm.value.description?.trim() 
+          ? { description: keywordCreateForm.value.description.trim() } 
+          : {})
+      };
+
+      await contentSecurityService.createKeywordRule(payload);
+      toastSuccess('Keyword rule created successfully.');
+      isRuleModalOpen.value = false;
+      await fetchKeywordRules();
+    } catch (err: any) {
+      toastError(err.message || 'Failed to create keyword rule.');
+    } finally {
+      isSubmittingKeywordRule.value = false;
+    }
+    return;
+  }
+
+  // Non-keyword or mock edit behavior
   if (!ruleForm.value.pattern.trim()) {
     toastError('Please enter a valid rule pattern.');
     return;
@@ -2069,12 +2141,123 @@ const getSeverityBadge = (severity: string) => {
     <!-- ========================================== -->
     <UiAdminModal
       :is-open="isRuleModalOpen"
-      :title="editingRule ? `Edit Rule: ${editingRule.id}` : 'Create Security Detection Rule'"
-      subtitle="Define pattern heuristics for automated catalog inspection."
+      :title="editingRule ? `Edit Rule: ${editingRule.id}` : (ruleForm.type === 'keyword' ? 'Create Keyword Rule' : 'Create Security Detection Rule')"
+      :subtitle="ruleForm.type === 'keyword' && !editingRule ? 'Define keyword pattern heuristics for content security inspection.' : 'Define pattern heuristics for automated catalog inspection.'"
       max-width="max-w-lg"
       @close="isRuleModalOpen = false"
     >
-      <form @submit.prevent="saveRule" class="p-6 space-y-4">
+      <!-- Keyword Rule Create Form (Real API) -->
+      <form v-if="ruleForm.type === 'keyword' && !editingRule" @submit.prevent="saveRule" class="p-6 space-y-4">
+        <!-- Keyword -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Keyword <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="keywordCreateForm.keyword"
+            type="text" 
+            placeholder="e.g. free crypto giveaway, telegram @, etc."
+            required
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+          />
+        </div>
+
+        <!-- Category & Match Type Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Category <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="keywordCreateForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="SPAM">Spam</option>
+              <option value="SCAM">Scam</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="MALWARE">Malware</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="GAMBLING">Gambling</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="INJECTION">Injection</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="REDIRECT">Redirect</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Match Type <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="keywordCreateForm.match_type"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="WORD">Word</option>
+              <option value="SUBSTRING">Substring</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Severity -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Severity <span class="text-rose-500">*</span></label>
+          <select 
+            v-model="keywordCreateForm.severity"
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+          >
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+            <option value="INFO">Info</option>
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Description</label>
+          <textarea 
+            v-model="keywordCreateForm.description"
+            rows="2"
+            placeholder="Explain why this keyword is blocked..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div>
+            <p class="text-xs font-bold text-foreground">Rule Enabled</p>
+            <p class="text-[10px] text-muted-foreground">Active rules are evaluated during content security scans</p>
+          </div>
+          <input 
+            v-model="keywordCreateForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingKeywordRule"
+            @click="isRuleModalOpen = false"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingKeywordRule"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70"
+          >
+            <RefreshCw v-if="isSubmittingKeywordRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingKeywordRule ? 'Creating...' : 'Create Keyword Rule' }}</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Standard / Other Detection Rules Form -->
+      <form v-else @submit.prevent="saveRule" class="p-6 space-y-4">
         <!-- Rule Type -->
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-foreground">Rule Type</label>
