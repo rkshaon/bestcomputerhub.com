@@ -32,10 +32,19 @@ import {
   Sparkles,
   ChevronRight,
   MoreVertical,
-  RotateCcw
+  RotateCcw,
+  Loader2,
+  Calendar,
+  User,
+  Hash,
+  Activity,
+  FileCode,
+  CheckCircle,
+  XCircle,
+  AlertCircle
 } from 'lucide-vue-next';
 import { cn } from '@/utils';
-import { toastSuccess, toastInfo, toastWarning, toastError } from '@/composables/useToast';
+import { toastSuccess, toastInfo, toastWarning, toastError, extractErrorMessage } from '@/composables/useToast';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
@@ -44,7 +53,8 @@ import UiButton from '@/components/ui/Button.vue';
 import { refDebounced } from '@vueuse/core';
 import { useContentSecurityService } from '@/composables/useContentSecurityService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
-import type { KeywordRule, KeywordCategory, KeywordMatchType, KeywordSeverity, CreateKeywordRulePayload } from '@/types';
+import { useAdminModalState } from '@/composables/useAdminModalState';
+import type { KeywordRule, KeywordRuleDetail, KeywordCategory, KeywordMatchType, KeywordSeverity, CreateKeywordRulePayload } from '@/types';
 
 definePageMeta({
   layout: 'admin'
@@ -792,6 +802,71 @@ const runFullScan = () => {
       }, 500);
     }
   }, 600);
+};
+
+// ==========================================
+// Modal State: Keyword Rule Details (View)
+// ==========================================
+const isKeywordDetailsLoading = ref(false);
+const selectedKeywordRule = ref<KeywordRuleDetail | null>(null);
+
+const keywordModalState = useAdminModalState<KeywordRuleDetail>({
+  getItems: async (id) => {
+    isKeywordDetailsLoading.value = true;
+    try {
+      const details = await contentSecurityService.getKeywordRuleDetails(String(id));
+      return details;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve keyword rule details.');
+      toastError(msg);
+      return null;
+    } finally {
+      isKeywordDetailsLoading.value = false;
+    }
+  },
+  onResolveError: (id) => {
+    toastError(`Keyword Rule #${id} could not be resolved.`);
+    keywordModalState.closeModal({ replace: true });
+  }
+});
+
+watch(() => keywordModalState.activeEntity.value, (newEntity) => {
+  if (newEntity) {
+    selectedKeywordRule.value = newEntity;
+  }
+}, { immediate: true });
+
+watch(() => keywordModalState.isView.value, (isView) => {
+  if (!isView) {
+    selectedKeywordRule.value = null;
+  }
+}, { immediate: true });
+
+const openKeywordViewModal = (id: number | string) => {
+  if (!canViewKeywords.value) {
+    toastError('You do not have permission to view keyword rules.');
+    return;
+  }
+  keywordModalState.openView(id);
+};
+
+const closeKeywordViewModal = () => {
+  keywordModalState.closeModal();
+};
+
+const formatUserInfo = (userVal: any): string => {
+  if (!userVal) return 'N/A';
+  if (typeof userVal === 'string') return userVal;
+  if (typeof userVal === 'number') return `User #${userVal}`;
+  if (typeof userVal === 'object') {
+    if (userVal.first_name || userVal.last_name) {
+      return `${userVal.first_name || ''} ${userVal.last_name || ''}`.trim();
+    }
+    if (userVal.username) return userVal.username;
+    if (userVal.email) return userVal.email;
+    if (userVal.id) return `User #${userVal.id}`;
+  }
+  return 'N/A';
 };
 
 // ==========================================
@@ -1849,20 +1924,31 @@ const getSeverityBadge = (severity: string) => {
 
               <!-- Actions Cell -->
               <template #cell-actions="{ item }">
-                <div class="flex items-center justify-end gap-2">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button 
+                    v-if="canViewKeywords"
+                    @click.stop="openKeywordViewModal(item.id)"
+                    class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                    title="View keyword rule details"
+                    aria-label="View keyword rule details"
+                  >
+                    <Eye class="w-4 h-4" />
+                  </button>
                   <button 
                     v-if="hasPermission('content_security.change_keywordrule')"
                     @click.stop="openEditRuleModal(item as any)"
-                    class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                     title="Edit rule"
+                    aria-label="Edit rule"
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
                   <button 
                     v-if="hasPermission('content_security.delete_keywordrule')"
                     @click.stop="deleteRule(item as any)"
-                    class="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
+                    class="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                     title="Delete rule"
+                    aria-label="Delete rule"
                   >
                     <Trash2 class="w-4 h-4" />
                   </button>
@@ -2355,6 +2441,164 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </form>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: VIEW KEYWORD RULE DETAILS -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="keywordModalState.isView.value"
+      :title="isKeywordDetailsLoading ? 'Loading Keyword Rule...' : (selectedKeywordRule ? `Keyword Rule #${selectedKeywordRule.id}` : 'Keyword Rule Details')"
+      subtitle="Comprehensive security inspection parameters and audit metadata."
+      max-width="max-w-2xl"
+      @close="closeKeywordViewModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isKeywordDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving keyword rule details from security registry...</p>
+      </div>
+
+      <!-- Error / Not Found State -->
+      <div v-else-if="!selectedKeywordRule" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <AlertCircle class="w-6 h-6" />
+        </div>
+        <p class="text-sm font-bold text-foreground">Rule Details Not Available</p>
+        <p class="text-xs text-muted-foreground">Could not load the requested keyword rule from the security engine.</p>
+        <button 
+          type="button"
+          @click="closeKeywordViewModal"
+          class="mt-2 h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+
+      <!-- Loaded Details View -->
+      <div v-else class="p-6 sm:p-8 space-y-6">
+        <!-- Hero Summary Card -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-muted/40 rounded-2xl border border-border">
+          <div class="space-y-1.5 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Blocked Pattern</span>
+            </div>
+            <div class="font-mono text-base sm:text-lg font-bold text-foreground bg-background px-3 py-1.5 rounded-xl border border-border shadow-2xs inline-block break-all">
+              {{ selectedKeywordRule.keyword }}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <!-- Severity Badge -->
+            <span :class="cn('px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border', getSeverityBadge(selectedKeywordRule.severity))">
+              {{ selectedKeywordRule.severity }}
+            </span>
+            <!-- Match Type Badge -->
+            <span class="px-2.5 py-1 rounded-full bg-muted text-xs font-mono font-semibold text-foreground border border-border">
+              {{ selectedKeywordRule.match_type }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Rule Specifications Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</span>
+            <p class="text-sm font-bold text-foreground">{{ selectedKeywordRule.category }}</p>
+          </div>
+
+          <!-- Status Indicators -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Operational Status</span>
+            <div class="flex items-center gap-3">
+              <!-- Enabled Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedKeywordRule.is_enabled 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedKeywordRule.is_enabled ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedKeywordRule.is_enabled ? 'Enabled' : 'Disabled' }}</span>
+              </span>
+
+              <!-- Active Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedKeywordRule.is_active 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedKeywordRule.is_active ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedKeywordRule.is_active ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="space-y-1.5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rule Description & Rationale</span>
+          <div class="bg-card border border-border rounded-xl p-4 text-xs font-medium text-foreground leading-relaxed">
+            <p v-if="selectedKeywordRule.description?.trim()">{{ selectedKeywordRule.description }}</p>
+            <p v-else class="text-muted-foreground italic">No description provided for this rule.</p>
+          </div>
+        </div>
+
+        <!-- Audit & Tracking Metadata -->
+        <div class="space-y-2 pt-2 border-t border-border">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audit & Lifecycle Metadata</span>
+          <div class="bg-muted/30 border border-border rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedKeywordRule.created_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedKeywordRule.updated_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedKeywordRule.created_by) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedKeywordRule.updated_by) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-4 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            @click="closeKeywordViewModal"
+            class="h-9 px-5 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </UiAdminModal>
   </div>
 </template>

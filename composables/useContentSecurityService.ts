@@ -4,6 +4,7 @@ import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
 import type { 
   KeywordRule, 
+  KeywordRuleDetail,
   CreateKeywordRulePayload,
   KeywordRulesQueryParams, 
   PaginatedKeywordRules 
@@ -241,10 +242,56 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getKeywordRuleDetails = async (
+    id: string | number
+  ): Promise<KeywordRuleDetail | null> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const fallbackList = getFallbackKeywordRules();
+      const found = fallbackList.find((r) => String(r.id) === String(id));
+      isLoading.value = false;
+      if (!found) return null;
+      return {
+        id: found.id,
+        keyword: found.keyword,
+        category: found.category,
+        severity: found.severity,
+        match_type: found.match_type,
+        is_enabled: found.is_enabled,
+        is_active: found.is_active,
+        description: 'Auto-generated security rule for content filtering.',
+        created_at: found.created_at,
+        updated_at: found.created_at,
+        created_by: 'Security System',
+        updated_by: 'Security System'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<KeywordRuleDetail>(
+        `/api/v1/content-security/keyword-rules/${id}/`,
+        {
+          method: 'GET'
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve keyword rule details.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
     getKeywordRules,
-    createKeywordRule
+    createKeywordRule,
+    getKeywordRuleDetails
   };
 };
