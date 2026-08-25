@@ -124,6 +124,13 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     iconKey: 'ShieldAlert',
     viewPermission: ['admin.view_logentry', 'view_logentry', 'security.view_security']
   },
+  'content-security': {
+    key: 'content-security',
+    route: '/admin/content-security',
+    name: 'Content Security',
+    iconKey: 'ShieldAlert',
+    viewPermission: null
+  },
   notifications: {
     key: 'notifications',
     route: '/admin/notifications',

@@ -68,6 +68,7 @@ const navigation = [
 
 const secondaryNavigation = [
   { name: 'Profile', iconKey: 'UserIcon', href: '/admin/profile' },
+  { name: 'Content Security', iconKey: 'ShieldAlert', href: '/admin/content-security' },
   { name: 'Security', iconKey: 'ShieldAlert', href: '/admin/security' },
   { name: 'SEO & Sitemap', iconKey: 'Globe', href: '/admin/seo' },
   { name: 'Notifications', iconKey: 'Bell', href: '/admin/notifications' },
