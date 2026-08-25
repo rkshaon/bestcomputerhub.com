@@ -127,6 +127,7 @@ const { hasPermission } = useAdminPermissions();
 const canViewKeywords = computed(() => hasPermission('content_security.view_keywordrule'));
 const canAddKeywordRule = computed(() => hasPermission('content_security.add_keywordrule'));
 const canEditKeywordRule = computed(() => hasPermission('content_security.change_keywordrule'));
+const canDeleteKeywordRule = computed(() => hasPermission('content_security.delete_keywordrule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -814,12 +815,14 @@ const runFullScan = () => {
 };
 
 // ==========================================
-// Modal State: Keyword Rule Details (View & Edit)
+// Modal State: Keyword Rule Details (View, Edit & Delete)
 // ==========================================
 const isKeywordDetailsLoading = ref(false);
 const selectedKeywordRule = ref<KeywordRuleDetail | null>(null);
 const editingKeywordRuleId = ref<number | null>(null);
 const isSubmittingKeywordEdit = ref(false);
+const isDeletingKeywordRule = ref(false);
+const deletingKeywordRule = ref<{ id: number; keyword: string } | null>(null);
 
 const keywordEditForm = ref<{
   keyword: string;
@@ -894,11 +897,25 @@ watch(() => keywordModalState.activeEntity.value, (newEntity) => {
         description: newEntity.description || ''
       };
     }
+
+    if (keywordModalState.isDelete.value) {
+      if (!canDeleteKeywordRule.value) {
+        toastError('You do not have permission to delete keyword rules.');
+        keywordModalState.closeModal({ replace: true });
+        return;
+      }
+      if (!deletingKeywordRule.value) {
+        deletingKeywordRule.value = {
+          id: newEntity.id,
+          keyword: newEntity.keyword || `Rule #${newEntity.id}`
+        };
+      }
+    }
   }
 }, { immediate: true });
 
 watch(() => keywordModalState.isView.value, (isView) => {
-  if (!isView && !keywordModalState.isEdit.value) {
+  if (!isView && !keywordModalState.isEdit.value && !keywordModalState.isDelete.value) {
     selectedKeywordRule.value = null;
   }
 }, { immediate: true });
@@ -907,6 +924,15 @@ watch(() => keywordModalState.isEdit.value, (isEdit) => {
   if (!isEdit) {
     editingKeywordRuleId.value = null;
     originalKeywordRuleData.value = null;
+  }
+}, { immediate: true });
+
+watch(() => keywordModalState.isDelete.value, (isDelete) => {
+  if (!isDelete) {
+    deletingKeywordRule.value = null;
+  } else if (!canDeleteKeywordRule.value) {
+    toastError('You do not have permission to delete keyword rules.');
+    keywordModalState.closeModal({ replace: true });
   }
 }, { immediate: true });
 
@@ -932,6 +958,55 @@ const openEditKeywordRuleModal = async (id: number | string) => {
 
 const closeKeywordEditModal = async () => {
   await keywordModalState.closeModal();
+};
+
+const openDeleteKeywordRuleModal = async (rule: { id: number; keyword?: string }) => {
+  if (!canDeleteKeywordRule.value) {
+    toastError('You do not have permission to delete keyword rules.');
+    return;
+  }
+  deletingKeywordRule.value = {
+    id: rule.id,
+    keyword: rule.keyword || `Rule #${rule.id}`
+  };
+  await keywordModalState.openDelete(rule.id);
+};
+
+const closeKeywordDeleteModal = async () => {
+  await keywordModalState.closeModal();
+};
+
+const executeDeleteKeywordRule = async () => {
+  if (!canDeleteKeywordRule.value) {
+    toastError('You do not have permission to delete keyword rules.');
+    return;
+  }
+
+  const targetId = deletingKeywordRule.value?.id || keywordModalState.activeId.value;
+  if (!targetId) {
+    toastError('Keyword rule identifier missing.');
+    return;
+  }
+
+  if (isDeletingKeywordRule.value) return;
+
+  isDeletingKeywordRule.value = true;
+  try {
+    await contentSecurityService.deleteKeywordRule(targetId);
+    toastSuccess(`Keyword rule "${deletingKeywordRule.value?.keyword || `#${targetId}`}" deleted successfully.`);
+    await closeKeywordDeleteModal();
+    await fetchKeywordRules();
+
+    if (keywordRulesData.value.length === 0 && keywordPage.value > 1) {
+      keywordPage.value = Math.max(1, keywordPage.value - 1);
+      await fetchKeywordRules();
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to delete keyword rule.');
+    toastError(msg);
+  } finally {
+    isDeletingKeywordRule.value = false;
+  }
 };
 
 const submitUpdateKeywordRule = async () => {
@@ -2099,11 +2174,11 @@ const getSeverityBadge = (severity: string) => {
                     <Edit3 class="w-4 h-4" />
                   </button>
                   <button 
-                    v-if="hasPermission('content_security.delete_keywordrule')"
-                    @click.stop="deleteRule(item as any)"
+                    v-if="canDeleteKeywordRule"
+                    @click.stop="openDeleteKeywordRuleModal(item)"
                     class="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                    title="Delete rule"
-                    aria-label="Delete rule"
+                    title="Delete keyword rule"
+                    aria-label="Delete keyword rule"
                   >
                     <Trash2 class="w-4 h-4" />
                   </button>
@@ -2881,6 +2956,53 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </form>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: DELETE KEYWORD RULE CONFIRMATION -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="keywordModalState.isDelete.value"
+      title="Delete Keyword Rule"
+      subtitle="Verify decommissioning of this content security keyword rule."
+      max-width="max-w-md"
+      :show-close-button="!isDeletingKeywordRule"
+      @close="closeKeywordDeleteModal"
+    >
+      <div class="p-6 space-y-5">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div class="space-y-2">
+          <p class="text-sm font-bold text-foreground">
+            Are you sure you want to delete this keyword rule?
+          </p>
+          <p class="text-xs text-muted-foreground leading-relaxed">
+            Rule <span class="font-mono font-bold text-foreground">{{ deletingKeywordRule?.keyword || (selectedKeywordRule ? selectedKeywordRule.keyword : `ID #${keywordModalState.activeId.value}`) }}</span> will be permanently removed from active content inspection heuristics.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isDeletingKeywordRule"
+            @click="closeKeywordDeleteModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            :disabled="isDeletingKeywordRule"
+            @click="executeDeleteKeywordRule"
+            class="h-9 px-5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isDeletingKeywordRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isDeletingKeywordRule ? 'Deleting...' : 'Delete Rule' }}</span>
+          </button>
+        </div>
+      </div>
     </UiAdminModal>
   </div>
 </template>
