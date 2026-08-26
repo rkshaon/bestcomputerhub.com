@@ -64,6 +64,7 @@ import type {
   UpdateKeywordRulePayload,
   DomainRule,
   DomainMatchType,
+  CreateDomainRulePayload,
   DomainRulesQueryParams
 } from '@/types';
 
@@ -1260,6 +1261,7 @@ const formatUserInfo = (userVal: any): string => {
 const isRuleModalOpen = ref(false);
 const editingRule = ref<DetectionRule | null>(null);
 const isSubmittingKeywordRule = ref(false);
+const isSubmittingDomainRule = ref(false);
 
 const keywordCreateForm = ref<{
   keyword: string;
@@ -1273,6 +1275,22 @@ const keywordCreateForm = ref<{
   category: 'SPAM',
   severity: 'HIGH',
   match_type: 'WORD',
+  is_enabled: true,
+  description: ''
+});
+
+const domainCreateForm = ref<{
+  domain: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  match_type: DomainMatchType;
+  is_enabled: boolean;
+  description: string;
+}>({
+  domain: '',
+  category: 'GAMBLING',
+  severity: 'HIGH',
+  match_type: 'EXACT',
   is_enabled: true,
   description: ''
 });
@@ -1298,6 +1316,19 @@ const openAddRuleModal = (type: DetectionRule['type']) => {
       category: 'SPAM',
       severity: 'HIGH',
       match_type: 'WORD',
+      is_enabled: true,
+      description: ''
+    };
+  } else if (type === 'domain') {
+    if (!canAddDomainRule.value) {
+      toastError('You do not have permission to add domain rules.');
+      return;
+    }
+    domainCreateForm.value = {
+      domain: '',
+      category: 'GAMBLING',
+      severity: 'HIGH',
+      match_type: 'EXACT',
       is_enabled: true,
       description: ''
     };
@@ -1365,7 +1396,45 @@ const saveRule = async () => {
     return;
   }
 
-  // Non-keyword or mock edit behavior
+  // Handle Real Domain Rule Creation via API
+  if (ruleForm.value.type === 'domain' && !editingRule.value) {
+    if (!canAddDomainRule.value) {
+      toastError('You do not have permission to add domain rules.');
+      return;
+    }
+
+    const trimmedDomain = domainCreateForm.value.domain.trim();
+    if (!trimmedDomain) {
+      toastError('Domain is required.');
+      return;
+    }
+
+    try {
+      isSubmittingDomainRule.value = true;
+      const payload: CreateDomainRulePayload = {
+        domain: trimmedDomain,
+        category: domainCreateForm.value.category,
+        severity: domainCreateForm.value.severity,
+        match_type: domainCreateForm.value.match_type,
+        is_enabled: domainCreateForm.value.is_enabled,
+        ...(domainCreateForm.value.description?.trim() 
+          ? { description: domainCreateForm.value.description.trim() } 
+          : {})
+      };
+
+      await contentSecurityService.createDomainRule(payload);
+      toastSuccess('Domain rule created successfully.');
+      isRuleModalOpen.value = false;
+      await fetchDomainRules();
+    } catch (err: any) {
+      toastError(err.message || 'Failed to create domain rule.');
+    } finally {
+      isSubmittingDomainRule.value = false;
+    }
+    return;
+  }
+
+  // Non-keyword / non-domain or mock edit behavior
   if (!ruleForm.value.pattern.trim()) {
     toastError('Please enter a valid rule pattern.');
     return;
@@ -2875,8 +2944,8 @@ const getSeverityBadge = (severity: string) => {
     <!-- ========================================== -->
     <UiAdminModal
       :is-open="isRuleModalOpen"
-      :title="editingRule ? `Edit Rule: ${editingRule.id}` : (ruleForm.type === 'keyword' ? 'Create Keyword Rule' : 'Create Security Detection Rule')"
-      :subtitle="ruleForm.type === 'keyword' && !editingRule ? 'Define keyword pattern heuristics for content security inspection.' : 'Define pattern heuristics for automated catalog inspection.'"
+      :title="editingRule ? `Edit Rule: ${editingRule.id}` : (ruleForm.type === 'keyword' ? 'Create Keyword Rule' : ruleForm.type === 'domain' ? 'Create Domain Rule' : 'Create Security Detection Rule')"
+      :subtitle="ruleForm.type === 'keyword' && !editingRule ? 'Define keyword pattern heuristics for content security inspection.' : ruleForm.type === 'domain' && !editingRule ? 'Define domain pattern heuristics for content security inspection.' : 'Define pattern heuristics for automated catalog inspection.'"
       max-width="max-w-lg"
       @close="isRuleModalOpen = false"
     >
@@ -2986,6 +3055,116 @@ const getSeverityBadge = (severity: string) => {
           >
             <RefreshCw v-if="isSubmittingKeywordRule" class="w-3.5 h-3.5 animate-spin" />
             <span>{{ isSubmittingKeywordRule ? 'Creating...' : 'Create Keyword Rule' }}</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Domain Rule Create Form (Real API) -->
+      <form v-else-if="ruleForm.type === 'domain' && !editingRule" @submit.prevent="saveRule" class="p-6 space-y-4">
+        <!-- Domain -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Domain <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="domainCreateForm.domain"
+            type="text" 
+            placeholder="e.g. malicious-site.com, shady-tracker.org"
+            required
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+          />
+        </div>
+
+        <!-- Category & Match Type Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Category <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="domainCreateForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="GAMBLING">Gambling</option>
+              <option value="MALWARE">Malware</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="SCAM">Scam</option>
+              <option value="SPAM">Spam</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="INJECTION">Injection</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="REDIRECT">Redirect</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Match Type <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="domainCreateForm.match_type"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="EXACT">Exact Domain</option>
+              <option value="SUBDOMAIN">Domain And Subdomains</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Severity -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Severity <span class="text-rose-500">*</span></label>
+          <select 
+            v-model="domainCreateForm.severity"
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+          >
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+            <option value="INFO">Info</option>
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Description</label>
+          <textarea 
+            v-model="domainCreateForm.description"
+            rows="2"
+            placeholder="Explain why this domain is blocked..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div>
+            <p class="text-xs font-bold text-foreground">Rule Enabled</p>
+            <p class="text-[10px] text-muted-foreground">Active rules are evaluated during content security scans</p>
+          </div>
+          <input 
+            v-model="domainCreateForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingDomainRule"
+            @click="isRuleModalOpen = false"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingDomainRule"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70"
+          >
+            <RefreshCw v-if="isSubmittingDomainRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingDomainRule ? 'Creating...' : 'Create Domain Rule' }}</span>
           </button>
         </div>
       </form>

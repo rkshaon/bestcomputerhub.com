@@ -107,6 +107,15 @@ export interface DomainRule {
   match_type: DomainMatchType;
 }
 
+export interface CreateDomainRulePayload {
+  domain: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  match_type: DomainMatchType;
+  is_enabled?: boolean;
+  description?: string;
+}
+
 export interface DomainRulesQueryParams {
   search?: string;
   category?: KeywordCategory;
