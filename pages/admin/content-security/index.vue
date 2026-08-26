@@ -61,7 +61,10 @@ import type {
   KeywordMatchType, 
   KeywordSeverity, 
   CreateKeywordRulePayload,
-  UpdateKeywordRulePayload 
+  UpdateKeywordRulePayload,
+  DomainRule,
+  DomainMatchType,
+  DomainRulesQueryParams
 } from '@/types';
 
 definePageMeta({
@@ -128,6 +131,11 @@ const canViewKeywords = computed(() => hasPermission('content_security.view_keyw
 const canAddKeywordRule = computed(() => hasPermission('content_security.add_keywordrule'));
 const canEditKeywordRule = computed(() => hasPermission('content_security.change_keywordrule'));
 const canDeleteKeywordRule = computed(() => hasPermission('content_security.delete_keywordrule'));
+
+const canViewDomains = computed(() => hasPermission('content_security.view_domainrule'));
+const canAddDomainRule = computed(() => hasPermission('content_security.add_domainrule'));
+const canEditDomainRule = computed(() => hasPermission('content_security.change_domainrule'));
+const canDeleteDomainRule = computed(() => hasPermission('content_security.delete_domainrule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -203,6 +211,87 @@ const fetchKeywordRules = async () => {
   keywordRulesPages.value = response.pages;
 };
 
+// Domain Rules Query/Data States
+const isDomainsLoading = ref(false);
+const domainsError = ref<string | null>(null);
+const domainSearchQuery = ref('');
+const debouncedDomainSearch = refDebounced(domainSearchQuery, 300);
+const domainCategory = ref<string>('all');
+const domainSeverity = ref<string>('all');
+const domainMatchType = ref<string>('all');
+const domainIsActive = ref<string>('all');
+const domainIsEnabled = ref<string>('all');
+const domainOrdering = ref<string>('-created_at');
+const domainPage = ref(1);
+const domainPageSize = ref(10);
+const domainRulesData = ref<DomainRule[]>([]);
+const domainRulesCount = ref(0);
+const domainRulesPages = ref(1);
+
+const domainRuleColumns: UiTableColumn<DomainRule>[] = [
+  { key: 'domain', label: 'Domain', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-sm font-bold text-foreground' },
+  { key: 'category', label: 'Category', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'match_type', label: 'Match Type', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs' },
+  { key: 'severity', label: 'Severity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'is_enabled', label: 'Enabled', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'is_active', label: 'Active', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' },
+  { key: 'actions', label: 'Actions', align: 'right' as const, width: '100px', headerClass: 'px-4 py-3 text-right whitespace-nowrap', cellClass: 'px-4 py-3 text-right whitespace-nowrap' }
+];
+
+const resetDomainFilters = () => {
+  domainSearchQuery.value = '';
+  domainCategory.value = 'all';
+  domainSeverity.value = 'all';
+  domainMatchType.value = 'all';
+  domainIsActive.value = 'all';
+  domainIsEnabled.value = 'all';
+  domainPage.value = 1;
+};
+
+const fetchDomainRules = async () => {
+  if (!canViewDomains.value) return;
+  
+  isDomainsLoading.value = true;
+  domainsError.value = null;
+
+  try {
+    const params: DomainRulesQueryParams = {
+      page: domainPage.value,
+      page_size: domainPageSize.value,
+      ordering: domainOrdering.value
+    };
+
+    if (debouncedDomainSearch.value.trim()) {
+      params.search = debouncedDomainSearch.value.trim();
+    }
+    if (domainCategory.value !== 'all') {
+      params.category = domainCategory.value as KeywordCategory;
+    }
+    if (domainSeverity.value !== 'all') {
+      params.severity = domainSeverity.value as KeywordSeverity;
+    }
+    if (domainMatchType.value !== 'all') {
+      params.match_type = domainMatchType.value as DomainMatchType;
+    }
+    if (domainIsActive.value !== 'all') {
+      params.is_active = domainIsActive.value === 'true';
+    }
+    if (domainIsEnabled.value !== 'all') {
+      params.is_enabled = domainIsEnabled.value === 'true';
+    }
+
+    const response = await contentSecurityService.getDomainRules(params);
+    domainRulesData.value = response.results;
+    domainRulesCount.value = response.count;
+    domainRulesPages.value = response.pages;
+  } catch (err: any) {
+    domainsError.value = extractErrorMessage(err, 'Failed to retrieve domain rules.');
+  } finally {
+    isDomainsLoading.value = false;
+  }
+};
+
 // URL Routing/Query Management
 const route = useRoute();
 const router = useRouter();
@@ -210,15 +299,28 @@ const router = useRouter();
 const syncFromRoute = () => {
   if (route.query.mainTab) mainTab.value = route.query.mainTab as any;
   if (route.query.subTab) rulesSubTab.value = route.query.subTab as any;
-  if (route.query.search) keywordSearchQuery.value = String(route.query.search);
-  if (route.query.category) keywordCategory.value = String(route.query.category);
-  if (route.query.severity) keywordSeverity.value = String(route.query.severity);
-  if (route.query.match_type) keywordMatchType.value = String(route.query.match_type);
-  if (route.query.is_active) keywordIsActive.value = String(route.query.is_active);
-  if (route.query.is_enabled) keywordIsEnabled.value = String(route.query.is_enabled);
-  if (route.query.ordering) keywordOrdering.value = String(route.query.ordering);
-  if (route.query.page) keywordPage.value = parseInt(String(route.query.page)) || 1;
-  if (route.query.page_size) keywordPageSize.value = parseInt(String(route.query.page_size)) || 10;
+
+  if (rulesSubTab.value === 'domains') {
+    if (route.query.search) domainSearchQuery.value = String(route.query.search);
+    if (route.query.category) domainCategory.value = String(route.query.category);
+    if (route.query.severity) domainSeverity.value = String(route.query.severity);
+    if (route.query.match_type) domainMatchType.value = String(route.query.match_type);
+    if (route.query.is_active) domainIsActive.value = String(route.query.is_active);
+    if (route.query.is_enabled) domainIsEnabled.value = String(route.query.is_enabled);
+    if (route.query.ordering) domainOrdering.value = String(route.query.ordering);
+    if (route.query.page) domainPage.value = parseInt(String(route.query.page)) || 1;
+    if (route.query.page_size) domainPageSize.value = parseInt(String(route.query.page_size)) || 10;
+  } else {
+    if (route.query.search) keywordSearchQuery.value = String(route.query.search);
+    if (route.query.category) keywordCategory.value = String(route.query.category);
+    if (route.query.severity) keywordSeverity.value = String(route.query.severity);
+    if (route.query.match_type) keywordMatchType.value = String(route.query.match_type);
+    if (route.query.is_active) keywordIsActive.value = String(route.query.is_active);
+    if (route.query.is_enabled) keywordIsEnabled.value = String(route.query.is_enabled);
+    if (route.query.ordering) keywordOrdering.value = String(route.query.ordering);
+    if (route.query.page) keywordPage.value = parseInt(String(route.query.page)) || 1;
+    if (route.query.page_size) keywordPageSize.value = parseInt(String(route.query.page_size)) || 10;
+  }
 };
 
 const updateRouteQuery = () => {
@@ -237,6 +339,16 @@ const updateRouteQuery = () => {
     query.ordering = keywordOrdering.value !== '-created_at' ? keywordOrdering.value : undefined;
     query.page = keywordPage.value !== 1 ? String(keywordPage.value) : undefined;
     query.page_size = keywordPageSize.value !== 10 ? String(keywordPageSize.value) : undefined;
+  } else if (mainTab.value === 'rules' && rulesSubTab.value === 'domains') {
+    query.search = domainSearchQuery.value || undefined;
+    query.category = domainCategory.value !== 'all' ? domainCategory.value : undefined;
+    query.severity = domainSeverity.value !== 'all' ? domainSeverity.value : undefined;
+    query.match_type = domainMatchType.value !== 'all' ? domainMatchType.value : undefined;
+    query.is_active = domainIsActive.value !== 'all' ? domainIsActive.value : undefined;
+    query.is_enabled = domainIsEnabled.value !== 'all' ? domainIsEnabled.value : undefined;
+    query.ordering = domainOrdering.value !== '-created_at' ? domainOrdering.value : undefined;
+    query.page = domainPage.value !== 1 ? String(domainPage.value) : undefined;
+    query.page_size = domainPageSize.value !== 10 ? String(domainPageSize.value) : undefined;
   } else {
     delete query.search;
     delete query.category;
@@ -255,10 +367,15 @@ const updateRouteQuery = () => {
 // Initial Sync
 onMounted(() => {
   syncFromRoute();
-  fetchKeywordRules();
+  if (canViewKeywords.value) {
+    fetchKeywordRules();
+  }
+  if (canViewDomains.value) {
+    fetchDomainRules();
+  }
 });
 
-// Reactively watch filters & trigger fetch
+// Reactively watch keyword filters & trigger fetch
 watch(
   [
     debouncedKeywordSearch,
@@ -273,19 +390,55 @@ watch(
   () => {
     keywordPage.value = 1;
     updateRouteQuery();
-    fetchKeywordRules();
+    if (rulesSubTab.value === 'keywords') {
+      fetchKeywordRules();
+    }
   }
 );
 
 watch(keywordPage, () => {
   updateRouteQuery();
-  fetchKeywordRules();
+  if (rulesSubTab.value === 'keywords') {
+    fetchKeywordRules();
+  }
+});
+
+// Reactively watch domain filters & trigger fetch
+watch(
+  [
+    debouncedDomainSearch,
+    domainCategory,
+    domainSeverity,
+    domainMatchType,
+    domainIsActive,
+    domainIsEnabled,
+    domainOrdering,
+    domainPageSize
+  ],
+  () => {
+    domainPage.value = 1;
+    updateRouteQuery();
+    if (rulesSubTab.value === 'domains') {
+      fetchDomainRules();
+    }
+  }
+);
+
+watch(domainPage, () => {
+  updateRouteQuery();
+  if (rulesSubTab.value === 'domains') {
+    fetchDomainRules();
+  }
 });
 
 watch([mainTab, rulesSubTab], () => {
   updateRouteQuery();
-  if (mainTab.value === 'rules' && rulesSubTab.value === 'keywords') {
-    fetchKeywordRules();
+  if (mainTab.value === 'rules') {
+    if (rulesSubTab.value === 'keywords') {
+      fetchKeywordRules();
+    } else if (rulesSubTab.value === 'domains') {
+      fetchDomainRules();
+    }
   }
 });
 
@@ -610,8 +763,10 @@ const visibleSubTabs = computed(() => {
   if (canViewKeywords.value) {
     tabs.push({ id: 'keywords', label: 'Keywords', count: keywordRulesCount.value });
   }
+  if (canViewDomains.value) {
+    tabs.push({ id: 'domains', label: 'Domains', count: domainRulesCount.value });
+  }
   tabs.push(
-    { id: 'domains', label: 'Domains', count: rules.value.filter(r => r.type === 'domain').length },
     { id: 'html', label: 'Dangerous HTML', count: rules.value.filter(r => r.type === 'html').length },
     { id: 'attributes', label: 'Dangerous Attributes', count: rules.value.filter(r => r.type === 'attribute').length },
     { id: 'redirects', label: 'Redirect Rules', count: rules.value.filter(r => r.type === 'redirect').length }
@@ -1914,7 +2069,7 @@ const getSeverityBadge = (severity: string) => {
         </div>
 
         <UiButton 
-          v-if="rulesSubTab !== 'keywords' || hasPermission('content_security.add_keywordrule')"
+          v-if="(rulesSubTab === 'keywords' && canAddKeywordRule) || (rulesSubTab === 'domains' && canAddDomainRule) || (rulesSubTab !== 'keywords' && rulesSubTab !== 'domains')"
           @click="openAddRuleModal(
             rulesSubTab === 'keywords' ? 'keyword' :
             rulesSubTab === 'domains' ? 'domain' :
@@ -2200,7 +2355,270 @@ const getSeverityBadge = (severity: string) => {
         </div>
       </div>
 
-      <!-- Non-Keywords Rules (Domains, HTML, Attributes, Redirects) original fallback -->
+      <!-- Domains Subtab Specific Filters & Table -->
+      <div v-else-if="rulesSubTab === 'domains'" class="space-y-4">
+        <!-- Domain Rules Filters Toolbar -->
+        <div class="bg-card border border-border rounded-2xl p-3.5 shadow-xs space-y-3">
+          <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+            <!-- Search Box -->
+            <div class="relative flex-1">
+              <Search class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input 
+                v-model="domainSearchQuery"
+                type="text" 
+                placeholder="Search domains..." 
+                class="w-full h-9 pl-9 pr-4 bg-background border border-input rounded-lg text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+              />
+              <button 
+                v-if="domainSearchQuery" 
+                @click="domainSearchQuery = ''"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X class="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <!-- Filters Dropdowns Row -->
+            <div class="flex items-center gap-2 flex-wrap lg:flex-nowrap">
+              <!-- Category Filter -->
+              <select 
+                v-model="domainCategory"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Categories</option>
+                <option value="ADULT">Adult</option>
+                <option value="DRUG">Drug</option>
+                <option value="GAMBLING">Gambling</option>
+                <option value="HIDDEN_CONTENT">Hidden Content</option>
+                <option value="INJECTION">Injection</option>
+                <option value="MALWARE">Malware</option>
+                <option value="OBFUSCATION">Obfuscation</option>
+                <option value="PHISHING">Phishing</option>
+                <option value="REDIRECT">Redirect</option>
+                <option value="SCAM">Scam</option>
+                <option value="SPAM">Spam</option>
+              </select>
+
+              <!-- Severity Filter -->
+              <select 
+                v-model="domainSeverity"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Severities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+                <option value="INFO">Info</option>
+              </select>
+
+              <!-- Match Type Filter -->
+              <select 
+                v-model="domainMatchType"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Match Types</option>
+                <option value="EXACT">Exact Domain</option>
+                <option value="SUBDOMAIN">Domain And Subdomains</option>
+              </select>
+
+              <!-- Is Active Filter -->
+              <select 
+                v-model="domainIsActive"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Active Status</option>
+                <option value="true">Active Only</option>
+                <option value="false">Inactive Only</option>
+              </select>
+
+              <!-- Is Enabled Filter -->
+              <select 
+                v-model="domainIsEnabled"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Enabled Status</option>
+                <option value="true">Enabled Only</option>
+                <option value="false">Disabled Only</option>
+              </select>
+
+              <!-- Ordering Filter -->
+              <select 
+                v-model="domainOrdering"
+                class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="-created_at">Newest First</option>
+                <option value="created_at">Oldest First</option>
+                <option value="domain">Domain (A-Z)</option>
+                <option value="-domain">Domain (Z-A)</option>
+              </select>
+
+              <!-- Page Size Selector -->
+              <div class="flex items-center gap-1.5 border-l border-border pl-2.5 shrink-0">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+                <select 
+                  v-model="domainPageSize"
+                  class="h-9 px-2 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+                >
+                  <option :value="5">5 / page</option>
+                  <option :value="10">10 / page</option>
+                  <option :value="25">25 / page</option>
+                  <option :value="50">50 / page</option>
+                  <option :value="100">100 / page</option>
+                </select>
+              </div>
+
+              <!-- Reset Button -->
+              <button 
+                v-if="domainSearchQuery || domainCategory !== 'all' || domainSeverity !== 'all' || domainMatchType !== 'all' || domainIsActive !== 'all' || domainIsEnabled !== 'all'"
+                @click="resetDomainFilters"
+                class="h-9 px-3 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors shrink-0"
+                title="Reset domain filters"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Domain Rules Table Wrapper -->
+        <div v-if="!canViewDomains" class="p-8 text-center text-rose-500 bg-rose-500/5 border border-rose-500/20 rounded-2xl space-y-2">
+          <ShieldAlert class="w-8 h-8 mx-auto text-rose-500" />
+          <p class="text-sm font-semibold">Access Denied</p>
+          <p class="text-xs text-muted-foreground">You do not have permission to view content security domain rules.</p>
+        </div>
+        <div v-else class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+          <!-- Loading state -->
+          <div v-if="isDomainsLoading" class="p-12 text-center space-y-3">
+            <RefreshCw class="w-8 h-8 animate-spin mx-auto text-primary" />
+            <p class="text-xs text-muted-foreground">Loading domain rules from security registry...</p>
+          </div>
+          <!-- Error state -->
+          <div v-else-if="domainsError" class="p-12 text-center space-y-3 text-rose-500">
+            <ShieldAlert class="w-8 h-8 mx-auto" />
+            <p class="text-sm font-semibold">Failed to Retrieve Domain Rules</p>
+            <p class="text-xs text-muted-foreground">{{ domainsError }}</p>
+            <UiButton size="sm" @click="fetchDomainRules" class="mt-2">Retry</UiButton>
+          </div>
+          <!-- Table state -->
+          <div v-else>
+            <UiTable 
+              :columns="domainRuleColumns" 
+              :data="domainRulesData"
+              empty-text="No domain rules found"
+              empty-description="No items match your active rules query."
+            >
+              <!-- Domain Cell -->
+              <template #cell-domain="{ item }">
+                <span class="font-mono text-sm font-bold text-foreground bg-muted px-2.5 py-1 rounded-lg border border-border">
+                  {{ item.domain }}
+                </span>
+              </template>
+
+              <!-- Category Cell -->
+              <template #cell-category="{ item }">
+                <span class="text-xs font-semibold text-muted-foreground">
+                  {{ item.category }}
+                </span>
+              </template>
+
+              <!-- Match Type Cell -->
+              <template #cell-match_type="{ item }">
+                <span class="px-2 py-0.5 rounded bg-muted text-[11px] font-mono text-muted-foreground border border-border/50">
+                  {{ item.match_type }}
+                </span>
+              </template>
+
+              <!-- Severity Cell -->
+              <template #cell-severity="{ item }">
+                <span :class="cn('px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border', getSeverityBadge(item.severity))">
+                  {{ item.severity }}
+                </span>
+              </template>
+
+              <!-- Enabled Cell -->
+              <template #cell-is_enabled="{ item }">
+                <span 
+                  :class="cn(
+                    'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5 w-fit',
+                    item.is_enabled 
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                      : 'bg-muted text-muted-foreground border-border'
+                  )"
+                >
+                  <span :class="cn('w-1.5 h-1.5 rounded-full', item.is_enabled ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                  <span>{{ item.is_enabled ? 'Enabled' : 'Disabled' }}</span>
+                </span>
+              </template>
+
+              <!-- Active Cell -->
+              <template #cell-is_active="{ item }">
+                <span 
+                  :class="cn(
+                    'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5 w-fit',
+                    item.is_active 
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                      : 'bg-muted text-muted-foreground border-border'
+                  )"
+                >
+                  <span :class="cn('w-1.5 h-1.5 rounded-full', item.is_active ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                  <span>{{ item.is_active ? 'Active' : 'Inactive' }}</span>
+                </span>
+              </template>
+
+              <!-- Created At Cell -->
+              <template #cell-created_at="{ item }">
+                <span class="text-xs text-muted-foreground font-mono">
+                  {{ formatDate(item.created_at) }}
+                </span>
+              </template>
+
+              <!-- Actions Cell -->
+              <template #cell-actions="{ item }">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button 
+                    v-if="canViewDomains"
+                    class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                    title="View domain rule details"
+                    aria-label="View domain rule details"
+                  >
+                    <Eye class="w-4 h-4" />
+                  </button>
+                  <button 
+                    v-if="canEditDomainRule"
+                    class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                    title="Edit domain rule"
+                    aria-label="Edit domain rule"
+                  >
+                    <Edit3 class="w-4 h-4" />
+                  </button>
+                  <button 
+                    v-if="canDeleteDomainRule"
+                    class="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                    title="Delete domain rule"
+                    aria-label="Delete domain rule"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+              </template>
+            </UiTable>
+
+            <!-- Pagination Controls -->
+            <UiPagination 
+              v-if="domainRulesCount > 0"
+              :current-page="domainPage"
+              :total-pages="domainRulesPages"
+              :total-count="domainRulesCount"
+              :items-per-page="domainPageSize"
+              item-label="domain rules"
+              @update:current-page="domainPage = $event"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Non-Keywords/Non-Domains Rules (HTML, Attributes, Redirects) original fallback -->
       <div v-else class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
         <div class="divide-y divide-border">
           <div 

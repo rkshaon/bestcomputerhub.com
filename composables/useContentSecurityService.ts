@@ -8,7 +8,10 @@ import type {
   CreateKeywordRulePayload,
   UpdateKeywordRulePayload,
   KeywordRulesQueryParams, 
-  PaginatedKeywordRules 
+  PaginatedKeywordRules,
+  DomainRule,
+  DomainRulesQueryParams,
+  PaginatedDomainRules
 } from '@/types';
 
 export const useContentSecurityService = () => {
@@ -374,6 +377,156 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getFallbackDomainRules = (): DomainRule[] => {
+    return [
+      {
+        id: 1,
+        domain: 'casino-example.com',
+        category: 'GAMBLING',
+        match_type: 'SUBDOMAIN',
+        severity: 'CRITICAL',
+        is_enabled: true,
+        is_active: true,
+        created_at: '2026-08-22T10:00:00Z'
+      },
+      {
+        id: 2,
+        domain: 'free-giveaway-zone.xyz',
+        category: 'PHISHING',
+        match_type: 'EXACT',
+        severity: 'CRITICAL',
+        is_enabled: true,
+        is_active: true,
+        created_at: '2026-08-21T14:30:00Z'
+      },
+      {
+        id: 3,
+        domain: 'tracker-telemetry.biz',
+        category: 'MALWARE',
+        match_type: 'SUBDOMAIN',
+        severity: 'HIGH',
+        is_enabled: true,
+        is_active: true,
+        created_at: '2026-08-19T09:15:00Z'
+      },
+      {
+        id: 4,
+        domain: 'free-file-vault-dl.com',
+        category: 'MALWARE',
+        match_type: 'EXACT',
+        severity: 'CRITICAL',
+        is_enabled: true,
+        is_active: true,
+        created_at: '2026-08-12T16:20:00Z'
+      }
+    ];
+  };
+
+  const getDomainRules = async (
+    params?: DomainRulesQueryParams
+  ): Promise<PaginatedDomainRules> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      let results = getFallbackDomainRules();
+
+      if (params?.search) {
+        const q = params.search.toLowerCase().trim();
+        results = results.filter((r) => r.domain.toLowerCase().includes(q));
+      }
+      if (params?.category) {
+        results = results.filter((r) => r.category === params.category);
+      }
+      if (params?.severity) {
+        results = results.filter((r) => r.severity === params.severity);
+      }
+      if (params?.match_type) {
+        results = results.filter((r) => r.match_type === params.match_type);
+      }
+      if (params?.is_active !== undefined) {
+        results = results.filter((r) => r.is_active === params.is_active);
+      }
+      if (params?.is_enabled !== undefined) {
+        results = results.filter((r) => r.is_enabled === params.is_enabled);
+      }
+
+      // Pagination
+      const page = params?.page || 1;
+      const pageSize = params?.page_size || 10;
+      const totalCount = results.length;
+      const totalPages = Math.ceil(totalCount / pageSize) || 1;
+      const start = (page - 1) * pageSize;
+      const paginatedResults = results.slice(start, start + pageSize);
+
+      isLoading.value = false;
+      return {
+        results: paginatedResults,
+        count: totalCount,
+        page,
+        pages: totalPages,
+        next: page < totalPages ? `?page=${page + 1}` : null,
+        previous: page > 1 ? `?page=${page - 1}` : null
+      };
+    }
+
+    try {
+      const queryObj: Record<string, any> = {};
+      if (params?.page) queryObj.page = params.page;
+      if (params?.page_size) queryObj.page_size = params.page_size;
+      if (params?.search) queryObj.search = params.search;
+      if (params?.category) queryObj.category = params.category;
+      if (params?.severity) queryObj.severity = params.severity;
+      if (params?.match_type) queryObj.match_type = params.match_type;
+      if (params?.is_active !== undefined) queryObj.is_active = params.is_active;
+      if (params?.is_enabled !== undefined) queryObj.is_enabled = params.is_enabled;
+      if (params?.ordering) queryObj.ordering = params.ordering;
+
+      const data = await apiClient.request<any>('/api/v1/content-security/domain-rules/', {
+        method: 'GET',
+        params: queryObj
+      });
+
+      let results: DomainRule[] = [];
+      let count = 0;
+      let pageNum = params?.page || 1;
+      let totalPagesNum = 1;
+
+      if (Array.isArray(data)) {
+        results = data;
+        count = data.length;
+      } else if (data && typeof data === 'object') {
+        results = data.results || [];
+        count = data.count || results.length;
+        pageNum = data.page || params?.page || 1;
+        totalPagesNum = data.pages || Math.ceil(count / (params?.page_size || 10)) || 1;
+      }
+
+      return {
+        results,
+        count,
+        page: pageNum,
+        pages: totalPagesNum,
+        next: data?.next || null,
+        previous: data?.previous || null
+      };
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to fetch domain rules.');
+      errorMsg.value = msg;
+      return {
+        results: [],
+        count: 0,
+        page: params?.page || 1,
+        pages: 1,
+        next: null,
+        previous: null
+      };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -381,6 +534,7 @@ export const useContentSecurityService = () => {
     createKeywordRule,
     getKeywordRuleDetails,
     updateKeywordRule,
-    deleteKeywordRule
+    deleteKeywordRule,
+    getDomainRules
   };
 };

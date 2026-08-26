@@ -93,3 +93,37 @@ export interface PaginatedKeywordRules {
   next?: string | null;
   previous?: string | null;
 }
+
+export type DomainMatchType = 'EXACT' | 'SUBDOMAIN';
+
+export interface DomainRule {
+  id: number;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  is_active: boolean;
+  created_at: string;
+  domain: string;
+  match_type: DomainMatchType;
+}
+
+export interface DomainRulesQueryParams {
+  search?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  match_type?: DomainMatchType;
+  is_active?: boolean;
+  is_enabled?: boolean;
+  ordering?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedDomainRules {
+  results: DomainRule[];
+  count: number;
+  page: number;
+  pages: number;
+  next?: string | null;
+  previous?: string | null;
+}
