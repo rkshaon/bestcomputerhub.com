@@ -10,7 +10,9 @@ import type {
   KeywordRulesQueryParams, 
   PaginatedKeywordRules,
   DomainRule,
+  DomainRuleDetail,
   CreateDomainRulePayload,
+  UpdateDomainRulePayload,
   DomainRulesQueryParams,
   PaginatedDomainRules
 } from '@/types';
@@ -587,6 +589,103 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getDomainRuleDetails = async (
+    id: string | number
+  ): Promise<DomainRuleDetail | null> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const fallbackList = getFallbackDomainRules();
+      const found = fallbackList.find((r) => String(r.id) === String(id));
+      isLoading.value = false;
+      if (!found) return null;
+      return {
+        id: found.id,
+        domain: found.domain,
+        category: found.category,
+        severity: found.severity,
+        match_type: found.match_type,
+        is_enabled: found.is_enabled,
+        is_active: found.is_active,
+        description: 'Auto-generated security rule for domain filtering heuristics.',
+        created_at: found.created_at,
+        updated_at: found.created_at,
+        created_by: 'Security System',
+        updated_by: 'Security System'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<DomainRuleDetail>(
+        `/api/v1/content-security/domain-rules/${id}/`,
+        {
+          method: 'GET'
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve domain rule details.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
+  const updateDomainRule = async (
+    id: string | number,
+    payload: UpdateDomainRulePayload
+  ): Promise<DomainRuleDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      isLoading.value = false;
+      const fallbackList = getFallbackDomainRules();
+      const idx = fallbackList.findIndex((r) => String(r.id) === String(id));
+      if (idx === -1) {
+        throw new Error('Domain rule not found.');
+      }
+      const existing = fallbackList[idx]!;
+      const updated: DomainRule = {
+        ...existing,
+        domain: payload.domain !== undefined ? payload.domain : existing.domain,
+        category: payload.category !== undefined ? payload.category : existing.category,
+        severity: payload.severity !== undefined ? payload.severity : existing.severity,
+        match_type: payload.match_type !== undefined ? payload.match_type : existing.match_type,
+        is_enabled: payload.is_enabled !== undefined ? payload.is_enabled : existing.is_enabled
+      };
+      fallbackList[idx] = updated;
+      return {
+        ...updated,
+        description: payload.description !== undefined ? payload.description : 'Updated domain rule.',
+        updated_at: new Date().toISOString(),
+        created_by: 'Security Admin',
+        updated_by: 'Security Admin'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<DomainRuleDetail>(
+        `/api/v1/content-security/domain-rules/${id}/`,
+        {
+          method: 'PATCH',
+          body: payload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to update domain rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -596,6 +695,8 @@ export const useContentSecurityService = () => {
     updateKeywordRule,
     deleteKeywordRule,
     getDomainRules,
-    createDomainRule
+    createDomainRule,
+    getDomainRuleDetails,
+    updateDomainRule
   };
 };

@@ -107,11 +107,47 @@ export interface DomainRule {
   match_type: DomainMatchType;
 }
 
+export interface DomainRuleDetail {
+  id: number;
+  domain: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  match_type: DomainMatchType;
+  is_enabled: boolean;
+  description?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by?: {
+    id: number;
+    username?: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+  } | string | number | null;
+  updated_by?: {
+    id: number;
+    username?: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+  } | string | number | null;
+}
+
 export interface CreateDomainRulePayload {
   domain: string;
   category: KeywordCategory;
   severity: KeywordSeverity;
   match_type: DomainMatchType;
+  is_enabled?: boolean;
+  description?: string;
+}
+
+export interface UpdateDomainRulePayload {
+  domain?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  match_type?: DomainMatchType;
   is_enabled?: boolean;
   description?: string;
 }

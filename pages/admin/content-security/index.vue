@@ -63,8 +63,10 @@ import type {
   CreateKeywordRulePayload,
   UpdateKeywordRulePayload,
   DomainRule,
+  DomainRuleDetail,
   DomainMatchType,
   CreateDomainRulePayload,
+  UpdateDomainRulePayload,
   DomainRulesQueryParams
 } from '@/types';
 
@@ -1007,6 +1009,7 @@ const originalKeywordRuleData = ref<{
 
 const keywordModalState = useAdminModalState<KeywordRuleDetail>({
   getItems: async (id) => {
+    if (rulesSubTab.value !== 'keywords') return null;
     isKeywordDetailsLoading.value = true;
     try {
       const details = await contentSecurityService.getKeywordRuleDetails(String(id));
@@ -1020,13 +1023,15 @@ const keywordModalState = useAdminModalState<KeywordRuleDetail>({
     }
   },
   onResolveError: (id) => {
-    toastError(`Keyword Rule #${id} could not be resolved.`);
-    keywordModalState.closeModal({ replace: true });
+    if (rulesSubTab.value === 'keywords') {
+      toastError(`Keyword Rule #${id} could not be resolved.`);
+      keywordModalState.closeModal({ replace: true });
+    }
   }
 });
 
 watch(() => keywordModalState.activeEntity.value, (newEntity) => {
-  if (newEntity) {
+  if (newEntity && rulesSubTab.value === 'keywords') {
     selectedKeywordRule.value = newEntity;
 
     if (keywordModalState.isEdit.value) {
@@ -1102,6 +1107,205 @@ const openKeywordViewModal = (id: number | string) => {
 
 const closeKeywordViewModal = () => {
   keywordModalState.closeModal();
+};
+
+// ==========================================
+// Modal State: Domain Rule Details (View) & Edit
+// ==========================================
+const isDomainDetailsLoading = ref(false);
+const selectedDomainRule = ref<DomainRuleDetail | null>(null);
+const editingDomainRuleId = ref<number | null>(null);
+const isSubmittingDomainEdit = ref(false);
+
+const domainEditForm = ref<{
+  domain: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  match_type: DomainMatchType;
+  is_enabled: boolean;
+  description: string;
+}>({
+  domain: '',
+  category: 'MALWARE',
+  severity: 'HIGH',
+  match_type: 'SUBDOMAIN',
+  is_enabled: true,
+  description: ''
+});
+
+const originalDomainRuleData = ref<{
+  domain: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  match_type: DomainMatchType;
+  is_enabled: boolean;
+  description: string;
+} | null>(null);
+
+const domainModalState = useAdminModalState<DomainRuleDetail>({
+  getItems: async (id) => {
+    if (rulesSubTab.value !== 'domains') return null;
+    isDomainDetailsLoading.value = true;
+    try {
+      const details = await contentSecurityService.getDomainRuleDetails(String(id));
+      return details;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve domain rule details.');
+      toastError(msg);
+      return null;
+    } finally {
+      isDomainDetailsLoading.value = false;
+    }
+  },
+  onResolveError: (id) => {
+    if (rulesSubTab.value === 'domains') {
+      toastError(`Domain Rule #${id} could not be resolved.`);
+      domainModalState.closeModal({ replace: true });
+    }
+  }
+});
+
+watch(() => domainModalState.activeEntity.value, (newEntity) => {
+  if (newEntity && rulesSubTab.value === 'domains') {
+    selectedDomainRule.value = newEntity;
+
+    if (domainModalState.isEdit.value) {
+      if (!canEditDomainRule.value) {
+        toastError('You do not have permission to edit domain rules.');
+        domainModalState.closeModal({ replace: true });
+        return;
+      }
+      editingDomainRuleId.value = newEntity.id;
+      domainEditForm.value = {
+        domain: newEntity.domain || '',
+        category: newEntity.category || 'MALWARE',
+        severity: newEntity.severity || 'HIGH',
+        match_type: newEntity.match_type || 'SUBDOMAIN',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+      originalDomainRuleData.value = {
+        domain: newEntity.domain || '',
+        category: newEntity.category || 'MALWARE',
+        severity: newEntity.severity || 'HIGH',
+        match_type: newEntity.match_type || 'SUBDOMAIN',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+    }
+  }
+}, { immediate: true });
+
+watch(() => domainModalState.isView.value, (isView) => {
+  if (!isView && !domainModalState.isEdit.value && !domainModalState.isDelete.value) {
+    selectedDomainRule.value = null;
+  }
+}, { immediate: true });
+
+watch(() => domainModalState.isEdit.value, (isEdit) => {
+  if (!isEdit) {
+    editingDomainRuleId.value = null;
+    originalDomainRuleData.value = null;
+  }
+}, { immediate: true });
+
+const openDomainViewModal = (id: number | string) => {
+  if (!canViewDomains.value) {
+    toastError('You do not have permission to view domain rules.');
+    return;
+  }
+  domainModalState.openView(id);
+};
+
+const closeDomainViewModal = () => {
+  domainModalState.closeModal();
+};
+
+const openEditDomainRuleModal = async (id: number | string) => {
+  if (!canEditDomainRule.value) {
+    toastError('You do not have permission to edit domain rules.');
+    return;
+  }
+  await domainModalState.openEdit(id);
+};
+
+const closeDomainEditModal = async () => {
+  await domainModalState.closeModal();
+};
+
+const submitUpdateDomainRule = async () => {
+  if (!canEditDomainRule.value) {
+    toastError('You do not have permission to edit domain rules.');
+    return;
+  }
+
+  if (!editingDomainRuleId.value) {
+    toastError('Domain rule identifier missing.');
+    return;
+  }
+
+  const trimmedDomain = domainEditForm.value.domain.trim();
+  if (!trimmedDomain) {
+    toastError('Domain is required.');
+    return;
+  }
+
+  const payload: UpdateDomainRulePayload = {};
+  const orig = originalDomainRuleData.value;
+  const current = domainEditForm.value;
+
+  if (orig) {
+    if (trimmedDomain !== orig.domain.trim()) {
+      payload.domain = trimmedDomain;
+    }
+    if (current.category !== orig.category) {
+      payload.category = current.category;
+    }
+    if (current.severity !== orig.severity) {
+      payload.severity = current.severity;
+    }
+    if (current.match_type !== orig.match_type) {
+      payload.match_type = current.match_type;
+    }
+    if (Boolean(current.is_enabled) !== Boolean(orig.is_enabled)) {
+      payload.is_enabled = current.is_enabled;
+    }
+    const currentDesc = current.description.trim();
+    const origDesc = (orig.description || '').trim();
+    if (currentDesc !== origDesc) {
+      payload.description = currentDesc;
+    }
+  } else {
+    payload.domain = trimmedDomain;
+    payload.category = current.category;
+    payload.severity = current.severity;
+    payload.match_type = current.match_type;
+    payload.is_enabled = current.is_enabled;
+    payload.description = current.description.trim();
+  }
+
+  if (Object.keys(payload).length === 0) {
+    toastInfo('No changes detected.');
+    await closeDomainEditModal();
+    return;
+  }
+
+  isSubmittingDomainEdit.value = true;
+  try {
+    const updated = await contentSecurityService.updateDomainRule(editingDomainRuleId.value, payload);
+    toastSuccess('Domain rule updated successfully.');
+    await closeDomainEditModal();
+    await fetchDomainRules();
+
+    if (selectedDomainRule.value && String(selectedDomainRule.value.id) === String(updated.id)) {
+      selectedDomainRule.value = updated;
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to update domain rule.');
+    toastError(msg);
+  } finally {
+    isSubmittingDomainEdit.value = false;
+  }
 };
 
 const openEditKeywordRuleModal = async (id: number | string) => {
@@ -2647,6 +2851,7 @@ const getSeverityBadge = (severity: string) => {
                 <div class="flex items-center justify-end gap-1.5">
                   <button 
                     v-if="canViewDomains"
+                    @click.stop="openDomainViewModal(item.id)"
                     class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                     title="View domain rule details"
                     aria-label="View domain rule details"
@@ -2655,6 +2860,7 @@ const getSeverityBadge = (severity: string) => {
                   </button>
                   <button 
                     v-if="canEditDomainRule"
+                    @click.stop="openEditDomainRuleModal(item.id)"
                     class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                     title="Edit domain rule"
                     aria-label="Edit domain rule"
@@ -3426,6 +3632,291 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: VIEW DOMAIN RULE DETAILS -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="domainModalState.isView.value"
+      :title="isDomainDetailsLoading ? 'Loading Domain Rule...' : (selectedDomainRule ? `Domain Rule #${selectedDomainRule.id}` : 'Domain Rule Details')"
+      subtitle="Comprehensive security inspection parameters and audit metadata."
+      max-width="max-w-2xl"
+      @close="closeDomainViewModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isDomainDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving domain rule details from security registry...</p>
+      </div>
+
+      <!-- Error / Not Found State -->
+      <div v-else-if="!selectedDomainRule" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <AlertCircle class="w-6 h-6" />
+        </div>
+        <p class="text-sm font-bold text-foreground">Rule Details Not Available</p>
+        <p class="text-xs text-muted-foreground">Could not load the requested domain rule from the security engine.</p>
+        <button 
+          type="button"
+          @click="closeDomainViewModal"
+          class="mt-2 h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+
+      <!-- Loaded Details View -->
+      <div v-else class="p-6 sm:p-8 space-y-6">
+        <!-- Hero Summary Card -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-muted/40 rounded-2xl border border-border">
+          <div class="space-y-1.5 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Blocked Domain</span>
+            </div>
+            <div class="font-mono text-base sm:text-lg font-bold text-foreground bg-background px-3 py-1.5 rounded-xl border border-border shadow-2xs inline-block break-all">
+              {{ selectedDomainRule.domain }}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <!-- Severity Badge -->
+            <span :class="cn('px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border', getSeverityBadge(selectedDomainRule.severity))">
+              {{ selectedDomainRule.severity }}
+            </span>
+            <!-- Match Type Badge -->
+            <span class="px-2.5 py-1 rounded-full bg-muted text-xs font-mono font-semibold text-foreground border border-border">
+              {{ selectedDomainRule.match_type }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Rule Specifications Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</span>
+            <p class="text-sm font-bold text-foreground">{{ selectedDomainRule.category }}</p>
+          </div>
+
+          <!-- Status Indicators -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Operational Status</span>
+            <div class="flex items-center gap-3">
+              <!-- Enabled Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedDomainRule.is_enabled 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedDomainRule.is_enabled ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedDomainRule.is_enabled ? 'Enabled' : 'Disabled' }}</span>
+              </span>
+
+              <!-- Active Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedDomainRule.is_active 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedDomainRule.is_active ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedDomainRule.is_active ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="space-y-1.5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rule Description & Rationale</span>
+          <div class="bg-card border border-border rounded-xl p-4 text-xs font-medium text-foreground leading-relaxed">
+            <p v-if="selectedDomainRule.description?.trim()">{{ selectedDomainRule.description }}</p>
+            <p v-else class="text-muted-foreground italic">No description provided for this rule.</p>
+          </div>
+        </div>
+
+        <!-- Audit & Tracking Metadata -->
+        <div class="space-y-2 pt-2 border-t border-border">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audit & Lifecycle Metadata</span>
+          <div class="bg-muted/30 border border-border rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedDomainRule.created_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedDomainRule.updated_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedDomainRule.created_by) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedDomainRule.updated_by) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-4 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            @click="closeDomainViewModal"
+            class="h-9 px-5 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: EDIT DOMAIN RULE -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="domainModalState.isEdit.value"
+      :title="isDomainDetailsLoading ? 'Loading Domain Rule...' : (editingDomainRuleId ? `Edit Domain Rule #${editingDomainRuleId}` : 'Edit Domain Rule')"
+      subtitle="Update pattern heuristics and classification parameters for this domain rule."
+      max-width="max-w-lg"
+      @close="closeDomainEditModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isDomainDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving domain rule details for editing...</p>
+      </div>
+
+      <!-- Form -->
+      <form v-else @submit.prevent="submitUpdateDomainRule" class="p-6 space-y-4">
+        <!-- Domain -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Domain <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="domainEditForm.domain"
+            type="text" 
+            placeholder="e.g. malicious-site.com, cdn-phish.net, etc."
+            required
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+          />
+        </div>
+
+        <!-- Category & Match Type Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Category <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="domainEditForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="SPAM">Spam</option>
+              <option value="SCAM">Scam</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="MALWARE">Malware</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="GAMBLING">Gambling</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="INJECTION">Injection</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="REDIRECT">Redirect</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Match Type <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="domainEditForm.match_type"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="EXACT">Exact Domain</option>
+              <option value="SUBDOMAIN">Domain And Subdomains</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Severity -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Severity <span class="text-rose-500">*</span></label>
+          <select 
+            v-model="domainEditForm.severity"
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+          >
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+            <option value="INFO">Info</option>
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Description</label>
+          <textarea 
+            v-model="domainEditForm.description"
+            rows="2"
+            placeholder="Explain why this domain is blocked..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div>
+            <p class="text-xs font-bold text-foreground">Rule Enabled</p>
+            <p class="text-[10px] text-muted-foreground">Active rules are evaluated during content security scans</p>
+          </div>
+          <input 
+            v-model="domainEditForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingDomainEdit"
+            @click="closeDomainEditModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingDomainEdit"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isSubmittingDomainEdit" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingDomainEdit ? 'Saving Changes...' : 'Save Changes' }}</span>
+          </button>
+        </div>
+      </form>
     </UiAdminModal>
 
     <!-- ========================================== -->
