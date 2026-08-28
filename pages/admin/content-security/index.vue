@@ -1395,12 +1395,14 @@ const closeDomainViewModal = () => {
 };
 
 // ==========================================
-// Modal State: Hidden Content Rule Details (View, Edit)
+// Modal State: Hidden Content Rule Details (View, Edit, Delete)
 // ==========================================
 const isHiddenContentDetailsLoading = ref(false);
 const selectedHiddenContentRule = ref<HiddenContentRuleDetail | null>(null);
 const editingHiddenContentRuleId = ref<number | null>(null);
 const isSubmittingHiddenContentEdit = ref(false);
+const isDeletingHiddenContentRule = ref(false);
+const deletingHiddenContentRule = ref<{ id: number; pattern: string } | null>(null);
 
 const hiddenContentEditForm = ref<{
   pattern: string;
@@ -1473,11 +1475,25 @@ watch(() => hiddenContentModalState.activeEntity.value, (newEntity) => {
         description: newEntity.description || ''
       };
     }
+
+    if (hiddenContentModalState.isDelete.value) {
+      if (!canDeleteHiddenContentRule.value) {
+        toastError('You do not have permission to delete hidden content rules.');
+        hiddenContentModalState.closeModal({ replace: true });
+        return;
+      }
+      if (!deletingHiddenContentRule.value) {
+        deletingHiddenContentRule.value = {
+          id: newEntity.id,
+          pattern: newEntity.pattern || `Rule #${newEntity.id}`
+        };
+      }
+    }
   }
 }, { immediate: true });
 
 watch(() => hiddenContentModalState.isView.value, (isView) => {
-  if (!isView && !hiddenContentModalState.isEdit.value) {
+  if (!isView && !hiddenContentModalState.isEdit.value && !hiddenContentModalState.isDelete.value) {
     selectedHiddenContentRule.value = null;
   }
 }, { immediate: true });
@@ -1486,6 +1502,15 @@ watch(() => hiddenContentModalState.isEdit.value, (isEdit) => {
   if (!isEdit) {
     editingHiddenContentRuleId.value = null;
     originalHiddenContentRuleData.value = null;
+  }
+}, { immediate: true });
+
+watch(() => hiddenContentModalState.isDelete.value, (isDelete) => {
+  if (!isDelete) {
+    deletingHiddenContentRule.value = null;
+  } else if (!canDeleteHiddenContentRule.value) {
+    toastError('You do not have permission to delete hidden content rules.');
+    hiddenContentModalState.closeModal({ replace: true });
   }
 }, { immediate: true });
 
@@ -1511,6 +1536,55 @@ const openEditHiddenContentRuleModal = async (id: number | string) => {
 
 const closeHiddenContentEditModal = async () => {
   await hiddenContentModalState.closeModal();
+};
+
+const openDeleteHiddenContentRuleModal = async (rule: { id: number; pattern?: string }) => {
+  if (!canDeleteHiddenContentRule.value) {
+    toastError('You do not have permission to delete hidden content rules.');
+    return;
+  }
+  deletingHiddenContentRule.value = {
+    id: rule.id,
+    pattern: rule.pattern || `Rule #${rule.id}`
+  };
+  await hiddenContentModalState.openDelete(rule.id);
+};
+
+const closeHiddenContentDeleteModal = async () => {
+  await hiddenContentModalState.closeModal();
+};
+
+const executeDeleteHiddenContentRule = async () => {
+  if (!canDeleteHiddenContentRule.value) {
+    toastError('You do not have permission to delete hidden content rules.');
+    return;
+  }
+
+  const targetId = deletingHiddenContentRule.value?.id || hiddenContentModalState.activeId.value;
+  if (!targetId) {
+    toastError('Hidden content rule identifier missing.');
+    return;
+  }
+
+  if (isDeletingHiddenContentRule.value) return;
+
+  isDeletingHiddenContentRule.value = true;
+  try {
+    await contentSecurityService.deleteHiddenContentRule(targetId);
+    toastSuccess(`Hidden content rule "${deletingHiddenContentRule.value?.pattern || `#${targetId}`}" deleted successfully.`);
+    await closeHiddenContentDeleteModal();
+    await fetchHiddenContentRules();
+
+    if (hiddenContentRulesData.value.length === 0 && hiddenContentPage.value > 1) {
+      hiddenContentPage.value = Math.max(1, hiddenContentPage.value - 1);
+      await fetchHiddenContentRules();
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to delete hidden content rule.');
+    toastError(msg);
+  } finally {
+    isDeletingHiddenContentRule.value = false;
+  }
 };
 
 const submitUpdateHiddenContentRule = async () => {
@@ -3607,7 +3681,15 @@ const getSeverityBadge = (severity: string) => {
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
-                  <span class="text-[11px] text-muted-foreground font-mono">#{{ item.id }}</span>
+                  <button 
+                    v-if="canDeleteHiddenContentRule"
+                    @click.stop="openDeleteHiddenContentRuleModal(item)"
+                    class="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                    title="Delete hidden content rule"
+                    aria-label="Delete hidden content rule"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
                 </div>
               </template>
             </UiTable>
@@ -4892,6 +4974,53 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </form>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: DELETE HIDDEN CONTENT RULE CONFIRMATION -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="hiddenContentModalState.isDelete.value"
+      title="Delete Hidden Content Rule"
+      subtitle="Verify decommissioning of this content security hidden content rule."
+      max-width="max-w-md"
+      :show-close-button="!isDeletingHiddenContentRule"
+      @close="closeHiddenContentDeleteModal"
+    >
+      <div class="p-6 space-y-5">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div class="space-y-2">
+          <p class="text-sm font-bold text-foreground">
+            Are you sure you want to delete this hidden content rule?
+          </p>
+          <p class="text-xs text-muted-foreground leading-relaxed">
+            Pattern <span class="font-mono font-bold text-foreground">{{ deletingHiddenContentRule?.pattern || (selectedHiddenContentRule ? selectedHiddenContentRule.pattern : `ID #${hiddenContentModalState.activeId.value}`) }}</span> will be permanently removed from active content inspection heuristics.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isDeletingHiddenContentRule"
+            @click="closeHiddenContentDeleteModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            :disabled="isDeletingHiddenContentRule"
+            @click="executeDeleteHiddenContentRule"
+            class="h-9 px-5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isDeletingHiddenContentRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isDeletingHiddenContentRule ? 'Deleting...' : 'Delete Rule' }}</span>
+          </button>
+        </div>
+      </div>
     </UiAdminModal>
 
     <!-- ========================================== -->
