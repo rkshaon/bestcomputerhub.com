@@ -36,6 +36,7 @@ import type {
   HtmlAttributeRule,
   HtmlAttributeRuleDetail,
   CreateHtmlAttributeRulePayload,
+  UpdateHtmlAttributeRulePayload,
   HtmlAttributeRulesQueryParams,
   PaginatedHtmlAttributeRules
 } from '@/types';
@@ -2021,6 +2022,62 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const updateHtmlAttributeRule = async (
+    id: string | number,
+    payload: UpdateHtmlAttributeRulePayload
+  ): Promise<HtmlAttributeRuleDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      isLoading.value = false;
+      const fallbackList = getFallbackHtmlAttributeRules();
+      const idx = fallbackList.findIndex((r) => String(r.id) === String(id));
+      const existing = idx !== -1 ? fallbackList[idx] : null;
+
+      if (!existing) {
+        const err = new Error(`HTML attribute rule #${id} not found.`);
+        errorMsg.value = err.message;
+        throw err;
+      }
+
+      const updated: HtmlAttributeRule = {
+        ...existing,
+        attribute: payload.attribute !== undefined ? payload.attribute.trim() : (existing.attribute || existing.pattern),
+        pattern: payload.attribute !== undefined ? payload.attribute.trim() : (existing.pattern || existing.attribute),
+        category: payload.category !== undefined ? payload.category : existing.category,
+        severity: payload.severity !== undefined ? payload.severity : existing.severity,
+        is_enabled: payload.is_enabled !== undefined ? payload.is_enabled : existing.is_enabled
+      };
+      fallbackList[idx] = updated;
+      return {
+        ...updated,
+        description: payload.description !== undefined ? payload.description : 'Updated HTML attribute rule.',
+        updated_at: new Date().toISOString(),
+        created_by: 'Security System',
+        updated_by: 'Security System'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<HtmlAttributeRuleDetail>(
+        `/api/v1/content-security/html-attribute-rules/${id}/`,
+        {
+          method: 'PATCH',
+          body: payload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to update HTML attribute rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -2051,6 +2108,7 @@ export const useContentSecurityService = () => {
     deleteRedirectRule,
     getHtmlAttributeRules,
     createHtmlAttributeRule,
-    getHtmlAttributeRuleDetails
+    getHtmlAttributeRuleDetails,
+    updateHtmlAttributeRule
   };
 };

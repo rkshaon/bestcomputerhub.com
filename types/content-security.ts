@@ -435,6 +435,14 @@ export interface CreateHtmlAttributeRulePayload {
   description?: string;
 }
 
+export interface UpdateHtmlAttributeRulePayload {
+  attribute?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  is_enabled?: boolean;
+  description?: string;
+}
+
 export interface HtmlAttributeRulesQueryParams {
   search?: string;
   category?: KeywordCategory;

@@ -86,6 +86,7 @@ import type {
   HtmlAttributeRule,
   HtmlAttributeRuleDetail,
   CreateHtmlAttributeRulePayload,
+  UpdateHtmlAttributeRulePayload,
   HtmlAttributeRulesQueryParams
 } from '@/types';
 
@@ -176,6 +177,7 @@ const canDeleteRedirectRule = computed(() => hasPermission('content_security.del
 
 const canViewHtmlAttributeRules = computed(() => hasPermission('content_security.view_htmlattributerule'));
 const canAddHtmlAttributeRule = computed(() => hasPermission('content_security.add_htmlattributerule'));
+const canEditHtmlAttributeRule = computed(() => hasPermission('content_security.change_htmlattributerule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
