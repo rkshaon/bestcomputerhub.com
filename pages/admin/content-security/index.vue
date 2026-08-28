@@ -4485,7 +4485,7 @@ const getSeverityBadge = (severity: string) => {
             <input 
               v-model="searchQuery"
               type="text" 
-              placeholder="Search content name, detected token, rule, or issue..." 
+              placeholder="Search content name, ID, or field name..." 
               class="w-full h-9 pl-9 pr-4 bg-background border border-input rounded-lg text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
             />
             <button 
@@ -4504,7 +4504,7 @@ const getSeverityBadge = (severity: string) => {
               v-model="filterContentType"
               class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
             >
-              <option value="all">All Content Types</option>
+              <option value="all">All Types</option>
               <option value="Product">Products</option>
               <option value="Category">Categories</option>
             </select>
@@ -4520,33 +4520,6 @@ const getSeverityBadge = (severity: string) => {
               <option value="Needs Review">Needs Review</option>
               <option value="Clean">Clean</option>
               <option value="Resolved">Resolved</option>
-            </select>
-
-            <!-- Severity Filter -->
-            <select 
-              v-model="filterSeverity"
-              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
-            >
-              <option value="all">All Severities</option>
-              <option value="Critical">Critical</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
-
-            <!-- Detector Filter -->
-            <select 
-              v-model="filterDetector"
-              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer hidden sm:block"
-            >
-              <option value="all">All Detectors</option>
-              <option value="Keyword">Keyword</option>
-              <option value="Domain">Domain</option>
-              <option value="HTML">HTML</option>
-              <option value="Attribute">Attribute</option>
-              <option value="Redirect">Redirect</option>
-              <option value="Hidden Content">Hidden Content</option>
-              <option value="Obfuscation">Obfuscation</option>
             </select>
 
             <!-- Page Size Selector -->
@@ -4565,7 +4538,7 @@ const getSeverityBadge = (severity: string) => {
 
             <!-- Reset Button -->
             <button 
-              v-if="searchQuery || filterContentType !== 'all' || filterStatus !== 'all' || filterSeverity !== 'all' || filterDetector !== 'all'"
+              v-if="searchQuery || filterContentType !== 'all' || filterStatus !== 'all'"
               @click="resetFilters"
               class="h-9 px-3 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors shrink-0"
               title="Reset all filters"
@@ -4576,14 +4549,14 @@ const getSeverityBadge = (severity: string) => {
         </div>
       </div>
 
-      <!-- Main Findings Table -->
+      <!-- Main Scan Table -->
       <div class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
         <UiTable 
           :columns="scanResultColumns" 
-          :data="paginatedFindings"
-          empty-text="No security findings found"
+          :data="contentScansData"
+          empty-text="No content scans found"
           empty-description="No items match your active filters or search criteria."
-          @row-click="openFindingDetail"
+          :loading="isContentScansLoading"
         >
           <!-- Status Cell -->
           <template #cell-status="{ item }">
@@ -4593,22 +4566,27 @@ const getSeverityBadge = (severity: string) => {
                 item.status === 'Critical' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' :
                 item.status === 'High Risk' ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30' :
                 item.status === 'Needs Review' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30' :
-                item.status === 'Resolved' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30' :
-                'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                item.status === 'Clean' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
+                'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
               )"
             >
-              <component :is="getStatusBadge(item.status).icon" class="w-3 h-3" />
-              <span>{{ item.status }}</span>
+              {{ item.status }}
             </span>
           </template>
+        </UiTable>
 
-          <!-- Type Cell -->
-          <template #cell-contentType="{ item }">
-            <div class="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-              <Package v-if="item.contentType === 'Product'" class="w-3.5 h-3.5 text-primary shrink-0" />
-              <Layers v-else class="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <span>{{ item.contentType }}</span>
-            </div>
+        <!-- Pagination -->
+        <div class="px-4 py-3 border-t border-border bg-muted/20 flex items-center justify-between">
+          <UiPagination 
+            :current-page="currentPage"
+            :total-pages="contentScansPages"
+            :total-count="contentScansCount"
+            :items-per-page="itemsPerPage"
+            item-label="scans"
+            @update:current-page="currentPage = $event"
+          />
+        </div>
+      </div>
           </template>
 
           <!-- Content Entity Name Cell -->
