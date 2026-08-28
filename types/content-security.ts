@@ -172,3 +172,33 @@ export interface PaginatedDomainRules {
   next?: string | null;
   previous?: string | null;
 }
+
+export interface HiddenContentRule {
+  id: number;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  is_active: boolean;
+  created_at: string;
+  pattern: string;
+}
+
+export interface HiddenContentRulesQueryParams {
+  search?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  is_active?: boolean;
+  is_enabled?: boolean;
+  ordering?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedHiddenContentRules {
+  results: HiddenContentRule[];
+  count: number;
+  page: number;
+  pages: number;
+  next?: string | null;
+  previous?: string | null;
+}
