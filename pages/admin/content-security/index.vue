@@ -84,6 +84,7 @@ import type {
   UpdateRedirectRulePayload,
   RedirectRulesQueryParams,
   HtmlAttributeRule,
+  HtmlAttributeRuleDetail,
   CreateHtmlAttributeRulePayload,
   HtmlAttributeRulesQueryParams
 } from '@/types';
@@ -583,7 +584,8 @@ const htmlAttributeRuleColumns: UiTableColumn<HtmlAttributeRule>[] = [
   { key: 'severity', label: 'Severity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'is_enabled', label: 'Enabled', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'is_active', label: 'Active', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
-  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' }
+  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' },
+  { key: 'actions', label: 'Actions', align: 'right' as const, width: '80px', headerClass: 'px-4 py-3 text-right whitespace-nowrap', cellClass: 'px-4 py-3 text-right whitespace-nowrap' }
 ];
 
 const resetHtmlAttributeFilters = () => {
@@ -2603,6 +2605,57 @@ const executeDeleteRedirectRule = async () => {
   } finally {
     isDeletingRedirectRule.value = false;
   }
+};
+
+// HTML Attribute Rule Details Modal State
+const isHtmlAttributeDetailsLoading = ref(false);
+const selectedHtmlAttributeRule = ref<HtmlAttributeRuleDetail | null>(null);
+
+const htmlAttributeModalState = useAdminModalState<HtmlAttributeRuleDetail>({
+  getItems: async (id) => {
+    if (rulesSubTab.value !== 'attributes') return null;
+    isHtmlAttributeDetailsLoading.value = true;
+    try {
+      const details = await contentSecurityService.getHtmlAttributeRuleDetails(String(id));
+      return details;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve HTML attribute rule details.');
+      toastError(msg);
+      return null;
+    } finally {
+      isHtmlAttributeDetailsLoading.value = false;
+    }
+  },
+  onResolveError: (id) => {
+    if (rulesSubTab.value === 'attributes') {
+      toastError(`HTML Attribute Rule #${id} could not be resolved.`);
+      htmlAttributeModalState.closeModal({ replace: true });
+    }
+  }
+});
+
+watch(() => htmlAttributeModalState.activeEntity.value, (newEntity) => {
+  if (newEntity && rulesSubTab.value === 'attributes') {
+    selectedHtmlAttributeRule.value = newEntity;
+  }
+}, { immediate: true });
+
+watch(() => htmlAttributeModalState.isView.value, (isView) => {
+  if (!isView) {
+    selectedHtmlAttributeRule.value = null;
+  }
+}, { immediate: true });
+
+const openHtmlAttributeViewModal = (id: number | string) => {
+  if (!canViewHtmlAttributeRules.value) {
+    toastError('You do not have permission to view HTML attribute rules.');
+    return;
+  }
+  htmlAttributeModalState.openView(id);
+};
+
+const closeHtmlAttributeViewModal = () => {
+  htmlAttributeModalState.closeModal();
 };
 
 const openEditDomainRuleModal = async (id: number | string) => {
@@ -5590,6 +5643,21 @@ const getSeverityBadge = (severity: string) => {
                     {{ formatDate(item.created_at) }}
                   </span>
                 </template>
+
+                <!-- Actions Cell -->
+                <template #cell-actions="{ item }">
+                  <div class="flex items-center justify-end gap-1">
+                    <button 
+                      v-if="canViewHtmlAttributeRules"
+                      @click.stop="openHtmlAttributeViewModal(item.id)"
+                      class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                      title="View HTML attribute rule details"
+                      aria-label="View HTML attribute rule details"
+                    >
+                      <Eye class="w-4 h-4" />
+                    </button>
+                  </div>
+                </template>
               </UiTable>
 
               <!-- Pagination Controls -->
@@ -7353,6 +7421,160 @@ const getSeverityBadge = (severity: string) => {
           <button 
             type="button" 
             @click="closeRedirectViewModal"
+            class="h-9 px-5 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: VIEW HTML ATTRIBUTE RULE DETAILS -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="htmlAttributeModalState.isView.value"
+      :title="isHtmlAttributeDetailsLoading ? 'Loading HTML Attribute Rule...' : (selectedHtmlAttributeRule ? `HTML Attribute Rule #${selectedHtmlAttributeRule.id}` : 'HTML Attribute Rule Details')"
+      subtitle="Comprehensive security inspection parameters and audit metadata."
+      max-width="max-w-2xl"
+      @close="closeHtmlAttributeViewModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isHtmlAttributeDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving HTML attribute rule details from security registry...</p>
+      </div>
+
+      <!-- Error / Not Found State -->
+      <div v-else-if="!selectedHtmlAttributeRule" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <AlertCircle class="w-6 h-6" />
+        </div>
+        <p class="text-sm font-bold text-foreground">Rule Details Not Available</p>
+        <p class="text-xs text-muted-foreground">Could not load the requested HTML attribute rule from the security engine.</p>
+        <button 
+          type="button"
+          @click="closeHtmlAttributeViewModal"
+          class="mt-2 h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+
+      <!-- Loaded Details View -->
+      <div v-else class="p-6 sm:p-8 space-y-6">
+        <!-- Hero Summary Card -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-muted/40 rounded-2xl border border-border">
+          <div class="space-y-1.5 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Attribute / Pattern</span>
+            </div>
+            <div class="font-mono text-base sm:text-lg font-bold text-foreground bg-background px-3 py-1.5 rounded-xl border border-border shadow-2xs inline-block break-all">
+              {{ selectedHtmlAttributeRule.attribute || selectedHtmlAttributeRule.pattern }}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <!-- Severity Badge -->
+            <span :class="cn('px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border', getSeverityBadge(selectedHtmlAttributeRule.severity))">
+              {{ selectedHtmlAttributeRule.severity }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Rule Specifications Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</span>
+            <p class="text-sm font-bold text-foreground">{{ selectedHtmlAttributeRule.category }}</p>
+          </div>
+
+          <!-- Status Indicators -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Operational Status</span>
+            <div class="flex items-center gap-3">
+              <!-- Enabled Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedHtmlAttributeRule.is_enabled 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedHtmlAttributeRule.is_enabled ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedHtmlAttributeRule.is_enabled ? 'Enabled' : 'Disabled' }}</span>
+              </span>
+
+              <!-- Active Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedHtmlAttributeRule.is_active 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedHtmlAttributeRule.is_active ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedHtmlAttributeRule.is_active ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="space-y-1.5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rule Description & Rationale</span>
+          <div class="bg-card border border-border rounded-xl p-4 text-xs font-medium text-foreground leading-relaxed">
+            <p v-if="selectedHtmlAttributeRule.description?.trim()">{{ selectedHtmlAttributeRule.description }}</p>
+            <p v-else class="text-muted-foreground italic">No description provided for this rule.</p>
+          </div>
+        </div>
+
+        <!-- Audit & Tracking Metadata -->
+        <div class="space-y-2 pt-2 border-t border-border">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audit & Lifecycle Metadata</span>
+          <div class="bg-muted/30 border border-border rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedHtmlAttributeRule.created_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedHtmlAttributeRule.updated_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedHtmlAttributeRule.created_by) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedHtmlAttributeRule.updated_by) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-4 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            @click="closeHtmlAttributeViewModal"
             class="h-9 px-5 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
           >
             Close

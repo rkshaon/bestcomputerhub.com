@@ -34,6 +34,7 @@ import type {
   RedirectRulesQueryParams,
   PaginatedRedirectRules,
   HtmlAttributeRule,
+  HtmlAttributeRuleDetail,
   CreateHtmlAttributeRulePayload,
   HtmlAttributeRulesQueryParams,
   PaginatedHtmlAttributeRules
@@ -1969,6 +1970,57 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getHtmlAttributeRuleDetails = async (
+    id: string | number
+  ): Promise<HtmlAttributeRuleDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      isLoading.value = false;
+      const fallbackList = getFallbackHtmlAttributeRules();
+      const found = fallbackList.find((r) => String(r.id) === String(id));
+
+      if (!found) {
+        const err = new Error(`HTML attribute rule #${id} not found.`);
+        errorMsg.value = err.message;
+        throw err;
+      }
+
+      return {
+        id: found.id,
+        attribute: found.attribute || found.pattern,
+        pattern: found.pattern || found.attribute,
+        category: found.category,
+        severity: found.severity,
+        is_enabled: found.is_enabled,
+        is_active: found.is_active,
+        description: 'Auto-generated security rule for HTML attribute pattern / heuristic inspection.',
+        created_at: found.created_at,
+        updated_at: found.created_at,
+        created_by: 'Security System',
+        updated_by: 'Security System'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<HtmlAttributeRuleDetail>(
+        `/api/v1/content-security/html-attribute-rules/${id}/`,
+        {
+          method: 'GET'
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve HTML attribute rule details.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -1998,6 +2050,7 @@ export const useContentSecurityService = () => {
     updateRedirectRule,
     deleteRedirectRule,
     getHtmlAttributeRules,
-    createHtmlAttributeRule
+    createHtmlAttributeRule,
+    getHtmlAttributeRuleDetails
   };
 };
