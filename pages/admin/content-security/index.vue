@@ -2997,6 +2997,57 @@ const executeDeleteHtmlAttributeRule = async () => {
   }
 };
 
+// HTML Tag Rule Details Modal State
+const isHtmlTagDetailsLoading = ref(false);
+const selectedHtmlTagRule = ref<HtmlTagRuleDetail | null>(null);
+
+const htmlTagModalState = useAdminModalState<HtmlTagRuleDetail>({
+  getItems: async (id) => {
+    if (rulesSubTab.value !== 'html') return null;
+    isHtmlTagDetailsLoading.value = true;
+    try {
+      const details = await contentSecurityService.getHtmlTagRuleDetails(String(id));
+      return details;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve HTML tag rule details.');
+      toastError(msg);
+      return null;
+    } finally {
+      isHtmlTagDetailsLoading.value = false;
+    }
+  },
+  onResolveError: (id) => {
+    if (rulesSubTab.value === 'html') {
+      toastError(`HTML Tag Rule #${id} could not be resolved.`);
+      htmlTagModalState.closeModal({ replace: true });
+    }
+  }
+});
+
+watch(() => htmlTagModalState.activeEntity.value, (newEntity) => {
+  if (newEntity && rulesSubTab.value === 'html') {
+    selectedHtmlTagRule.value = newEntity;
+  }
+}, { immediate: true });
+
+watch(() => htmlTagModalState.isView.value, (isView) => {
+  if (!isView) {
+    selectedHtmlTagRule.value = null;
+  }
+}, { immediate: true });
+
+const openHtmlTagViewModal = (id: number | string) => {
+  if (!canViewHtmlTagRules.value) {
+    toastError('You do not have permission to view HTML tag rules.');
+    return;
+  }
+  htmlTagModalState.openView(id);
+};
+
+const closeHtmlTagViewModal = () => {
+  htmlTagModalState.closeModal();
+};
+
 const openEditDomainRuleModal = async (id: number | string) => {
   if (!canEditDomainRule.value) {
     toastError('You do not have permission to edit domain rules.');
@@ -6322,7 +6373,15 @@ const getSeverityBadge = (severity: string) => {
                 <!-- Actions Cell -->
                 <template #cell-actions="{ item }">
                   <div class="flex items-center justify-end gap-1.5">
-                    <span class="text-xs text-muted-foreground font-semibold px-2 py-1 bg-muted rounded-md border">List View</span>
+                    <button 
+                      v-if="canViewHtmlTagRules"
+                      @click.stop="openHtmlTagViewModal(item.id)"
+                      class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                      title="View HTML tag rule details"
+                      aria-label="View HTML tag rule details"
+                    >
+                      <Eye class="w-4 h-4" />
+                    </button>
                   </div>
                 </template>
               </UiTable>
@@ -8190,6 +8249,160 @@ const getSeverityBadge = (severity: string) => {
           <button 
             type="button" 
             @click="closeRedirectViewModal"
+            class="h-9 px-5 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: VIEW HTML TAG RULE DETAILS -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="htmlTagModalState.isView.value"
+      :title="isHtmlTagDetailsLoading ? 'Loading HTML Tag Rule...' : (selectedHtmlTagRule ? `HTML Tag Rule #${selectedHtmlTagRule.id}` : 'HTML Tag Rule Details')"
+      subtitle="Comprehensive security inspection parameters and audit metadata."
+      max-width="max-w-2xl"
+      @close="closeHtmlTagViewModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isHtmlTagDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving HTML tag rule details from security registry...</p>
+      </div>
+
+      <!-- Error / Not Found State -->
+      <div v-else-if="!selectedHtmlTagRule" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <AlertCircle class="w-6 h-6" />
+        </div>
+        <p class="text-sm font-bold text-foreground">Rule Details Not Available</p>
+        <p class="text-xs text-muted-foreground">Could not load the requested HTML tag rule from the security engine.</p>
+        <button 
+          type="button"
+          @click="closeHtmlTagViewModal"
+          class="mt-2 h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+
+      <!-- Loaded Details View -->
+      <div v-else class="p-6 sm:p-8 space-y-6">
+        <!-- Hero Summary Card -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-muted/40 rounded-2xl border border-border">
+          <div class="space-y-1.5 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Tag / Pattern</span>
+            </div>
+            <div class="font-mono text-base sm:text-lg font-bold text-foreground bg-background px-3 py-1.5 rounded-xl border border-border shadow-2xs inline-block break-all">
+              &lt;{{ selectedHtmlTagRule.tag || selectedHtmlTagRule.pattern }}&gt;
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <!-- Severity Badge -->
+            <span :class="cn('px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border', getSeverityBadge(selectedHtmlTagRule.severity))">
+              {{ selectedHtmlTagRule.severity }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Rule Specifications Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</span>
+            <p class="text-sm font-bold text-foreground">{{ selectedHtmlTagRule.category }}</p>
+          </div>
+
+          <!-- Status Indicators -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Operational Status</span>
+            <div class="flex items-center gap-3">
+              <!-- Enabled Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedHtmlTagRule.is_enabled 
+                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                  : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedHtmlTagRule.is_enabled ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedHtmlTagRule.is_enabled ? 'Enabled' : 'Disabled' }}</span>
+              </span>
+
+              <!-- Active Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedHtmlTagRule.is_active 
+                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                  : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedHtmlTagRule.is_active ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedHtmlTagRule.is_active ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="space-y-1.5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rule Description & Rationale</span>
+          <div class="bg-card border border-border rounded-xl p-4 text-xs font-medium text-foreground leading-relaxed">
+            <p v-if="selectedHtmlTagRule.description?.trim()">{{ selectedHtmlTagRule.description }}</p>
+            <p v-else class="text-muted-foreground italic">No description provided for this rule.</p>
+          </div>
+        </div>
+
+        <!-- Audit & Tracking Metadata -->
+        <div class="space-y-2 pt-2 border-t border-border">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audit & Lifecycle Metadata</span>
+          <div class="bg-muted/30 border border-border rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedHtmlTagRule.created_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedHtmlTagRule.updated_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedHtmlTagRule.created_by) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedHtmlTagRule.updated_by) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-4 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            @click="closeHtmlTagViewModal"
             class="h-9 px-5 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
           >
             Close

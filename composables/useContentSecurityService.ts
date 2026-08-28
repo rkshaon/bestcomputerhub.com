@@ -1978,6 +1978,57 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getHtmlTagRuleDetails = async (
+    id: string | number
+  ): Promise<HtmlTagRuleDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      isLoading.value = false;
+      const fallbackList = getFallbackHtmlTagRules();
+      const found = fallbackList.find((r) => String(r.id) === String(id));
+
+      if (!found) {
+        const err = new Error(`HTML tag rule #${id} not found.`);
+        errorMsg.value = err.message;
+        throw err;
+      }
+
+      return {
+        id: found.id,
+        tag: found.tag || found.pattern,
+        pattern: found.pattern || found.tag,
+        category: found.category,
+        severity: found.severity,
+        is_enabled: found.is_enabled,
+        is_active: found.is_active,
+        description: 'Auto-generated security rule for HTML tag pattern / heuristic inspection.',
+        created_at: found.created_at,
+        updated_at: found.created_at,
+        created_by: 'Security System',
+        updated_by: 'Security System'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<HtmlTagRuleDetail>(
+        `/api/v1/content-security/html-tag-rules/${id}/`,
+        {
+          method: 'GET'
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve HTML tag rule details.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   const getFallbackHtmlAttributeRules = (): HtmlAttributeRule[] => {
     return [
       {
@@ -2359,6 +2410,7 @@ export const useContentSecurityService = () => {
     updateHtmlAttributeRule,
     deleteHtmlAttributeRule,
     getHtmlTagRules,
-    createHtmlTagRule
+    createHtmlTagRule,
+    getHtmlTagRuleDetails
   };
 };
