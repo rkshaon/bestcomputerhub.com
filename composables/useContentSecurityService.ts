@@ -28,6 +28,7 @@ import type {
   ObfuscationRulesQueryParams,
   PaginatedObfuscationRules,
   RedirectRule,
+  CreateRedirectRulePayload,
   RedirectRulesQueryParams,
   PaginatedRedirectRules
 } from '@/types';
@@ -1560,6 +1561,63 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const createRedirectRule = async (
+    payload: CreateRedirectRulePayload
+  ): Promise<RedirectRule> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    const trimmedPattern = payload.pattern?.trim();
+    if (!trimmedPattern) {
+      const err = new Error('Pattern is required.');
+      errorMsg.value = err.message;
+      isLoading.value = false;
+      throw err;
+    }
+
+    const cleanPayload: CreateRedirectRulePayload = {
+      pattern: trimmedPattern,
+      category: payload.category,
+      severity: payload.severity,
+      is_enabled: Boolean(payload.is_enabled),
+      ...(payload.description !== undefined && payload.description !== null && payload.description.trim() !== ''
+        ? { description: payload.description.trim() }
+        : {})
+    };
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const newRule: RedirectRule = {
+        id: Math.floor(1000 + Math.random() * 9000),
+        pattern: cleanPayload.pattern,
+        category: cleanPayload.category,
+        severity: cleanPayload.severity,
+        is_enabled: cleanPayload.is_enabled ?? true,
+        is_active: cleanPayload.is_enabled ?? true,
+        created_at: new Date().toISOString()
+      };
+      isLoading.value = false;
+      return newRule;
+    }
+
+    try {
+      const data = await apiClient.request<RedirectRule>(
+        '/api/v1/content-security/redirect-rules/',
+        {
+          method: 'POST',
+          body: cleanPayload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to create redirect rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -1583,6 +1641,7 @@ export const useContentSecurityService = () => {
     getObfuscationRuleDetails,
     updateObfuscationRule,
     deleteObfuscationRule,
-    getRedirectRules
+    getRedirectRules,
+    createRedirectRule
   };
 };

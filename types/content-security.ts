@@ -347,3 +347,11 @@ export interface PaginatedRedirectRules {
   previous?: string | null;
 }
 
+export interface CreateRedirectRulePayload {
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled?: boolean;
+  description?: string;
+}
+

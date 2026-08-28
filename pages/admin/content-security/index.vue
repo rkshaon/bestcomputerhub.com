@@ -79,6 +79,7 @@ import type {
   UpdateObfuscationRulePayload,
   ObfuscationRulesQueryParams,
   RedirectRule,
+  CreateRedirectRulePayload,
   RedirectRulesQueryParams
 } from '@/types';
 
@@ -2495,6 +2496,7 @@ const isSubmittingKeywordRule = ref(false);
 const isSubmittingDomainRule = ref(false);
 const isSubmittingHiddenContentRule = ref(false);
 const isSubmittingObfuscationRule = ref(false);
+const isSubmittingRedirectRule = ref(false);
 
 const keywordCreateForm = ref<{
   keyword: string;
@@ -2551,6 +2553,20 @@ const obfuscationCreateForm = ref<{
 }>({
   pattern: '',
   category: 'OBFUSCATION',
+  severity: 'HIGH',
+  is_enabled: true,
+  description: ''
+});
+
+const redirectCreateForm = ref<{
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+}>({
+  pattern: '',
+  category: 'REDIRECT',
   severity: 'HIGH',
   is_enabled: true,
   description: ''
@@ -2613,6 +2629,18 @@ const openAddRuleModal = (type: DetectionRule['type']) => {
     obfuscationCreateForm.value = {
       pattern: '',
       category: 'OBFUSCATION',
+      severity: 'HIGH',
+      is_enabled: true,
+      description: ''
+    };
+  } else if (type === 'redirect') {
+    if (!canAddRedirectRule.value) {
+      toastError('You do not have permission to add redirect rules.');
+      return;
+    }
+    redirectCreateForm.value = {
+      pattern: '',
+      category: 'REDIRECT',
       severity: 'HIGH',
       is_enabled: true,
       description: ''
@@ -2793,6 +2821,43 @@ const saveRule = async () => {
     return;
   }
 
+  // Handle Real Redirect Rule Creation via API
+  if (ruleForm.value.type === 'redirect' && !editingRule.value) {
+    if (!canAddRedirectRule.value) {
+      toastError('You do not have permission to add redirect rules.');
+      return;
+    }
+
+    const trimmedPattern = redirectCreateForm.value.pattern.trim();
+    if (!trimmedPattern) {
+      toastError('Redirect pattern / heuristic is required.');
+      return;
+    }
+
+    try {
+      isSubmittingRedirectRule.value = true;
+      const payload: CreateRedirectRulePayload = {
+        pattern: trimmedPattern,
+        category: redirectCreateForm.value.category,
+        severity: redirectCreateForm.value.severity,
+        is_enabled: redirectCreateForm.value.is_enabled,
+        ...(redirectCreateForm.value.description?.trim() 
+          ? { description: redirectCreateForm.value.description.trim() } 
+          : {})
+      };
+
+      await contentSecurityService.createRedirectRule(payload);
+      toastSuccess('Redirect rule created successfully.');
+      isRuleModalOpen.value = false;
+      await fetchRedirectRules();
+    } catch (err: any) {
+      toastError(err.message || 'Failed to create redirect rule.');
+    } finally {
+      isSubmittingRedirectRule.value = false;
+    }
+    return;
+  }
+
   // Non-keyword / non-domain or mock edit behavior
   if (!ruleForm.value.pattern.trim()) {
     toastError('Please enter a valid rule pattern.');
@@ -2839,31 +2904,6 @@ const deleteRule = (rule: DetectionRule) => {
   rules.value = rules.value.filter(r => r.id !== rule.id);
   toastSuccess(`Rule ${rule.id} (${rule.pattern}) has been deleted.`);
 };
-
-// Filtered rules for current sub-tab
-const visibleSubTabs = computed(() => {
-  const tabs: Array<{ id: string; label: string; count: number }> = [];
-  if (canViewKeywords.value) {
-    tabs.push({ id: 'keywords', label: 'Keyword Rules', count: keywordRulesCount.value });
-  }
-  if (canViewDomains.value) {
-    tabs.push({ id: 'domains', label: 'Domain Rules', count: domainRulesCount.value });
-  }
-  if (canViewHiddenContent.value) {
-    tabs.push({ id: 'hidden_content', label: 'Hidden Content Rules', count: hiddenContentRulesCount.value });
-  }
-  if (canViewObfuscation.value) {
-    tabs.push({ id: 'obfuscation', label: 'Obfuscation Rules', count: obfuscationRulesCount.value });
-  }
-  if (canViewRedirects.value) {
-    tabs.push({ id: 'redirects', label: 'Redirect Rules', count: redirectRulesCount.value });
-  }
-  tabs.push(
-    { id: 'html', label: 'Dangerous HTML', count: rules.value.filter(r => r.type === 'html').length },
-    { id: 'attributes', label: 'Dangerous Attributes', count: rules.value.filter(r => r.type === 'attribute').length }
-  );
-  return tabs;
-});
 
 const filteredRules = computed(() => {
   const typeMap: Record<string, DetectionRule['type']> = {
@@ -5087,8 +5127,8 @@ const getSeverityBadge = (severity: string) => {
     <!-- ========================================== -->
     <UiAdminModal
       :is-open="isRuleModalOpen"
-      :title="editingRule ? `Edit Rule: ${editingRule.id}` : (ruleForm.type === 'keyword' ? 'Create Keyword Rule' : ruleForm.type === 'domain' ? 'Create Domain Rule' : ruleForm.type === 'hidden_content' ? 'Create Hidden Content Rule' : ruleForm.type === 'obfuscation' ? 'Create Obfuscation Rule' : 'Create Security Detection Rule')"
-      :subtitle="ruleForm.type === 'keyword' && !editingRule ? 'Define keyword pattern heuristics for content security inspection.' : ruleForm.type === 'domain' && !editingRule ? 'Define domain pattern heuristics for content security inspection.' : ruleForm.type === 'hidden_content' && !editingRule ? 'Define CSS declaration pattern heuristics for content security inspection.' : ruleForm.type === 'obfuscation' && !editingRule ? 'Define code obfuscation pattern / regex heuristics for content security inspection.' : 'Define pattern heuristics for automated catalog inspection.'"
+      :title="editingRule ? `Edit Rule: ${editingRule.id}` : (ruleForm.type === 'keyword' ? 'Create Keyword Rule' : ruleForm.type === 'domain' ? 'Create Domain Rule' : ruleForm.type === 'hidden_content' ? 'Create Hidden Content Rule' : ruleForm.type === 'obfuscation' ? 'Create Obfuscation Rule' : ruleForm.type === 'redirect' ? 'Create Redirect Rule' : 'Create Security Detection Rule')"
+      :subtitle="ruleForm.type === 'keyword' && !editingRule ? 'Define keyword pattern heuristics for content security inspection.' : ruleForm.type === 'domain' && !editingRule ? 'Define domain pattern heuristics for content security inspection.' : ruleForm.type === 'hidden_content' && !editingRule ? 'Define CSS declaration pattern heuristics for content security inspection.' : ruleForm.type === 'obfuscation' && !editingRule ? 'Define code obfuscation pattern / regex heuristics for content security inspection.' : ruleForm.type === 'redirect' && !editingRule ? 'Define redirect pattern / heuristic rules for content security inspection.' : 'Define pattern heuristics for automated catalog inspection.'"
       max-width="max-w-lg"
       @close="isRuleModalOpen = false"
     >
@@ -5504,6 +5544,104 @@ const getSeverityBadge = (severity: string) => {
           >
             <RefreshCw v-if="isSubmittingObfuscationRule" class="w-3.5 h-3.5 animate-spin" />
             <span>{{ isSubmittingObfuscationRule ? 'Creating...' : 'Create Obfuscation Rule' }}</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Redirect Rule Create Form (Real API) -->
+      <form v-else-if="ruleForm.type === 'redirect' && !editingRule" @submit.prevent="saveRule" class="p-6 space-y-4">
+        <!-- Pattern / Heuristic -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Redirect Pattern / Heuristic <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="redirectCreateForm.pattern"
+            type="text" 
+            placeholder="e.g. window.location=, http-equiv=&quot;refresh&quot;, bit.ly/"
+            required
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+          />
+        </div>
+
+        <!-- Category & Severity Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Category <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="redirectCreateForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="REDIRECT">Redirect</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="MALWARE">Malware</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="SCAM">Scam</option>
+              <option value="SPAM">Spam</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="INJECTION">Injection</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="GAMBLING">Gambling</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Severity <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="redirectCreateForm.severity"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+              <option value="INFO">Info</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Description</label>
+          <textarea 
+            v-model="redirectCreateForm.description"
+            rows="2"
+            placeholder="Explain why this redirect pattern or URL shortener is flagged..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div>
+            <p class="text-xs font-bold text-foreground">Rule Enabled</p>
+            <p class="text-[10px] text-muted-foreground font-medium">Active rules are evaluated during content security scans</p>
+          </div>
+          <input 
+            v-model="redirectCreateForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingRedirectRule"
+            @click="isRuleModalOpen = false"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingRedirectRule"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70"
+          >
+            <RefreshCw v-if="isSubmittingRedirectRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingRedirectRule ? 'Creating...' : 'Create Redirect Rule' }}</span>
           </button>
         </div>
       </form>
