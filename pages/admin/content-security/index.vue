@@ -76,6 +76,7 @@ import type {
   ObfuscationRule,
   ObfuscationRuleDetail,
   CreateObfuscationRulePayload,
+  UpdateObfuscationRulePayload,
   ObfuscationRulesQueryParams
 } from '@/types';
 
@@ -156,6 +157,7 @@ const canDeleteHiddenContentRule = computed(() => hasPermission('content_securit
 
 const canViewObfuscation = computed(() => hasPermission('content_security.view_obfuscationrule'));
 const canAddObfuscationRule = computed(() => hasPermission('content_security.add_obfuscationrule'));
+const canEditObfuscationRule = computed(() => hasPermission('content_security.change_obfuscationrule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -1798,10 +1800,34 @@ const submitUpdateHiddenContentRule = async () => {
 };
 
 // ==========================================
-// Modal State: Obfuscation Rule Details (View)
+// Modal State: Obfuscation Rule Details (View) & Edit
 // ==========================================
 const isObfuscationDetailsLoading = ref(false);
 const selectedObfuscationRule = ref<ObfuscationRuleDetail | null>(null);
+const editingObfuscationRuleId = ref<number | null>(null);
+const isSubmittingObfuscationEdit = ref(false);
+
+const obfuscationEditForm = ref<{
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+}>({
+  pattern: '',
+  category: 'OBFUSCATION',
+  severity: 'HIGH',
+  is_enabled: true,
+  description: ''
+});
+
+const originalObfuscationRuleData = ref<{
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+} | null>(null);
 
 const obfuscationModalState = useAdminModalState<ObfuscationRuleDetail>({
   getItems: async (id) => {
@@ -1829,12 +1855,42 @@ const obfuscationModalState = useAdminModalState<ObfuscationRuleDetail>({
 watch(() => obfuscationModalState.activeEntity.value, (newEntity) => {
   if (newEntity && rulesSubTab.value === 'obfuscation') {
     selectedObfuscationRule.value = newEntity;
+
+    if (obfuscationModalState.isEdit.value) {
+      if (!canEditObfuscationRule.value) {
+        toastError('You do not have permission to edit obfuscation rules.');
+        obfuscationModalState.closeModal({ replace: true });
+        return;
+      }
+      editingObfuscationRuleId.value = newEntity.id;
+      obfuscationEditForm.value = {
+        pattern: newEntity.pattern || '',
+        category: newEntity.category || 'OBFUSCATION',
+        severity: newEntity.severity || 'HIGH',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+      originalObfuscationRuleData.value = {
+        pattern: newEntity.pattern || '',
+        category: newEntity.category || 'OBFUSCATION',
+        severity: newEntity.severity || 'HIGH',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+    }
   }
 }, { immediate: true });
 
 watch(() => obfuscationModalState.isView.value, (isView) => {
-  if (!isView) {
+  if (!isView && !obfuscationModalState.isEdit.value) {
     selectedObfuscationRule.value = null;
+  }
+}, { immediate: true });
+
+watch(() => obfuscationModalState.isEdit.value, (isEdit) => {
+  if (!isEdit) {
+    editingObfuscationRuleId.value = null;
+    originalObfuscationRuleData.value = null;
   }
 }, { immediate: true });
 
@@ -1848,6 +1904,91 @@ const openObfuscationViewModal = (id: number | string) => {
 
 const closeObfuscationViewModal = () => {
   obfuscationModalState.closeModal();
+};
+
+const openEditObfuscationRuleModal = async (id: number | string) => {
+  if (!canEditObfuscationRule.value) {
+    toastError('You do not have permission to edit obfuscation rules.');
+    return;
+  }
+  await obfuscationModalState.openEdit(id);
+};
+
+const closeObfuscationEditModal = async () => {
+  await obfuscationModalState.closeModal();
+};
+
+const submitUpdateObfuscationRule = async () => {
+  if (!canEditObfuscationRule.value) {
+    toastError('You do not have permission to edit obfuscation rules.');
+    return;
+  }
+
+  if (!editingObfuscationRuleId.value) {
+    toastError('Obfuscation rule identifier missing.');
+    return;
+  }
+
+  const trimmedPattern = obfuscationEditForm.value.pattern.trim();
+  if (!trimmedPattern) {
+    toastError('Pattern / regex is required.');
+    return;
+  }
+
+  const payload: UpdateObfuscationRulePayload = {};
+  const orig = originalObfuscationRuleData.value;
+  const current = obfuscationEditForm.value;
+
+  if (orig) {
+    if (trimmedPattern !== orig.pattern.trim()) {
+      payload.pattern = trimmedPattern;
+    }
+    if (current.category !== orig.category) {
+      payload.category = current.category;
+    }
+    if (current.severity !== orig.severity) {
+      payload.severity = current.severity;
+    }
+    if (Boolean(current.is_enabled) !== Boolean(orig.is_enabled)) {
+      payload.is_enabled = current.is_enabled;
+    }
+    const currentDesc = current.description.trim();
+    const origDesc = (orig.description || '').trim();
+    if (currentDesc !== origDesc) {
+      payload.description = currentDesc;
+    }
+  } else {
+    payload.pattern = trimmedPattern;
+    payload.category = current.category;
+    payload.severity = current.severity;
+    payload.is_enabled = current.is_enabled;
+    payload.description = current.description.trim();
+  }
+
+  if (Object.keys(payload).length === 0) {
+    toastInfo('No changes detected.');
+    await closeObfuscationEditModal();
+    return;
+  }
+
+  if (isSubmittingObfuscationEdit.value) return;
+
+  isSubmittingObfuscationEdit.value = true;
+  try {
+    const updated = await contentSecurityService.updateObfuscationRule(editingObfuscationRuleId.value, payload);
+    toastSuccess('Obfuscation rule updated successfully.');
+    await closeObfuscationEditModal();
+    await fetchObfuscationRules();
+
+    if (selectedObfuscationRule.value && String(selectedObfuscationRule.value.id) === String(updated.id)) {
+      selectedObfuscationRule.value = updated;
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to update obfuscation rule.');
+    toastError(msg);
+  } finally {
+    isSubmittingObfuscationEdit.value = false;
+  }
 };
 
 const openEditDomainRuleModal = async (id: number | string) => {
@@ -4186,6 +4327,15 @@ const getSeverityBadge = (severity: string) => {
                   >
                     <Eye class="w-4 h-4" />
                   </button>
+                  <button 
+                    v-if="canEditObfuscationRule"
+                    @click.stop="openEditObfuscationRuleModal(item.id)"
+                    class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                    title="Edit obfuscation rule"
+                    aria-label="Edit obfuscation rule"
+                  >
+                    <Edit3 class="w-4 h-4" />
+                  </button>
                 </div>
               </template>
             </UiTable>
@@ -5606,6 +5756,132 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: EDIT OBFUSCATION RULE -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="obfuscationModalState.isEdit.value"
+      :title="isObfuscationDetailsLoading ? 'Loading Obfuscation Rule...' : (editingObfuscationRuleId ? `Edit Obfuscation Rule #${editingObfuscationRuleId}` : 'Edit Obfuscation Rule')"
+      subtitle="Update pattern heuristics and classification parameters for this obfuscation rule."
+      max-width="max-w-lg"
+      @close="closeObfuscationEditModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isObfuscationDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving obfuscation rule details for editing...</p>
+      </div>
+
+      <!-- Form -->
+      <form v-else @submit.prevent="submitUpdateObfuscationRule" class="p-6 space-y-4">
+        <!-- Pattern / Regex -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Pattern / Regular Expression <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="obfuscationEditForm.pattern"
+            type="text" 
+            placeholder="e.g. [a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}, (?i)v[il1][a-z0-9]{3,}"
+            class="w-full h-9 px-3 bg-background border border-input rounded-xl text-xs font-mono text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-muted-foreground/60"
+            required
+          />
+          <p class="text-[11px] text-muted-foreground">
+            Specify the regex pattern or heuristic sequence to detect evasion tactics and obfuscated content.
+          </p>
+        </div>
+
+        <!-- Category & Severity Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">
+              Category <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              v-model="obfuscationEditForm.category"
+              class="w-full h-9 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all cursor-pointer"
+            >
+              <option value="SPAM">Spam Blacklist</option>
+              <option value="PHISHING">Phishing & Social Engineering</option>
+              <option value="MALWARE">Malicious URLs & Payloads</option>
+              <option value="POLICY">Policy & Regulatory Violation</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="OBFUSCATION">Obfuscation Rules</option>
+              <option value="OTHER">Other Custom Heuristics</option>
+            </select>
+          </div>
+
+          <!-- Severity -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">
+              Severity Level <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              v-model="obfuscationEditForm.severity"
+              class="w-full h-9 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all cursor-pointer"
+            >
+              <option value="LOW">Low Risk</option>
+              <option value="MEDIUM">Medium Risk</option>
+              <option value="HIGH">High Risk</option>
+              <option value="CRITICAL">Critical Severity</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Rule Description & Rationale
+          </label>
+          <textarea 
+            v-model="obfuscationEditForm.description"
+            rows="3"
+            placeholder="Document why this regex/heuristic rule was established, evasion patterns targeted, and false positive safeguards..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-muted-foreground/60 leading-relaxed"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="pt-2 border-t border-border flex items-center justify-between">
+          <div class="space-y-0.5">
+            <label class="text-xs font-bold text-foreground cursor-pointer" for="edit-obfuscation-enabled">
+              Enable Inspection Heuristic
+            </label>
+            <p class="text-[11px] text-muted-foreground">
+              When enabled, incoming content will actively be evaluated against this obfuscation pattern.
+            </p>
+          </div>
+          <input 
+            id="edit-obfuscation-enabled"
+            v-model="obfuscationEditForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingObfuscationEdit"
+            @click="closeObfuscationEditModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingObfuscationEdit"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isSubmittingObfuscationEdit" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingObfuscationEdit ? 'Saving Changes...' : 'Save Changes' }}</span>
+          </button>
+        </div>
+      </form>
     </UiAdminModal>
 
     <!-- ========================================== -->

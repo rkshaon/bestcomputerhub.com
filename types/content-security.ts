@@ -308,3 +308,12 @@ export interface CreateObfuscationRulePayload {
   is_enabled?: boolean;
   description?: string;
 }
+
+export interface UpdateObfuscationRulePayload {
+  pattern?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  is_enabled?: boolean;
+  description?: string;
+}
+
