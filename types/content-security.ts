@@ -389,3 +389,35 @@ export interface RedirectRuleDetail {
   } | string | number | null;
 }
 
+export interface HtmlAttributeRule {
+  id: number;
+  attribute?: string;
+  pattern?: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface HtmlAttributeRulesQueryParams {
+  search?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  is_active?: boolean;
+  is_enabled?: boolean;
+  ordering?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedHtmlAttributeRules {
+  results: HtmlAttributeRule[];
+  count: number;
+  page: number;
+  pages: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
+

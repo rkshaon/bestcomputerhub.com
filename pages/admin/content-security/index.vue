@@ -82,7 +82,9 @@ import type {
   RedirectRuleDetail,
   CreateRedirectRulePayload,
   UpdateRedirectRulePayload,
-  RedirectRulesQueryParams
+  RedirectRulesQueryParams,
+  HtmlAttributeRule,
+  HtmlAttributeRulesQueryParams
 } from '@/types';
 
 definePageMeta({
@@ -169,6 +171,8 @@ const canViewRedirects = computed(() => hasPermission('content_security.view_red
 const canAddRedirectRule = computed(() => hasPermission('content_security.add_redirectrule'));
 const canEditRedirectRule = computed(() => hasPermission('content_security.change_redirectrule'));
 const canDeleteRedirectRule = computed(() => hasPermission('content_security.delete_redirectrule'));
+
+const canViewHtmlAttributeRules = computed(() => hasPermission('content_security.view_htmlattributerule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -555,6 +559,81 @@ const fetchRedirectRules = async () => {
   }
 };
 
+// HTML Attribute Rules Query/Data States
+const isHtmlAttributeLoading = ref(false);
+const htmlAttributeError = ref<string | null>(null);
+const htmlAttributeSearchQuery = ref('');
+const debouncedHtmlAttributeSearch = refDebounced(htmlAttributeSearchQuery, 300);
+const htmlAttributeCategory = ref<string>('all');
+const htmlAttributeSeverity = ref<string>('all');
+const htmlAttributeIsActive = ref<string>('all');
+const htmlAttributeIsEnabled = ref<string>('all');
+const htmlAttributeOrdering = ref<string>('-created_at');
+const htmlAttributePage = ref(1);
+const htmlAttributePageSize = ref(10);
+const htmlAttributeRulesData = ref<HtmlAttributeRule[]>([]);
+const htmlAttributeRulesCount = ref(0);
+const htmlAttributeRulesPages = ref(1);
+
+const htmlAttributeRuleColumns: UiTableColumn<HtmlAttributeRule>[] = [
+  { key: 'attribute', label: 'Attribute / Pattern', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-sm font-bold text-foreground' },
+  { key: 'category', label: 'Category', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'severity', label: 'Severity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'is_enabled', label: 'Enabled', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'is_active', label: 'Active', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' }
+];
+
+const resetHtmlAttributeFilters = () => {
+  htmlAttributeSearchQuery.value = '';
+  htmlAttributeCategory.value = 'all';
+  htmlAttributeSeverity.value = 'all';
+  htmlAttributeIsActive.value = 'all';
+  htmlAttributeIsEnabled.value = 'all';
+  htmlAttributeOrdering.value = '-created_at';
+  htmlAttributePage.value = 1;
+};
+
+const fetchHtmlAttributeRules = async () => {
+  if (!canViewHtmlAttributeRules.value) return;
+  
+  isHtmlAttributeLoading.value = true;
+  htmlAttributeError.value = null;
+
+  try {
+    const params: HtmlAttributeRulesQueryParams = {
+      page: htmlAttributePage.value,
+      page_size: htmlAttributePageSize.value,
+      ordering: htmlAttributeOrdering.value
+    };
+
+    if (debouncedHtmlAttributeSearch.value.trim()) {
+      params.search = debouncedHtmlAttributeSearch.value.trim();
+    }
+    if (htmlAttributeCategory.value !== 'all') {
+      params.category = htmlAttributeCategory.value as KeywordCategory;
+    }
+    if (htmlAttributeSeverity.value !== 'all') {
+      params.severity = htmlAttributeSeverity.value as KeywordSeverity;
+    }
+    if (htmlAttributeIsActive.value !== 'all') {
+      params.is_active = htmlAttributeIsActive.value === 'true';
+    }
+    if (htmlAttributeIsEnabled.value !== 'all') {
+      params.is_enabled = htmlAttributeIsEnabled.value === 'true';
+    }
+
+    const response = await contentSecurityService.getHtmlAttributeRules(params);
+    htmlAttributeRulesData.value = response.results;
+    htmlAttributeRulesCount.value = response.count;
+    htmlAttributeRulesPages.value = response.pages;
+  } catch (err: any) {
+    htmlAttributeError.value = extractErrorMessage(err, 'Failed to retrieve HTML attribute rules.');
+  } finally {
+    isHtmlAttributeLoading.value = false;
+  }
+};
+
 // URL Routing/Query Management
 const route = useRoute();
 const router = useRouter();
@@ -606,6 +685,15 @@ const syncFromRoute = () => {
     if (route.query.ordering) redirectOrdering.value = String(route.query.ordering);
     if (route.query.page) redirectPage.value = parseInt(String(route.query.page)) || 1;
     if (route.query.page_size) redirectPageSize.value = parseInt(String(route.query.page_size)) || 10;
+  } else if (rulesSubTab.value === 'attributes') {
+    if (route.query.search) htmlAttributeSearchQuery.value = String(route.query.search);
+    if (route.query.category) htmlAttributeCategory.value = String(route.query.category);
+    if (route.query.severity) htmlAttributeSeverity.value = String(route.query.severity);
+    if (route.query.is_active) htmlAttributeIsActive.value = String(route.query.is_active);
+    if (route.query.is_enabled) htmlAttributeIsEnabled.value = String(route.query.is_enabled);
+    if (route.query.ordering) htmlAttributeOrdering.value = String(route.query.ordering);
+    if (route.query.page) htmlAttributePage.value = parseInt(String(route.query.page)) || 1;
+    if (route.query.page_size) htmlAttributePageSize.value = parseInt(String(route.query.page_size)) || 10;
   } else {
     if (route.query.search) keywordSearchQuery.value = String(route.query.search);
     if (route.query.category) keywordCategory.value = String(route.query.category);
@@ -675,6 +763,16 @@ const updateRouteQuery = () => {
     query.ordering = redirectOrdering.value !== '-created_at' ? redirectOrdering.value : undefined;
     query.page = redirectPage.value !== 1 ? String(redirectPage.value) : undefined;
     query.page_size = redirectPageSize.value !== 10 ? String(redirectPageSize.value) : undefined;
+  } else if (mainTab.value === 'rules' && rulesSubTab.value === 'attributes') {
+    query.search = htmlAttributeSearchQuery.value || undefined;
+    query.category = htmlAttributeCategory.value !== 'all' ? htmlAttributeCategory.value : undefined;
+    query.severity = htmlAttributeSeverity.value !== 'all' ? htmlAttributeSeverity.value : undefined;
+    delete query.match_type;
+    query.is_active = htmlAttributeIsActive.value !== 'all' ? htmlAttributeIsActive.value : undefined;
+    query.is_enabled = htmlAttributeIsEnabled.value !== 'all' ? htmlAttributeIsEnabled.value : undefined;
+    query.ordering = htmlAttributeOrdering.value !== '-created_at' ? htmlAttributeOrdering.value : undefined;
+    query.page = htmlAttributePage.value !== 1 ? String(htmlAttributePage.value) : undefined;
+    query.page_size = htmlAttributePageSize.value !== 10 ? String(htmlAttributePageSize.value) : undefined;
   } else {
     delete query.search;
     delete query.category;
@@ -707,6 +805,9 @@ onMounted(() => {
   }
   if (canViewRedirects.value) {
     fetchRedirectRules();
+  }
+  if (canViewHtmlAttributeRules.value) {
+    fetchHtmlAttributeRules();
   }
 });
 
@@ -847,6 +948,33 @@ watch(redirectPage, () => {
   }
 });
 
+// Reactively watch HTML attribute filters & trigger fetch
+watch(
+  [
+    debouncedHtmlAttributeSearch,
+    htmlAttributeCategory,
+    htmlAttributeSeverity,
+    htmlAttributeIsActive,
+    htmlAttributeIsEnabled,
+    htmlAttributeOrdering,
+    htmlAttributePageSize
+  ],
+  () => {
+    htmlAttributePage.value = 1;
+    updateRouteQuery();
+    if (rulesSubTab.value === 'attributes') {
+      fetchHtmlAttributeRules();
+    }
+  }
+);
+
+watch(htmlAttributePage, () => {
+  updateRouteQuery();
+  if (rulesSubTab.value === 'attributes') {
+    fetchHtmlAttributeRules();
+  }
+});
+
 watch([mainTab, rulesSubTab], () => {
   updateRouteQuery();
   if (mainTab.value === 'rules') {
@@ -860,6 +988,8 @@ watch([mainTab, rulesSubTab], () => {
       fetchObfuscationRules();
     } else if (rulesSubTab.value === 'redirects') {
       fetchRedirectRules();
+    } else if (rulesSubTab.value === 'attributes') {
+      fetchHtmlAttributeRules();
     }
   }
 });
@@ -1194,10 +1324,14 @@ const visibleSubTabs = computed(() => {
   if (canViewObfuscation.value) {
     tabs.push({ id: 'obfuscation', label: 'Obfuscation', count: obfuscationRulesCount.value });
   }
+  if (canViewRedirects.value) {
+    tabs.push({ id: 'redirects', label: 'Redirect Rules', count: redirectRulesCount.value });
+  }
+  if (canViewHtmlAttributeRules.value) {
+    tabs.push({ id: 'attributes', label: 'Dangerous Attributes', count: htmlAttributeRulesCount.value });
+  }
   tabs.push(
-    { id: 'html', label: 'Dangerous HTML', count: rules.value.filter(r => r.type === 'html').length },
-    { id: 'attributes', label: 'Dangerous Attributes', count: rules.value.filter(r => r.type === 'attribute').length },
-    { id: 'redirects', label: 'Redirect Rules', count: rules.value.filter(r => r.type === 'redirect').length }
+    { id: 'html', label: 'Dangerous HTML', count: rules.value.filter(r => r.type === 'html').length }
   );
   return tabs;
 });
@@ -5166,6 +5300,241 @@ const getSeverityBadge = (severity: string) => {
                 :items-per-page="redirectPageSize"
                 item-label="redirect rules"
                 @update:current-page="redirectPage = $event"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HTML Attribute Rules Subtab -->
+      <div v-else-if="rulesSubTab === 'attributes'" class="space-y-4">
+        <!-- Permission Alert -->
+        <div v-if="!canViewHtmlAttributeRules" class="p-6 bg-card border border-border rounded-2xl flex flex-col items-center justify-center gap-3 text-center">
+          <ShieldAlert class="w-8 h-8 text-amber-500" />
+          <div class="space-y-1">
+            <p class="text-sm font-bold text-foreground">Access Restricted</p>
+            <p class="text-xs text-muted-foreground">You do not have permission to view HTML attribute rules.</p>
+          </div>
+        </div>
+
+        <div v-else class="space-y-4">
+          <!-- HTML Attribute Rules Filters Toolbar -->
+          <div class="bg-card border border-border rounded-2xl p-3.5 shadow-xs space-y-3">
+            <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+              <!-- Search Box -->
+              <div class="relative flex-1">
+                <Search class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input 
+                  v-model="htmlAttributeSearchQuery"
+                  type="text" 
+                  placeholder="Search HTML attributes..." 
+                  class="w-full h-9 pl-9 pr-4 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+                />
+                <button 
+                  v-if="htmlAttributeSearchQuery" 
+                  @click="htmlAttributeSearchQuery = ''"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X class="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <!-- Filters Dropdowns Row -->
+              <div class="flex items-center gap-2 flex-wrap lg:flex-nowrap">
+                <!-- Category Filter -->
+                <select 
+                  v-model="htmlAttributeCategory"
+                  class="h-9 px-2.5 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="ADULT">Adult</option>
+                  <option value="DRUG">Drug</option>
+                  <option value="GAMBLING">Gambling</option>
+                  <option value="HIDDEN_CONTENT">Hidden Content</option>
+                  <option value="INJECTION">Injection</option>
+                  <option value="MALWARE">Malware</option>
+                  <option value="OBFUSCATION">Obfuscation</option>
+                  <option value="PHISHING">Phishing</option>
+                  <option value="REDIRECT">Redirect</option>
+                  <option value="SCAM">Scam</option>
+                  <option value="SPAM">Spam</option>
+                </select>
+
+                <!-- Severity Filter -->
+                <select 
+                  v-model="htmlAttributeSeverity"
+                  class="h-9 px-2.5 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+                >
+                  <option value="all">All Severities</option>
+                  <option value="CRITICAL">Critical</option>
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                  <option value="INFO">Info</option>
+                </select>
+
+                <!-- Active Filter -->
+                <select 
+                  v-model="htmlAttributeIsActive"
+                  class="h-9 px-2.5 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+                >
+                  <option value="all">All Active Status</option>
+                  <option value="true">Active Only</option>
+                  <option value="false">Inactive Only</option>
+                </select>
+
+                <!-- Enabled Filter -->
+                <select 
+                  v-model="htmlAttributeIsEnabled"
+                  class="h-9 px-2.5 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+                >
+                  <option value="all">All Enabled Status</option>
+                  <option value="true">Enabled Only</option>
+                  <option value="false">Disabled Only</option>
+                </select>
+
+                <!-- Ordering Filter -->
+                <select 
+                  v-model="htmlAttributeOrdering"
+                  class="h-9 px-2.5 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+                >
+                  <option value="-created_at">Newest First</option>
+                  <option value="created_at">Oldest First</option>
+                  <option value="attribute">Attribute (A-Z)</option>
+                  <option value="-attribute">Attribute (Z-A)</option>
+                </select>
+
+                <!-- Page Size Selector -->
+                <div class="flex items-center gap-1.5 border-l border-border pl-2">
+                  <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+                  <select 
+                    v-model.number="htmlAttributePageSize"
+                    class="h-9 px-2 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+                  >
+                    <option :value="5">5 / page</option>
+                    <option :value="10">10 / page</option>
+                    <option :value="25">25 / page</option>
+                    <option :value="50">50 / page</option>
+                    <option :value="100">100 / page</option>
+                  </select>
+                </div>
+
+                <!-- Reset Filters Button -->
+                <UiButton 
+                  variant="ghost" 
+                  size="sm" 
+                  @click="resetHtmlAttributeFilters" 
+                  class="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                  title="Reset filters"
+                >
+                  <RotateCcw class="w-3.5 h-3.5" />
+                </UiButton>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Container with Loading & Error States -->
+          <div class="relative">
+            <!-- Loading State Overlay -->
+            <div 
+              v-if="isHtmlAttributeLoading" 
+              class="p-12 bg-card/80 backdrop-blur-xs border border-border rounded-2xl flex flex-col items-center justify-center gap-3 text-center"
+            >
+              <Loader2 class="w-6 h-6 animate-spin text-primary" />
+              <p class="text-xs font-semibold text-muted-foreground">Loading HTML attribute rules...</p>
+            </div>
+
+            <!-- Error State -->
+            <div 
+              v-else-if="htmlAttributeError" 
+              class="p-8 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex flex-col items-center justify-center gap-3 text-center"
+            >
+              <AlertOctagon class="w-8 h-8 text-rose-500" />
+              <div class="space-y-1">
+                <p class="text-sm font-bold text-foreground">Failed to Load HTML Attribute Rules</p>
+                <p class="text-xs text-rose-600 dark:text-rose-400">{{ htmlAttributeError }}</p>
+              </div>
+              <UiButton size="sm" variant="outline" @click="fetchHtmlAttributeRules" class="border-rose-500/40 hover:bg-rose-500/10">
+                <RefreshCw class="w-3.5 h-3.5 mr-1.5" />
+                <span>Retry</span>
+              </UiButton>
+            </div>
+
+            <!-- Real Data Table -->
+            <div v-else class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+              <UiTable 
+                :data="htmlAttributeRulesData" 
+                :columns="htmlAttributeRuleColumns"
+                empty-message="No HTML attribute rules match your filters."
+              >
+                <!-- Attribute Cell -->
+                <template #cell-attribute="{ item }">
+                  <span class="font-mono text-sm font-bold text-foreground bg-muted px-2.5 py-1 rounded-lg border border-border">
+                    {{ item.attribute || item.pattern }}
+                  </span>
+                </template>
+
+                <!-- Category Cell -->
+                <template #cell-category="{ item }">
+                  <span class="text-xs font-semibold text-muted-foreground">
+                    {{ item.category }}
+                  </span>
+                </template>
+
+                <!-- Severity Cell -->
+                <template #cell-severity="{ item }">
+                  <span :class="cn('px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border', getSeverityBadge(item.severity))">
+                    {{ item.severity }}
+                  </span>
+                </template>
+
+                <!-- Enabled Cell -->
+                <template #cell-is_enabled="{ item }">
+                  <span 
+                    :class="cn(
+                      'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5 w-fit',
+                      item.is_enabled 
+                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                        : 'bg-muted text-muted-foreground border-border'
+                    )"
+                  >
+                    <span :class="cn('w-1.5 h-1.5 rounded-full', item.is_enabled ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                    <span>{{ item.is_enabled ? 'Enabled' : 'Disabled' }}</span>
+                  </span>
+                </template>
+
+                <!-- Active Cell -->
+                <template #cell-is_active="{ item }">
+                  <span 
+                    :class="cn(
+                      'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5 w-fit',
+                      item.is_active 
+                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                        : 'bg-muted text-muted-foreground border-border'
+                    )"
+                  >
+                    <span :class="cn('w-1.5 h-1.5 rounded-full', item.is_active ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                    <span>{{ item.is_active ? 'Active' : 'Inactive' }}</span>
+                  </span>
+                </template>
+
+                <!-- Created At Cell -->
+                <template #cell-created_at="{ item }">
+                  <span class="text-xs text-muted-foreground font-mono">
+                    {{ formatDate(item.created_at) }}
+                  </span>
+                </template>
+              </UiTable>
+
+              <!-- Pagination Controls -->
+              <UiPagination 
+                v-if="htmlAttributeRulesCount > 0"
+                :current-page="htmlAttributePage"
+                :total-pages="htmlAttributeRulesPages"
+                :total-count="htmlAttributeRulesCount"
+                :items-per-page="htmlAttributePageSize"
+                item-label="attribute rules"
+                @update:current-page="htmlAttributePage = $event"
               />
             </div>
           </div>
