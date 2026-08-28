@@ -158,6 +158,7 @@ const canDeleteHiddenContentRule = computed(() => hasPermission('content_securit
 const canViewObfuscation = computed(() => hasPermission('content_security.view_obfuscationrule'));
 const canAddObfuscationRule = computed(() => hasPermission('content_security.add_obfuscationrule'));
 const canEditObfuscationRule = computed(() => hasPermission('content_security.change_obfuscationrule'));
+const canDeleteObfuscationRule = computed(() => hasPermission('content_security.delete_obfuscationrule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -1800,12 +1801,14 @@ const submitUpdateHiddenContentRule = async () => {
 };
 
 // ==========================================
-// Modal State: Obfuscation Rule Details (View) & Edit
+// Modal State: Obfuscation Rule Details (View), Edit & Delete
 // ==========================================
 const isObfuscationDetailsLoading = ref(false);
 const selectedObfuscationRule = ref<ObfuscationRuleDetail | null>(null);
 const editingObfuscationRuleId = ref<number | null>(null);
 const isSubmittingObfuscationEdit = ref(false);
+const isDeletingObfuscationRule = ref(false);
+const deletingObfuscationRule = ref<{ id: number; pattern?: string } | null>(null);
 
 const obfuscationEditForm = ref<{
   pattern: string;
@@ -1878,11 +1881,25 @@ watch(() => obfuscationModalState.activeEntity.value, (newEntity) => {
         description: newEntity.description || ''
       };
     }
+
+    if (obfuscationModalState.isDelete.value) {
+      if (!canDeleteObfuscationRule.value) {
+        toastError('You do not have permission to delete obfuscation rules.');
+        obfuscationModalState.closeModal({ replace: true });
+        return;
+      }
+      if (!deletingObfuscationRule.value) {
+        deletingObfuscationRule.value = {
+          id: newEntity.id,
+          pattern: newEntity.pattern || `Rule #${newEntity.id}`
+        };
+      }
+    }
   }
 }, { immediate: true });
 
 watch(() => obfuscationModalState.isView.value, (isView) => {
-  if (!isView && !obfuscationModalState.isEdit.value) {
+  if (!isView && !obfuscationModalState.isEdit.value && !obfuscationModalState.isDelete.value) {
     selectedObfuscationRule.value = null;
   }
 }, { immediate: true });
@@ -1891,6 +1908,15 @@ watch(() => obfuscationModalState.isEdit.value, (isEdit) => {
   if (!isEdit) {
     editingObfuscationRuleId.value = null;
     originalObfuscationRuleData.value = null;
+  }
+}, { immediate: true });
+
+watch(() => obfuscationModalState.isDelete.value, (isDelete) => {
+  if (!isDelete) {
+    deletingObfuscationRule.value = null;
+  } else if (!canDeleteObfuscationRule.value) {
+    toastError('You do not have permission to delete obfuscation rules.');
+    obfuscationModalState.closeModal({ replace: true });
   }
 }, { immediate: true });
 
@@ -1988,6 +2014,55 @@ const submitUpdateObfuscationRule = async () => {
     toastError(msg);
   } finally {
     isSubmittingObfuscationEdit.value = false;
+  }
+};
+
+const openDeleteObfuscationRuleModal = async (rule: { id: number; pattern?: string }) => {
+  if (!canDeleteObfuscationRule.value) {
+    toastError('You do not have permission to delete obfuscation rules.');
+    return;
+  }
+  deletingObfuscationRule.value = {
+    id: rule.id,
+    pattern: rule.pattern || `Rule #${rule.id}`
+  };
+  await obfuscationModalState.openDelete(rule.id);
+};
+
+const closeObfuscationDeleteModal = async () => {
+  await obfuscationModalState.closeModal();
+};
+
+const executeDeleteObfuscationRule = async () => {
+  if (!canDeleteObfuscationRule.value) {
+    toastError('You do not have permission to delete obfuscation rules.');
+    return;
+  }
+
+  const targetId = deletingObfuscationRule.value?.id || obfuscationModalState.activeId.value;
+  if (!targetId) {
+    toastError('Obfuscation rule identifier missing.');
+    return;
+  }
+
+  if (isDeletingObfuscationRule.value) return;
+
+  isDeletingObfuscationRule.value = true;
+  try {
+    await contentSecurityService.deleteObfuscationRule(targetId);
+    toastSuccess(`Obfuscation rule "${deletingObfuscationRule.value?.pattern || `#${targetId}`}" deleted successfully.`);
+    await closeObfuscationDeleteModal();
+    await fetchObfuscationRules();
+
+    if (obfuscationRulesData.value.length === 0 && obfuscationPage.value > 1) {
+      obfuscationPage.value = Math.max(1, obfuscationPage.value - 1);
+      await fetchObfuscationRules();
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to delete obfuscation rule.');
+    toastError(msg);
+  } finally {
+    isDeletingObfuscationRule.value = false;
   }
 };
 
@@ -4336,6 +4411,15 @@ const getSeverityBadge = (severity: string) => {
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
+                  <button 
+                    v-if="canDeleteObfuscationRule"
+                    @click.stop="openDeleteObfuscationRuleModal(item)"
+                    class="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                    title="Delete obfuscation rule"
+                    aria-label="Delete obfuscation rule"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
                 </div>
               </template>
             </UiTable>
@@ -5882,6 +5966,53 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </form>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: DELETE OBFUSCATION RULE CONFIRMATION -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="obfuscationModalState.isDelete.value"
+      title="Delete Obfuscation Rule"
+      subtitle="Verify decommissioning of this content security obfuscation rule."
+      max-width="max-w-md"
+      :show-close-button="!isDeletingObfuscationRule"
+      @close="closeObfuscationDeleteModal"
+    >
+      <div class="p-6 space-y-5">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div class="space-y-2">
+          <p class="text-sm font-bold text-foreground">
+            Are you sure you want to delete this obfuscation rule?
+          </p>
+          <p class="text-xs text-muted-foreground leading-relaxed">
+            Pattern <span class="font-mono font-bold text-foreground">{{ deletingObfuscationRule?.pattern || (selectedObfuscationRule ? selectedObfuscationRule.pattern : `ID #${obfuscationModalState.activeId.value}`) }}</span> will be permanently removed from active content inspection heuristics.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isDeletingObfuscationRule"
+            @click="closeObfuscationDeleteModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            :disabled="isDeletingObfuscationRule"
+            @click="executeDeleteObfuscationRule"
+            class="h-9 px-5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isDeletingObfuscationRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isDeletingObfuscationRule ? 'Deleting...' : 'Delete Rule' }}</span>
+          </button>
+        </div>
+      </div>
     </UiAdminModal>
 
     <!-- ========================================== -->

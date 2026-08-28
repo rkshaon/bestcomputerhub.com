@@ -1372,6 +1372,40 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const deleteObfuscationRule = async (
+    id: string | number
+  ): Promise<boolean> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      isLoading.value = false;
+      const fallbackList = getFallbackObfuscationRules();
+      const idx = fallbackList.findIndex((r) => String(r.id) === String(id));
+      if (idx !== -1) {
+        fallbackList.splice(idx, 1);
+      }
+      return true;
+    }
+
+    try {
+      await apiClient.request(
+        `/api/v1/content-security/obfuscation-rules/${id}/`,
+        {
+          method: 'DELETE'
+        }
+      );
+      isLoading.value = false;
+      return true;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to delete obfuscation rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -1393,6 +1427,7 @@ export const useContentSecurityService = () => {
     getObfuscationRules,
     createObfuscationRule,
     getObfuscationRuleDetails,
-    updateObfuscationRule
+    updateObfuscationRule,
+    deleteObfuscationRule
   };
 };
