@@ -16,6 +16,7 @@ import type {
   DomainRulesQueryParams,
   PaginatedDomainRules,
   HiddenContentRule,
+  HiddenContentRuleDetail,
   CreateHiddenContentRulePayload,
   HiddenContentRulesQueryParams,
   PaginatedHiddenContentRules
@@ -932,6 +933,50 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getHiddenContentRuleDetails = async (
+    id: string | number
+  ): Promise<HiddenContentRuleDetail | null> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const fallbackList = getFallbackHiddenContentRules();
+      const found = fallbackList.find((r) => String(r.id) === String(id));
+      isLoading.value = false;
+      if (!found) return null;
+      return {
+        id: found.id,
+        pattern: found.pattern,
+        category: found.category,
+        severity: found.severity,
+        is_enabled: found.is_enabled,
+        is_active: found.is_active,
+        description: 'Auto-generated security rule for hidden content CSS declaration heuristics.',
+        created_at: found.created_at,
+        updated_at: found.created_at,
+        created_by: 'Security System',
+        updated_by: 'Security System'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<HiddenContentRuleDetail>(
+        `/api/v1/content-security/hidden-content-rules/${id}/`,
+        {
+          method: 'GET'
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve hidden content rule details.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -946,6 +991,7 @@ export const useContentSecurityService = () => {
     updateDomainRule,
     deleteDomainRule,
     getHiddenContentRules,
-    createHiddenContentRule
+    createHiddenContentRule,
+    getHiddenContentRuleDetails
   };
 };
