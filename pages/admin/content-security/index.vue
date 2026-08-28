@@ -79,7 +79,9 @@ import type {
   UpdateObfuscationRulePayload,
   ObfuscationRulesQueryParams,
   RedirectRule,
+  RedirectRuleDetail,
   CreateRedirectRulePayload,
+  UpdateRedirectRulePayload,
   RedirectRulesQueryParams
 } from '@/types';
 
@@ -499,7 +501,8 @@ const redirectRuleColumns: UiTableColumn<RedirectRule>[] = [
   { key: 'severity', label: 'Severity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'is_enabled', label: 'Enabled', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'is_active', label: 'Active', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
-  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' }
+  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' },
+  { key: 'actions', label: 'Actions', align: 'right' as const, width: '80px', headerClass: 'px-4 py-3 text-right whitespace-nowrap', cellClass: 'px-4 py-3 text-right whitespace-nowrap' }
 ];
 
 const resetRedirectFilters = () => {
@@ -2197,6 +2200,197 @@ const executeDeleteObfuscationRule = async () => {
     toastError(msg);
   } finally {
     isDeletingObfuscationRule.value = false;
+  }
+};
+
+// Redirect Rule Details & Edit Modal State
+const isRedirectDetailsLoading = ref(false);
+const selectedRedirectRule = ref<RedirectRuleDetail | null>(null);
+
+const editingRedirectRuleId = ref<number | string | null>(null);
+const isSubmittingRedirectEdit = ref(false);
+
+const redirectEditForm = ref<{
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+}>({
+  pattern: '',
+  category: 'REDIRECT',
+  severity: 'HIGH',
+  is_enabled: true,
+  description: ''
+});
+
+const originalRedirectRuleData = ref<{
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+} | null>(null);
+
+const redirectModalState = useAdminModalState<RedirectRuleDetail>({
+  getItems: async (id) => {
+    if (rulesSubTab.value !== 'redirects') return null;
+    isRedirectDetailsLoading.value = true;
+    try {
+      const details = await contentSecurityService.getRedirectRuleDetails(String(id));
+      return details;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve redirect rule details.');
+      toastError(msg);
+      return null;
+    } finally {
+      isRedirectDetailsLoading.value = false;
+    }
+  },
+  onResolveError: (id) => {
+    if (rulesSubTab.value === 'redirects') {
+      toastError(`Redirect Rule #${id} could not be resolved.`);
+      redirectModalState.closeModal({ replace: true });
+    }
+  }
+});
+
+watch(() => redirectModalState.activeEntity.value, (newEntity) => {
+  if (newEntity && rulesSubTab.value === 'redirects') {
+    selectedRedirectRule.value = newEntity;
+
+    if (redirectModalState.isEdit.value) {
+      if (!canEditRedirectRule.value) {
+        toastError('You do not have permission to edit redirect rules.');
+        redirectModalState.closeModal({ replace: true });
+        return;
+      }
+      editingRedirectRuleId.value = newEntity.id;
+      redirectEditForm.value = {
+        pattern: newEntity.pattern || '',
+        category: newEntity.category || 'REDIRECT',
+        severity: newEntity.severity || 'HIGH',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+      originalRedirectRuleData.value = {
+        pattern: newEntity.pattern || '',
+        category: newEntity.category || 'REDIRECT',
+        severity: newEntity.severity || 'HIGH',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+    }
+  }
+}, { immediate: true });
+
+watch(() => redirectModalState.isView.value, (isView) => {
+  if (!isView && !redirectModalState.isEdit.value) {
+    selectedRedirectRule.value = null;
+  }
+}, { immediate: true });
+
+watch(() => redirectModalState.isEdit.value, (isEdit) => {
+  if (!isEdit) {
+    editingRedirectRuleId.value = null;
+    originalRedirectRuleData.value = null;
+  }
+}, { immediate: true });
+
+const openRedirectViewModal = (id: number | string) => {
+  if (!canViewRedirects.value) {
+    toastError('You do not have permission to view redirect rules.');
+    return;
+  }
+  redirectModalState.openView(id);
+};
+
+const closeRedirectViewModal = () => {
+  redirectModalState.closeModal();
+};
+
+const openEditRedirectRuleModal = async (id: number | string) => {
+  if (!canEditRedirectRule.value) {
+    toastError('You do not have permission to edit redirect rules.');
+    return;
+  }
+  await redirectModalState.openEdit(id);
+};
+
+const closeRedirectEditModal = async () => {
+  await redirectModalState.closeModal();
+};
+
+const submitUpdateRedirectRule = async () => {
+  if (!canEditRedirectRule.value) {
+    toastError('You do not have permission to edit redirect rules.');
+    return;
+  }
+
+  if (!editingRedirectRuleId.value) {
+    toastError('Redirect rule identifier missing.');
+    return;
+  }
+
+  const trimmedPattern = redirectEditForm.value.pattern.trim();
+  if (!trimmedPattern) {
+    toastError('Pattern / heuristic sequence is required.');
+    return;
+  }
+
+  const payload: UpdateRedirectRulePayload = {};
+  const orig = originalRedirectRuleData.value;
+  const current = redirectEditForm.value;
+
+  if (orig) {
+    if (trimmedPattern !== orig.pattern.trim()) {
+      payload.pattern = trimmedPattern;
+    }
+    if (current.category !== orig.category) {
+      payload.category = current.category;
+    }
+    if (current.severity !== orig.severity) {
+      payload.severity = current.severity;
+    }
+    if (Boolean(current.is_enabled) !== Boolean(orig.is_enabled)) {
+      payload.is_enabled = current.is_enabled;
+    }
+    const currentDesc = current.description.trim();
+    const origDesc = (orig.description || '').trim();
+    if (currentDesc !== origDesc) {
+      payload.description = currentDesc;
+    }
+  } else {
+    payload.pattern = trimmedPattern;
+    payload.category = current.category;
+    payload.severity = current.severity;
+    payload.is_enabled = current.is_enabled;
+    payload.description = current.description.trim();
+  }
+
+  if (Object.keys(payload).length === 0) {
+    toastInfo('No changes detected.');
+    await closeRedirectEditModal();
+    return;
+  }
+
+  if (isSubmittingRedirectEdit.value) return;
+
+  isSubmittingRedirectEdit.value = true;
+  try {
+    const updated = await contentSecurityService.updateRedirectRule(editingRedirectRuleId.value, payload);
+    toastSuccess('Redirect rule updated successfully.');
+    await closeRedirectEditModal();
+    await fetchRedirectRules();
+
+    if (selectedRedirectRule.value && String(selectedRedirectRule.value.id) === String(updated.id)) {
+      selectedRedirectRule.value = updated;
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to update redirect rule.');
+    toastError(msg);
+  } finally {
+    isSubmittingRedirectEdit.value = false;
   }
 };
 
@@ -4853,6 +5047,30 @@ const getSeverityBadge = (severity: string) => {
                     {{ formatDate(item.created_at) }}
                   </span>
                 </template>
+
+                <!-- Actions Cell -->
+                <template #cell-actions="{ item }">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button 
+                      v-if="canViewRedirects"
+                      @click.stop="openRedirectViewModal(item.id)"
+                      class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                      title="View redirect rule details"
+                      aria-label="View redirect rule details"
+                    >
+                      <Eye class="w-4 h-4" />
+                    </button>
+                    <button 
+                      v-if="canEditRedirectRule"
+                      @click.stop="openEditRedirectRuleModal(item.id)"
+                      class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                      title="Edit redirect rule"
+                      aria-label="Edit redirect rule"
+                    >
+                      <Edit3 class="w-4 h-4" />
+                    </button>
+                  </div>
+                </template>
               </UiTable>
 
               <!-- Pagination Controls -->
@@ -6370,6 +6588,285 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: VIEW REDIRECT RULE DETAILS -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="redirectModalState.isView.value"
+      :title="isRedirectDetailsLoading ? 'Loading Redirect Rule...' : (selectedRedirectRule ? `Redirect Rule #${selectedRedirectRule.id}` : 'Redirect Rule Details')"
+      subtitle="Comprehensive security inspection parameters and audit metadata."
+      max-width="max-w-2xl"
+      @close="closeRedirectViewModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isRedirectDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving redirect rule details from security registry...</p>
+      </div>
+
+      <!-- Error / Not Found State -->
+      <div v-else-if="!selectedRedirectRule" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <AlertCircle class="w-6 h-6" />
+        </div>
+        <p class="text-sm font-bold text-foreground">Rule Details Not Available</p>
+        <p class="text-xs text-muted-foreground">Could not load the requested redirect rule from the security engine.</p>
+        <button 
+          type="button"
+          @click="closeRedirectViewModal"
+          class="mt-2 h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+
+      <!-- Loaded Details View -->
+      <div v-else class="p-6 sm:p-8 space-y-6">
+        <!-- Hero Summary Card -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-muted/40 rounded-2xl border border-border">
+          <div class="space-y-1.5 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Redirect Pattern</span>
+            </div>
+            <div class="font-mono text-base sm:text-lg font-bold text-foreground bg-background px-3 py-1.5 rounded-xl border border-border shadow-2xs inline-block break-all">
+              {{ selectedRedirectRule.pattern }}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <!-- Severity Badge -->
+            <span :class="cn('px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border', getSeverityBadge(selectedRedirectRule.severity))">
+              {{ selectedRedirectRule.severity }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Rule Specifications Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</span>
+            <p class="text-sm font-bold text-foreground">{{ selectedRedirectRule.category }}</p>
+          </div>
+
+          <!-- Status Indicators -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Operational Status</span>
+            <div class="flex items-center gap-3">
+              <!-- Enabled Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedRedirectRule.is_enabled 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedRedirectRule.is_enabled ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedRedirectRule.is_enabled ? 'Enabled' : 'Disabled' }}</span>
+              </span>
+
+              <!-- Active Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedRedirectRule.is_active 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedRedirectRule.is_active ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedRedirectRule.is_active ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="space-y-1.5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rule Description & Rationale</span>
+          <div class="bg-card border border-border rounded-xl p-4 text-xs font-medium text-foreground leading-relaxed">
+            <p v-if="selectedRedirectRule.description?.trim()">{{ selectedRedirectRule.description }}</p>
+            <p v-else class="text-muted-foreground italic">No description provided for this rule.</p>
+          </div>
+        </div>
+
+        <!-- Audit & Tracking Metadata -->
+        <div class="space-y-2 pt-2 border-t border-border">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audit & Lifecycle Metadata</span>
+          <div class="bg-muted/30 border border-border rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedRedirectRule.created_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedRedirectRule.updated_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedRedirectRule.created_by) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedRedirectRule.updated_by) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-4 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            @click="closeRedirectViewModal"
+            class="h-9 px-5 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: EDIT REDIRECT RULE -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="redirectModalState.isEdit.value"
+      :title="isRedirectDetailsLoading ? 'Loading Redirect Rule...' : (editingRedirectRuleId ? `Edit Redirect Rule #${editingRedirectRuleId}` : 'Edit Redirect Rule')"
+      subtitle="Update pattern heuristics and classification parameters for this redirect rule."
+      max-width="max-w-lg"
+      @close="closeRedirectEditModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isRedirectDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving redirect rule details for editing...</p>
+      </div>
+
+      <!-- Form -->
+      <form v-else @submit.prevent="submitUpdateRedirectRule" class="p-6 space-y-4">
+        <!-- Pattern / Heuristic -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Pattern / Redirect Sequence <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="redirectEditForm.pattern"
+            type="text" 
+            placeholder="e.g. http-equiv=&quot;refresh&quot;, window\.location, bit\.ly/"
+            class="w-full h-9 px-3 bg-background border border-input rounded-xl text-xs font-mono text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-muted-foreground/60"
+            required
+          />
+          <p class="text-[11px] text-muted-foreground">
+            Specify the pattern, script string, or heuristic sequence to detect unauthorized redirects or location overrides.
+          </p>
+        </div>
+
+        <!-- Category & Severity Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">
+              Category <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              v-model="redirectEditForm.category"
+              class="w-full h-9 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all cursor-pointer"
+            >
+              <option value="SPAM">Spam Blacklist</option>
+              <option value="PHISHING">Phishing & Social Engineering</option>
+              <option value="MALWARE">Malicious URLs & Payloads</option>
+              <option value="POLICY">Policy & Regulatory Violation</option>
+              <option value="REDIRECT">Redirect Rules</option>
+              <option value="OTHER">Other Custom Heuristics</option>
+            </select>
+          </div>
+
+          <!-- Severity -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">
+              Severity Level <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              v-model="redirectEditForm.severity"
+              class="w-full h-9 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all cursor-pointer"
+            >
+              <option value="LOW">Low Risk</option>
+              <option value="MEDIUM">Medium Risk</option>
+              <option value="HIGH">High Risk</option>
+              <option value="CRITICAL">Critical Severity</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Rule Description & Rationale
+          </label>
+          <textarea 
+            v-model="redirectEditForm.description"
+            rows="3"
+            placeholder="Document why this redirect rule was established, targeted vectors, and false positive safeguards..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-muted-foreground/60 leading-relaxed"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="pt-2 border-t border-border flex items-center justify-between">
+          <div class="space-y-0.5">
+            <label class="text-xs font-bold text-foreground cursor-pointer" for="edit-redirect-enabled">
+              Enable Redirect Inspection
+            </label>
+            <p class="text-[11px] text-muted-foreground">
+              When enabled, incoming content will actively be evaluated against this redirect pattern.
+            </p>
+          </div>
+          <input 
+            id="edit-redirect-enabled"
+            v-model="redirectEditForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingRedirectEdit"
+            @click="closeRedirectEditModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingRedirectEdit"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isSubmittingRedirectEdit" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingRedirectEdit ? 'Saving Changes...' : 'Save Changes' }}</span>
+          </button>
+        </div>
+      </form>
     </UiAdminModal>
 
     <!-- ========================================== -->

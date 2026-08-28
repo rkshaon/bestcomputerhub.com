@@ -28,7 +28,9 @@ import type {
   ObfuscationRulesQueryParams,
   PaginatedObfuscationRules,
   RedirectRule,
+  RedirectRuleDetail,
   CreateRedirectRulePayload,
+  UpdateRedirectRulePayload,
   RedirectRulesQueryParams,
   PaginatedRedirectRules
 } from '@/types';
@@ -1618,6 +1620,111 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getRedirectRuleDetails = async (
+    id: string | number
+  ): Promise<RedirectRuleDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      isLoading.value = false;
+      const fallbackList = getFallbackRedirectRules();
+      const found = fallbackList.find((r) => String(r.id) === String(id));
+
+      if (!found) {
+        const err = new Error(`Redirect rule #${id} not found.`);
+        errorMsg.value = err.message;
+        throw err;
+      }
+
+      return {
+        id: found.id,
+        pattern: found.pattern,
+        category: found.category,
+        severity: found.severity,
+        is_enabled: found.is_enabled,
+        is_active: found.is_active,
+        description: 'Auto-generated security rule for redirect pattern / heuristic inspection.',
+        created_at: found.created_at,
+        updated_at: found.created_at,
+        created_by: 'Security System',
+        updated_by: 'Security System'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<RedirectRuleDetail>(
+        `/api/v1/content-security/redirect-rules/${id}/`,
+        {
+          method: 'GET'
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve redirect rule details.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
+  const updateRedirectRule = async (
+    id: string | number,
+    payload: UpdateRedirectRulePayload
+  ): Promise<RedirectRuleDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      isLoading.value = false;
+      const fallbackList = getFallbackRedirectRules();
+      const idx = fallbackList.findIndex((r) => String(r.id) === String(id));
+      const existing = idx !== -1 ? fallbackList[idx] : null;
+
+      if (!existing) {
+        const err = new Error(`Redirect rule #${id} not found.`);
+        errorMsg.value = err.message;
+        throw err;
+      }
+
+      const updated: RedirectRule = {
+        ...existing,
+        pattern: payload.pattern !== undefined ? payload.pattern.trim() : existing.pattern,
+        category: payload.category !== undefined ? payload.category : existing.category,
+        severity: payload.severity !== undefined ? payload.severity : existing.severity,
+        is_enabled: payload.is_enabled !== undefined ? payload.is_enabled : existing.is_enabled
+      };
+      fallbackList[idx] = updated;
+      return {
+        ...updated,
+        description: payload.description !== undefined ? payload.description : 'Updated redirect rule.',
+        updated_at: new Date().toISOString(),
+        created_by: 'Security System',
+        updated_by: 'Security System'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<RedirectRuleDetail>(
+        `/api/v1/content-security/redirect-rules/${id}/`,
+        {
+          method: 'PATCH',
+          body: payload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to update redirect rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -1642,6 +1749,8 @@ export const useContentSecurityService = () => {
     updateObfuscationRule,
     deleteObfuscationRule,
     getRedirectRules,
-    createRedirectRule
+    createRedirectRule,
+    getRedirectRuleDetails,
+    updateRedirectRule
   };
 };
