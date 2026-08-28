@@ -317,3 +317,33 @@ export interface UpdateObfuscationRulePayload {
   description?: string;
 }
 
+export interface RedirectRule {
+  id: number;
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface RedirectRulesQueryParams {
+  search?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  is_active?: boolean;
+  is_enabled?: boolean;
+  ordering?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedRedirectRules {
+  results: RedirectRule[];
+  count: number;
+  page: number;
+  pages: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
