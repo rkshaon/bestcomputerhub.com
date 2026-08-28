@@ -11,7 +11,11 @@ export type KeywordCategory =
   | 'PHISHING'
   | 'REDIRECT'
   | 'SCAM'
-  | 'SPAM';
+  | 'SPAM'
+  | 'DANGEROUS_TAGS'
+  | 'EMBEDDED_CONTENT'
+  | 'PLUGIN_OBJECTS'
+  | 'DOM_HIJACKING';
 
 export type KeywordSeverity = 'CRITICAL' | 'HIGH' | 'INFO' | 'LOW' | 'MEDIUM';
 
@@ -456,6 +460,80 @@ export interface HtmlAttributeRulesQueryParams {
 
 export interface PaginatedHtmlAttributeRules {
   results: HtmlAttributeRule[];
+  count: number;
+  page: number;
+  pages: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
+export interface HtmlTagRule {
+  id: number;
+  tag?: string;
+  pattern?: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface HtmlTagRuleDetail {
+  id: number;
+  tag?: string;
+  pattern?: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by?: {
+    id: number;
+    username?: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+  } | string | number | null;
+  updated_by?: {
+    id: number;
+    username?: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+  } | string | number | null;
+}
+
+export interface CreateHtmlTagRulePayload {
+  tag: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled?: boolean;
+  description?: string;
+}
+
+export interface UpdateHtmlTagRulePayload {
+  tag?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  is_enabled?: boolean;
+  description?: string;
+}
+
+export interface HtmlTagRulesQueryParams {
+  search?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  is_active?: boolean;
+  is_enabled?: boolean;
+  ordering?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedHtmlTagRules {
+  results: HtmlTagRule[];
   count: number;
   page: number;
   pages: number;
