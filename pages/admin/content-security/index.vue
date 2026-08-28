@@ -93,7 +93,9 @@ import type {
   CreateHtmlTagRulePayload,
   UpdateHtmlTagRulePayload,
   HtmlTagRulesQueryParams,
-  PaginatedHtmlTagRules
+  PaginatedHtmlTagRules,
+  ContentScan,
+  ContentScansQueryParams
 } from '@/types';
 
 definePageMeta({
@@ -190,6 +192,8 @@ const canViewHtmlTagRules = computed(() => hasPermission('content_security.view_
 const canAddHtmlTagRule = computed(() => hasPermission('content_security.add_htmltagrule'));
 const canEditHtmlTagRule = computed(() => hasPermission('content_security.change_htmltagrule'));
 const canDeleteHtmlTagRule = computed(() => hasPermission('content_security.delete_htmltagrule'));
+
+const canViewContentScans = computed(() => hasPermission('content_security.view_contentscan'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -1496,68 +1500,57 @@ const filterCategory = ref('all');
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
 
-const uniqueCategories = computed(() => {
-  const cats = new Set<string>();
-  findings.value.forEach(f => {
-    if (f.categoryName) cats.add(f.categoryName);
-  });
-  return Array.from(cats);
-});
+// Content Scans States & Fetching
+const isContentScansLoading = ref(false);
+const contentScansError = ref<string | null>(null);
+const contentScansData = ref<ContentScan[]>([]);
+const contentScansCount = ref(0);
+const contentScansPages = ref(1);
 
-const filteredFindings = computed(() => {
-  return findings.value.filter(item => {
-    // Search
-    if (debouncedSearch.value.trim()) {
-      const q = debouncedSearch.value.toLowerCase().trim();
-      const match = 
-        item.contentName.toLowerCase().includes(q) ||
-        item.description.toLowerCase().includes(q) ||
-        item.matchedValue.toLowerCase().includes(q) ||
-        item.field.toLowerCase().includes(q) ||
-        item.id.toLowerCase().includes(q);
-      if (!match) return false;
+const fetchContentScans = async () => {
+  if (!canViewContentScans.value) return;
+
+  isContentScansLoading.value = true;
+  contentScansError.value = null;
+
+  try {
+    const params: ContentScansQueryParams = {
+      page: currentPage.value,
+      page_size: itemsPerPage.value
+    };
+
+    if (searchQuery.value.trim()) {
+      params.search = searchQuery.value.trim();
+    }
+    if (filterContentType.value !== 'all') {
+      params.content_type = filterContentType.value;
+    }
+    if (filterStatus.value !== 'all') {
+      params.status = filterStatus.value;
     }
 
-    // Content Type
-    if (filterContentType.value !== 'all' && item.contentType !== filterContentType.value) {
-      return false;
-    }
+    const response = await contentSecurityService.getContentScans(params);
+    contentScansData.value = response.results;
+    contentScansCount.value = response.count;
+    contentScansPages.value = response.pages;
+  } catch (err: any) {
+    contentScansError.value = extractErrorMessage(err, 'Failed to retrieve content scans.');
+  } finally {
+    isContentScansLoading.value = false;
+  }
+};
 
-    // Status
-    if (filterStatus.value !== 'all' && item.status !== filterStatus.value) {
-      return false;
-    }
-
-    // Severity
-    if (filterSeverity.value !== 'all' && item.severity !== filterSeverity.value) {
-      return false;
-    }
-
-    // Detector
-    if (filterDetector.value !== 'all' && item.detector !== filterDetector.value) {
-      return false;
-    }
-
-    // Category
-    if (filterCategory.value !== 'all' && item.categoryName !== filterCategory.value) {
-      return false;
-    }
-
-    return true;
-  });
-});
-
-const totalPages = computed(() => {
-  return Math.ceil(filteredFindings.value.length / itemsPerPage.value) || 1;
-});
-
-const paginatedFindings = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  return filteredFindings.value.slice(start, start + itemsPerPage.value);
-});
-
-watch([debouncedSearch, filterContentType, filterStatus, filterSeverity, filterDetector, filterCategory, itemsPerPage], () => {
+watch([debouncedSearch, filterContentType, filterStatus, itemsPerPage], () => {
   currentPage.value = 1;
+  if (mainTab.value === 'results') {
+    fetchContentScans();
+  }
+});
+
+watch(currentPage, () => {
+  if (mainTab.value === 'results') {
+    fetchContentScans();
+  }
 });
 
 const resetFilters = () => {
@@ -4091,15 +4084,16 @@ const filteredRules = computed(() => {
 });
 
 // Table columns for Scan Results
-const scanResultColumns: UiTableColumn<SecurityFinding>[] = [
+const scanResultColumns: UiTableColumn<ContentScan>[] = [
+  { key: 'id', label: 'Scan ID', width: '120px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap font-mono text-xs font-semibold' },
   { key: 'status', label: 'Status', width: '130px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
-  { key: 'contentType', label: 'Type', width: '110px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
-  { key: 'contentName', label: 'Content Entity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 max-w-[280px]' },
-  { key: 'field', label: 'Field', width: '120px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap font-mono text-xs' },
-  { key: 'riskScore', label: 'Risk Score', width: '120px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
-  { key: 'findings', label: 'Detected Issue', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 max-w-[320px]' },
-  { key: 'scannedAt', label: 'Scanned At', width: '140px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' },
-  { key: 'actions', label: 'Actions', align: 'right', width: '100px', headerClass: 'px-4 py-3 text-right whitespace-nowrap', cellClass: 'px-4 py-3 text-right whitespace-nowrap' }
+  { key: 'content_type', label: 'Type', width: '110px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'object_id', label: 'Object ID', width: '110px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap font-mono text-xs' },
+  { key: 'field_name', label: 'Field Name', width: '120px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap font-mono text-xs' },
+  { key: 'risk_score', label: 'Risk Score', width: '120px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'finding_count', label: 'Findings', width: '100px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs font-semibold' },
+  { key: 'scanner_version', label: 'Scanner Ver.', width: '110px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground font-mono' },
+  { key: 'scanned_at', label: 'Scanned At', width: '140px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' }
 ];
 
 // Helper styles for badges

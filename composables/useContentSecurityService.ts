@@ -44,7 +44,10 @@ import type {
   CreateHtmlTagRulePayload,
   UpdateHtmlTagRulePayload,
   HtmlTagRulesQueryParams,
-  PaginatedHtmlTagRules
+  PaginatedHtmlTagRules,
+  ContentScan,
+  ContentScansQueryParams,
+  PaginatedContentScans
 } from '@/types';
 
 export const useContentSecurityService = () => {
@@ -2464,6 +2467,158 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getFallbackContentScans = (): ContentScan[] => {
+    return [
+      {
+        id: 'CS-1092',
+        content_type: 'Product',
+        object_id: '101',
+        field_name: 'description',
+        status: 'Critical',
+        risk_score: 98,
+        finding_count: 1,
+        scanner_version: 'v2.1.0',
+        scanned_at: '2026-08-25T11:52:00Z'
+      },
+      {
+        id: 'CS-1088',
+        content_type: 'Product',
+        object_id: '104',
+        field_name: 'specifications',
+        status: 'Critical',
+        risk_score: 92,
+        finding_count: 1,
+        scanner_version: 'v2.1.0',
+        scanned_at: '2026-08-25T11:48:00Z'
+      },
+      {
+        id: 'CS-1084',
+        content_type: 'Category',
+        object_id: '15',
+        field_name: 'description',
+        status: 'Needs Review',
+        risk_score: 65,
+        finding_count: 2,
+        scanner_version: 'v2.1.0',
+        scanned_at: '2026-08-25T11:40:00Z'
+      },
+      {
+        id: 'CS-1080',
+        content_type: 'Product',
+        object_id: '112',
+        field_name: 'description',
+        status: 'Clean',
+        risk_score: 0,
+        finding_count: 0,
+        scanner_version: 'v2.1.0',
+        scanned_at: '2026-08-25T11:34:00Z'
+      },
+      {
+        id: 'CS-1075',
+        content_type: 'Product',
+        object_id: '120',
+        field_name: 'name',
+        status: 'Clean',
+        risk_score: 4,
+        finding_count: 0,
+        scanner_version: 'v2.1.0',
+        scanned_at: '2026-08-25T11:22:00Z'
+      }
+    ];
+  };
+
+  const getContentScans = async (
+    params?: ContentScansQueryParams
+  ): Promise<PaginatedContentScans> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      let results = getFallbackContentScans();
+
+      if (params?.search) {
+        const q = params.search.toLowerCase().trim();
+        results = results.filter(
+          (r) =>
+            r.field_name.toLowerCase().includes(q) ||
+            String(r.id).toLowerCase().includes(q) ||
+            String(r.object_id).toLowerCase().includes(q) ||
+            r.content_type.toLowerCase().includes(q)
+        );
+      }
+      if (params?.content_type && params.content_type !== 'all') {
+        results = results.filter((r) => r.content_type === params.content_type);
+      }
+      if (params?.status && params.status !== 'all') {
+        results = results.filter((r) => r.status === params.status);
+      }
+
+      // Pagination
+      const page = params?.page || 1;
+      const pageSize = params?.page_size || 10;
+      const totalCount = results.length;
+      const totalPages = Math.ceil(totalCount / pageSize) || 1;
+      const start = (page - 1) * pageSize;
+      const paginatedResults = results.slice(start, start + pageSize);
+
+      isLoading.value = false;
+      return {
+        results: paginatedResults,
+        count: totalCount,
+        page,
+        pages: totalPages,
+        next: page < totalPages ? `?page=${page + 1}` : null,
+        previous: page > 1 ? `?page=${page - 1}` : null
+      };
+    }
+
+    try {
+      const queryObj: Record<string, any> = {};
+      if (params?.page) queryObj.page = params.page;
+      if (params?.page_size) queryObj.page_size = params.page_size;
+      if (params?.search) queryObj.search = params.search;
+      if (params?.content_type && params.content_type !== 'all') queryObj.content_type = params.content_type;
+      if (params?.status && params.status !== 'all') queryObj.status = params.status;
+      if (params?.ordering) queryObj.ordering = params.ordering;
+
+      const data = await apiClient.request<any>('/api/v1/content-security/scans/', {
+        method: 'GET',
+        params: queryObj
+      });
+
+      let results: ContentScan[] = [];
+      let count = 0;
+      let pageNum = params?.page || 1;
+      let totalPagesNum = 1;
+
+      if (Array.isArray(data)) {
+        results = data;
+        count = data.length;
+      } else if (data && typeof data === 'object') {
+        results = data.results || [];
+        count = data.count || results.length;
+        pageNum = data.page || params?.page || 1;
+        totalPagesNum = data.pages || Math.ceil(count / (params?.page_size || 10)) || 1;
+      }
+
+      isLoading.value = false;
+      return {
+        results,
+        count,
+        page: pageNum,
+        pages: totalPagesNum,
+        next: data.next || null,
+        previous: data.previous || null
+      };
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve content scans.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -2501,6 +2656,7 @@ export const useContentSecurityService = () => {
     createHtmlTagRule,
     getHtmlTagRuleDetails,
     updateHtmlTagRule,
-    deleteHtmlTagRule
+    deleteHtmlTagRule,
+    getContentScans
   };
 };

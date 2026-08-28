@@ -541,4 +541,35 @@ export interface PaginatedHtmlTagRules {
   previous?: string | null;
 }
 
+export interface ContentScan {
+  id: number | string;
+  content_type: string;
+  object_id: number | string;
+  field_name: string;
+  status: string;
+  risk_score: number;
+  finding_count: number;
+  scanner_version: string;
+  scanned_at: string;
+}
+
+export interface ContentScansQueryParams {
+  search?: string;
+  content_type?: string;
+  status?: string;
+  ordering?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedContentScans {
+  results: ContentScan[];
+  count: number;
+  page: number;
+  pages: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
+
 
