@@ -1140,6 +1140,8 @@ watch([mainTab, rulesSubTab], () => {
     } else if (rulesSubTab.value === 'html') {
       fetchHtmlTagRules();
     }
+  } else if (mainTab.value === 'results') {
+    fetchContentScans();
   }
 });
 
@@ -4573,9 +4575,35 @@ const getSeverityBadge = (severity: string) => {
               {{ item.status }}
             </span>
           </template>
+
+          <!-- Risk Score Cell -->
+          <template #cell-risk_score="{ item }">
+            <div class="flex items-center gap-2">
+              <div class="w-12 h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  :class="cn(
+                    'h-full rounded-full',
+                    item.risk_score >= 80 ? 'bg-rose-500' :
+                    item.risk_score >= 50 ? 'bg-amber-500' : 'bg-emerald-500'
+                  )"
+                  :style="{ width: `${item.risk_score}%` }"
+                ></div>
+              </div>
+              <span class="text-xs font-mono font-bold text-foreground">
+                {{ item.risk_score }}
+              </span>
+            </div>
+          </template>
+
+          <!-- Scanned At Cell -->
+          <template #cell-scanned_at="{ item }">
+            <span class="text-xs text-muted-foreground font-mono">
+              {{ new Date(item.scanned_at).toLocaleString() }}
+            </span>
+          </template>
         </UiTable>
 
-        <!-- Pagination -->
+        <!-- Pagination Controls -->
         <div class="px-4 py-3 border-t border-border bg-muted/20 flex items-center justify-between">
           <UiPagination 
             :current-page="currentPage"
@@ -4586,92 +4614,6 @@ const getSeverityBadge = (severity: string) => {
             @update:current-page="currentPage = $event"
           />
         </div>
-      </div>
-          </template>
-
-          <!-- Content Entity Name Cell -->
-          <template #cell-contentName="{ item }">
-            <div class="space-y-0.5 min-w-0">
-              <p class="text-xs font-bold text-foreground hover:text-primary transition-colors line-clamp-1">
-                {{ item.contentName }}
-              </p>
-              <p class="text-[10px] text-muted-foreground font-mono truncate">
-                ID: {{ item.contentId }} · /{{ item.contentSlug }}
-              </p>
-            </div>
-          </template>
-
-          <!-- Field Cell -->
-          <template #cell-field="{ item }">
-            <span class="px-2 py-0.5 rounded bg-muted text-[11px] font-mono text-muted-foreground border border-border/50">
-              {{ item.field }}
-            </span>
-          </template>
-
-          <!-- Risk Score Cell -->
-          <template #cell-riskScore="{ item }">
-            <div class="flex items-center gap-2">
-              <div class="w-12 h-2 bg-muted rounded-full overflow-hidden">
-                <div 
-                  :class="cn(
-                    'h-full rounded-full',
-                    item.riskScore >= 80 ? 'bg-rose-500' :
-                    item.riskScore >= 50 ? 'bg-amber-500' : 'bg-emerald-500'
-                  )"
-                  :style="{ width: `${item.riskScore}%` }"
-                ></div>
-              </div>
-              <span class="text-xs font-mono font-bold text-foreground">
-                {{ item.riskScore }}
-              </span>
-            </div>
-          </template>
-
-          <!-- Findings Cell -->
-          <template #cell-findings="{ item }">
-            <div class="space-y-0.5">
-              <p class="text-xs font-medium text-foreground line-clamp-1">
-                {{ item.description }}
-              </p>
-              <div class="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
-                <span class="font-bold text-rose-500 dark:text-rose-400">Match:</span>
-                <span class="truncate max-w-[200px] bg-rose-500/10 px-1 rounded text-rose-600 dark:text-rose-400">
-                  {{ item.matchedValue }}
-                </span>
-              </div>
-            </div>
-          </template>
-
-          <!-- Scanned At Cell -->
-          <template #cell-scannedAt="{ item }">
-            <span class="text-xs text-muted-foreground font-mono">
-              {{ item.scannedAt }}
-            </span>
-          </template>
-
-          <!-- Actions Cell -->
-          <template #cell-actions="{ item }">
-            <div class="flex items-center justify-end gap-1.5">
-              <button 
-                @click.stop="openFindingDetail(item)"
-                class="px-2.5 py-1 text-xs font-bold text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                title="View detailed finding"
-              >
-                Inspect
-              </button>
-            </div>
-          </template>
-        </UiTable>
-
-        <!-- Pagination Controls -->
-        <UiPagination 
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :total-count="filteredFindings.length"
-          :items-per-page="itemsPerPage"
-          item-label="findings"
-          @update:current-page="currentPage = $event"
-        />
       </div>
     </div>
 
