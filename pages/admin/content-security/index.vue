@@ -189,6 +189,7 @@ const canDeleteHtmlAttributeRule = computed(() => hasPermission('content_securit
 const canViewHtmlTagRules = computed(() => hasPermission('content_security.view_htmltagrule'));
 const canAddHtmlTagRule = computed(() => hasPermission('content_security.add_htmltagrule'));
 const canEditHtmlTagRule = computed(() => hasPermission('content_security.change_htmltagrule'));
+const canDeleteHtmlTagRule = computed(() => hasPermission('content_security.delete_htmltagrule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -3066,6 +3067,16 @@ watch(() => htmlTagModalState.isEdit.value, (isEdit) => {
   }
 }, { immediate: true });
 
+watch(() => htmlTagModalState.isDelete.value, (isDelete) => {
+  if (!isDelete) {
+    deletingHtmlTagRule.value = null;
+  }
+}, { immediate: true });
+
+// HTML Tag Rule Delete Modal State
+const deletingHtmlTagRule = ref<{ id: number | string; tag: string } | null>(null);
+const isDeletingHtmlTagRule = ref(false);
+
 // HTML Tag Rule Edit Modal State
 const editingHtmlTagRuleId = ref<number | string | null>(null);
 const isSubmittingHtmlTagEdit = ref(false);
@@ -3183,6 +3194,54 @@ const submitUpdateHtmlTagRule = async () => {
     toastError(msg);
   } finally {
     isSubmittingHtmlTagEdit.value = false;
+  }
+};
+
+const openDeleteHtmlTagRuleModal = async (rule: { id: number | string; tag?: string; pattern?: string }) => {
+  if (!canDeleteHtmlTagRule.value) {
+    toastError('You do not have permission to delete HTML tag rules.');
+    return;
+  }
+  deletingHtmlTagRule.value = {
+    id: rule.id,
+    tag: rule.tag || rule.pattern || `Rule #${rule.id}`
+  };
+  await htmlTagModalState.openDelete(rule.id);
+};
+
+const closeHtmlTagDeleteModal = async () => {
+  await htmlTagModalState.closeModal();
+};
+
+const executeDeleteHtmlTagRule = async () => {
+  if (!canDeleteHtmlTagRule.value) {
+    toastError('You do not have permission to delete HTML tag rules.');
+    return;
+  }
+
+  const targetId = deletingHtmlTagRule.value?.id || htmlTagModalState.activeId.value;
+  if (!targetId) {
+    toastError('HTML tag rule identifier missing.');
+    return;
+  }
+  if (isDeletingHtmlTagRule.value) return;
+  isDeletingHtmlTagRule.value = true;
+
+  try {
+    await contentSecurityService.deleteHtmlTagRule(targetId);
+    toastSuccess(`HTML tag rule "${deletingHtmlTagRule.value?.tag || `#${targetId}`}" deleted successfully.`);
+    await closeHtmlTagDeleteModal();
+    await fetchHtmlTagRules();
+
+    if (htmlTagRulesData.value.length === 0 && htmlTagPage.value > 1) {
+      htmlTagPage.value = Math.max(1, htmlTagPage.value - 1);
+      await fetchHtmlTagRules();
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to delete HTML tag rule.');
+    toastError(msg);
+  } finally {
+    isDeletingHtmlTagRule.value = false;
   }
 };
 
@@ -6529,6 +6588,15 @@ const getSeverityBadge = (severity: string) => {
                     >
                       <Edit3 class="w-4 h-4" />
                     </button>
+                    <button 
+                      v-if="canDeleteHtmlTagRule"
+                      @click.stop="openDeleteHtmlTagRuleModal(item)"
+                      class="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                      title="Delete HTML tag rule"
+                      aria-label="Delete HTML tag rule"
+                    >
+                      <Trash2 class="w-4 h-4" />
+                    </button>
                   </div>
                 </template>
               </UiTable>
@@ -8688,6 +8756,58 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </form>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: DELETE HTML TAG RULE -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="htmlTagModalState.isDelete.value"
+      title="Delete HTML Tag Rule"
+      subtitle="Confirm permanent deletion of this HTML tag rule from content inspection parameters."
+      max-width="max-w-md"
+      @close="closeHtmlTagDeleteModal"
+    >
+      <div class="p-6 space-y-4">
+        <div class="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex gap-3">
+          <AlertTriangle class="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+          <div class="space-y-1">
+            <h4 class="text-xs font-bold text-rose-500">Critical Confirmation</h4>
+            <p class="text-[10px] text-rose-500/80 font-medium leading-relaxed">
+              Deletions are non-reversible. Once deleted, this rule is instantly expunged, and future content security scanners will no longer target this tag heuristic.
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <p class="text-xs text-foreground font-semibold">
+            Are you sure you want to delete this rule?
+          </p>
+          <p class="text-xs text-muted-foreground leading-relaxed">
+            Rule tag / pattern <span class="font-mono font-bold text-foreground">{{ deletingHtmlTagRule?.tag || (selectedHtmlTagRule ? (selectedHtmlTagRule.tag || selectedHtmlTagRule.pattern) : `ID #${htmlTagModalState.activeId.value}`) }}</span> will be permanently removed from active content inspection heuristics.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isDeletingHtmlTagRule"
+            @click="closeHtmlTagDeleteModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            :disabled="isDeletingHtmlTagRule"
+            @click="executeDeleteHtmlTagRule"
+            class="h-9 px-5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isDeletingHtmlTagRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isDeletingHtmlTagRule ? 'Deleting...' : 'Delete Rule' }}</span>
+          </button>
+        </div>
+      </div>
     </UiAdminModal>
 
     <!-- ========================================== -->

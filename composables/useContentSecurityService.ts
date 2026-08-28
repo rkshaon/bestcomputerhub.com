@@ -2085,6 +2085,38 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const deleteHtmlTagRule = async (id: string | number): Promise<boolean> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      isLoading.value = false;
+      const fallbackList = getFallbackHtmlTagRules();
+      const idx = fallbackList.findIndex((r) => String(r.id) === String(id));
+      if (idx !== -1) {
+        fallbackList.splice(idx, 1);
+      }
+      return true;
+    }
+
+    try {
+      await apiClient.request(
+        `/api/v1/content-security/html-tag-rules/${id}/`,
+        {
+          method: 'DELETE'
+        }
+      );
+      isLoading.value = false;
+      return true;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to delete HTML tag rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   const getFallbackHtmlAttributeRules = (): HtmlAttributeRule[] => {
     return [
       {
@@ -2468,6 +2500,7 @@ export const useContentSecurityService = () => {
     getHtmlTagRules,
     createHtmlTagRule,
     getHtmlTagRuleDetails,
-    updateHtmlTagRule
+    updateHtmlTagRule,
+    deleteHtmlTagRule
   };
 };
