@@ -400,6 +400,14 @@ export interface HtmlAttributeRule {
   created_at: string;
 }
 
+export interface CreateHtmlAttributeRulePayload {
+  attribute: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled?: boolean;
+  description?: string;
+}
+
 export interface HtmlAttributeRulesQueryParams {
   search?: string;
   category?: KeywordCategory;

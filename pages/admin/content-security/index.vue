@@ -84,6 +84,7 @@ import type {
   UpdateRedirectRulePayload,
   RedirectRulesQueryParams,
   HtmlAttributeRule,
+  CreateHtmlAttributeRulePayload,
   HtmlAttributeRulesQueryParams
 } from '@/types';
 
@@ -173,6 +174,7 @@ const canEditRedirectRule = computed(() => hasPermission('content_security.chang
 const canDeleteRedirectRule = computed(() => hasPermission('content_security.delete_redirectrule'));
 
 const canViewHtmlAttributeRules = computed(() => hasPermission('content_security.view_htmlattributerule'));
+const canAddHtmlAttributeRule = computed(() => hasPermission('content_security.add_htmlattributerule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -2900,6 +2902,7 @@ const isSubmittingDomainRule = ref(false);
 const isSubmittingHiddenContentRule = ref(false);
 const isSubmittingObfuscationRule = ref(false);
 const isSubmittingRedirectRule = ref(false);
+const isSubmittingHtmlAttributeRule = ref(false);
 
 const keywordCreateForm = ref<{
   keyword: string;
@@ -2975,6 +2978,20 @@ const redirectCreateForm = ref<{
   description: ''
 });
 
+const htmlAttributeCreateForm = ref<{
+  attribute: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+}>({
+  attribute: '',
+  category: 'INJECTION',
+  severity: 'CRITICAL',
+  is_enabled: true,
+  description: ''
+});
+
 const ruleForm = ref({
   type: 'keyword' as DetectionRule['type'],
   pattern: '',
@@ -3045,6 +3062,18 @@ const openAddRuleModal = (type: DetectionRule['type']) => {
       pattern: '',
       category: 'REDIRECT',
       severity: 'HIGH',
+      is_enabled: true,
+      description: ''
+    };
+  } else if (type === 'attribute') {
+    if (!canAddHtmlAttributeRule.value) {
+      toastError('You do not have permission to add HTML attribute rules.');
+      return;
+    }
+    htmlAttributeCreateForm.value = {
+      attribute: '',
+      category: 'INJECTION',
+      severity: 'CRITICAL',
       is_enabled: true,
       description: ''
     };
@@ -3257,6 +3286,43 @@ const saveRule = async () => {
       toastError(err.message || 'Failed to create redirect rule.');
     } finally {
       isSubmittingRedirectRule.value = false;
+    }
+    return;
+  }
+
+  // Handle Real HTML Attribute Rule Creation via API
+  if (ruleForm.value.type === 'attribute' && !editingRule.value) {
+    if (!canAddHtmlAttributeRule.value) {
+      toastError('You do not have permission to add HTML attribute rules.');
+      return;
+    }
+
+    const trimmedAttribute = htmlAttributeCreateForm.value.attribute.trim();
+    if (!trimmedAttribute) {
+      toastError('Attribute is required.');
+      return;
+    }
+
+    try {
+      isSubmittingHtmlAttributeRule.value = true;
+      const payload: CreateHtmlAttributeRulePayload = {
+        attribute: trimmedAttribute,
+        category: htmlAttributeCreateForm.value.category,
+        severity: htmlAttributeCreateForm.value.severity,
+        is_enabled: htmlAttributeCreateForm.value.is_enabled,
+        ...(htmlAttributeCreateForm.value.description?.trim() 
+          ? { description: htmlAttributeCreateForm.value.description.trim() } 
+          : {})
+      };
+
+      await contentSecurityService.createHtmlAttributeRule(payload);
+      toastSuccess('HTML attribute rule created successfully.');
+      isRuleModalOpen.value = false;
+      await fetchHtmlAttributeRules();
+    } catch (err: any) {
+      toastError(err.message || 'Failed to create HTML attribute rule.');
+    } finally {
+      isSubmittingHtmlAttributeRule.value = false;
     }
     return;
   }
@@ -3964,7 +4030,7 @@ const getSeverityBadge = (severity: string) => {
         </div>
 
         <UiButton 
-          v-if="(rulesSubTab === 'keywords' && canAddKeywordRule) || (rulesSubTab === 'domains' && canAddDomainRule) || (rulesSubTab === 'hidden_content' && canAddHiddenContentRule) || (rulesSubTab === 'obfuscation' && canAddObfuscationRule) || (rulesSubTab === 'redirects' && canAddRedirectRule) || (rulesSubTab === 'html' || rulesSubTab === 'attributes')"
+          v-if="(rulesSubTab === 'keywords' && canAddKeywordRule) || (rulesSubTab === 'domains' && canAddDomainRule) || (rulesSubTab === 'hidden_content' && canAddHiddenContentRule) || (rulesSubTab === 'obfuscation' && canAddObfuscationRule) || (rulesSubTab === 'redirects' && canAddRedirectRule) || (rulesSubTab === 'attributes' && canAddHtmlAttributeRule) || (rulesSubTab === 'html')"
           @click="openAddRuleModal(
             rulesSubTab === 'keywords' ? 'keyword' :
             rulesSubTab === 'domains' ? 'domain' :
@@ -5798,8 +5864,8 @@ const getSeverityBadge = (severity: string) => {
     <!-- ========================================== -->
     <UiAdminModal
       :is-open="isRuleModalOpen"
-      :title="editingRule ? `Edit Rule: ${editingRule.id}` : (ruleForm.type === 'keyword' ? 'Create Keyword Rule' : ruleForm.type === 'domain' ? 'Create Domain Rule' : ruleForm.type === 'hidden_content' ? 'Create Hidden Content Rule' : ruleForm.type === 'obfuscation' ? 'Create Obfuscation Rule' : ruleForm.type === 'redirect' ? 'Create Redirect Rule' : 'Create Security Detection Rule')"
-      :subtitle="ruleForm.type === 'keyword' && !editingRule ? 'Define keyword pattern heuristics for content security inspection.' : ruleForm.type === 'domain' && !editingRule ? 'Define domain pattern heuristics for content security inspection.' : ruleForm.type === 'hidden_content' && !editingRule ? 'Define CSS declaration pattern heuristics for content security inspection.' : ruleForm.type === 'obfuscation' && !editingRule ? 'Define code obfuscation pattern / regex heuristics for content security inspection.' : ruleForm.type === 'redirect' && !editingRule ? 'Define redirect pattern / heuristic rules for content security inspection.' : 'Define pattern heuristics for automated catalog inspection.'"
+      :title="editingRule ? `Edit Rule: ${editingRule.id}` : (ruleForm.type === 'keyword' ? 'Create Keyword Rule' : ruleForm.type === 'domain' ? 'Create Domain Rule' : ruleForm.type === 'hidden_content' ? 'Create Hidden Content Rule' : ruleForm.type === 'obfuscation' ? 'Create Obfuscation Rule' : ruleForm.type === 'redirect' ? 'Create Redirect Rule' : ruleForm.type === 'attribute' ? 'Create HTML Attribute Rule' : 'Create Security Detection Rule')"
+      :subtitle="ruleForm.type === 'keyword' && !editingRule ? 'Define keyword pattern heuristics for content security inspection.' : ruleForm.type === 'domain' && !editingRule ? 'Define domain pattern heuristics for content security inspection.' : ruleForm.type === 'hidden_content' && !editingRule ? 'Define CSS declaration pattern heuristics for content security inspection.' : ruleForm.type === 'obfuscation' && !editingRule ? 'Define code obfuscation pattern / regex heuristics for content security inspection.' : ruleForm.type === 'redirect' && !editingRule ? 'Define redirect pattern / heuristic rules for content security inspection.' : ruleForm.type === 'attribute' && !editingRule ? 'Define dangerous HTML event attribute pattern heuristics for content security inspection.' : 'Define pattern heuristics for automated catalog inspection.'"
       max-width="max-w-lg"
       @close="isRuleModalOpen = false"
     >
@@ -6313,6 +6379,104 @@ const getSeverityBadge = (severity: string) => {
           >
             <RefreshCw v-if="isSubmittingRedirectRule" class="w-3.5 h-3.5 animate-spin" />
             <span>{{ isSubmittingRedirectRule ? 'Creating...' : 'Create Redirect Rule' }}</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- HTML Attribute Rule Create Form (Real API) -->
+      <form v-else-if="ruleForm.type === 'attribute' && !editingRule" @submit.prevent="saveRule" class="p-6 space-y-4">
+        <!-- Attribute -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Attribute / Pattern <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="htmlAttributeCreateForm.attribute"
+            type="text" 
+            placeholder="e.g. onerror, onclick, onload, javascript:"
+            required
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+          />
+        </div>
+
+        <!-- Category & Severity Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Category <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="htmlAttributeCreateForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="INJECTION">Injection</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="MALWARE">Malware</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="REDIRECT">Redirect</option>
+              <option value="SCAM">Scam</option>
+              <option value="SPAM">Spam</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="GAMBLING">Gambling</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Severity <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="htmlAttributeCreateForm.severity"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+              <option value="INFO">Info</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Description</label>
+          <textarea 
+            v-model="htmlAttributeCreateForm.description"
+            rows="2"
+            placeholder="Explain why this HTML attribute or event handler pattern is flagged..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div>
+            <p class="text-xs font-bold text-foreground">Rule Enabled</p>
+            <p class="text-[10px] text-muted-foreground font-medium">Active rules are evaluated during content security scans</p>
+          </div>
+          <input 
+            v-model="htmlAttributeCreateForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingHtmlAttributeRule"
+            @click="isRuleModalOpen = false"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingHtmlAttributeRule"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70"
+          >
+            <RefreshCw v-if="isSubmittingHtmlAttributeRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingHtmlAttributeRule ? 'Creating...' : 'Create HTML Attribute Rule' }}</span>
           </button>
         </div>
       </form>

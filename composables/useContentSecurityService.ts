@@ -34,6 +34,7 @@ import type {
   RedirectRulesQueryParams,
   PaginatedRedirectRules,
   HtmlAttributeRule,
+  CreateHtmlAttributeRulePayload,
   HtmlAttributeRulesQueryParams,
   PaginatedHtmlAttributeRules
 } from '@/types';
@@ -1911,6 +1912,63 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const createHtmlAttributeRule = async (
+    payload: CreateHtmlAttributeRulePayload
+  ): Promise<HtmlAttributeRule> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    const trimmedAttribute = payload.attribute?.trim();
+    if (!trimmedAttribute) {
+      const err = new Error('Attribute / pattern is required.');
+      errorMsg.value = err.message;
+      isLoading.value = false;
+      throw err;
+    }
+
+    const cleanPayload: CreateHtmlAttributeRulePayload = {
+      attribute: trimmedAttribute,
+      category: payload.category,
+      severity: payload.severity,
+      is_enabled: Boolean(payload.is_enabled),
+      ...(payload.description !== undefined && payload.description !== null && payload.description.trim() !== ''
+        ? { description: payload.description.trim() }
+        : {})
+    };
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const newRule: HtmlAttributeRule = {
+        id: Math.floor(1000 + Math.random() * 9000),
+        attribute: cleanPayload.attribute,
+        category: cleanPayload.category,
+        severity: cleanPayload.severity,
+        is_enabled: cleanPayload.is_enabled ?? true,
+        is_active: cleanPayload.is_enabled ?? true,
+        created_at: new Date().toISOString()
+      };
+      isLoading.value = false;
+      return newRule;
+    }
+
+    try {
+      const data = await apiClient.request<HtmlAttributeRule>(
+        '/api/v1/content-security/html-attribute-rules/',
+        {
+          method: 'POST',
+          body: cleanPayload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to create HTML attribute rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -1939,6 +1997,7 @@ export const useContentSecurityService = () => {
     getRedirectRuleDetails,
     updateRedirectRule,
     deleteRedirectRule,
-    getHtmlAttributeRules
+    getHtmlAttributeRules,
+    createHtmlAttributeRule
   };
 };
