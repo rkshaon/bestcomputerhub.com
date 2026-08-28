@@ -1920,6 +1920,64 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const createHtmlTagRule = async (
+    payload: CreateHtmlTagRulePayload
+  ): Promise<HtmlTagRule> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    const trimmedTag = payload.tag?.trim();
+    if (!trimmedTag) {
+      const err = new Error('Tag / pattern is required.');
+      errorMsg.value = err.message;
+      isLoading.value = false;
+      throw err;
+    }
+
+    const cleanPayload: CreateHtmlTagRulePayload = {
+      tag: trimmedTag,
+      category: payload.category,
+      severity: payload.severity,
+      is_enabled: Boolean(payload.is_enabled),
+      ...(payload.description !== undefined && payload.description !== null && payload.description.trim() !== ''
+        ? { description: payload.description.trim() }
+        : {})
+    };
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const newRule: HtmlTagRule = {
+        id: Math.floor(1000 + Math.random() * 9000),
+        tag: cleanPayload.tag,
+        pattern: cleanPayload.tag,
+        category: cleanPayload.category,
+        severity: cleanPayload.severity,
+        is_enabled: cleanPayload.is_enabled ?? true,
+        is_active: cleanPayload.is_enabled ?? true,
+        created_at: new Date().toISOString()
+      };
+      isLoading.value = false;
+      return newRule;
+    }
+
+    try {
+      const data = await apiClient.request<HtmlTagRule>(
+        '/api/v1/content-security/html-tag-rules/',
+        {
+          method: 'POST',
+          body: cleanPayload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to create HTML tag rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   const getFallbackHtmlAttributeRules = (): HtmlAttributeRule[] => {
     return [
       {
@@ -2300,6 +2358,7 @@ export const useContentSecurityService = () => {
     getHtmlAttributeRuleDetails,
     updateHtmlAttributeRule,
     deleteHtmlAttributeRule,
-    getHtmlTagRules
+    getHtmlTagRules,
+    createHtmlTagRule
   };
 };

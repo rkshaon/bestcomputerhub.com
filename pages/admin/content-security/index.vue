@@ -187,6 +187,7 @@ const canEditHtmlAttributeRule = computed(() => hasPermission('content_security.
 const canDeleteHtmlAttributeRule = computed(() => hasPermission('content_security.delete_htmlattributerule'));
 
 const canViewHtmlTagRules = computed(() => hasPermission('content_security.view_htmltagrule'));
+const canAddHtmlTagRule = computed(() => hasPermission('content_security.add_htmltagrule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -3294,6 +3295,7 @@ const isSubmittingHiddenContentRule = ref(false);
 const isSubmittingObfuscationRule = ref(false);
 const isSubmittingRedirectRule = ref(false);
 const isSubmittingHtmlAttributeRule = ref(false);
+const isSubmittingHtmlTagRule = ref(false);
 
 const keywordCreateForm = ref<{
   keyword: string;
@@ -3383,6 +3385,20 @@ const htmlAttributeCreateForm = ref<{
   description: ''
 });
 
+const htmlTagCreateForm = ref<{
+  tag: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+}>({
+  tag: '',
+  category: 'DANGEROUS_TAGS',
+  severity: 'CRITICAL',
+  is_enabled: true,
+  description: ''
+});
+
 const ruleForm = ref({
   type: 'keyword' as DetectionRule['type'],
   pattern: '',
@@ -3464,6 +3480,18 @@ const openAddRuleModal = (type: DetectionRule['type']) => {
     htmlAttributeCreateForm.value = {
       attribute: '',
       category: 'INJECTION',
+      severity: 'CRITICAL',
+      is_enabled: true,
+      description: ''
+    };
+  } else if (type === 'html') {
+    if (!canAddHtmlTagRule.value) {
+      toastError('You do not have permission to add HTML tag rules.');
+      return;
+    }
+    htmlTagCreateForm.value = {
+      tag: '',
+      category: 'DANGEROUS_TAGS',
       severity: 'CRITICAL',
       is_enabled: true,
       description: ''
@@ -3714,6 +3742,43 @@ const saveRule = async () => {
       toastError(err.message || 'Failed to create HTML attribute rule.');
     } finally {
       isSubmittingHtmlAttributeRule.value = false;
+    }
+    return;
+  }
+
+  // Handle Real HTML Tag Rule Creation via API
+  if (ruleForm.value.type === 'html' && !editingRule.value) {
+    if (!canAddHtmlTagRule.value) {
+      toastError('You do not have permission to add HTML tag rules.');
+      return;
+    }
+
+    const trimmedTag = htmlTagCreateForm.value.tag.trim();
+    if (!trimmedTag) {
+      toastError('Tag is required.');
+      return;
+    }
+
+    try {
+      isSubmittingHtmlTagRule.value = true;
+      const payload: CreateHtmlTagRulePayload = {
+        tag: trimmedTag,
+        category: htmlTagCreateForm.value.category,
+        severity: htmlTagCreateForm.value.severity,
+        is_enabled: htmlTagCreateForm.value.is_enabled,
+        ...(htmlTagCreateForm.value.description?.trim() 
+          ? { description: htmlTagCreateForm.value.description.trim() } 
+          : {})
+      };
+
+      await contentSecurityService.createHtmlTagRule(payload);
+      toastSuccess('HTML tag rule created successfully.');
+      isRuleModalOpen.value = false;
+      await fetchHtmlTagRules();
+    } catch (err: any) {
+      toastError(err.message || 'Failed to create HTML tag rule.');
+    } finally {
+      isSubmittingHtmlTagRule.value = false;
     }
     return;
   }
@@ -4421,7 +4486,7 @@ const getSeverityBadge = (severity: string) => {
         </div>
 
         <UiButton 
-          v-if="(rulesSubTab === 'keywords' && canAddKeywordRule) || (rulesSubTab === 'domains' && canAddDomainRule) || (rulesSubTab === 'hidden_content' && canAddHiddenContentRule) || (rulesSubTab === 'obfuscation' && canAddObfuscationRule) || (rulesSubTab === 'redirects' && canAddRedirectRule) || (rulesSubTab === 'attributes' && canAddHtmlAttributeRule) || (rulesSubTab === 'html')"
+          v-if="(rulesSubTab === 'keywords' && canAddKeywordRule) || (rulesSubTab === 'domains' && canAddDomainRule) || (rulesSubTab === 'hidden_content' && canAddHiddenContentRule) || (rulesSubTab === 'obfuscation' && canAddObfuscationRule) || (rulesSubTab === 'redirects' && canAddRedirectRule) || (rulesSubTab === 'attributes' && canAddHtmlAttributeRule) || (rulesSubTab === 'html' && canAddHtmlTagRule)"
           @click="openAddRuleModal(
             rulesSubTab === 'keywords' ? 'keyword' :
             rulesSubTab === 'domains' ? 'domain' :
@@ -7147,6 +7212,108 @@ const getSeverityBadge = (severity: string) => {
           >
             <RefreshCw v-if="isSubmittingHtmlAttributeRule" class="w-3.5 h-3.5 animate-spin" />
             <span>{{ isSubmittingHtmlAttributeRule ? 'Creating...' : 'Create HTML Attribute Rule' }}</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- HTML Tag Rule Create Form (Real API) -->
+      <form v-else-if="ruleForm.type === 'html' && !editingRule" @submit.prevent="saveRule" class="p-6 space-y-4">
+        <!-- Tag -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            HTML Tag Name <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="htmlTagCreateForm.tag"
+            type="text" 
+            placeholder="e.g. script, iframe, object, embed, etc."
+            required
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+          />
+        </div>
+
+        <!-- Category & Severity Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Category <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="htmlTagCreateForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="DANGEROUS_TAGS">Dangerous Tags</option>
+              <option value="EMBEDDED_CONTENT">Embedded Content</option>
+              <option value="PLUGIN_OBJECTS">Plugin Objects</option>
+              <option value="DOM_HIJACKING">DOM Hijacking</option>
+              <option value="INJECTION">Injection</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="MALWARE">Malware</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="REDIRECT">Redirect</option>
+              <option value="SCAM">Scam</option>
+              <option value="SPAM">Spam</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="GAMBLING">Gambling</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Severity <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="htmlTagCreateForm.severity"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+              <option value="INFO">Info</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Description</label>
+          <textarea 
+            v-model="htmlTagCreateForm.description"
+            rows="2"
+            placeholder="Explain why this HTML tag pattern is flagged..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div>
+            <p class="text-xs font-bold text-foreground">Rule Enabled</p>
+            <p class="text-[10px] text-muted-foreground font-medium">Active rules are evaluated during content security scans</p>
+          </div>
+          <input 
+            v-model="htmlTagCreateForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingHtmlTagRule"
+            @click="isRuleModalOpen = false"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingHtmlTagRule"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70"
+          >
+            <RefreshCw v-if="isSubmittingHtmlTagRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingHtmlTagRule ? 'Creating...' : 'Create HTML Tag Rule' }}</span>
           </button>
         </div>
       </form>
