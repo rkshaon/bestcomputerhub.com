@@ -22,6 +22,7 @@ import type {
   HiddenContentRulesQueryParams,
   PaginatedHiddenContentRules,
   ObfuscationRule,
+  CreateObfuscationRulePayload,
   ObfuscationRulesQueryParams,
   PaginatedObfuscationRules
 } from '@/types';
@@ -1217,6 +1218,63 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const createObfuscationRule = async (
+    payload: CreateObfuscationRulePayload
+  ): Promise<ObfuscationRule> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    const trimmedPattern = payload.pattern?.trim();
+    if (!trimmedPattern) {
+      const err = new Error('Pattern is required.');
+      errorMsg.value = err.message;
+      isLoading.value = false;
+      throw err;
+    }
+
+    const cleanPayload: CreateObfuscationRulePayload = {
+      pattern: trimmedPattern,
+      category: payload.category,
+      severity: payload.severity,
+      is_enabled: Boolean(payload.is_enabled),
+      ...(payload.description !== undefined && payload.description !== null && payload.description.trim() !== ''
+        ? { description: payload.description.trim() }
+        : {})
+    };
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const newRule: ObfuscationRule = {
+        id: Math.floor(1000 + Math.random() * 9000),
+        pattern: cleanPayload.pattern,
+        category: cleanPayload.category,
+        severity: cleanPayload.severity,
+        is_enabled: cleanPayload.is_enabled ?? true,
+        is_active: cleanPayload.is_enabled ?? true,
+        created_at: new Date().toISOString()
+      };
+      isLoading.value = false;
+      return newRule;
+    }
+
+    try {
+      const data = await apiClient.request<ObfuscationRule>(
+        '/api/v1/content-security/obfuscation-rules/',
+        {
+          method: 'POST',
+          body: cleanPayload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to create obfuscation rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -1235,6 +1293,7 @@ export const useContentSecurityService = () => {
     getHiddenContentRuleDetails,
     updateHiddenContentRule,
     deleteHiddenContentRule,
-    getObfuscationRules
+    getObfuscationRules,
+    createObfuscationRule
   };
 };

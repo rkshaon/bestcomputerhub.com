@@ -274,3 +274,11 @@ export interface PaginatedObfuscationRules {
   next?: string | null;
   previous?: string | null;
 }
+
+export interface CreateObfuscationRulePayload {
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled?: boolean;
+  description?: string;
+}
