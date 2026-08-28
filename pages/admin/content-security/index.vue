@@ -2210,6 +2210,9 @@ const selectedRedirectRule = ref<RedirectRuleDetail | null>(null);
 const editingRedirectRuleId = ref<number | string | null>(null);
 const isSubmittingRedirectEdit = ref(false);
 
+const deletingRedirectRule = ref<{ id: number | string; pattern: string } | null>(null);
+const isDeletingRedirectRule = ref(false);
+
 const redirectEditForm = ref<{
   pattern: string;
   category: KeywordCategory;
@@ -2281,11 +2284,25 @@ watch(() => redirectModalState.activeEntity.value, (newEntity) => {
         description: newEntity.description || ''
       };
     }
+
+    if (redirectModalState.isDelete.value) {
+      if (!canDeleteRedirectRule.value) {
+        toastError('You do not have permission to delete redirect rules.');
+        redirectModalState.closeModal({ replace: true });
+        return;
+      }
+      if (!deletingRedirectRule.value) {
+        deletingRedirectRule.value = {
+          id: newEntity.id,
+          pattern: newEntity.pattern || `Rule #${newEntity.id}`
+        };
+      }
+    }
   }
 }, { immediate: true });
 
 watch(() => redirectModalState.isView.value, (isView) => {
-  if (!isView && !redirectModalState.isEdit.value) {
+  if (!isView && !redirectModalState.isEdit.value && !redirectModalState.isDelete.value) {
     selectedRedirectRule.value = null;
   }
 }, { immediate: true });
@@ -2294,6 +2311,15 @@ watch(() => redirectModalState.isEdit.value, (isEdit) => {
   if (!isEdit) {
     editingRedirectRuleId.value = null;
     originalRedirectRuleData.value = null;
+  }
+}, { immediate: true });
+
+watch(() => redirectModalState.isDelete.value, (isDelete) => {
+  if (!isDelete) {
+    deletingRedirectRule.value = null;
+  } else if (!canDeleteRedirectRule.value) {
+    toastError('You do not have permission to delete redirect rules.');
+    redirectModalState.closeModal({ replace: true });
   }
 }, { immediate: true });
 
@@ -2391,6 +2417,55 @@ const submitUpdateRedirectRule = async () => {
     toastError(msg);
   } finally {
     isSubmittingRedirectEdit.value = false;
+  }
+};
+
+const openDeleteRedirectRuleModal = async (rule: { id: number | string; pattern?: string }) => {
+  if (!canDeleteRedirectRule.value) {
+    toastError('You do not have permission to delete redirect rules.');
+    return;
+  }
+  deletingRedirectRule.value = {
+    id: rule.id,
+    pattern: rule.pattern || `Rule #${rule.id}`
+  };
+  await redirectModalState.openDelete(rule.id);
+};
+
+const closeRedirectDeleteModal = async () => {
+  await redirectModalState.closeModal();
+};
+
+const executeDeleteRedirectRule = async () => {
+  if (!canDeleteRedirectRule.value) {
+    toastError('You do not have permission to delete redirect rules.');
+    return;
+  }
+
+  const targetId = deletingRedirectRule.value?.id || redirectModalState.activeId.value;
+  if (!targetId) {
+    toastError('Redirect rule identifier missing.');
+    return;
+  }
+
+  if (isDeletingRedirectRule.value) return;
+
+  isDeletingRedirectRule.value = true;
+  try {
+    await contentSecurityService.deleteRedirectRule(targetId);
+    toastSuccess(`Redirect rule "${deletingRedirectRule.value?.pattern || `#${targetId}`}" deleted successfully.`);
+    await closeRedirectDeleteModal();
+    await fetchRedirectRules();
+
+    if (redirectRulesData.value.length === 0 && redirectPage.value > 1) {
+      redirectPage.value = Math.max(1, redirectPage.value - 1);
+      await fetchRedirectRules();
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to delete redirect rule.');
+    toastError(msg);
+  } finally {
+    isDeletingRedirectRule.value = false;
   }
 };
 
@@ -5069,6 +5144,15 @@ const getSeverityBadge = (severity: string) => {
                     >
                       <Edit3 class="w-4 h-4" />
                     </button>
+                    <button 
+                      v-if="canDeleteRedirectRule"
+                      @click.stop="openDeleteRedirectRuleModal(item)"
+                      class="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                      title="Delete redirect rule"
+                      aria-label="Delete redirect rule"
+                    >
+                      <Trash2 class="w-4 h-4" />
+                    </button>
                   </div>
                 </template>
               </UiTable>
@@ -6867,6 +6951,53 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </form>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: DELETE REDIRECT RULE CONFIRMATION -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="redirectModalState.isDelete.value"
+      title="Delete Redirect Rule"
+      subtitle="Verify decommissioning of this content security redirect rule."
+      max-width="max-w-md"
+      :show-close-button="!isDeletingRedirectRule"
+      @close="closeRedirectDeleteModal"
+    >
+      <div class="p-6 space-y-5">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div class="space-y-2">
+          <p class="text-sm font-bold text-foreground">
+            Are you sure you want to delete this redirect rule?
+          </p>
+          <p class="text-xs text-muted-foreground leading-relaxed">
+            Pattern <span class="font-mono font-bold text-foreground">{{ deletingRedirectRule?.pattern || (selectedRedirectRule ? selectedRedirectRule.pattern : `ID #${redirectModalState.activeId.value}`) }}</span> will be permanently removed from active content inspection heuristics.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isDeletingRedirectRule"
+            @click="closeRedirectDeleteModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            :disabled="isDeletingRedirectRule"
+            @click="executeDeleteRedirectRule"
+            class="h-9 px-5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isDeletingRedirectRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isDeletingRedirectRule ? 'Deleting...' : 'Delete Rule' }}</span>
+          </button>
+        </div>
+      </div>
     </UiAdminModal>
 
     <!-- ========================================== -->
