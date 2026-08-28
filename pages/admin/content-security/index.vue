@@ -2609,9 +2609,33 @@ const executeDeleteRedirectRule = async () => {
   }
 };
 
-// HTML Attribute Rule Details Modal State
+// HTML Attribute Rule Details & Edit Modal State
 const isHtmlAttributeDetailsLoading = ref(false);
 const selectedHtmlAttributeRule = ref<HtmlAttributeRuleDetail | null>(null);
+const editingHtmlAttributeRuleId = ref<number | string | null>(null);
+const isSubmittingHtmlAttributeEdit = ref(false);
+
+const htmlAttributeEditForm = ref<{
+  attribute: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+}>({
+  attribute: '',
+  category: 'INJECTION',
+  severity: 'CRITICAL',
+  is_enabled: true,
+  description: ''
+});
+
+const originalHtmlAttributeRuleData = ref<{
+  attribute: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+} | null>(null);
 
 const htmlAttributeModalState = useAdminModalState<HtmlAttributeRuleDetail>({
   getItems: async (id) => {
@@ -2639,12 +2663,41 @@ const htmlAttributeModalState = useAdminModalState<HtmlAttributeRuleDetail>({
 watch(() => htmlAttributeModalState.activeEntity.value, (newEntity) => {
   if (newEntity && rulesSubTab.value === 'attributes') {
     selectedHtmlAttributeRule.value = newEntity;
+    if (htmlAttributeModalState.isEdit.value) {
+      if (!canEditHtmlAttributeRule.value) {
+        toastError('You do not have permission to edit HTML attribute rules.');
+        htmlAttributeModalState.closeModal({ replace: true });
+        return;
+      }
+      editingHtmlAttributeRuleId.value = newEntity.id;
+      htmlAttributeEditForm.value = {
+        attribute: newEntity.attribute || newEntity.pattern || '',
+        category: newEntity.category || 'INJECTION',
+        severity: newEntity.severity || 'CRITICAL',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+      originalHtmlAttributeRuleData.value = {
+        attribute: newEntity.attribute || newEntity.pattern || '',
+        category: newEntity.category || 'INJECTION',
+        severity: newEntity.severity || 'CRITICAL',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+    }
   }
 }, { immediate: true });
 
 watch(() => htmlAttributeModalState.isView.value, (isView) => {
-  if (!isView) {
+  if (!isView && !htmlAttributeModalState.isEdit.value) {
     selectedHtmlAttributeRule.value = null;
+  }
+}, { immediate: true });
+
+watch(() => htmlAttributeModalState.isEdit.value, (isEdit) => {
+  if (!isEdit) {
+    editingHtmlAttributeRuleId.value = null;
+    originalHtmlAttributeRuleData.value = null;
   }
 }, { immediate: true });
 
@@ -2658,6 +2711,88 @@ const openHtmlAttributeViewModal = (id: number | string) => {
 
 const closeHtmlAttributeViewModal = () => {
   htmlAttributeModalState.closeModal();
+};
+
+const openEditHtmlAttributeRuleModal = async (id: number | string) => {
+  if (!canEditHtmlAttributeRule.value) {
+    toastError('You do not have permission to edit HTML attribute rules.');
+    return;
+  }
+  await htmlAttributeModalState.openEdit(id);
+};
+
+const closeHtmlAttributeEditModal = async () => {
+  await htmlAttributeModalState.closeModal();
+};
+
+const submitUpdateHtmlAttributeRule = async () => {
+  if (!canEditHtmlAttributeRule.value) {
+    toastError('You do not have permission to edit HTML attribute rules.');
+    return;
+  }
+  if (!editingHtmlAttributeRuleId.value) {
+    toastError('HTML attribute rule identifier missing.');
+    return;
+  }
+  const trimmedAttribute = htmlAttributeEditForm.value.attribute.trim();
+  if (!trimmedAttribute) {
+    toastError('Attribute / pattern is required.');
+    return;
+  }
+
+  const payload: UpdateHtmlAttributeRulePayload = {};
+  const orig = originalHtmlAttributeRuleData.value;
+  const current = htmlAttributeEditForm.value;
+
+  if (orig) {
+    if (trimmedAttribute !== orig.attribute.trim()) {
+      payload.attribute = trimmedAttribute;
+    }
+    if (current.category !== orig.category) {
+      payload.category = current.category;
+    }
+    if (current.severity !== orig.severity) {
+      payload.severity = current.severity;
+    }
+    if (Boolean(current.is_enabled) !== Boolean(orig.is_enabled)) {
+      payload.is_enabled = current.is_enabled;
+    }
+    const currentDesc = current.description.trim();
+    const origDesc = (orig.description || '').trim();
+    if (currentDesc !== origDesc) {
+      payload.description = currentDesc;
+    }
+  } else {
+    payload.attribute = trimmedAttribute;
+    payload.category = current.category;
+    payload.severity = current.severity;
+    payload.is_enabled = current.is_enabled;
+    payload.description = current.description.trim();
+  }
+
+  if (Object.keys(payload).length === 0) {
+    toastInfo('No changes detected.');
+    await closeHtmlAttributeEditModal();
+    return;
+  }
+
+  if (isSubmittingHtmlAttributeEdit.value) return;
+  isSubmittingHtmlAttributeEdit.value = true;
+
+  try {
+    const updated = await contentSecurityService.updateHtmlAttributeRule(editingHtmlAttributeRuleId.value, payload);
+    toastSuccess('HTML attribute rule updated successfully.');
+    await closeHtmlAttributeEditModal();
+    await fetchHtmlAttributeRules();
+    if (selectedHtmlAttributeRule.value && String(selectedHtmlAttributeRule.value.id) === String(updated.id)) {
+      selectedHtmlAttributeRule.value = updated;
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to update HTML attribute rule.');
+    toastError(msg);
+  } finally {
+    isSubmittingHtmlAttributeEdit.value = false;
+  }
 };
 
 const openEditDomainRuleModal = async (id: number | string) => {
@@ -5648,7 +5783,7 @@ const getSeverityBadge = (severity: string) => {
 
                 <!-- Actions Cell -->
                 <template #cell-actions="{ item }">
-                  <div class="flex items-center justify-end gap-1">
+                  <div class="flex items-center justify-end gap-1.5">
                     <button 
                       v-if="canViewHtmlAttributeRules"
                       @click.stop="openHtmlAttributeViewModal(item.id)"
@@ -5657,6 +5792,15 @@ const getSeverityBadge = (severity: string) => {
                       aria-label="View HTML attribute rule details"
                     >
                       <Eye class="w-4 h-4" />
+                    </button>
+                    <button 
+                      v-if="canEditHtmlAttributeRule"
+                      @click.stop="openEditHtmlAttributeRuleModal(item.id)"
+                      class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                      title="Edit HTML attribute rule"
+                      aria-label="Edit HTML attribute rule"
+                    >
+                      <Edit3 class="w-4 h-4" />
                     </button>
                   </div>
                 </template>
@@ -7583,6 +7727,134 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: EDIT HTML ATTRIBUTE RULE -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="htmlAttributeModalState.isEdit.value"
+      :title="isHtmlAttributeDetailsLoading ? 'Loading HTML Attribute Rule...' : (editingHtmlAttributeRuleId ? `Edit HTML Attribute Rule #${editingHtmlAttributeRuleId}` : 'Edit HTML Attribute Rule')"
+      subtitle="Update pattern heuristics and classification parameters for this HTML attribute rule."
+      max-width="max-w-lg"
+      @close="closeHtmlAttributeEditModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isHtmlAttributeDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving HTML attribute rule details for editing...</p>
+      </div>
+
+      <!-- Form -->
+      <form v-else @submit.prevent="submitUpdateHtmlAttributeRule" class="p-6 space-y-4">
+        <!-- Attribute / Pattern -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Attribute / Pattern <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="htmlAttributeEditForm.attribute"
+            type="text" 
+            placeholder="e.g. onerror, onclick, onload, javascript:"
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+            required
+          />
+        </div>
+
+        <!-- Category & Severity Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">
+              Category <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              v-model="htmlAttributeEditForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="INJECTION">Injection</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="MALWARE">Malware</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="REDIRECT">Redirect</option>
+              <option value="SCAM">Scam</option>
+              <option value="SPAM">Spam</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="GAMBLING">Gambling</option>
+            </select>
+          </div>
+
+          <!-- Severity -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">
+              Severity Level <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              v-model="htmlAttributeEditForm.severity"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+              <option value="INFO">Info</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Rule Description & Rationale
+          </label>
+          <textarea 
+            v-model="htmlAttributeEditForm.description"
+            rows="3"
+            placeholder="Document why this HTML attribute or event handler pattern was established, targeted vectors, and false positive safeguards..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all resize-none leading-relaxed"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div class="space-y-0.5">
+            <label class="text-xs font-bold text-foreground cursor-pointer" for="edit-attribute-enabled">
+              Rule Enabled
+            </label>
+            <p class="text-[10px] text-muted-foreground font-medium">
+              Active rules are evaluated during content security scans.
+            </p>
+          </div>
+          <input 
+            id="edit-attribute-enabled"
+            v-model="htmlAttributeEditForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingHtmlAttributeEdit"
+            @click="closeHtmlAttributeEditModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingHtmlAttributeEdit"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isSubmittingHtmlAttributeEdit" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingHtmlAttributeEdit ? 'Saving Changes...' : 'Save Changes' }}</span>
+          </button>
+        </div>
+      </form>
     </UiAdminModal>
 
     <!-- ========================================== -->
