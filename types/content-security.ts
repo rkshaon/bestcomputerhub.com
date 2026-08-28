@@ -244,3 +244,33 @@ export interface PaginatedHiddenContentRules {
   next?: string | null;
   previous?: string | null;
 }
+
+export interface ObfuscationRule {
+  id: number;
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ObfuscationRulesQueryParams {
+  search?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  is_active?: boolean;
+  is_enabled?: boolean;
+  ordering?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedObfuscationRules {
+  results: ObfuscationRule[];
+  count: number;
+  page: number;
+  pages: number;
+  next?: string | null;
+  previous?: string | null;
+}

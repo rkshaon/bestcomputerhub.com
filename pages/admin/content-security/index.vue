@@ -72,7 +72,9 @@ import type {
   HiddenContentRuleDetail,
   CreateHiddenContentRulePayload,
   UpdateHiddenContentRulePayload,
-  HiddenContentRulesQueryParams
+  HiddenContentRulesQueryParams,
+  ObfuscationRule,
+  ObfuscationRulesQueryParams
 } from '@/types';
 
 definePageMeta({
@@ -118,7 +120,7 @@ export interface SecurityFinding {
 
 export interface DetectionRule {
   id: string;
-  type: 'keyword' | 'domain' | 'hidden_content' | 'html' | 'attribute' | 'redirect';
+  type: 'keyword' | 'domain' | 'hidden_content' | 'obfuscation' | 'html' | 'attribute' | 'redirect';
   pattern: string;
   category: string;
   severity: SecuritySeverity;
@@ -132,7 +134,7 @@ export interface DetectionRule {
 // State Management
 // ==========================================
 const mainTab = ref<'overview' | 'results' | 'rules'>('overview');
-const rulesSubTab = ref<'keywords' | 'domains' | 'hidden_content' | 'html' | 'attributes' | 'redirects'>('keywords');
+const rulesSubTab = ref<'keywords' | 'domains' | 'hidden_content' | 'obfuscation' | 'html' | 'attributes' | 'redirects'>('keywords');
 
 const { hasPermission } = useAdminPermissions();
 const canViewKeywords = computed(() => hasPermission('content_security.view_keywordrule'));
@@ -149,6 +151,8 @@ const canViewHiddenContent = computed(() => hasPermission('content_security.view
 const canAddHiddenContentRule = computed(() => hasPermission('content_security.add_hiddencontentrule'));
 const canEditHiddenContentRule = computed(() => hasPermission('content_security.change_hiddencontentrule'));
 const canDeleteHiddenContentRule = computed(() => hasPermission('content_security.delete_hiddencontentrule'));
+
+const canViewObfuscation = computed(() => hasPermission('content_security.view_obfuscationrule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -383,6 +387,81 @@ const fetchHiddenContentRules = async () => {
   }
 };
 
+// Obfuscation Rules Query/Data States
+const isObfuscationLoading = ref(false);
+const obfuscationError = ref<string | null>(null);
+const obfuscationSearchQuery = ref('');
+const debouncedObfuscationSearch = refDebounced(obfuscationSearchQuery, 300);
+const obfuscationCategory = ref<string>('all');
+const obfuscationSeverity = ref<string>('all');
+const obfuscationIsActive = ref<string>('all');
+const obfuscationIsEnabled = ref<string>('all');
+const obfuscationOrdering = ref<string>('-created_at');
+const obfuscationPage = ref(1);
+const obfuscationPageSize = ref(10);
+const obfuscationRulesData = ref<ObfuscationRule[]>([]);
+const obfuscationRulesCount = ref(0);
+const obfuscationRulesPages = ref(1);
+
+const obfuscationRuleColumns: UiTableColumn<ObfuscationRule>[] = [
+  { key: 'pattern', label: 'Obfuscation Pattern / Regex', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-sm font-bold text-foreground' },
+  { key: 'category', label: 'Category', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'severity', label: 'Severity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'is_enabled', label: 'Enabled', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'is_active', label: 'Active', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' }
+];
+
+const resetObfuscationFilters = () => {
+  obfuscationSearchQuery.value = '';
+  obfuscationCategory.value = 'all';
+  obfuscationSeverity.value = 'all';
+  obfuscationIsActive.value = 'all';
+  obfuscationIsEnabled.value = 'all';
+  obfuscationOrdering.value = '-created_at';
+  obfuscationPage.value = 1;
+};
+
+const fetchObfuscationRules = async () => {
+  if (!canViewObfuscation.value) return;
+  
+  isObfuscationLoading.value = true;
+  obfuscationError.value = null;
+
+  try {
+    const params: ObfuscationRulesQueryParams = {
+      page: obfuscationPage.value,
+      page_size: obfuscationPageSize.value,
+      ordering: obfuscationOrdering.value
+    };
+
+    if (debouncedObfuscationSearch.value.trim()) {
+      params.search = debouncedObfuscationSearch.value.trim();
+    }
+    if (obfuscationCategory.value !== 'all') {
+      params.category = obfuscationCategory.value as KeywordCategory;
+    }
+    if (obfuscationSeverity.value !== 'all') {
+      params.severity = obfuscationSeverity.value as KeywordSeverity;
+    }
+    if (obfuscationIsActive.value !== 'all') {
+      params.is_active = obfuscationIsActive.value === 'true';
+    }
+    if (obfuscationIsEnabled.value !== 'all') {
+      params.is_enabled = obfuscationIsEnabled.value === 'true';
+    }
+
+    const response = await contentSecurityService.getObfuscationRules(params);
+    obfuscationRulesData.value = response.results;
+    obfuscationRulesCount.value = response.count;
+    obfuscationRulesPages.value = response.pages;
+  } catch (err: any) {
+    obfuscationError.value = extractErrorMessage(err, 'Failed to retrieve obfuscation rules.');
+  } finally {
+    isObfuscationLoading.value = false;
+  }
+};
+
 // URL Routing/Query Management
 const route = useRoute();
 const router = useRouter();
@@ -416,6 +495,15 @@ const syncFromRoute = () => {
     if (route.query.ordering) hiddenContentOrdering.value = String(route.query.ordering);
     if (route.query.page) hiddenContentPage.value = parseInt(String(route.query.page)) || 1;
     if (route.query.page_size) hiddenContentPageSize.value = parseInt(String(route.query.page_size)) || 10;
+  } else if (rulesSubTab.value === 'obfuscation') {
+    if (route.query.search) obfuscationSearchQuery.value = String(route.query.search);
+    if (route.query.category) obfuscationCategory.value = String(route.query.category);
+    if (route.query.severity) obfuscationSeverity.value = String(route.query.severity);
+    if (route.query.is_active) obfuscationIsActive.value = String(route.query.is_active);
+    if (route.query.is_enabled) obfuscationIsEnabled.value = String(route.query.is_enabled);
+    if (route.query.ordering) obfuscationOrdering.value = String(route.query.ordering);
+    if (route.query.page) obfuscationPage.value = parseInt(String(route.query.page)) || 1;
+    if (route.query.page_size) obfuscationPageSize.value = parseInt(String(route.query.page_size)) || 10;
   } else {
     if (route.query.search) keywordSearchQuery.value = String(route.query.search);
     if (route.query.category) keywordCategory.value = String(route.query.category);
@@ -465,6 +553,16 @@ const updateRouteQuery = () => {
     query.ordering = hiddenContentOrdering.value !== '-created_at' ? hiddenContentOrdering.value : undefined;
     query.page = hiddenContentPage.value !== 1 ? String(hiddenContentPage.value) : undefined;
     query.page_size = hiddenContentPageSize.value !== 10 ? String(hiddenContentPageSize.value) : undefined;
+  } else if (mainTab.value === 'rules' && rulesSubTab.value === 'obfuscation') {
+    query.search = obfuscationSearchQuery.value || undefined;
+    query.category = obfuscationCategory.value !== 'all' ? obfuscationCategory.value : undefined;
+    query.severity = obfuscationSeverity.value !== 'all' ? obfuscationSeverity.value : undefined;
+    delete query.match_type;
+    query.is_active = obfuscationIsActive.value !== 'all' ? obfuscationIsActive.value : undefined;
+    query.is_enabled = obfuscationIsEnabled.value !== 'all' ? obfuscationIsEnabled.value : undefined;
+    query.ordering = obfuscationOrdering.value !== '-created_at' ? obfuscationOrdering.value : undefined;
+    query.page = obfuscationPage.value !== 1 ? String(obfuscationPage.value) : undefined;
+    query.page_size = obfuscationPageSize.value !== 10 ? String(obfuscationPageSize.value) : undefined;
   } else {
     delete query.search;
     delete query.category;
@@ -491,6 +589,9 @@ onMounted(() => {
   }
   if (canViewHiddenContent.value) {
     fetchHiddenContentRules();
+  }
+  if (canViewObfuscation.value) {
+    fetchObfuscationRules();
   }
 });
 
@@ -577,6 +678,33 @@ watch(hiddenContentPage, () => {
   }
 });
 
+// Reactively watch obfuscation filters & trigger fetch
+watch(
+  [
+    debouncedObfuscationSearch,
+    obfuscationCategory,
+    obfuscationSeverity,
+    obfuscationIsActive,
+    obfuscationIsEnabled,
+    obfuscationOrdering,
+    obfuscationPageSize
+  ],
+  () => {
+    obfuscationPage.value = 1;
+    updateRouteQuery();
+    if (rulesSubTab.value === 'obfuscation') {
+      fetchObfuscationRules();
+    }
+  }
+);
+
+watch(obfuscationPage, () => {
+  updateRouteQuery();
+  if (rulesSubTab.value === 'obfuscation') {
+    fetchObfuscationRules();
+  }
+});
+
 watch([mainTab, rulesSubTab], () => {
   updateRouteQuery();
   if (mainTab.value === 'rules') {
@@ -586,6 +714,8 @@ watch([mainTab, rulesSubTab], () => {
       fetchDomainRules();
     } else if (rulesSubTab.value === 'hidden_content') {
       fetchHiddenContentRules();
+    } else if (rulesSubTab.value === 'obfuscation') {
+      fetchObfuscationRules();
     }
   }
 });
@@ -916,6 +1046,9 @@ const visibleSubTabs = computed(() => {
   }
   if (canViewHiddenContent.value) {
     tabs.push({ id: 'hidden_content', label: 'Hidden Content', count: hiddenContentRulesCount.value });
+  }
+  if (canViewObfuscation.value) {
+    tabs.push({ id: 'obfuscation', label: 'Obfuscation', count: obfuscationRulesCount.value });
   }
   tabs.push(
     { id: 'html', label: 'Dangerous HTML', count: rules.value.filter(r => r.type === 'html').length },
@@ -2894,7 +3027,7 @@ const getSeverityBadge = (severity: string) => {
         </div>
 
         <UiButton 
-          v-if="(rulesSubTab === 'keywords' && canAddKeywordRule) || (rulesSubTab === 'domains' && canAddDomainRule) || (rulesSubTab === 'hidden_content' && canAddHiddenContentRule) || (rulesSubTab !== 'keywords' && rulesSubTab !== 'domains' && rulesSubTab !== 'hidden_content')"
+          v-if="(rulesSubTab === 'keywords' && canAddKeywordRule) || (rulesSubTab === 'domains' && canAddDomainRule) || (rulesSubTab === 'hidden_content' && canAddHiddenContentRule) || (rulesSubTab !== 'keywords' && rulesSubTab !== 'domains' && rulesSubTab !== 'hidden_content' && rulesSubTab !== 'obfuscation')"
           @click="openAddRuleModal(
             rulesSubTab === 'keywords' ? 'keyword' :
             rulesSubTab === 'domains' ? 'domain' :
@@ -3703,6 +3836,231 @@ const getSeverityBadge = (severity: string) => {
               :items-per-page="hiddenContentPageSize"
               item-label="hidden content rules"
               @update:current-page="hiddenContentPage = $event"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Obfuscation Subtab Specific Filters & Table -->
+      <div v-else-if="rulesSubTab === 'obfuscation'" class="space-y-4">
+        <!-- Obfuscation Rules Filters Toolbar -->
+        <div class="bg-card border border-border rounded-2xl p-3.5 shadow-xs space-y-3">
+          <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+            <!-- Search Box -->
+            <div class="relative flex-1">
+              <Search class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input 
+                v-model="obfuscationSearchQuery" 
+                type="text" 
+                placeholder="Search obfuscation rules (e.g. eval, base64, fromCharCode)..." 
+                class="w-full h-9 pl-9 pr-8 bg-background border border-input rounded-xl text-xs font-medium text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring transition-all"
+              />
+              <button 
+                v-if="obfuscationSearchQuery" 
+                @click="obfuscationSearchQuery = ''"
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                title="Clear search"
+              >
+                <X class="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <!-- Category Filter -->
+              <select 
+                v-model="obfuscationCategory"
+                class="h-9 px-2.5 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Categories</option>
+                <option value="ADULT">Adult</option>
+                <option value="DRUG">Drug</option>
+                <option value="GAMBLING">Gambling</option>
+                <option value="HIDDEN_CONTENT">Hidden Content</option>
+                <option value="INJECTION">Injection</option>
+                <option value="MALWARE">Malware</option>
+                <option value="OBFUSCATION">Obfuscation</option>
+                <option value="PHISHING">Phishing</option>
+                <option value="REDIRECT">Redirect</option>
+                <option value="SCAM">Scam</option>
+                <option value="SPAM">Spam</option>
+              </select>
+
+              <!-- Severity Filter -->
+              <select 
+                v-model="obfuscationSeverity"
+                class="h-9 px-2.5 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Severities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+                <option value="INFO">Info</option>
+              </select>
+
+              <!-- Active Filter -->
+              <select 
+                v-model="obfuscationIsActive"
+                class="h-9 px-2.5 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Active Status</option>
+                <option value="true">Active Only</option>
+                <option value="false">Inactive Only</option>
+              </select>
+
+              <!-- Enabled Filter -->
+              <select 
+                v-model="obfuscationIsEnabled"
+                class="h-9 px-2.5 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="all">All Enabled Status</option>
+                <option value="true">Enabled Only</option>
+                <option value="false">Disabled Only</option>
+              </select>
+
+              <!-- Ordering Filter -->
+              <select 
+                v-model="obfuscationOrdering"
+                class="h-9 px-2.5 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option value="-created_at">Newest First</option>
+                <option value="created_at">Oldest First</option>
+                <option value="pattern">Pattern (A-Z)</option>
+                <option value="-pattern">Pattern (Z-A)</option>
+              </select>
+
+              <!-- Page Size Selector -->
+              <div class="flex items-center gap-1.5 border-l border-border pl-2">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+                <select 
+                  v-model.number="obfuscationPageSize"
+                  class="h-9 px-2 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+                >
+                  <option :value="5">5 / page</option>
+                  <option :value="10">10 / page</option>
+                  <option :value="25">25 / page</option>
+                  <option :value="50">50 / page</option>
+                  <option :value="100">100 / page</option>
+                </select>
+              </div>
+
+              <!-- Reset Filters Button -->
+              <UiButton 
+                variant="ghost" 
+                size="sm" 
+                @click="resetObfuscationFilters" 
+                class="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                title="Reset filters"
+              >
+                <RotateCcw class="w-3.5 h-3.5" />
+              </UiButton>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Container with Loading & Error States -->
+        <div class="relative">
+          <!-- Loading State Overlay -->
+          <div 
+            v-if="isObfuscationLoading" 
+            class="p-12 bg-card/80 backdrop-blur-xs border border-border rounded-2xl flex flex-col items-center justify-center gap-3 text-center"
+          >
+            <Loader2 class="w-6 h-6 animate-spin text-primary" />
+            <p class="text-xs font-semibold text-muted-foreground">Loading obfuscation rules...</p>
+          </div>
+
+          <!-- Error State -->
+          <div 
+            v-else-if="obfuscationError" 
+            class="p-8 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex flex-col items-center justify-center gap-3 text-center"
+          >
+            <AlertOctagon class="w-8 h-8 text-rose-500" />
+            <div class="space-y-1">
+              <p class="text-sm font-bold text-foreground">Failed to Load Obfuscation Rules</p>
+              <p class="text-xs text-rose-600 dark:text-rose-400">{{ obfuscationError }}</p>
+            </div>
+            <UiButton size="sm" variant="outline" @click="fetchObfuscationRules" class="border-rose-500/40 hover:bg-rose-500/10">
+              <RefreshCw class="w-3.5 h-3.5 mr-1.5" />
+              <span>Retry</span>
+            </UiButton>
+          </div>
+
+          <!-- Real Data Table -->
+          <div v-else class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+            <UiTable 
+              :data="obfuscationRulesData" 
+              :columns="obfuscationRuleColumns"
+              empty-message="No obfuscation rules match your filters."
+            >
+              <!-- Pattern Cell -->
+              <template #cell-pattern="{ item }">
+                <span class="font-mono text-sm font-bold text-foreground bg-muted px-2.5 py-1 rounded-lg border border-border">
+                  {{ item.pattern }}
+                </span>
+              </template>
+
+              <!-- Category Cell -->
+              <template #cell-category="{ item }">
+                <span class="text-xs font-semibold text-muted-foreground">
+                  {{ item.category }}
+                </span>
+              </template>
+
+              <!-- Severity Cell -->
+              <template #cell-severity="{ item }">
+                <span :class="cn('px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border', getSeverityBadge(item.severity))">
+                  {{ item.severity }}
+                </span>
+              </template>
+
+              <!-- Enabled Cell -->
+              <template #cell-is_enabled="{ item }">
+                <span 
+                  :class="cn(
+                    'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5 w-fit',
+                    item.is_enabled 
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                      : 'bg-muted text-muted-foreground border-border'
+                  )"
+                >
+                  <span :class="cn('w-1.5 h-1.5 rounded-full', item.is_enabled ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                  <span>{{ item.is_enabled ? 'Enabled' : 'Disabled' }}</span>
+                </span>
+              </template>
+
+              <!-- Active Cell -->
+              <template #cell-is_active="{ item }">
+                <span 
+                  :class="cn(
+                    'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5 w-fit',
+                    item.is_active 
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                      : 'bg-muted text-muted-foreground border-border'
+                  )"
+                >
+                  <span :class="cn('w-1.5 h-1.5 rounded-full', item.is_active ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                  <span>{{ item.is_active ? 'Active' : 'Inactive' }}</span>
+                </span>
+              </template>
+
+              <!-- Created At Cell -->
+              <template #cell-created_at="{ item }">
+                <span class="text-xs text-muted-foreground font-mono">
+                  {{ formatDate(item.created_at) }}
+                </span>
+              </template>
+            </UiTable>
+
+            <!-- Pagination Controls -->
+            <UiPagination 
+              v-if="obfuscationRulesCount > 0"
+              :current-page="obfuscationPage"
+              :total-pages="obfuscationRulesPages"
+              :total-count="obfuscationRulesCount"
+              :items-per-page="obfuscationPageSize"
+              item-label="obfuscation rules"
+              @update:current-page="obfuscationPage = $event"
             />
           </div>
         </div>

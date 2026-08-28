@@ -20,7 +20,10 @@ import type {
   CreateHiddenContentRulePayload,
   UpdateHiddenContentRulePayload,
   HiddenContentRulesQueryParams,
-  PaginatedHiddenContentRules
+  PaginatedHiddenContentRules,
+  ObfuscationRule,
+  ObfuscationRulesQueryParams,
+  PaginatedObfuscationRules
 } from '@/types';
 
 export const useContentSecurityService = () => {
@@ -1063,6 +1066,157 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getFallbackObfuscationRules = (): ObfuscationRule[] => {
+    return [
+      {
+        id: 1,
+        pattern: 'eval\\(',
+        category: 'OBFUSCATION',
+        severity: 'CRITICAL',
+        is_enabled: true,
+        is_active: true,
+        created_at: '2026-08-20T10:00:00Z'
+      },
+      {
+        id: 2,
+        pattern: 'String\\.fromCharCode',
+        category: 'OBFUSCATION',
+        severity: 'HIGH',
+        is_enabled: true,
+        is_active: true,
+        created_at: '2026-08-18T14:30:00Z'
+      },
+      {
+        id: 3,
+        pattern: 'unescape\\(',
+        category: 'OBFUSCATION',
+        severity: 'HIGH',
+        is_enabled: true,
+        is_active: true,
+        created_at: '2026-08-15T09:00:00Z'
+      },
+      {
+        id: 4,
+        pattern: 'base64_decode',
+        category: 'INJECTION',
+        severity: 'CRITICAL',
+        is_enabled: true,
+        is_active: true,
+        created_at: '2026-08-12T11:20:00Z'
+      },
+      {
+        id: 5,
+        pattern: '&#x[0-9a-fA-F]+;',
+        category: 'OBFUSCATION',
+        severity: 'MEDIUM',
+        is_enabled: false,
+        is_active: false,
+        created_at: '2026-08-08T16:45:00Z'
+      }
+    ];
+  };
+
+  const getObfuscationRules = async (
+    params?: ObfuscationRulesQueryParams
+  ): Promise<PaginatedObfuscationRules> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      let results = getFallbackObfuscationRules();
+
+      if (params?.search) {
+        const q = params.search.toLowerCase().trim();
+        results = results.filter((r) => r.pattern.toLowerCase().includes(q));
+      }
+      if (params?.category) {
+        results = results.filter((r) => r.category === params.category);
+      }
+      if (params?.severity) {
+        results = results.filter((r) => r.severity === params.severity);
+      }
+      if (params?.is_active !== undefined) {
+        results = results.filter((r) => r.is_active === params.is_active);
+      }
+      if (params?.is_enabled !== undefined) {
+        results = results.filter((r) => r.is_enabled === params.is_enabled);
+      }
+
+      // Pagination
+      const page = params?.page || 1;
+      const pageSize = params?.page_size || 10;
+      const totalCount = results.length;
+      const totalPages = Math.ceil(totalCount / pageSize) || 1;
+      const start = (page - 1) * pageSize;
+      const paginatedResults = results.slice(start, start + pageSize);
+
+      isLoading.value = false;
+      return {
+        results: paginatedResults,
+        count: totalCount,
+        page,
+        pages: totalPages,
+        next: page < totalPages ? `?page=${page + 1}` : null,
+        previous: page > 1 ? `?page=${page - 1}` : null
+      };
+    }
+
+    try {
+      const queryObj: Record<string, any> = {};
+      if (params?.page) queryObj.page = params.page;
+      if (params?.page_size) queryObj.page_size = params.page_size;
+      if (params?.search) queryObj.search = params.search;
+      if (params?.category) queryObj.category = params.category;
+      if (params?.severity) queryObj.severity = params.severity;
+      if (params?.is_active !== undefined) queryObj.is_active = params.is_active;
+      if (params?.is_enabled !== undefined) queryObj.is_enabled = params.is_enabled;
+      if (params?.ordering) queryObj.ordering = params.ordering;
+
+      const data = await apiClient.request<any>('/api/v1/content-security/obfuscation-rules/', {
+        method: 'GET',
+        params: queryObj
+      });
+
+      let results: ObfuscationRule[] = [];
+      let count = 0;
+      let pageNum = 1;
+      let totalPagesNum = 1;
+
+      if (Array.isArray(data)) {
+        results = data;
+        count = data.length;
+      } else if (data && typeof data === 'object') {
+        results = data.results || [];
+        count = data.count || results.length;
+        pageNum = data.page || params?.page || 1;
+        totalPagesNum = data.pages || Math.ceil(count / (params?.page_size || 10)) || 1;
+      }
+
+      return {
+        results,
+        count,
+        page: pageNum,
+        pages: totalPagesNum,
+        next: data?.next || null,
+        previous: data?.previous || null
+      };
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to fetch obfuscation rules.');
+      errorMsg.value = msg;
+      return {
+        results: [],
+        count: 0,
+        page: params?.page || 1,
+        pages: 1,
+        next: null,
+        previous: null
+      };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -1080,6 +1234,7 @@ export const useContentSecurityService = () => {
     createHiddenContentRule,
     getHiddenContentRuleDetails,
     updateHiddenContentRule,
-    deleteHiddenContentRule
+    deleteHiddenContentRule,
+    getObfuscationRules
   };
 };
