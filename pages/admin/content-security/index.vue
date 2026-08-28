@@ -188,6 +188,7 @@ const canDeleteHtmlAttributeRule = computed(() => hasPermission('content_securit
 
 const canViewHtmlTagRules = computed(() => hasPermission('content_security.view_htmltagrule'));
 const canAddHtmlTagRule = computed(() => hasPermission('content_security.add_htmltagrule'));
+const canEditHtmlTagRule = computed(() => hasPermission('content_security.change_htmltagrule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -3027,14 +3028,69 @@ const htmlTagModalState = useAdminModalState<HtmlTagRuleDetail>({
 watch(() => htmlTagModalState.activeEntity.value, (newEntity) => {
   if (newEntity && rulesSubTab.value === 'html') {
     selectedHtmlTagRule.value = newEntity;
+    if (htmlTagModalState.isEdit.value) {
+      if (!canEditHtmlTagRule.value) {
+        toastError('You do not have permission to edit HTML tag rules.');
+        htmlTagModalState.closeModal({ replace: true });
+        return;
+      }
+      editingHtmlTagRuleId.value = newEntity.id;
+      htmlTagEditForm.value = {
+        tag: newEntity.tag || newEntity.pattern || '',
+        category: newEntity.category || 'DANGEROUS_TAGS',
+        severity: newEntity.severity || 'CRITICAL',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+      originalHtmlTagRuleData.value = {
+        tag: newEntity.tag || newEntity.pattern || '',
+        category: newEntity.category || 'DANGEROUS_TAGS',
+        severity: newEntity.severity || 'CRITICAL',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+    }
   }
 }, { immediate: true });
 
 watch(() => htmlTagModalState.isView.value, (isView) => {
-  if (!isView) {
+  if (!isView && !htmlTagModalState.isEdit.value) {
     selectedHtmlTagRule.value = null;
   }
 }, { immediate: true });
+
+watch(() => htmlTagModalState.isEdit.value, (isEdit) => {
+  if (!isEdit) {
+    editingHtmlTagRuleId.value = null;
+    originalHtmlTagRuleData.value = null;
+  }
+}, { immediate: true });
+
+// HTML Tag Rule Edit Modal State
+const editingHtmlTagRuleId = ref<number | string | null>(null);
+const isSubmittingHtmlTagEdit = ref(false);
+
+const htmlTagEditForm = ref<{
+  tag: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+}>({
+  tag: '',
+  category: 'DANGEROUS_TAGS',
+  severity: 'CRITICAL',
+  is_enabled: true,
+  description: ''
+});
+
+const originalHtmlTagRuleData = ref<{
+  tag: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+} | null>(null);
 
 const openHtmlTagViewModal = (id: number | string) => {
   if (!canViewHtmlTagRules.value) {
@@ -3046,6 +3102,88 @@ const openHtmlTagViewModal = (id: number | string) => {
 
 const closeHtmlTagViewModal = () => {
   htmlTagModalState.closeModal();
+};
+
+const openEditHtmlTagRuleModal = async (id: number | string) => {
+  if (!canEditHtmlTagRule.value) {
+    toastError('You do not have permission to edit HTML tag rules.');
+    return;
+  }
+  await htmlTagModalState.openEdit(id);
+};
+
+const closeHtmlTagEditModal = async () => {
+  await htmlTagModalState.closeModal();
+};
+
+const submitUpdateHtmlTagRule = async () => {
+  if (!canEditHtmlTagRule.value) {
+    toastError('You do not have permission to edit HTML tag rules.');
+    return;
+  }
+  if (!editingHtmlTagRuleId.value) {
+    toastError('HTML tag rule identifier missing.');
+    return;
+  }
+  const trimmedTag = htmlTagEditForm.value.tag.trim();
+  if (!trimmedTag) {
+    toastError('Tag / pattern is required.');
+    return;
+  }
+
+  const payload: UpdateHtmlTagRulePayload = {};
+  const orig = originalHtmlTagRuleData.value;
+  const current = htmlTagEditForm.value;
+
+  if (orig) {
+    if (trimmedTag !== orig.tag.trim()) {
+      payload.tag = trimmedTag;
+    }
+    if (current.category !== orig.category) {
+      payload.category = current.category;
+    }
+    if (current.severity !== orig.severity) {
+      payload.severity = current.severity;
+    }
+    if (Boolean(current.is_enabled) !== Boolean(orig.is_enabled)) {
+      payload.is_enabled = current.is_enabled;
+    }
+    const currentDesc = current.description.trim();
+    const origDesc = (orig.description || '').trim();
+    if (currentDesc !== origDesc) {
+      payload.description = currentDesc;
+    }
+  } else {
+    payload.tag = trimmedTag;
+    payload.category = current.category;
+    payload.severity = current.severity;
+    payload.is_enabled = current.is_enabled;
+    payload.description = current.description.trim();
+  }
+
+  if (Object.keys(payload).length === 0) {
+    toastInfo('No changes detected.');
+    await closeHtmlTagEditModal();
+    return;
+  }
+
+  if (isSubmittingHtmlTagEdit.value) return;
+  isSubmittingHtmlTagEdit.value = true;
+
+  try {
+    const updated = await contentSecurityService.updateHtmlTagRule(editingHtmlTagRuleId.value, payload);
+    toastSuccess('HTML tag rule updated successfully.');
+    await closeHtmlTagEditModal();
+    await fetchHtmlTagRules();
+    if (selectedHtmlTagRule.value && String(selectedHtmlTagRule.value.id) === String(updated.id)) {
+      selectedHtmlTagRule.value = updated;
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to update HTML tag rule.');
+    toastError(msg);
+  } finally {
+    isSubmittingHtmlTagEdit.value = false;
+  }
 };
 
 const openEditDomainRuleModal = async (id: number | string) => {
@@ -6382,6 +6520,15 @@ const getSeverityBadge = (severity: string) => {
                     >
                       <Eye class="w-4 h-4" />
                     </button>
+                    <button 
+                      v-if="canEditHtmlTagRule"
+                      @click.stop="openEditHtmlTagRuleModal(item.id)"
+                      class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                      title="Edit HTML tag rule"
+                      aria-label="Edit HTML tag rule"
+                    >
+                      <Edit3 class="w-4 h-4" />
+                    </button>
                   </div>
                 </template>
               </UiTable>
@@ -8409,6 +8556,138 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: EDIT HTML TAG RULE -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="htmlTagModalState.isEdit.value"
+      :title="isHtmlTagDetailsLoading ? 'Loading HTML Tag Rule...' : (editingHtmlTagRuleId ? `Edit HTML Tag Rule #${editingHtmlTagRuleId}` : 'Edit HTML Tag Rule')"
+      subtitle="Update pattern heuristics and classification parameters for this HTML tag rule."
+      max-width="max-w-lg"
+      @close="closeHtmlTagEditModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isHtmlTagDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving HTML tag rule details for editing...</p>
+      </div>
+
+      <!-- Form -->
+      <form v-else @submit.prevent="submitUpdateHtmlTagRule" class="p-6 space-y-4">
+        <!-- Tag / Pattern -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Tag / Pattern <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="htmlTagEditForm.tag"
+            type="text" 
+            placeholder="e.g. script, iframe, object, embed, etc."
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+            required
+          />
+        </div>
+
+        <!-- Category & Severity Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">
+              Category <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              v-model="htmlTagEditForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="DANGEROUS_TAGS">Dangerous Tags</option>
+              <option value="EMBEDDED_CONTENT">Embedded Content</option>
+              <option value="PLUGIN_OBJECTS">Plugin Objects</option>
+              <option value="DOM_HIJACKING">DOM Hijacking</option>
+              <option value="INJECTION">Injection</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="MALWARE">Malware</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="REDIRECT">Redirect</option>
+              <option value="SCAM">Scam</option>
+              <option value="SPAM">Spam</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="GAMBLING">Gambling</option>
+            </select>
+          </div>
+
+          <!-- Severity -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">
+              Severity Level <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              v-model="htmlTagEditForm.severity"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+              <option value="INFO">Info</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            Rule Description & Rationale
+          </label>
+          <textarea 
+            v-model="htmlTagEditForm.description"
+            rows="3"
+            placeholder="Document why this HTML tag pattern was established, targeted vectors, and false positive safeguards..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all resize-none leading-relaxed"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div class="space-y-0.5">
+            <label class="text-xs font-bold text-foreground cursor-pointer" for="edit-tag-enabled">
+              Rule Enabled
+            </label>
+            <p class="text-[10px] text-muted-foreground font-medium">
+              Active rules are evaluated during content security scans.
+            </p>
+          </div>
+          <input 
+            id="edit-tag-enabled"
+            v-model="htmlTagEditForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingHtmlTagEdit"
+            @click="closeHtmlTagEditModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingHtmlTagEdit"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isSubmittingHtmlTagEdit" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingHtmlTagEdit ? 'Saving Changes...' : 'Save Changes' }}</span>
+          </button>
+        </div>
+      </form>
     </UiAdminModal>
 
     <!-- ========================================== -->

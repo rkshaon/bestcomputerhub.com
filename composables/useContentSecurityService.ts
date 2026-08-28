@@ -2029,6 +2029,62 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const updateHtmlTagRule = async (
+    id: string | number,
+    payload: UpdateHtmlTagRulePayload
+  ): Promise<HtmlTagRuleDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      isLoading.value = false;
+      const fallbackList = getFallbackHtmlTagRules();
+      const idx = fallbackList.findIndex((r) => String(r.id) === String(id));
+      const existing = idx !== -1 ? fallbackList[idx] : null;
+
+      if (!existing) {
+        const err = new Error(`HTML tag rule #${id} not found.`);
+        errorMsg.value = err.message;
+        throw err;
+      }
+
+      const updated: HtmlTagRule = {
+        ...existing,
+        tag: payload.tag !== undefined ? payload.tag.trim() : (existing.tag || existing.pattern),
+        pattern: payload.tag !== undefined ? payload.tag.trim() : (existing.pattern || existing.tag),
+        category: payload.category !== undefined ? payload.category : existing.category,
+        severity: payload.severity !== undefined ? payload.severity : existing.severity,
+        is_enabled: payload.is_enabled !== undefined ? payload.is_enabled : existing.is_enabled
+      };
+      fallbackList[idx] = updated;
+      return {
+        ...updated,
+        description: payload.description !== undefined ? payload.description : 'Updated HTML tag rule.',
+        updated_at: new Date().toISOString(),
+        created_by: 'Security System',
+        updated_by: 'Security System'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<HtmlTagRuleDetail>(
+        `/api/v1/content-security/html-tag-rules/${id}/`,
+        {
+          method: 'PATCH',
+          body: payload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to update HTML tag rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   const getFallbackHtmlAttributeRules = (): HtmlAttributeRule[] => {
     return [
       {
@@ -2411,6 +2467,7 @@ export const useContentSecurityService = () => {
     deleteHtmlAttributeRule,
     getHtmlTagRules,
     createHtmlTagRule,
-    getHtmlTagRuleDetails
+    getHtmlTagRuleDetails,
+    updateHtmlTagRule
   };
 };
