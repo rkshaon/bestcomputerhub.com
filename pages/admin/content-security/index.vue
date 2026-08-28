@@ -178,6 +178,7 @@ const canDeleteRedirectRule = computed(() => hasPermission('content_security.del
 const canViewHtmlAttributeRules = computed(() => hasPermission('content_security.view_htmlattributerule'));
 const canAddHtmlAttributeRule = computed(() => hasPermission('content_security.add_htmlattributerule'));
 const canEditHtmlAttributeRule = computed(() => hasPermission('content_security.change_htmlattributerule'));
+const canDeleteHtmlAttributeRule = computed(() => hasPermission('content_security.delete_htmlattributerule'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -2614,6 +2615,8 @@ const isHtmlAttributeDetailsLoading = ref(false);
 const selectedHtmlAttributeRule = ref<HtmlAttributeRuleDetail | null>(null);
 const editingHtmlAttributeRuleId = ref<number | string | null>(null);
 const isSubmittingHtmlAttributeEdit = ref(false);
+const deletingHtmlAttributeRule = ref<{ id: number | string; attribute: string } | null>(null);
+const isDeletingHtmlAttributeRule = ref(false);
 
 const htmlAttributeEditForm = ref<{
   attribute: string;
@@ -2685,6 +2688,17 @@ watch(() => htmlAttributeModalState.activeEntity.value, (newEntity) => {
         description: newEntity.description || ''
       };
     }
+    if (htmlAttributeModalState.isDelete.value) {
+      if (!canDeleteHtmlAttributeRule.value) {
+        toastError('You do not have permission to delete HTML attribute rules.');
+        htmlAttributeModalState.closeModal({ replace: true });
+        return;
+      }
+      deletingHtmlAttributeRule.value = {
+        id: newEntity.id,
+        attribute: newEntity.attribute || newEntity.pattern || ''
+      };
+    }
   }
 }, { immediate: true });
 
@@ -2698,6 +2712,12 @@ watch(() => htmlAttributeModalState.isEdit.value, (isEdit) => {
   if (!isEdit) {
     editingHtmlAttributeRuleId.value = null;
     originalHtmlAttributeRuleData.value = null;
+  }
+}, { immediate: true });
+
+watch(() => htmlAttributeModalState.isDelete.value, (isDelete) => {
+  if (!isDelete) {
+    deletingHtmlAttributeRule.value = null;
   }
 }, { immediate: true });
 
@@ -2792,6 +2812,52 @@ const submitUpdateHtmlAttributeRule = async () => {
     toastError(msg);
   } finally {
     isSubmittingHtmlAttributeEdit.value = false;
+  }
+};
+
+const openDeleteHtmlAttributeRuleModal = async (rule: { id: number | string; attribute?: string; pattern?: string }) => {
+  if (!canDeleteHtmlAttributeRule.value) {
+    toastError('You do not have permission to delete HTML attribute rules.');
+    return;
+  }
+  deletingHtmlAttributeRule.value = {
+    id: rule.id,
+    attribute: rule.attribute || rule.pattern || `Rule #${rule.id}`
+  };
+  await htmlAttributeModalState.openDelete(rule.id);
+};
+
+const closeHtmlAttributeDeleteModal = async () => {
+  await htmlAttributeModalState.closeModal();
+};
+
+const executeDeleteHtmlAttributeRule = async () => {
+  if (!canDeleteHtmlAttributeRule.value) {
+    toastError('You do not have permission to delete HTML attribute rules.');
+    return;
+  }
+  const targetId = deletingHtmlAttributeRule.value?.id || htmlAttributeModalState.activeId.value;
+  if (!targetId) {
+    toastError('HTML attribute rule identifier missing.');
+    return;
+  }
+  if (isDeletingHtmlAttributeRule.value) return;
+  isDeletingHtmlAttributeRule.value = true;
+  try {
+    await contentSecurityService.deleteHtmlAttributeRule(targetId);
+    toastSuccess(`HTML attribute rule "${deletingHtmlAttributeRule.value?.attribute || `#${targetId}`}" deleted successfully.`);
+    await closeHtmlAttributeDeleteModal();
+    await fetchHtmlAttributeRules();
+
+    if (htmlAttributeRulesData.value.length === 0 && htmlAttributePage.value > 1) {
+      htmlAttributePage.value = Math.max(1, htmlAttributePage.value - 1);
+      await fetchHtmlAttributeRules();
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to delete HTML attribute rule.');
+    toastError(msg);
+  } finally {
+    isDeletingHtmlAttributeRule.value = false;
   }
 };
 
@@ -5802,6 +5868,15 @@ const getSeverityBadge = (severity: string) => {
                     >
                       <Edit3 class="w-4 h-4" />
                     </button>
+                    <button 
+                      v-if="canDeleteHtmlAttributeRule"
+                      @click.stop="openDeleteHtmlAttributeRuleModal(item)"
+                      class="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                      title="Delete HTML attribute rule"
+                      aria-label="Delete HTML attribute rule"
+                    >
+                      <Trash2 class="w-4 h-4" />
+                    </button>
                   </div>
                 </template>
               </UiTable>
@@ -7980,6 +8055,53 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </form>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: DELETE HTML ATTRIBUTE RULE CONFIRMATION -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="htmlAttributeModalState.isDelete.value"
+      title="Delete HTML Attribute Rule"
+      subtitle="Verify decommissioning of this content security HTML attribute rule."
+      max-width="max-w-md"
+      :show-close-button="!isDeletingHtmlAttributeRule"
+      @close="closeHtmlAttributeDeleteModal"
+    >
+      <div class="p-6 space-y-5">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div class="space-y-2">
+          <p class="text-sm font-bold text-foreground">
+            Are you sure you want to delete this HTML attribute rule?
+          </p>
+          <p class="text-xs text-muted-foreground leading-relaxed">
+            Rule attribute / pattern <span class="font-mono font-bold text-foreground">{{ deletingHtmlAttributeRule?.attribute || (selectedHtmlAttributeRule ? (selectedHtmlAttributeRule.attribute || selectedHtmlAttributeRule.pattern) : `ID #${htmlAttributeModalState.activeId.value}`) }}</span> will be permanently removed from active content inspection heuristics.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isDeletingHtmlAttributeRule"
+            @click="closeHtmlAttributeDeleteModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            :disabled="isDeletingHtmlAttributeRule"
+            @click="executeDeleteHtmlAttributeRule"
+            class="h-9 px-5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isDeletingHtmlAttributeRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isDeletingHtmlAttributeRule ? 'Deleting...' : 'Delete Rule' }}</span>
+          </button>
+        </div>
+      </div>
     </UiAdminModal>
 
     <!-- ========================================== -->
