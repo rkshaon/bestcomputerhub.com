@@ -71,6 +71,7 @@ import type {
   HiddenContentRule,
   HiddenContentRuleDetail,
   CreateHiddenContentRulePayload,
+  UpdateHiddenContentRulePayload,
   HiddenContentRulesQueryParams
 } from '@/types';
 
@@ -1394,10 +1395,34 @@ const closeDomainViewModal = () => {
 };
 
 // ==========================================
-// Modal State: Hidden Content Rule Details (View)
+// Modal State: Hidden Content Rule Details (View, Edit)
 // ==========================================
 const isHiddenContentDetailsLoading = ref(false);
 const selectedHiddenContentRule = ref<HiddenContentRuleDetail | null>(null);
+const editingHiddenContentRuleId = ref<number | null>(null);
+const isSubmittingHiddenContentEdit = ref(false);
+
+const hiddenContentEditForm = ref<{
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+}>({
+  pattern: '',
+  category: 'HIDDEN_CONTENT',
+  severity: 'HIGH',
+  is_enabled: true,
+  description: ''
+});
+
+const originalHiddenContentRuleData = ref<{
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+} | null>(null);
 
 const hiddenContentModalState = useAdminModalState<HiddenContentRuleDetail>({
   getItems: async (id) => {
@@ -1425,12 +1450,42 @@ const hiddenContentModalState = useAdminModalState<HiddenContentRuleDetail>({
 watch(() => hiddenContentModalState.activeEntity.value, (newEntity) => {
   if (newEntity && rulesSubTab.value === 'hidden_content') {
     selectedHiddenContentRule.value = newEntity;
+
+    if (hiddenContentModalState.isEdit.value) {
+      if (!canEditHiddenContentRule.value) {
+        toastError('You do not have permission to edit hidden content rules.');
+        hiddenContentModalState.closeModal({ replace: true });
+        return;
+      }
+      editingHiddenContentRuleId.value = newEntity.id;
+      hiddenContentEditForm.value = {
+        pattern: newEntity.pattern || '',
+        category: newEntity.category || 'HIDDEN_CONTENT',
+        severity: newEntity.severity || 'HIGH',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+      originalHiddenContentRuleData.value = {
+        pattern: newEntity.pattern || '',
+        category: newEntity.category || 'HIDDEN_CONTENT',
+        severity: newEntity.severity || 'HIGH',
+        is_enabled: newEntity.is_enabled ?? true,
+        description: newEntity.description || ''
+      };
+    }
   }
 }, { immediate: true });
 
 watch(() => hiddenContentModalState.isView.value, (isView) => {
-  if (!isView) {
+  if (!isView && !hiddenContentModalState.isEdit.value) {
     selectedHiddenContentRule.value = null;
+  }
+}, { immediate: true });
+
+watch(() => hiddenContentModalState.isEdit.value, (isEdit) => {
+  if (!isEdit) {
+    editingHiddenContentRuleId.value = null;
+    originalHiddenContentRuleData.value = null;
   }
 }, { immediate: true });
 
@@ -1444,6 +1499,91 @@ const openHiddenContentViewModal = (id: number | string) => {
 
 const closeHiddenContentViewModal = () => {
   hiddenContentModalState.closeModal();
+};
+
+const openEditHiddenContentRuleModal = async (id: number | string) => {
+  if (!canEditHiddenContentRule.value) {
+    toastError('You do not have permission to edit hidden content rules.');
+    return;
+  }
+  await hiddenContentModalState.openEdit(id);
+};
+
+const closeHiddenContentEditModal = async () => {
+  await hiddenContentModalState.closeModal();
+};
+
+const submitUpdateHiddenContentRule = async () => {
+  if (!canEditHiddenContentRule.value) {
+    toastError('You do not have permission to edit hidden content rules.');
+    return;
+  }
+
+  if (!editingHiddenContentRuleId.value) {
+    toastError('Hidden content rule identifier missing.');
+    return;
+  }
+
+  const trimmedPattern = hiddenContentEditForm.value.pattern.trim();
+  if (!trimmedPattern) {
+    toastError('CSS pattern / declaration is required.');
+    return;
+  }
+
+  const payload: UpdateHiddenContentRulePayload = {};
+  const orig = originalHiddenContentRuleData.value;
+  const current = hiddenContentEditForm.value;
+
+  if (orig) {
+    if (trimmedPattern !== orig.pattern.trim()) {
+      payload.pattern = trimmedPattern;
+    }
+    if (current.category !== orig.category) {
+      payload.category = current.category;
+    }
+    if (current.severity !== orig.severity) {
+      payload.severity = current.severity;
+    }
+    if (Boolean(current.is_enabled) !== Boolean(orig.is_enabled)) {
+      payload.is_enabled = current.is_enabled;
+    }
+    const currentDesc = current.description.trim();
+    const origDesc = (orig.description || '').trim();
+    if (currentDesc !== origDesc) {
+      payload.description = currentDesc;
+    }
+  } else {
+    payload.pattern = trimmedPattern;
+    payload.category = current.category;
+    payload.severity = current.severity;
+    payload.is_enabled = current.is_enabled;
+    payload.description = current.description.trim();
+  }
+
+  if (Object.keys(payload).length === 0) {
+    toastInfo('No changes detected.');
+    await closeHiddenContentEditModal();
+    return;
+  }
+
+  if (isSubmittingHiddenContentEdit.value) return;
+
+  isSubmittingHiddenContentEdit.value = true;
+  try {
+    const updated = await contentSecurityService.updateHiddenContentRule(editingHiddenContentRuleId.value, payload);
+    toastSuccess('Hidden content rule updated successfully.');
+    await closeHiddenContentEditModal();
+    await fetchHiddenContentRules();
+
+    if (selectedHiddenContentRule.value && String(selectedHiddenContentRule.value.id) === String(updated.id)) {
+      selectedHiddenContentRule.value = updated;
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to update hidden content rule.');
+    toastError(msg);
+  } finally {
+    isSubmittingHiddenContentEdit.value = false;
+  }
 };
 
 const openEditDomainRuleModal = async (id: number | string) => {
@@ -3458,6 +3598,15 @@ const getSeverityBadge = (severity: string) => {
                   >
                     <Eye class="w-4 h-4" />
                   </button>
+                  <button 
+                    v-if="canEditHiddenContentRule"
+                    @click.stop="openEditHiddenContentRuleModal(item.id)"
+                    class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                    title="Edit hidden content rule"
+                    aria-label="Edit hidden content rule"
+                  >
+                    <Edit3 class="w-4 h-4" />
+                  </button>
                   <span class="text-[11px] text-muted-foreground font-mono">#{{ item.id }}</span>
                 </div>
               </template>
@@ -4627,6 +4776,122 @@ const getSeverityBadge = (severity: string) => {
           </button>
         </div>
       </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: EDIT HIDDEN CONTENT RULE -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="hiddenContentModalState.isEdit.value"
+      :title="isHiddenContentDetailsLoading ? 'Loading Hidden Content Rule...' : (editingHiddenContentRuleId ? `Edit Hidden Content Rule #${editingHiddenContentRuleId}` : 'Edit Hidden Content Rule')"
+      subtitle="Update CSS pattern heuristics and classification parameters for this hidden content rule."
+      max-width="max-w-lg"
+      @close="closeHiddenContentEditModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isHiddenContentDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving hidden content rule details for editing...</p>
+      </div>
+
+      <!-- Form -->
+      <form v-else @submit.prevent="submitUpdateHiddenContentRule" class="p-6 space-y-4">
+        <!-- CSS Declaration / Pattern -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            CSS Declaration / Pattern <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="hiddenContentEditForm.pattern"
+            type="text" 
+            placeholder="e.g. display:none, opacity:0, font-size:0, visibility:hidden"
+            required
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+          />
+        </div>
+
+        <!-- Category & Severity Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Category <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="hiddenContentEditForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="SPAM">Spam</option>
+              <option value="SCAM">Scam</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="MALWARE">Malware</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="GAMBLING">Gambling</option>
+              <option value="INJECTION">Injection</option>
+              <option value="REDIRECT">Redirect</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Severity <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="hiddenContentEditForm.severity"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+              <option value="INFO">Info</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Description</label>
+          <textarea 
+            v-model="hiddenContentEditForm.description"
+            rows="2"
+            placeholder="Explain why this hidden content pattern is flagged or prohibited..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div>
+            <p class="text-xs font-bold text-foreground">Rule Enabled</p>
+            <p class="text-[10px] text-muted-foreground">Active rules are evaluated during content security scans</p>
+          </div>
+          <input 
+            v-model="hiddenContentEditForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingHiddenContentEdit"
+            @click="closeHiddenContentEditModal"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingHiddenContentEdit"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
+          >
+            <Loader2 v-if="isSubmittingHiddenContentEdit" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingHiddenContentEdit ? 'Saving Changes...' : 'Save Changes' }}</span>
+          </button>
+        </div>
+      </form>
     </UiAdminModal>
 
     <!-- ========================================== -->

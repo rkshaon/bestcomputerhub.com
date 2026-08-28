@@ -18,6 +18,7 @@ import type {
   HiddenContentRule,
   HiddenContentRuleDetail,
   CreateHiddenContentRulePayload,
+  UpdateHiddenContentRulePayload,
   HiddenContentRulesQueryParams,
   PaginatedHiddenContentRules
 } from '@/types';
@@ -977,6 +978,57 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const updateHiddenContentRule = async (
+    id: string | number,
+    payload: UpdateHiddenContentRulePayload
+  ): Promise<HiddenContentRuleDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      isLoading.value = false;
+      const fallbackList = getFallbackHiddenContentRules();
+      const idx = fallbackList.findIndex((r) => String(r.id) === String(id));
+      if (idx === -1) {
+        throw new Error('Hidden content rule not found.');
+      }
+      const existing = fallbackList[idx]!;
+      const updated: HiddenContentRule = {
+        ...existing,
+        pattern: payload.pattern !== undefined ? payload.pattern : existing.pattern,
+        category: payload.category !== undefined ? payload.category : existing.category,
+        severity: payload.severity !== undefined ? payload.severity : existing.severity,
+        is_enabled: payload.is_enabled !== undefined ? payload.is_enabled : existing.is_enabled
+      };
+      fallbackList[idx] = updated;
+      return {
+        ...updated,
+        description: payload.description !== undefined ? payload.description : 'Updated hidden content rule.',
+        updated_at: new Date().toISOString(),
+        created_by: 'Security Admin',
+        updated_by: 'Security Admin'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<HiddenContentRuleDetail>(
+        `/api/v1/content-security/hidden-content-rules/${id}/`,
+        {
+          method: 'PATCH',
+          body: payload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to update hidden content rule.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -992,6 +1044,7 @@ export const useContentSecurityService = () => {
     deleteDomainRule,
     getHiddenContentRules,
     createHiddenContentRule,
-    getHiddenContentRuleDetails
+    getHiddenContentRuleDetails,
+    updateHiddenContentRule
   };
 };

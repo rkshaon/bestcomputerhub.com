@@ -217,6 +217,14 @@ export interface CreateHiddenContentRulePayload {
   description?: string;
 }
 
+export interface UpdateHiddenContentRulePayload {
+  pattern?: string;
+  category?: KeywordCategory;
+  severity?: KeywordSeverity;
+  is_enabled?: boolean;
+  description?: string;
+}
+
 export interface HiddenContentRulesQueryParams {
   search?: string;
   category?: KeywordCategory;
