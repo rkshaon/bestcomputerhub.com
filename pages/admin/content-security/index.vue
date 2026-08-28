@@ -74,6 +74,7 @@ import type {
   UpdateHiddenContentRulePayload,
   HiddenContentRulesQueryParams,
   ObfuscationRule,
+  ObfuscationRuleDetail,
   CreateObfuscationRulePayload,
   ObfuscationRulesQueryParams
 } from '@/types';
@@ -411,7 +412,8 @@ const obfuscationRuleColumns: UiTableColumn<ObfuscationRule>[] = [
   { key: 'severity', label: 'Severity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'is_enabled', label: 'Enabled', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'is_active', label: 'Active', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
-  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' }
+  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' },
+  { key: 'actions', label: 'Actions', align: 'right' as const, width: '80px', headerClass: 'px-4 py-3 text-right whitespace-nowrap', cellClass: 'px-4 py-3 text-right whitespace-nowrap' }
 ];
 
 const resetObfuscationFilters = () => {
@@ -1793,6 +1795,59 @@ const submitUpdateHiddenContentRule = async () => {
   } finally {
     isSubmittingHiddenContentEdit.value = false;
   }
+};
+
+// ==========================================
+// Modal State: Obfuscation Rule Details (View)
+// ==========================================
+const isObfuscationDetailsLoading = ref(false);
+const selectedObfuscationRule = ref<ObfuscationRuleDetail | null>(null);
+
+const obfuscationModalState = useAdminModalState<ObfuscationRuleDetail>({
+  getItems: async (id) => {
+    if (rulesSubTab.value !== 'obfuscation') return null;
+    isObfuscationDetailsLoading.value = true;
+    try {
+      const details = await contentSecurityService.getObfuscationRuleDetails(String(id));
+      return details;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve obfuscation rule details.');
+      toastError(msg);
+      return null;
+    } finally {
+      isObfuscationDetailsLoading.value = false;
+    }
+  },
+  onResolveError: (id) => {
+    if (rulesSubTab.value === 'obfuscation') {
+      toastError(`Obfuscation Rule #${id} could not be resolved.`);
+      obfuscationModalState.closeModal({ replace: true });
+    }
+  }
+});
+
+watch(() => obfuscationModalState.activeEntity.value, (newEntity) => {
+  if (newEntity && rulesSubTab.value === 'obfuscation') {
+    selectedObfuscationRule.value = newEntity;
+  }
+}, { immediate: true });
+
+watch(() => obfuscationModalState.isView.value, (isView) => {
+  if (!isView) {
+    selectedObfuscationRule.value = null;
+  }
+}, { immediate: true });
+
+const openObfuscationViewModal = (id: number | string) => {
+  if (!canViewObfuscation.value) {
+    toastError('You do not have permission to view obfuscation rules.');
+    return;
+  }
+  obfuscationModalState.openView(id);
+};
+
+const closeObfuscationViewModal = () => {
+  obfuscationModalState.closeModal();
 };
 
 const openEditDomainRuleModal = async (id: number | string) => {
@@ -4118,6 +4173,21 @@ const getSeverityBadge = (severity: string) => {
                   {{ formatDate(item.created_at) }}
                 </span>
               </template>
+
+              <!-- Actions Cell -->
+              <template #cell-actions="{ item }">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button 
+                    v-if="canViewObfuscation"
+                    @click.stop="openObfuscationViewModal(item.id)"
+                    class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                    title="View obfuscation rule details"
+                    aria-label="View obfuscation rule details"
+                  >
+                    <Eye class="w-4 h-4" />
+                  </button>
+                </div>
+              </template>
             </UiTable>
 
             <!-- Pagination Controls -->
@@ -5376,6 +5446,160 @@ const getSeverityBadge = (severity: string) => {
           <button 
             type="button" 
             @click="closeHiddenContentViewModal"
+            class="h-9 px-5 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: VIEW OBFUSCATION RULE DETAILS -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="obfuscationModalState.isView.value"
+      :title="isObfuscationDetailsLoading ? 'Loading Obfuscation Rule...' : (selectedObfuscationRule ? `Obfuscation Rule #${selectedObfuscationRule.id}` : 'Obfuscation Rule Details')"
+      subtitle="Comprehensive security inspection parameters and audit metadata."
+      max-width="max-w-2xl"
+      @close="closeObfuscationViewModal"
+    >
+      <!-- Loading State -->
+      <div v-if="isObfuscationDetailsLoading" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
+        <p class="text-xs font-semibold text-muted-foreground">Retrieving obfuscation rule details from security registry...</p>
+      </div>
+
+      <!-- Error / Not Found State -->
+      <div v-else-if="!selectedObfuscationRule" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <AlertCircle class="w-6 h-6" />
+        </div>
+        <p class="text-sm font-bold text-foreground">Rule Details Not Available</p>
+        <p class="text-xs text-muted-foreground">Could not load the requested obfuscation rule from the security engine.</p>
+        <button 
+          type="button"
+          @click="closeObfuscationViewModal"
+          class="mt-2 h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+
+      <!-- Loaded Details View -->
+      <div v-else class="p-6 sm:p-8 space-y-6">
+        <!-- Hero Summary Card -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-muted/40 rounded-2xl border border-border">
+          <div class="space-y-1.5 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Pattern / Regex</span>
+            </div>
+            <div class="font-mono text-base sm:text-lg font-bold text-foreground bg-background px-3 py-1.5 rounded-xl border border-border shadow-2xs inline-block break-all">
+              {{ selectedObfuscationRule.pattern }}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <!-- Severity Badge -->
+            <span :class="cn('px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border', getSeverityBadge(selectedObfuscationRule.severity))">
+              {{ selectedObfuscationRule.severity }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Rule Specifications Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</span>
+            <p class="text-sm font-bold text-foreground">{{ selectedObfuscationRule.category }}</p>
+          </div>
+
+          <!-- Status Indicators -->
+          <div class="p-4 bg-card border border-border rounded-xl space-y-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Operational Status</span>
+            <div class="flex items-center gap-3">
+              <!-- Enabled Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedObfuscationRule.is_enabled 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedObfuscationRule.is_enabled ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedObfuscationRule.is_enabled ? 'Enabled' : 'Disabled' }}</span>
+              </span>
+
+              <!-- Active Status -->
+              <span 
+                :class="cn(
+                  'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1.5',
+                  selectedObfuscationRule.is_active 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-muted text-muted-foreground border-border'
+                )"
+              >
+                <span :class="cn('w-1.5 h-1.5 rounded-full', selectedObfuscationRule.is_active ? 'bg-emerald-500' : 'bg-muted-foreground')"></span>
+                <span>{{ selectedObfuscationRule.is_active ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="space-y-1.5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rule Description & Rationale</span>
+          <div class="bg-card border border-border rounded-xl p-4 text-xs font-medium text-foreground leading-relaxed">
+            <p v-if="selectedObfuscationRule.description?.trim()">{{ selectedObfuscationRule.description }}</p>
+            <p v-else class="text-muted-foreground italic">No description provided for this rule.</p>
+          </div>
+        </div>
+
+        <!-- Audit & Tracking Metadata -->
+        <div class="space-y-2 pt-2 border-t border-border">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audit & Lifecycle Metadata</span>
+          <div class="bg-muted/30 border border-border rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedObfuscationRule.created_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated At:</span>
+              </div>
+              <p class="font-mono text-foreground font-medium pl-5">{{ formatDate(selectedObfuscationRule.updated_at) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Created By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedObfuscationRule.created_by) }}</p>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 text-muted-foreground">
+                <User class="w-3.5 h-3.5" />
+                <span class="font-semibold">Updated By:</span>
+              </div>
+              <p class="text-foreground font-medium pl-5">{{ formatUserInfo(selectedObfuscationRule.updated_by) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-4 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            @click="closeObfuscationViewModal"
             class="h-9 px-5 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
           >
             Close

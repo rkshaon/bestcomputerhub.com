@@ -275,6 +275,32 @@ export interface PaginatedObfuscationRules {
   previous?: string | null;
 }
 
+export interface ObfuscationRuleDetail {
+  id: number;
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by?: {
+    id: number;
+    username?: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+  } | string | number | null;
+  updated_by?: {
+    id: number;
+    username?: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+  } | string | number | null;
+}
+
 export interface CreateObfuscationRulePayload {
   pattern: string;
   category: KeywordCategory;

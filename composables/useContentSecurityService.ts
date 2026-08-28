@@ -22,6 +22,7 @@ import type {
   HiddenContentRulesQueryParams,
   PaginatedHiddenContentRules,
   ObfuscationRule,
+  ObfuscationRuleDetail,
   CreateObfuscationRulePayload,
   ObfuscationRulesQueryParams,
   PaginatedObfuscationRules
@@ -1275,6 +1276,50 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getObfuscationRuleDetails = async (
+    id: string | number
+  ): Promise<ObfuscationRuleDetail | null> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const fallbackList = getFallbackObfuscationRules();
+      const found = fallbackList.find((r) => String(r.id) === String(id));
+      isLoading.value = false;
+      if (!found) return null;
+      return {
+        id: found.id,
+        pattern: found.pattern,
+        category: found.category,
+        severity: found.severity,
+        is_enabled: found.is_enabled,
+        is_active: found.is_active,
+        description: 'Auto-generated security rule for code obfuscation pattern / regex heuristics.',
+        created_at: found.created_at,
+        updated_at: found.created_at,
+        created_by: 'Security System',
+        updated_by: 'Security System'
+      };
+    }
+
+    try {
+      const data = await apiClient.request<ObfuscationRuleDetail>(
+        `/api/v1/content-security/obfuscation-rules/${id}/`,
+        {
+          method: 'GET'
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve obfuscation rule details.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -1294,6 +1339,7 @@ export const useContentSecurityService = () => {
     updateHiddenContentRule,
     deleteHiddenContentRule,
     getObfuscationRules,
-    createObfuscationRule
+    createObfuscationRule,
+    getObfuscationRuleDetails
   };
 };
