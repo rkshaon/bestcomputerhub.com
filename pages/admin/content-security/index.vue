@@ -69,6 +69,7 @@ import type {
   UpdateDomainRulePayload,
   DomainRulesQueryParams,
   HiddenContentRule,
+  CreateHiddenContentRulePayload,
   HiddenContentRulesQueryParams
 } from '@/types';
 
@@ -115,7 +116,7 @@ export interface SecurityFinding {
 
 export interface DetectionRule {
   id: string;
-  type: 'keyword' | 'domain' | 'html' | 'attribute' | 'redirect';
+  type: 'keyword' | 'domain' | 'hidden_content' | 'html' | 'attribute' | 'redirect';
   pattern: string;
   category: string;
   severity: SecuritySeverity;
@@ -1685,6 +1686,7 @@ const isRuleModalOpen = ref(false);
 const editingRule = ref<DetectionRule | null>(null);
 const isSubmittingKeywordRule = ref(false);
 const isSubmittingDomainRule = ref(false);
+const isSubmittingHiddenContentRule = ref(false);
 
 const keywordCreateForm = ref<{
   keyword: string;
@@ -1714,6 +1716,20 @@ const domainCreateForm = ref<{
   category: 'GAMBLING',
   severity: 'HIGH',
   match_type: 'EXACT',
+  is_enabled: true,
+  description: ''
+});
+
+const hiddenContentCreateForm = ref<{
+  pattern: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+}>({
+  pattern: '',
+  category: 'HIDDEN_CONTENT',
+  severity: 'HIGH',
   is_enabled: true,
   description: ''
 });
@@ -1755,11 +1771,23 @@ const openAddRuleModal = (type: DetectionRule['type']) => {
       is_enabled: true,
       description: ''
     };
+  } else if (type === 'hidden_content') {
+    if (!canAddHiddenContentRule.value) {
+      toastError('You do not have permission to add hidden content rules.');
+      return;
+    }
+    hiddenContentCreateForm.value = {
+      pattern: '',
+      category: 'HIDDEN_CONTENT',
+      severity: 'HIGH',
+      is_enabled: true,
+      description: ''
+    };
   }
   ruleForm.value = {
     type,
     pattern: '',
-    category: type === 'keyword' ? 'Spam Blacklist' : type === 'domain' ? 'Malicious Domains' : type === 'html' ? 'Disallowed Tags' : type === 'attribute' ? 'Event Handlers' : 'Redirects',
+    category: type === 'keyword' ? 'Spam Blacklist' : type === 'domain' ? 'Malicious Domains' : type === 'hidden_content' ? 'Hidden Content' : type === 'html' ? 'Disallowed Tags' : type === 'attribute' ? 'Event Handlers' : 'Redirects',
     severity: 'High',
     description: '',
     enabled: true
@@ -1853,6 +1881,43 @@ const saveRule = async () => {
       toastError(err.message || 'Failed to create domain rule.');
     } finally {
       isSubmittingDomainRule.value = false;
+    }
+    return;
+  }
+
+  // Handle Real Hidden Content Rule Creation via API
+  if (ruleForm.value.type === 'hidden_content' && !editingRule.value) {
+    if (!canAddHiddenContentRule.value) {
+      toastError('You do not have permission to add hidden content rules.');
+      return;
+    }
+
+    const trimmedPattern = hiddenContentCreateForm.value.pattern.trim();
+    if (!trimmedPattern) {
+      toastError('CSS declaration / pattern is required.');
+      return;
+    }
+
+    try {
+      isSubmittingHiddenContentRule.value = true;
+      const payload: CreateHiddenContentRulePayload = {
+        pattern: trimmedPattern,
+        category: hiddenContentCreateForm.value.category,
+        severity: hiddenContentCreateForm.value.severity,
+        is_enabled: hiddenContentCreateForm.value.is_enabled,
+        ...(hiddenContentCreateForm.value.description?.trim() 
+          ? { description: hiddenContentCreateForm.value.description.trim() } 
+          : {})
+      };
+
+      await contentSecurityService.createHiddenContentRule(payload);
+      toastSuccess('Hidden content rule created successfully.');
+      isRuleModalOpen.value = false;
+      await fetchHiddenContentRules();
+    } catch (err: any) {
+      toastError(err.message || 'Failed to create hidden content rule.');
+    } finally {
+      isSubmittingHiddenContentRule.value = false;
     }
     return;
   }
@@ -2561,10 +2626,11 @@ const getSeverityBadge = (severity: string) => {
         </div>
 
         <UiButton 
-          v-if="(rulesSubTab === 'keywords' && canAddKeywordRule) || (rulesSubTab === 'domains' && canAddDomainRule) || (rulesSubTab !== 'keywords' && rulesSubTab !== 'domains' && rulesSubTab !== 'hidden_content')"
+          v-if="(rulesSubTab === 'keywords' && canAddKeywordRule) || (rulesSubTab === 'domains' && canAddDomainRule) || (rulesSubTab === 'hidden_content' && canAddHiddenContentRule) || (rulesSubTab !== 'keywords' && rulesSubTab !== 'domains' && rulesSubTab !== 'hidden_content')"
           @click="openAddRuleModal(
             rulesSubTab === 'keywords' ? 'keyword' :
             rulesSubTab === 'domains' ? 'domain' :
+            rulesSubTab === 'hidden_content' ? 'hidden_content' :
             rulesSubTab === 'html' ? 'html' :
             rulesSubTab === 'attributes' ? 'attribute' : 'redirect'
           )"
@@ -2575,6 +2641,7 @@ const getSeverityBadge = (severity: string) => {
           <span>Add {{ 
             rulesSubTab === 'keywords' ? 'Keyword' :
             rulesSubTab === 'domains' ? 'Domain' :
+            rulesSubTab === 'hidden_content' ? 'Hidden Content Rule' :
             rulesSubTab === 'html' ? 'HTML Tag' :
             rulesSubTab === 'attributes' ? 'Attribute' : 'Redirect Rule'
           }}</span>
@@ -3604,8 +3671,8 @@ const getSeverityBadge = (severity: string) => {
     <!-- ========================================== -->
     <UiAdminModal
       :is-open="isRuleModalOpen"
-      :title="editingRule ? `Edit Rule: ${editingRule.id}` : (ruleForm.type === 'keyword' ? 'Create Keyword Rule' : ruleForm.type === 'domain' ? 'Create Domain Rule' : 'Create Security Detection Rule')"
-      :subtitle="ruleForm.type === 'keyword' && !editingRule ? 'Define keyword pattern heuristics for content security inspection.' : ruleForm.type === 'domain' && !editingRule ? 'Define domain pattern heuristics for content security inspection.' : 'Define pattern heuristics for automated catalog inspection.'"
+      :title="editingRule ? `Edit Rule: ${editingRule.id}` : (ruleForm.type === 'keyword' ? 'Create Keyword Rule' : ruleForm.type === 'domain' ? 'Create Domain Rule' : ruleForm.type === 'hidden_content' ? 'Create Hidden Content Rule' : 'Create Security Detection Rule')"
+      :subtitle="ruleForm.type === 'keyword' && !editingRule ? 'Define keyword pattern heuristics for content security inspection.' : ruleForm.type === 'domain' && !editingRule ? 'Define domain pattern heuristics for content security inspection.' : ruleForm.type === 'hidden_content' && !editingRule ? 'Define CSS declaration pattern heuristics for content security inspection.' : 'Define pattern heuristics for automated catalog inspection.'"
       max-width="max-w-lg"
       @close="isRuleModalOpen = false"
     >
@@ -3829,6 +3896,104 @@ const getSeverityBadge = (severity: string) => {
         </div>
       </form>
 
+      <!-- Hidden Content Rule Create Form (Real API) -->
+      <form v-else-if="ruleForm.type === 'hidden_content' && !editingRule" @submit.prevent="saveRule" class="p-6 space-y-4">
+        <!-- CSS Declaration / Pattern -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">
+            CSS Declaration / Pattern <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            v-model="hiddenContentCreateForm.pattern"
+            type="text" 
+            placeholder="e.g. display:none, opacity:0, font-size:0, visibility:hidden"
+            required
+            class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-mono font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+          />
+        </div>
+
+        <!-- Category & Severity Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Category <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="hiddenContentCreateForm.category"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="SPAM">Spam</option>
+              <option value="SCAM">Scam</option>
+              <option value="PHISHING">Phishing</option>
+              <option value="MALWARE">Malware</option>
+              <option value="ADULT">Adult</option>
+              <option value="DRUG">Drug</option>
+              <option value="GAMBLING">Gambling</option>
+              <option value="INJECTION">Injection</option>
+              <option value="REDIRECT">Redirect</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Severity <span class="text-rose-500">*</span></label>
+            <select 
+              v-model="hiddenContentCreateForm.severity"
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+              <option value="INFO">Info</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Description</label>
+          <textarea 
+            v-model="hiddenContentCreateForm.description"
+            rows="2"
+            placeholder="Explain why this hidden content pattern is flagged or prohibited..."
+            class="w-full p-3 bg-background border border-input rounded-xl text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20"
+          ></textarea>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
+          <div>
+            <p class="text-xs font-bold text-foreground">Rule Enabled</p>
+            <p class="text-[10px] text-muted-foreground">Active rules are evaluated during content security scans</p>
+          </div>
+          <input 
+            v-model="hiddenContentCreateForm.is_enabled"
+            type="checkbox" 
+            class="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+          />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-3 border-t border-border flex items-center justify-end gap-2">
+          <button 
+            type="button" 
+            :disabled="isSubmittingHiddenContentRule"
+            @click="isRuleModalOpen = false"
+            class="h-9 px-4 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            :disabled="isSubmittingHiddenContentRule"
+            class="h-9 px-5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-70"
+          >
+            <RefreshCw v-if="isSubmittingHiddenContentRule" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmittingHiddenContentRule ? 'Creating...' : 'Create Hidden Content Rule' }}</span>
+          </button>
+        </div>
+      </form>
+
       <!-- Standard / Other Detection Rules Form -->
       <form v-else @submit.prevent="saveRule" class="p-6 space-y-4">
         <!-- Rule Type -->
@@ -3841,6 +4006,7 @@ const getSeverityBadge = (severity: string) => {
           >
             <option value="keyword">Blacklisted Keyword / Phrase</option>
             <option value="domain">Malicious / Phishing Domain</option>
+            <option value="hidden_content">Hidden Content Rule</option>
             <option value="html">Dangerous HTML Tag</option>
             <option value="attribute">Dangerous Event Attribute</option>
             <option value="redirect">Redirect Hijacking Rule</option>
