@@ -3,3 +3,6 @@ allowBuilds:
   '@parcel/watcher': true
   esbuild: true
   protobufjs: true
+
+overrides:
+  tar: 7.5.19
