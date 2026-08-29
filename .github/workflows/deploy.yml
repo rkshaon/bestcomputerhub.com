@@ -11,19 +11,19 @@ on:
   pull_request:
     branches: ["main", "master"]
 
-  permissions:
-    contents: read
-    packages: write
+permissions:
+  contents: read
+  packages: write
 
-  env:
-    REGISTRY: ghcr.io
-    IMAGE_NAME: ${{ github.repository }}
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
-  jobs:
-    # ---------------------------------------------------------
-    # Job 1: Lint & Type Check
-    # ---------------------------------------------------------
-    test:
+jobs:
+# ---------------------------------------------------------
+# Job 1: Lint & Type Check
+# ---------------------------------------------------------
+  test:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
