@@ -2651,7 +2651,7 @@ export const useContentSecurityService = () => {
 
     try {
       const data = await apiClient.request<ContentScanRunResult>(
-        '/api/v1/content-security/scans/run/',
+        '/api/v1/content-security/scans/',
         {
           method: 'POST',
           body: payload

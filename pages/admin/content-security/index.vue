@@ -2130,7 +2130,7 @@ const submitScanRun = async () => {
   
   try {
     const payload: ContentScanRunRequest = {
-      content_type: scanRunForm.value.content_type,
+      content_type: scanRunForm.value.content_type.trim().toUpperCase(),
       object_id: Number(scanRunForm.value.object_id),
     };
     
@@ -2140,9 +2140,11 @@ const submitScanRun = async () => {
     }
     
     await contentSecurityService.runContentScan(payload);
+    toastSuccess('Content security scan completed successfully.');
     isRunScanModalOpen.value = false;
     fetchContentScans();
   } catch (err: any) {
+    toastError(err.message || 'Failed to run content scan.');
   } finally {
     isSubmittingScanRun.value = false;
   }
