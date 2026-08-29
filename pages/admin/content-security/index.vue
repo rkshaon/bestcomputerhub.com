@@ -95,7 +95,8 @@ import type {
   HtmlTagRulesQueryParams,
   PaginatedHtmlTagRules,
   ContentScan,
-  ContentScansQueryParams
+  ContentScansQueryParams,
+  ContentScanRunRequest
 } from '@/types';
 
 definePageMeta({
@@ -1646,6 +1647,12 @@ const runFullScan = () => {
 };
 
 const isSubmittingScanRun = ref(false);
+const scanRunForm = ref({
+  content_type: '',
+  object_id: '',
+  field_names: ''
+});
+
 const submitScanRun = async () => {
   if (isSubmittingScanRun.value) return;
   
@@ -1662,7 +1669,7 @@ const submitScanRun = async () => {
     };
     
     if (scanRunForm.value.field_names) {
-      payload.field_names = scanRunForm.value.field_names.split(',').map(f => f.trim()).filter(f => f !== '');
+      payload.field_names = scanRunForm.value.field_names.split(',').map((f: string) => f.trim()).filter((f: string) => f !== '');
       if (payload.field_names.length === 0) delete payload.field_names;
     }
     
@@ -1675,33 +1682,7 @@ const submitScanRun = async () => {
   }
 };
 
-  const steps = [
-    { progress: 15, text: 'Scanning 4,120 Product titles, descriptions & specification matrices...' },
-    { progress: 45, text: 'Inspecting 186 Category tree descriptions and marketing blocks...' },
-    { progress: 70, text: 'Running Domain Blacklist & Cross-Site Scripting heuristics...' },
-    { progress: 90, text: 'Checking HTML tag structures and event attributes...' },
-    { progress: 100, text: 'Scan complete. Compiling threat analysis report...' }
-  ];
 
-  let stepIdx = 0;
-  const interval = setInterval(() => {
-    if (stepIdx < steps.length) {
-      const step = steps[stepIdx];
-      if (step) {
-        scanProgress.value = step.progress;
-        scanStepText.value = step.text;
-      }
-      stepIdx++;
-    } else {
-      clearInterval(interval);
-      setTimeout(() => {
-        isScanning.value = false;
-        lastScanTimestamp.value = 'Just now';
-        toastSuccess('Catalog Security Scan completed. All 4,306 entities inspected.');
-      }, 500);
-    }
-  }, 600);
-};
 
 // ==========================================
 // Modal State: Keyword Rule Details (View, Edit & Delete)
