@@ -611,7 +611,7 @@ export interface PaginatedContentScanFindings {
   previous?: string | null;
 }
 
-export interface Finding {
+export interface ContentScanFindingDetail {
   id: number;
   scan: number;
   content_type: string;
@@ -620,8 +620,8 @@ export interface Finding {
   detector: string;
   rule_id_value: string;
   rule_value: string;
-  category: KeywordCategory;
-  severity: KeywordSeverity;
+  category: KeywordCategory | string;
+  severity: KeywordSeverity | string;
   matched_value: string;
   message: string;
   metadata: any;
@@ -632,6 +632,8 @@ export interface Finding {
   created_at: string;
   updated_at: string;
 }
+
+export type Finding = ContentScanFindingDetail;
 
 export interface ContentScanDetail {
   id: number;
@@ -647,6 +649,15 @@ export interface ContentScanDetail {
   created_at: string;
   updated_at: string;
   findings: Finding[];
+}
+
+export interface ContentScanFindingReviewRequest {
+  review_status: 'FALSE_POSITIVE' | 'CONFIRMED' | string;
+  review_note?: string | null;
+}
+
+export interface ContentScanFindingResolveRequest {
+  review_note?: string | null;
 }
 
 export interface ContentScanRunRequest {

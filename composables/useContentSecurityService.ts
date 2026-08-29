@@ -52,6 +52,9 @@ import type {
   ContentScanRunResult,
   ContentScanDetail,
   Finding,
+  ContentScanFindingDetail,
+  ContentScanFindingReviewRequest,
+  ContentScanFindingResolveRequest,
   ContentScanFindingListItem,
   ContentScanFindingsQueryParams,
   PaginatedContentScanFindings
@@ -2905,6 +2908,273 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getContentScanFindingDetails = async (id: number | string): Promise<ContentScanFindingDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const fallbackList = getFallbackContentScanFindings();
+      const found = fallbackList.find((f) => String(f.id) === String(id));
+      isLoading.value = false;
+      if (found) {
+        return {
+          id: found.id,
+          scan: found.scan,
+          content_type: found.content_type,
+          object_id: found.object_id,
+          field_name: found.field_name,
+          detector: found.detector,
+          rule_id_value: `RULE-${found.detector}-${found.id}`,
+          rule_value: found.rule_value,
+          category: found.category,
+          severity: found.severity,
+          matched_value: found.matched_value,
+          message: found.message,
+          metadata: {
+            confidence: 0.98,
+            offset: 42,
+            length: found.matched_value.length,
+            context_tag: 'rich_text_editor'
+          },
+          review_status: found.review_status,
+          reviewed_by: found.review_status !== 'PENDING' ? 'Security Operations Team' : null,
+          reviewed_at: found.review_status !== 'PENDING' ? '2026-08-25T14:30:00Z' : null,
+          review_note: found.review_status !== 'PENDING' ? 'Confirmed finding during automated triage.' : null,
+          created_at: found.created_at,
+          updated_at: found.created_at
+        };
+      }
+      return {
+        id: Number(id) || 1,
+        scan: 1092,
+        content_type: 'Product',
+        object_id: 101,
+        field_name: 'description',
+        detector: 'KEYWORD',
+        rule_id_value: 'RULE-KW-101',
+        rule_value: 'phishing-signature',
+        category: 'SPAM',
+        severity: 'HIGH',
+        matched_value: 'example phishing link text',
+        message: 'Security policy violation detected in content payload.',
+        metadata: {
+          confidence: 0.95,
+          offset: 12
+        },
+        review_status: 'PENDING',
+        reviewed_by: null,
+        reviewed_at: null,
+        review_note: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    }
+
+    try {
+      const data = await apiClient.request<ContentScanFindingDetail>(
+        `/api/v1/content-security/findings/${id}/`,
+        {
+          method: 'GET'
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve finding details.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
+  const reviewContentScanFinding = async (
+    id: number | string,
+    payload: ContentScanFindingReviewRequest
+  ): Promise<ContentScanFindingDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const fallbackList = getFallbackContentScanFindings();
+      const found = fallbackList.find((f) => String(f.id) === String(id));
+      isLoading.value = false;
+      const now = new Date().toISOString();
+      const updatedStatus = payload.review_status;
+      const updatedNote = payload.review_note ?? null;
+      if (found) {
+        found.review_status = updatedStatus;
+        return {
+          id: found.id,
+          scan: found.scan,
+          content_type: found.content_type,
+          object_id: found.object_id,
+          field_name: found.field_name,
+          detector: found.detector,
+          rule_id_value: `RULE-${found.detector}-${found.id}`,
+          rule_value: found.rule_value,
+          category: found.category,
+          severity: found.severity,
+          matched_value: found.matched_value,
+          message: found.message,
+          metadata: {
+            confidence: 0.98,
+            offset: 42,
+            length: found.matched_value.length,
+            context_tag: 'rich_text_editor'
+          },
+          review_status: updatedStatus,
+          reviewed_by: 'Security Operations Team',
+          reviewed_at: now,
+          review_note: updatedNote,
+          created_at: found.created_at,
+          updated_at: now
+        };
+      }
+      return {
+        id: Number(id) || 1,
+        scan: 1092,
+        content_type: 'Product',
+        object_id: 101,
+        field_name: 'description',
+        detector: 'KEYWORD',
+        rule_id_value: 'RULE-KW-101',
+        rule_value: 'phishing-signature',
+        category: 'SPAM',
+        severity: 'HIGH',
+        matched_value: 'example phishing link text',
+        message: 'Security policy violation detected in content payload.',
+        metadata: {
+          confidence: 0.95,
+          offset: 12
+        },
+        review_status: updatedStatus,
+        reviewed_by: 'Security Operations Team',
+        reviewed_at: now,
+        review_note: updatedNote,
+        created_at: new Date().toISOString(),
+        updated_at: now
+      };
+    }
+
+    try {
+      const body: Record<string, any> = {
+        review_status: payload.review_status
+      };
+      if (payload.review_note !== undefined && payload.review_note !== null) {
+        body.review_note = payload.review_note;
+      }
+
+      const data = await apiClient.request<ContentScanFindingDetail>(
+        `/api/v1/content-security/findings/${id}/review/`,
+        {
+          method: 'POST',
+          body
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to submit finding review.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
+  const resolveContentScanFinding = async (
+    id: number | string,
+    payload?: ContentScanFindingResolveRequest
+  ): Promise<ContentScanFindingDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const fallbackList = getFallbackContentScanFindings();
+      const found = fallbackList.find((f) => String(f.id) === String(id));
+      isLoading.value = false;
+      const now = new Date().toISOString();
+      const updatedNote = payload?.review_note ?? 'Resolved by administrator.';
+      if (found) {
+        found.review_status = 'RESOLVED';
+        return {
+          id: found.id,
+          scan: found.scan,
+          content_type: found.content_type,
+          object_id: found.object_id,
+          field_name: found.field_name,
+          detector: found.detector,
+          rule_id_value: `RULE-${found.detector}-${found.id}`,
+          rule_value: found.rule_value,
+          category: found.category,
+          severity: found.severity,
+          matched_value: found.matched_value,
+          message: found.message,
+          metadata: {
+            confidence: 0.98,
+            offset: 42,
+            length: found.matched_value.length,
+            context_tag: 'rich_text_editor'
+          },
+          review_status: 'RESOLVED',
+          reviewed_by: 'Security Operations Team',
+          reviewed_at: now,
+          review_note: updatedNote,
+          created_at: found.created_at,
+          updated_at: now
+        };
+      }
+      return {
+        id: Number(id) || 1,
+        scan: 1092,
+        content_type: 'Product',
+        object_id: 101,
+        field_name: 'description',
+        detector: 'KEYWORD',
+        rule_id_value: 'RULE-KW-101',
+        rule_value: 'phishing-signature',
+        category: 'SPAM',
+        severity: 'HIGH',
+        matched_value: 'example phishing link text',
+        message: 'Security policy violation detected in content payload.',
+        metadata: {
+          confidence: 0.95,
+          offset: 12
+        },
+        review_status: 'RESOLVED',
+        reviewed_by: 'Security Operations Team',
+        reviewed_at: now,
+        review_note: updatedNote,
+        created_at: new Date().toISOString(),
+        updated_at: now
+      };
+    }
+
+    try {
+      const body: Record<string, any> = {};
+      if (payload?.review_note !== undefined && payload?.review_note !== null) {
+        body.review_note = payload.review_note;
+      }
+
+      const data = await apiClient.request<ContentScanFindingDetail>(
+        `/api/v1/content-security/findings/${id}/resolve/`,
+        {
+          method: 'POST',
+          body
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to resolve content scan finding.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -2946,6 +3216,9 @@ export const useContentSecurityService = () => {
     getContentScans,
     runContentScan,
     getContentScanDetails,
-    getContentScanFindings
+    getContentScanFindings,
+    getContentScanFindingDetails,
+    reviewContentScanFinding,
+    resolveContentScanFinding
   };
 };
