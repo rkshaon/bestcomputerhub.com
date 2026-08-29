@@ -195,6 +195,7 @@ const canEditHtmlTagRule = computed(() => hasPermission('content_security.change
 const canDeleteHtmlTagRule = computed(() => hasPermission('content_security.delete_htmltagrule'));
 
 const canViewContentScans = computed(() => hasPermission('content_security.view_contentscan'));
+const canRunContentScan = computed(() => hasPermission('content_security.run_content_scan'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -4168,6 +4169,7 @@ const getSeverityBadge = (severity: string) => {
         </div>
 
         <UiButton 
+          v-if="canRunContentScan"
           @click="runFullScan" 
           :disabled="isScanning"
           class="h-10 px-5 gap-2 font-bold text-xs shadow-md shadow-primary/20 whitespace-nowrap"
@@ -9918,6 +9920,61 @@ const getSeverityBadge = (severity: string) => {
             <Loader2 v-if="isDeletingKeywordRule" class="w-3.5 h-3.5 animate-spin" />
             <span>{{ isDeletingKeywordRule ? 'Deleting...' : 'Delete Rule' }}</span>
           </button>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- Run Content Scan Modal -->
+    <UiAdminModal
+      :is-open="isRunScanModalOpen"
+      title="Run New Content Scan"
+      subtitle="Configure scan parameters for the target object"
+      max-width="max-w-lg"
+      @close="isRunScanModalOpen = false"
+    >
+      <div class="p-6 space-y-4">
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-muted-foreground uppercase">Content Type</label>
+          <input
+            v-model="scanRunForm.content_type"
+            type="text"
+            class="w-full h-9 px-3 rounded-lg border border-input text-xs"
+            placeholder="e.g., Product"
+          />
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-muted-foreground uppercase">Object ID</label>
+          <input
+            v-model="scanRunForm.object_id"
+            type="number"
+            class="w-full h-9 px-3 rounded-lg border border-input text-xs"
+            placeholder="e.g., 123"
+          />
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-muted-foreground uppercase">Fields (Optional)</label>
+          <input
+            v-model="scanRunForm.field_names"
+            type="text"
+            class="w-full h-9 px-3 rounded-lg border border-input text-xs"
+            placeholder="e.g., title, description"
+          />
+        </div>
+        <div class="pt-4 flex gap-3">
+          <UiButton 
+            variant="outline" 
+            class="flex-1" 
+            @click="isRunScanModalOpen = false"
+          >
+            Cancel
+          </UiButton>
+          <UiButton 
+            class="flex-1" 
+            :disabled="isSubmittingScanRun" 
+            @click="submitScanRun"
+          >
+            {{ isSubmittingScanRun ? 'Initiating Scan...' : 'Run Content Scan' }}
+          </UiButton>
         </div>
       </div>
     </UiAdminModal>
