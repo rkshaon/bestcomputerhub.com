@@ -6,178 +6,154 @@ run-name: >
   || format('{0}: {1}', github.ref_name, github.event.head_commit.message) }}
 
 on:
-push:
-branches: ["main", "master"]
-pull_request:
-branches: ["main", "master"]
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
 
-permissions:
-contents: read
-packages: write
+  permissions:
+    contents: read
+    packages: write
 
-env:
-REGISTRY: ghcr.io
-IMAGE_NAME: ${{ github.repository }}
+  env:
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ${{ github.repository }}
 
-jobs:
+  jobs:
+    # ---------------------------------------------------------
+    # Job 1: Lint & Type Check
+    # ---------------------------------------------------------
+    test:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-# ---------------------------------------------------------
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
 
-# Job 1: Lint & Type Check
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
-# ---------------------------------------------------------
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-test:
-name: Lint & Type Check
-runs-on: ubuntu-latest
+      - name: Run Lint / Checks
+        run: pnpm run lint
 
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+    # ---------------------------------------------------------
+    # Job 2: Build Docker Image
+    #
+    # Runs in parallel with lint.
+    #
+    # For pull requests:
+    # - Build and validate the Docker image
+    # - Do not push the image
+    #
+    # For pushes to main/master:
+    # - Build and push the Docker image to GHCR
+    # ---------------------------------------------------------
 
-  - name: Install pnpm
-    uses: pnpm/action-setup@v4
+    docker-release:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Set up Node.js 22
-    uses: actions/setup-node@v4
-    with:
-      node-version: 22
-      cache: pnpm
-      cache-dependency-path: pnpm-lock.yaml
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-  - name: Install dependencies
-    run: pnpm install --frozen-lockfile
+      - name: Log in to GitHub Container Registry (GHCR)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-  - name: Run Lint / Checks
-    run: pnpm run lint
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=,suffix=,format=short
+            type=raw,value=latest
 
-# ---------------------------------------------------------
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
-# Job 2: Build Docker Image
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-#
+    # ---------------------------------------------------------
+    # Job 3: Deploy to VPS
+    #
+    # Runs only for pushes to main/master.
+    # Deployment waits for BOTH lint and Docker build/push.
+    # ---------------------------------------------------------
 
-# Runs in parallel with lint.
+    deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
 
-#
+    environment:
+      name: development
 
-# For pull requests:
+    needs: [test, docker-release]
 
-# - Build and validate the Docker image
-
-# - Do not push the image
-
-#
-
-# For pushes to main/master:
-
-# - Build and push the Docker image to GHCR
-
-# ---------------------------------------------------------
-
-docker-release:
-name: Build & Push Docker Image
-runs-on: ubuntu-latest
-
-
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
-
-  - name: Set up Docker Buildx
-    uses: docker/setup-buildx-action@v4
-
-  - name: Log in to GitHub Container Registry (GHCR)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    uses: docker/login-action@v4
-    with:
-      registry: ${{ env.REGISTRY }}
-      username: ${{ github.actor }}
-      password: ${{ secrets.GITHUB_TOKEN }}
 
-  - name: Extract Docker metadata
-    id: meta
-    uses: docker/metadata-action@v6
-    with:
-      images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-      tags: |
-        type=ref,event=branch
-        type=sha,prefix=,suffix=,format=short
-        type=raw,value=latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
 
-  - name: Build and Push Docker Image
-    uses: docker/build-push-action@v7
-    with:
-      context: .
-      push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
-      tags: ${{ steps.meta.outputs.tags }}
-      labels: ${{ steps.meta.outputs.labels }}
+          script: |
+            # 1. Navigate to your project directory on the VPS
+            sudo mkdir -p /var/www/best-computers.rkshaon.info
+            sudo chown -R ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} /var/www/best-computers.rkshaon.info || true
+            cd /var/www/best-computers.rkshaon.info
 
-      cache-from: type=gha
-      cache-to: type=gha,mode=max
+            # 2. Re-create or update docker-compose.yml on target machine if needed
+            cat << 'EOF' > docker-compose.yml
+            services:
+              frontend:
+                container_name: bestcomputerhub-frontend
+                image: ghcr.io/${{ github.repository }}:latest
+                ports:
+                  - "127.0.0.1:3001:3000"
+                environment:
+                  - NODE_ENV=production
+                  - PORT=3000
+                  - HOST=0.0.0.0
+                  - NUXT_PUBLIC_API_BASE=${{ secrets.DEV_NUXT_PUBLIC_API_BASE }}
+                restart: unless-stopped
+            EOF
 
+            # 3. Log in to GitHub Container Registry inside VPS
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-# ---------------------------------------------------------
+            # 4. Pull the latest image and restart service
+            docker compose pull
+            docker compose up -d --remove-orphans
 
-# Job 3: Deploy to VPS
-
-#
-
-# Runs only for pushes to main/master.
-
-# Deployment waits for BOTH lint and Docker build/push.
-
-# ---------------------------------------------------------
-
-deploy:
-name: Deploy to VPS
-runs-on: ubuntu-latest
-
-environment:
-  name: development
-
-needs: [test, docker-release]
-
-if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-
-steps:
-  - name: Deploy via SSH
-    uses: appleboy/ssh-action@v1.0.3
-    with:
-      host: ${{ secrets.SSH_HOST }}
-      username: ${{ secrets.SSH_USER }}
-      key: ${{ secrets.SSH_PRIVATE_KEY }}
-      port: ${{ secrets.SSH_PORT || '22' }}
-
-      script: |
-        # 1. Navigate to your project directory on the VPS
-        sudo mkdir -p /var/www/best-computers.rkshaon.info
-        sudo chown -R ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} /var/www/best-computers.rkshaon.info || true
-        cd /var/www/best-computers.rkshaon.info
-
-        # 2. Re-create or update docker-compose.yml on target machine if needed
-        cat << 'EOF' > docker-compose.yml
-        services:
-          frontend:
-            container_name: bestcomputerhub-frontend
-            image: ghcr.io/${{ github.repository }}:latest
-            ports:
-              - "127.0.0.1:3001:3000"
-            environment:
-              - NODE_ENV=production
-              - PORT=3000
-              - HOST=0.0.0.0
-              - NUXT_PUBLIC_API_BASE=${{ secrets.DEV_NUXT_PUBLIC_API_BASE }}
-            restart: unless-stopped
-        EOF
-
-        # 3. Log in to GitHub Container Registry inside VPS
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-        # 4. Pull the latest image and restart service
-        docker compose pull
-        docker compose up -d --remove-orphans
-
-        # 5. Clean up dangling images
-        docker image prune -f
+            # 5. Clean up dangling images
+            docker image prune -f
 
