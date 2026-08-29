@@ -51,7 +51,10 @@ import type {
   ContentScanRunRequest,
   ContentScanRunResult,
   ContentScanDetail,
-  Finding
+  Finding,
+  ContentScanFindingListItem,
+  ContentScanFindingsQueryParams,
+  PaginatedContentScanFindings
 } from '@/types';
 
 export const useContentSecurityService = () => {
@@ -2703,6 +2706,205 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getFallbackContentScanFindings = (): ContentScanFindingListItem[] => {
+    return [
+      {
+        id: 1092,
+        scan: 1092,
+        content_type: 'Product',
+        object_id: 101,
+        field_name: 'description',
+        detector: 'DOMAIN',
+        category: 'PHISHING',
+        severity: 'CRITICAL',
+        rule_value: 'casino-example.com',
+        matched_value: 'https://casino-example.com/bonus-claim?ref=9982',
+        message: 'Blacklisted affiliate casino and promo redirect domain found embedded in description hyperlink.',
+        review_status: 'PENDING',
+        created_at: '2026-08-25T11:52:00Z'
+      },
+      {
+        id: 1088,
+        scan: 1088,
+        content_type: 'Product',
+        object_id: 104,
+        field_name: 'specifications',
+        detector: 'HTML_TAG',
+        category: 'DANGEROUS_TAGS',
+        severity: 'CRITICAL',
+        rule_value: '<iframe',
+        matched_value: '<iframe src="https://tracker-telemetry.biz/embed.html" width="0" height="0"></iframe>',
+        message: 'Dangerous inline iframe tag with cross-origin external tracking source detected in specification table.',
+        review_status: 'PENDING',
+        created_at: '2026-08-25T11:48:00Z'
+      },
+      {
+        id: 1074,
+        scan: 1084,
+        content_type: 'Category',
+        object_id: 15,
+        field_name: 'description',
+        detector: 'KEYWORD',
+        category: 'SPAM',
+        severity: 'HIGH',
+        rule_value: 'cheap replica',
+        matched_value: 'cheap replica guaranteed authentic quality',
+        message: 'Spam keyword signature detected matching deceptive merchant phrases.',
+        review_status: 'NEEDS_REVIEW',
+        created_at: '2026-08-25T11:40:00Z'
+      },
+      {
+        id: 1065,
+        scan: 1084,
+        content_type: 'Category',
+        object_id: 15,
+        field_name: 'description',
+        detector: 'HTML_ATTRIBUTE',
+        category: 'DOM_HIJACKING',
+        severity: 'HIGH',
+        rule_value: 'onload=',
+        matched_value: '<img src="x" onload="eval(atob(\'ZG9jdW1lbnQ=\'))" />',
+        message: 'Inline JavaScript event handler attribute detected executing obfuscated dynamic script payload.',
+        review_status: 'NEEDS_REVIEW',
+        created_at: '2026-08-25T11:40:00Z'
+      },
+      {
+        id: 1052,
+        scan: 1070,
+        content_type: 'Product',
+        object_id: 115,
+        field_name: 'description',
+        detector: 'OBFUSCATION',
+        category: 'OBFUSCATION',
+        severity: 'MEDIUM',
+        rule_value: 'fromCharCode',
+        matched_value: 'String.fromCharCode(83,99,114,105,112,116)',
+        message: 'Character code dynamic string evaluation detected attempting filter bypass.',
+        review_status: 'RESOLVED',
+        created_at: '2026-08-25T10:15:00Z'
+      }
+    ];
+  };
+
+  const getContentScanFindings = async (
+    params?: ContentScanFindingsQueryParams
+  ): Promise<PaginatedContentScanFindings> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      let results = getFallbackContentScanFindings();
+
+      if (params?.search) {
+        const q = params.search.toLowerCase().trim();
+        results = results.filter(
+          (r) =>
+            r.field_name.toLowerCase().includes(q) ||
+            String(r.id).toLowerCase().includes(q) ||
+            String(r.scan).toLowerCase().includes(q) ||
+            String(r.object_id).toLowerCase().includes(q) ||
+            r.content_type.toLowerCase().includes(q) ||
+            r.detector.toLowerCase().includes(q) ||
+            r.matched_value.toLowerCase().includes(q) ||
+            r.message.toLowerCase().includes(q)
+        );
+      }
+      if (params?.scan) {
+        results = results.filter((r) => String(r.scan) === String(params.scan));
+      }
+      if (params?.content_type && params.content_type !== 'all') {
+        results = results.filter((r) => r.content_type === params.content_type);
+      }
+      if (params?.object_id) {
+        results = results.filter((r) => String(r.object_id) === String(params.object_id));
+      }
+      if (params?.field_name) {
+        results = results.filter((r) => r.field_name.toLowerCase().includes(String(params.field_name).toLowerCase()));
+      }
+      if (params?.detector && params.detector !== 'all') {
+        results = results.filter((r) => r.detector.toUpperCase() === params.detector?.toUpperCase());
+      }
+      if (params?.category && params.category !== 'all') {
+        results = results.filter((r) => r.category === params.category);
+      }
+      if (params?.severity && params.severity !== 'all') {
+        results = results.filter((r) => r.severity.toUpperCase() === params.severity?.toUpperCase());
+      }
+      if (params?.review_status && params.review_status !== 'all') {
+        results = results.filter((r) => r.review_status.toUpperCase() === params.review_status?.toUpperCase());
+      }
+
+      const page = params?.page || 1;
+      const pageSize = params?.page_size || 10;
+      const totalCount = results.length;
+      const totalPages = Math.ceil(totalCount / pageSize) || 1;
+      const start = (page - 1) * pageSize;
+      const paginatedResults = results.slice(start, start + pageSize);
+
+      isLoading.value = false;
+      return {
+        results: paginatedResults,
+        count: totalCount,
+        page,
+        pages: totalPages,
+        next: page < totalPages ? `?page=${page + 1}` : null,
+        previous: page > 1 ? `?page=${page - 1}` : null
+      };
+    }
+
+    try {
+      const queryObj: Record<string, any> = {};
+      if (params?.page) queryObj.page = params.page;
+      if (params?.page_size) queryObj.page_size = params.page_size;
+      if (params?.search) queryObj.search = params.search;
+      if (params?.scan) queryObj.scan = params.scan;
+      if (params?.content_type && params.content_type !== 'all') queryObj.content_type = params.content_type;
+      if (params?.object_id) queryObj.object_id = params.object_id;
+      if (params?.field_name) queryObj.field_name = params.field_name;
+      if (params?.detector && params.detector !== 'all') queryObj.detector = params.detector;
+      if (params?.category && params.category !== 'all') queryObj.category = params.category;
+      if (params?.severity && params.severity !== 'all') queryObj.severity = params.severity;
+      if (params?.review_status && params.review_status !== 'all') queryObj.review_status = params.review_status;
+      if (params?.ordering) queryObj.ordering = params.ordering;
+
+      const data = await apiClient.request<any>('/api/v1/content-security/findings/', {
+        method: 'GET',
+        params: queryObj
+      });
+
+      let results: ContentScanFindingListItem[] = [];
+      let count = 0;
+      let pageNum = params?.page || 1;
+      let totalPagesNum = 1;
+
+      if (Array.isArray(data)) {
+        results = data;
+        count = data.length;
+      } else if (data && typeof data === 'object') {
+        results = data.results || [];
+        count = data.count || results.length;
+        pageNum = data.page || params?.page || 1;
+        totalPagesNum = data.pages || Math.ceil(count / (params?.page_size || 10)) || 1;
+      }
+
+      isLoading.value = false;
+      return {
+        results,
+        count,
+        page: pageNum,
+        pages: totalPagesNum,
+        next: data.next || null,
+        previous: data.previous || null
+      };
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve content scan findings.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -2743,6 +2945,7 @@ export const useContentSecurityService = () => {
     deleteHtmlTagRule,
     getContentScans,
     runContentScan,
-    getContentScanDetails
+    getContentScanDetails,
+    getContentScanFindings
   };
 };

@@ -571,6 +571,46 @@ export interface PaginatedContentScans {
   previous?: string | null;
 }
 
+export interface ContentScanFindingListItem {
+  id: number;
+  scan: number;
+  content_type: string;
+  object_id: number;
+  field_name: string;
+  detector: string;
+  category: KeywordCategory | string;
+  severity: KeywordSeverity | string;
+  rule_value: string;
+  matched_value: string;
+  message: string;
+  review_status: string;
+  created_at: string;
+}
+
+export interface ContentScanFindingsQueryParams {
+  search?: string;
+  scan?: number | string;
+  content_type?: string;
+  object_id?: number | string;
+  field_name?: string;
+  detector?: string;
+  category?: string;
+  severity?: string;
+  review_status?: string;
+  ordering?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedContentScanFindings {
+  results: ContentScanFindingListItem[];
+  count: number;
+  page: number;
+  pages: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
 export interface Finding {
   id: number;
   scan: number;

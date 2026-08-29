@@ -97,7 +97,9 @@ import type {
   ContentScan,
   ContentScansQueryParams,
   ContentScanRunRequest,
-  ContentScanDetail
+  ContentScanDetail,
+  ContentScanFindingListItem,
+  ContentScanFindingsQueryParams
 } from '@/types';
 
 definePageMeta({
@@ -156,7 +158,7 @@ export interface DetectionRule {
 // ==========================================
 // State Management
 // ==========================================
-const mainTab = ref<'overview' | 'results' | 'rules'>('overview');
+const mainTab = ref<'overview' | 'results' | 'findings' | 'rules'>('overview');
 const rulesSubTab = ref<'keywords' | 'domains' | 'hidden_content' | 'obfuscation' | 'html' | 'attributes' | 'redirects'>('keywords');
 
 const { hasPermission } = useAdminPermissions();
@@ -197,6 +199,7 @@ const canDeleteHtmlTagRule = computed(() => hasPermission('content_security.dele
 
 const canViewContentScans = computed(() => hasPermission('content_security.view_contentscan'));
 const canRunContentScan = computed(() => hasPermission('content_security.run_content_scan'));
+const canViewFindings = computed(() => hasPermission('content_security.view_contentscanfinding'));
 
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
@@ -735,6 +738,116 @@ const fetchHtmlTagRules = async () => {
   }
 };
 
+// ==========================================
+// Findings Query/Data States
+// ==========================================
+const isFindingsLoading = ref(false);
+const findingsError = ref<string | null>(null);
+const findingSearchQuery = ref('');
+const debouncedFindingSearch = refDebounced(findingSearchQuery, 300);
+const findingContentType = ref<string>('all');
+const findingSeverity = ref<string>('all');
+const findingDetector = ref<string>('all');
+const findingCategory = ref<string>('all');
+const findingReviewStatus = ref<string>('all');
+const findingOrdering = ref<string>('-created_at');
+const findingPage = ref(1);
+const findingPageSize = ref(10);
+const findingsData = ref<ContentScanFindingListItem[]>([]);
+const findingsCount = ref(0);
+const findingsPages = ref(1);
+
+const findingColumns: UiTableColumn<ContentScanFindingListItem>[] = [
+  { key: 'id', label: 'Finding ID', width: '100px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap font-mono text-xs font-semibold' },
+  { key: 'scan', label: 'Scan ID', width: '100px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap font-mono text-xs text-muted-foreground' },
+  { key: 'severity', label: 'Severity', width: '120px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'review_status', label: 'Review Status', width: '140px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'content_type', label: 'Type', width: '110px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs font-semibold' },
+  { key: 'object_id', label: 'Object ID', width: '100px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap font-mono text-xs' },
+  { key: 'field_name', label: 'Field', width: '120px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap font-mono text-xs' },
+  { key: 'detector', label: 'Detector', width: '130px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs font-medium' },
+  { key: 'category', label: 'Category', width: '130px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs' },
+  { key: 'matched_value', label: 'Matched Value', width: '180px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-xs' },
+  { key: 'message', label: 'Message', width: '220px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 text-xs text-muted-foreground' },
+  { key: 'created_at', label: 'Created At', width: '140px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground font-mono' },
+  { key: 'actions', label: '', width: '60px', headerClass: 'px-4 py-3', cellClass: 'px-4 py-3 text-right' }
+];
+
+const resetFindingFilters = () => {
+  findingSearchQuery.value = '';
+  findingContentType.value = 'all';
+  findingSeverity.value = 'all';
+  findingDetector.value = 'all';
+  findingCategory.value = 'all';
+  findingReviewStatus.value = 'all';
+  findingOrdering.value = '-created_at';
+  findingPage.value = 1;
+};
+
+const fetchFindings = async () => {
+  if (!canViewFindings.value) return;
+
+  isFindingsLoading.value = true;
+  findingsError.value = null;
+
+  try {
+    const params: ContentScanFindingsQueryParams = {
+      page: findingPage.value,
+      page_size: findingPageSize.value,
+      ordering: findingOrdering.value !== '-created_at' ? findingOrdering.value : undefined
+    };
+
+    if (debouncedFindingSearch.value.trim()) {
+      params.search = debouncedFindingSearch.value.trim();
+    }
+    if (findingContentType.value !== 'all') {
+      params.content_type = findingContentType.value;
+    }
+    if (findingSeverity.value !== 'all') {
+      params.severity = findingSeverity.value;
+    }
+    if (findingDetector.value !== 'all') {
+      params.detector = findingDetector.value;
+    }
+    if (findingCategory.value !== 'all') {
+      params.category = findingCategory.value;
+    }
+    if (findingReviewStatus.value !== 'all') {
+      params.review_status = findingReviewStatus.value;
+    }
+
+    const response = await contentSecurityService.getContentScanFindings(params);
+    findingsData.value = response.results;
+    findingsCount.value = response.count;
+    findingsPages.value = response.pages;
+  } catch (err: any) {
+    findingsError.value = extractErrorMessage(err, 'Failed to retrieve content scan findings.');
+  } finally {
+    isFindingsLoading.value = false;
+  }
+};
+
+const getFindingReviewStatusBadge = (status?: string | null) => {
+  const s = status?.toUpperCase() || 'PENDING';
+  switch (s) {
+    case 'NEEDS_REVIEW':
+    case 'PENDING':
+      return { variant: 'warning' as const, label: 'Needs Review', class: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30' };
+    case 'APPROVED':
+    case 'CONFIRMED':
+    case 'SUSPICIOUS':
+      return { variant: 'error' as const, label: 'Confirmed Risk', class: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' };
+    case 'RESOLVED':
+      return { variant: 'info' as const, label: 'Resolved', class: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30' };
+    case 'FALSE_POSITIVE':
+    case 'SAFE':
+    case 'WHITELISTED':
+      return { variant: 'success' as const, label: 'Safe / Whitelisted', class: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
+    default:
+      return { variant: 'secondary' as const, label: status || 'Unknown', class: 'bg-muted text-muted-foreground border-border' };
+  }
+};
+
 // URL Routing/Query Management
 const route = useRoute();
 const router = useRouter();
@@ -749,7 +862,17 @@ const syncFromRoute = () => {
     }
   }
 
-  if (rulesSubTab.value === 'domains') {
+  if (mainTab.value === 'findings') {
+    if (route.query.search) findingSearchQuery.value = String(route.query.search);
+    if (route.query.content_type) findingContentType.value = String(route.query.content_type);
+    if (route.query.severity) findingSeverity.value = String(route.query.severity);
+    if (route.query.detector) findingDetector.value = String(route.query.detector);
+    if (route.query.category) findingCategory.value = String(route.query.category);
+    if (route.query.review_status) findingReviewStatus.value = String(route.query.review_status);
+    if (route.query.ordering) findingOrdering.value = String(route.query.ordering);
+    if (route.query.page) findingPage.value = parseInt(String(route.query.page)) || 1;
+    if (route.query.page_size) findingPageSize.value = parseInt(String(route.query.page_size)) || 10;
+  } else if (rulesSubTab.value === 'domains') {
     if (route.query.search) domainSearchQuery.value = String(route.query.search);
     if (route.query.category) domainCategory.value = String(route.query.category);
     if (route.query.severity) domainSeverity.value = String(route.query.severity);
@@ -823,7 +946,17 @@ const updateRouteQuery = () => {
   query.mainTab = mainTab.value !== 'overview' ? mainTab.value : undefined;
   query.subTab = mainTab.value === 'rules' && rulesSubTab.value !== 'keywords' ? rulesSubTab.value : undefined;
 
-  if (mainTab.value === 'rules' && rulesSubTab.value === 'keywords') {
+  if (mainTab.value === 'findings') {
+    query.search = findingSearchQuery.value || undefined;
+    query.content_type = findingContentType.value !== 'all' ? findingContentType.value : undefined;
+    query.severity = findingSeverity.value !== 'all' ? findingSeverity.value : undefined;
+    query.detector = findingDetector.value !== 'all' ? findingDetector.value : undefined;
+    query.category = findingCategory.value !== 'all' ? findingCategory.value : undefined;
+    query.review_status = findingReviewStatus.value !== 'all' ? findingReviewStatus.value : undefined;
+    query.ordering = findingOrdering.value !== '-created_at' ? findingOrdering.value : undefined;
+    query.page = findingPage.value !== 1 ? String(findingPage.value) : undefined;
+    query.page_size = findingPageSize.value !== 10 ? String(findingPageSize.value) : undefined;
+  } else if (mainTab.value === 'rules' && rulesSubTab.value === 'keywords') {
     query.search = keywordSearchQuery.value || undefined;
     query.category = keywordCategory.value !== 'all' ? keywordCategory.value : undefined;
     query.severity = keywordSeverity.value !== 'all' ? keywordSeverity.value : undefined;
@@ -934,6 +1067,37 @@ onMounted(() => {
   }
   if (canViewContentScans.value && mainTab.value === 'results') {
     fetchContentScans();
+  }
+  if (canViewFindings.value && mainTab.value === 'findings') {
+    fetchFindings();
+  }
+});
+
+// Reactively watch finding filters & trigger fetch
+watch(
+  [
+    debouncedFindingSearch,
+    findingContentType,
+    findingSeverity,
+    findingDetector,
+    findingCategory,
+    findingReviewStatus,
+    findingOrdering,
+    findingPageSize
+  ],
+  () => {
+    findingPage.value = 1;
+    updateRouteQuery();
+    if (mainTab.value === 'findings') {
+      fetchFindings();
+    }
+  }
+);
+
+watch(findingPage, () => {
+  updateRouteQuery();
+  if (mainTab.value === 'findings') {
+    fetchFindings();
   }
 });
 
@@ -1148,6 +1312,8 @@ watch([mainTab, rulesSubTab], () => {
     }
   } else if (mainTab.value === 'results') {
     fetchContentScans();
+  } else if (mainTab.value === 'findings') {
+    fetchFindings();
   }
 });
 
@@ -4262,6 +4428,23 @@ const getSeverityBadge = (severity: string) => {
       </button>
 
       <button
+        v-if="canViewFindings"
+        @click="mainTab = 'findings'"
+        :class="cn(
+          'flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap',
+          mainTab === 'findings'
+            ? 'border-primary text-primary font-extrabold'
+            : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+        )"
+      >
+        <AlertCircle class="w-4 h-4" />
+        <span>Findings</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 ml-1">
+          {{ findingsCount }}
+        </span>
+      </button>
+
+      <button
         @click="mainTab = 'rules'"
         :class="cn(
           'flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap',
@@ -4661,6 +4844,199 @@ const getSeverityBadge = (severity: string) => {
             :items-per-page="itemsPerPage"
             item-label="scans"
             @update:current-page="currentPage = $event"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION: FINDINGS TAB -->
+    <!-- ========================================== -->
+    <div v-show="mainTab === 'findings'" class="space-y-4 animate-in fade-in duration-300">
+      <!-- Search & Filters Toolbar -->
+      <div class="bg-card border border-border rounded-2xl p-3.5 shadow-xs space-y-3">
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          <!-- Search Box -->
+          <div class="relative flex-1">
+            <Search class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input 
+              v-model="findingSearchQuery"
+              type="text" 
+              placeholder="Search field, detector, message, matched value, or ID..." 
+              class="w-full h-9 pl-9 pr-4 bg-background border border-input rounded-lg text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+            />
+            <button 
+              v-if="findingSearchQuery" 
+              @click="findingSearchQuery = ''"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X class="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <!-- Filter Dropdowns Row -->
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <!-- Content Type -->
+            <select 
+              v-model="findingContentType"
+              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="all">All Types</option>
+              <option value="Product">Products</option>
+              <option value="Category">Categories</option>
+            </select>
+
+            <!-- Severity Filter -->
+            <select 
+              v-model="findingSeverity"
+              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="all">All Severities</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+              <option value="INFO">Info</option>
+            </select>
+
+            <!-- Detector Filter -->
+            <select 
+              v-model="findingDetector"
+              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="all">All Detectors</option>
+              <option value="KEYWORD">Keyword</option>
+              <option value="DOMAIN">Domain</option>
+              <option value="HTML_TAG">HTML Tag</option>
+              <option value="HTML_ATTRIBUTE">HTML Attribute</option>
+              <option value="HIDDEN_CONTENT">Hidden Content</option>
+              <option value="OBFUSCATION">Obfuscation</option>
+              <option value="REDIRECT">Redirect</option>
+            </select>
+
+            <!-- Review Status Filter -->
+            <select 
+              v-model="findingReviewStatus"
+              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option value="all">All Statuses</option>
+              <option value="PENDING">Needs Review</option>
+              <option value="APPROVED">Confirmed Risk</option>
+              <option value="RESOLVED">Resolved</option>
+              <option value="FALSE_POSITIVE">Safe / Whitelisted</option>
+            </select>
+
+            <!-- Page Size Selector -->
+            <div class="flex items-center gap-1.5 border-l border-border pl-2 shrink-0">
+              <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+              <select 
+                v-model="findingPageSize"
+                class="h-9 px-2 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+              >
+                <option :value="5">5 / page</option>
+                <option :value="10">10 / page</option>
+                <option :value="25">25 / page</option>
+                <option :value="50">50 / page</option>
+              </select>
+            </div>
+
+            <!-- Reset Button -->
+            <button 
+              v-if="findingSearchQuery || findingContentType !== 'all' || findingSeverity !== 'all' || findingDetector !== 'all' || findingCategory !== 'all' || findingReviewStatus !== 'all'"
+              @click="resetFindingFilters"
+              class="h-9 px-3 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors shrink-0"
+              title="Reset all filters"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Findings Table -->
+      <div class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+        <UiTable 
+          :columns="findingColumns" 
+          :data="findingsData"
+          empty-text="No findings detected"
+          empty-description="No security findings match your active filters or search criteria."
+          :loading="isFindingsLoading"
+        >
+          <!-- Severity Cell -->
+          <template #cell-severity="{ item }">
+            <span 
+              :class="cn(
+                'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border whitespace-nowrap',
+                getSeverityBadge(item.severity)
+              )"
+            >
+              {{ item.severity }}
+            </span>
+          </template>
+
+          <!-- Review Status Cell -->
+          <template #cell-review_status="{ item }">
+            <span 
+              :class="cn(
+                'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border whitespace-nowrap',
+                getFindingReviewStatusBadge(item.review_status).class
+              )"
+            >
+              {{ getFindingReviewStatusBadge(item.review_status).label }}
+            </span>
+          </template>
+
+          <!-- Matched Value Cell -->
+          <template #cell-matched_value="{ item }">
+            <span 
+              class="font-mono text-xs text-foreground bg-muted/60 px-1.5 py-0.5 rounded max-w-[180px] truncate block"
+              :title="item.matched_value"
+            >
+              {{ item.matched_value || '—' }}
+            </span>
+          </template>
+
+          <!-- Message Cell -->
+          <template #cell-message="{ item }">
+            <span 
+              class="text-xs text-muted-foreground max-w-[220px] truncate block"
+              :title="item.message"
+            >
+              {{ item.message || '—' }}
+            </span>
+          </template>
+
+          <!-- Created At Cell -->
+          <template #cell-created_at="{ item }">
+            <span class="text-xs text-muted-foreground font-mono">
+              {{ formatDate(item.created_at) }}
+            </span>
+          </template>
+
+          <!-- Actions Cell -->
+          <template #cell-actions="{ item }">
+            <div class="flex items-center justify-end gap-1.5">
+              <button 
+                @click.stop="openFindingDetail(item as any)"
+                class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                title="View finding details"
+                aria-label="View finding details"
+              >
+                <Eye class="w-4 h-4" />
+              </button>
+            </div>
+          </template>
+        </UiTable>
+
+        <!-- Pagination Controls -->
+        <div class="px-4 py-3 border-t border-border bg-muted/20 flex items-center justify-between">
+          <UiPagination 
+            :current-page="findingPage"
+            :total-pages="findingsPages"
+            :total-count="findingsCount"
+            :items-per-page="findingPageSize"
+            item-label="findings"
+            @update:current-page="findingPage = $event"
           />
         </div>
       </div>
