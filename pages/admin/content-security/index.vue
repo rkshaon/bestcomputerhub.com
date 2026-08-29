@@ -929,6 +929,9 @@ onMounted(() => {
   if (canViewHtmlTagRules.value) {
     fetchHtmlTagRules();
   }
+  if (canViewContentScans.value && mainTab.value === 'results') {
+    fetchContentScans();
+  }
 });
 
 // Reactively watch keyword filters & trigger fetch
@@ -4409,7 +4412,7 @@ const getSeverityBadge = (severity: string) => {
               @click="mainTab = 'results'"
               class="text-xs font-bold text-primary hover:underline flex items-center gap-1"
             >
-              View All ({{ filteredFindings.length }}) <ArrowRight class="w-3 h-3" />
+              View All ({{ contentScansCount }}) <ArrowRight class="w-3 h-3" />
             </button>
           </div>
 
