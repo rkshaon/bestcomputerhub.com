@@ -96,7 +96,8 @@ import type {
   PaginatedHtmlTagRules,
   ContentScan,
   ContentScansQueryParams,
-  ContentScanRunRequest
+  ContentScanRunRequest,
+  ContentScanDetail
 } from '@/types';
 
 definePageMeta({
@@ -1601,6 +1602,9 @@ const recentFindings = computed(() => {
 const isDetailModalOpen = ref(false);
 const selectedFinding = ref<SecurityFinding | null>(null);
 
+const isScanDetailModalOpen = ref(false);
+const selectedContentScan = ref<ContentScanDetail | null>(null);
+
 const openFindingDetail = (finding: SecurityFinding) => {
   selectedFinding.value = finding;
   isDetailModalOpen.value = true;
@@ -1609,6 +1613,21 @@ const openFindingDetail = (finding: SecurityFinding) => {
 const closeFindingDetail = () => {
   isDetailModalOpen.value = false;
   selectedFinding.value = null;
+};
+
+const openScanDetail = async (scan: ContentScan) => {
+  try {
+    const details = await contentSecurityService.getContentScanDetails(scan.id);
+    selectedContentScan.value = details;
+    isScanDetailModalOpen.value = true;
+  } catch (err: any) {
+    toastError(extractErrorMessage(err, 'Failed to load scan details.'));
+  }
+};
+
+const closeScanDetail = () => {
+  isScanDetailModalOpen.value = false;
+  selectedContentScan.value = null;
 };
 
 // Actions inside Finding Details Modal
@@ -4109,7 +4128,8 @@ const scanResultColumns: UiTableColumn<ContentScan>[] = [
   { key: 'risk_score', label: 'Risk Score', width: '120px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'finding_count', label: 'Findings', width: '100px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs font-semibold' },
   { key: 'scanner_version', label: 'Scanner Ver.', width: '110px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground font-mono' },
-  { key: 'scanned_at', label: 'Scanned At', width: '140px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' }
+  { key: 'scanned_at', label: 'Scanned At', width: '140px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' },
+  { key: 'actions', label: '', width: '60px', headerClass: 'px-4 py-3', cellClass: 'px-4 py-3 text-right' }
 ];
 
 // Helper styles for badges
@@ -4615,6 +4635,20 @@ const getSeverityBadge = (severity: string) => {
             <span class="text-xs text-muted-foreground font-mono">
               {{ new Date(item.scanned_at).toLocaleString() }}
             </span>
+          </template>
+
+          <!-- Actions Cell -->
+          <template #cell-actions="{ item }">
+            <div class="flex items-center justify-end gap-1.5">
+              <button 
+                @click.stop="openScanDetail(item)"
+                class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                title="View scan details"
+                aria-label="View scan details"
+              >
+                <Eye class="w-4 h-4" />
+              </button>
+            </div>
           </template>
         </UiTable>
 
@@ -6792,6 +6826,65 @@ const getSeverityBadge = (severity: string) => {
             >
               Resolve Issue
             </button>
+          </div>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- ========================================== -->
+    <!-- MODAL: CONTENT SCAN DETAILS -->
+    <!-- ========================================== -->
+    <UiAdminModal
+      :is-open="isScanDetailModalOpen"
+      :title="`Scan Details: #${selectedContentScan?.id || ''}`"
+      :subtitle="`${selectedContentScan?.content_type} Content Inspection Report`"
+      max-width="max-w-4xl"
+      @close="closeScanDetail"
+    >
+      <div v-if="selectedContentScan" class="p-6 space-y-6 overflow-y-auto max-h-[75vh]">
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-muted/40 p-4 rounded-xl border border-border">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status</p>
+            <p class="text-sm font-bold">{{ selectedContentScan.status }}</p>
+          </div>
+          <div class="bg-muted/40 p-4 rounded-xl border border-border">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Risk Score</p>
+            <p class="text-sm font-bold">{{ selectedContentScan.risk_score }}</p>
+          </div>
+          <div class="bg-muted/40 p-4 rounded-xl border border-border">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Findings</p>
+            <p class="text-sm font-bold">{{ selectedContentScan.findings.length }}</p>
+          </div>
+          <div class="bg-muted/40 p-4 rounded-xl border border-border">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Scanned At</p>
+            <p class="text-sm font-bold">{{ new Date(selectedContentScan.scanned_at).toLocaleString() }}</p>
+          </div>
+        </div>
+
+        <!-- Findings List -->
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Detected Findings</h4>
+          <div v-if="selectedContentScan.findings.length === 0" class="p-4 bg-muted/20 text-center text-xs text-muted-foreground rounded-xl">
+            No findings detected.
+          </div>
+          <div v-else class="bg-card border border-border rounded-xl overflow-hidden">
+            <table class="w-full text-xs">
+              <thead class="bg-muted/40">
+                <tr>
+                  <th class="px-4 py-2 text-left">Category</th>
+                  <th class="px-4 py-2 text-left">Severity</th>
+                  <th class="px-4 py-2 text-left">Message</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr v-for="finding in selectedContentScan.findings" :key="finding.id">
+                  <td class="px-4 py-2">{{ finding.category }}</td>
+                  <td class="px-4 py-2">{{ finding.severity }}</td>
+                  <td class="px-4 py-2">{{ finding.message }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

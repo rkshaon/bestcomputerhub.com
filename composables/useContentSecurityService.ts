@@ -49,7 +49,9 @@ import type {
   ContentScansQueryParams,
   PaginatedContentScans,
   ContentScanRunRequest,
-  ContentScanRunResult
+  ContentScanRunResult,
+  ContentScanDetail,
+  Finding
 } from '@/types';
 
 export const useContentSecurityService = () => {
@@ -2658,6 +2660,49 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getContentScanDetails = async (
+    id: string | number
+  ): Promise<ContentScanDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      isLoading.value = false;
+      return {
+        id: Number(id),
+        content_type: 'Product',
+        object_id: 1,
+        object_label: 'Product #1',
+        field_name: 'description',
+        status: 'COMPLETED',
+        risk_score: 0,
+        scanner_version: '1.0.0',
+        content_hash: 'abc123hash',
+        scanned_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        findings: []
+      };
+    }
+
+    try {
+      const data = await apiClient.request<ContentScanDetail>(
+        `/api/v1/content-security/scans/${id}/`,
+        {
+          method: 'GET'
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve content scan details.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -2697,6 +2742,7 @@ export const useContentSecurityService = () => {
     updateHtmlTagRule,
     deleteHtmlTagRule,
     getContentScans,
-    runContentScan
+    runContentScan,
+    getContentScanDetails
   };
 };
