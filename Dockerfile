@@ -13,8 +13,8 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
 
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store 
-pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
 
 FROM base AS build
 
