@@ -2119,7 +2119,7 @@ const selectedScanContentType = ref<string>('Product');
 const selectedScanObjectId = ref<string | number>('');
 const scanFieldsInput = ref<string>('');
 
-const availableScanObjects = ref<Array<{ id: string | number; label: string; sublabel?: string }>>([]);
+const availableScanObjects = ref<Array<{ id: string | number; label: string; sublabel?: string; type: string; typeLabel: string }>>([]);
 const isScanObjectsLoading = ref(false);
 const scanObjectSearchQuery = ref('');
 const debouncedScanObjectQuery = refDebounced(scanObjectSearchQuery, 300);
@@ -2142,59 +2142,75 @@ const fetchAvailableScanObjects = async () => {
   
   try {
     const query = debouncedScanObjectQuery.value.trim();
-    const type = selectedScanContentType.value;
-    let list: Array<{ id: string | number; label: string; sublabel?: string }> = [];
+    let list: Array<{ id: string | number; label: string; sublabel?: string; type: string; typeLabel: string }> = [];
 
-    if (type === 'Product') {
-      const res = await scanProductService.getProductsList({ search: query, page_size: 50 });
-      list = (res.results || []).map((p) => ({
+    // Fetch from all supported endpoints concurrently
+    const [productsRes, categoriesRes, brandsRes, blogsRes] = await Promise.allSettled([
+      scanProductService.getProductsList({ search: query, page_size: 10 }),
+      scanCategoryService.getCategoriesList({ search: query, page_size: 10 }),
+      scanBrandService.getBrandsList({ search: query }),
+      scanBlogService.getPosts({ query })
+    ]);
+
+    if (productsRes.status === 'fulfilled') {
+      list.push(...(productsRes.value.results || []).map(p => ({
         id: p.id,
         label: p.name || (p as any).title || `Product #${p.id}`,
-        sublabel: p.slug ? `slug: ${p.slug}` : `ID: ${p.id}`
-      }));
-    } else if (type === 'Category') {
-      const res = await scanCategoryService.getCategoriesList({ search: query, page_size: 50 });
-      list = (res.results || []).map((c) => ({
+        sublabel: p.slug ? `slug: ${p.slug}` : `ID: ${p.id}`,
+        type: 'Product',
+        typeLabel: 'Product'
+      })));
+    }
+    
+    if (categoriesRes.status === 'fulfilled') {
+      list.push(...(categoriesRes.value.results || []).map(c => ({
         id: c.id,
         label: c.name || `Category #${c.id}`,
-        sublabel: c.slug ? `slug: ${c.slug}` : `ID: ${c.id}`
-      }));
-    } else if (type === 'Brand') {
-      const res = await scanBrandService.getBrandsList({ search: query });
-      list = (res || []).map((b) => ({
+        sublabel: c.slug ? `slug: ${c.slug}` : `ID: ${c.id}`,
+        type: 'Category',
+        typeLabel: 'Category'
+      })));
+    }
+
+    if (brandsRes.status === 'fulfilled') {
+      const bData = (brandsRes.value as any).value || brandsRes.value || [];
+      const brandList = Array.isArray(bData) ? bData : (bData.results || []);
+      list.push(...brandList.map((b: any) => ({
         id: b.id,
         label: b.name || `Brand #${b.id}`,
-        sublabel: b.slug ? `slug: ${b.slug}` : `ID: ${b.id}`
-      }));
-    } else if (type === 'Blog') {
-      const res = scanBlogService.getPosts({ query });
-      list = (res || []).map((p) => ({
+        sublabel: b.slug ? `slug: ${b.slug}` : `ID: ${b.id}`,
+        type: 'Brand',
+        typeLabel: 'Brand'
+      })));
+    }
+
+    if (blogsRes.status === 'fulfilled') {
+      const pData = (blogsRes.value as any).value || blogsRes.value || [];
+      const postList = Array.isArray(pData) ? pData : (pData.results || []);
+      list.push(...postList.map((p: any) => ({
         id: p.id,
         label: p.title || `Post #${p.id}`,
-        sublabel: p.slug ? `slug: ${p.slug}` : `ID: ${p.id}`
-      }));
+        sublabel: p.slug ? `slug: ${p.slug}` : `ID: ${p.id}`,
+        type: 'Blog',
+        typeLabel: 'Blog Post'
+      })));
     }
 
     availableScanObjects.value = list;
 
-    if (list.length > 0 && list[0]) {
-      const currentValid = list.some((item) => String(item.id) === String(selectedScanObjectId.value));
-      if (!currentValid) {
-        selectedScanObjectId.value = list[0].id;
-      }
-    } else {
-      selectedScanObjectId.value = '';
+    // Do not auto-select to avoid overwriting user selection when searching
+    if (list.length > 0 && (!selectedScanObjectId.value || !list.some(item => String(item.id) === String(selectedScanObjectId.value) && item.type === selectedScanContentType.value))) {
+      // We no longer auto-select the first item because it can be jarring
     }
   } catch (err) {
     console.error('Failed to fetch scannable objects:', err);
     availableScanObjects.value = [];
-    selectedScanObjectId.value = '';
   } finally {
     isScanObjectsLoading.value = false;
   }
 };
 
-watch([selectedScanContentType, debouncedScanObjectQuery, scanMode], ([newType, newQuery, newMode]) => {
+watch([debouncedScanObjectQuery, scanMode], ([newQuery, newMode]) => {
   if (newMode === 'specific') {
     fetchAvailableScanObjects();
   }
@@ -11173,23 +11189,11 @@ const getSeverityBadge = (severity: string) => {
 
         <!-- Mode 1: Specific Item Inputs -->
         <template v-if="scanMode === 'specific'">
-          <div class="space-y-1">
-            <label class="text-xs font-bold text-muted-foreground uppercase">Content Type</label>
-            <select
-              v-model="selectedScanContentType"
-              class="w-full h-9 px-3 rounded-lg border border-input bg-background text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
-            >
-              <option v-for="type in supportedContentTypes" :key="type.value" :value="type.value">
-                {{ type.label }}
-              </option>
-            </select>
-          </div>
-
           <div class="space-y-1.5">
             <div class="flex items-center justify-between">
-              <label class="text-xs font-bold text-muted-foreground uppercase">Target {{ selectedScanContentType }}</label>
+              <label class="text-xs font-bold text-muted-foreground uppercase">Target Item</label>
               <span v-if="isScanObjectsLoading" class="text-[11px] text-muted-foreground flex items-center gap-1">
-                <Loader2 class="w-3 h-3 animate-spin" /> Loading items...
+                <Loader2 class="w-3 h-3 animate-spin" /> Searching...
               </span>
             </div>
 
@@ -11198,25 +11202,38 @@ const getSeverityBadge = (severity: string) => {
               <input
                 v-model="scanObjectSearchQuery"
                 type="text"
-                class="w-full h-8 pl-8 pr-3 rounded-md border border-input text-xs bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                :placeholder="`Filter ${selectedScanContentType}s...`"
+                class="w-full h-9 pl-8 pr-3 rounded-md border border-input text-xs bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                placeholder="Search products, categories, brands, or posts..."
               />
             </div>
 
-            <select
-              v-model="selectedScanObjectId"
-              :disabled="isScanObjectsLoading || availableScanObjects.length === 0"
-              class="w-full h-9 px-3 rounded-lg border border-input bg-background text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer disabled:opacity-50"
-            >
-              <option v-if="availableScanObjects.length === 0 && !isScanObjectsLoading" value="" disabled>
-                No {{ selectedScanContentType }}s found
-              </option>
-              <option v-for="obj in availableScanObjects" :key="obj.id" :value="obj.id">
-                {{ obj.label }} (ID: {{ obj.id }})
-              </option>
-            </select>
+            <div class="border border-input rounded-lg overflow-hidden bg-background relative flex flex-col">
+              <div v-if="isScanObjectsLoading && availableScanObjects.length === 0" class="p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                <Loader2 class="w-4 h-4 animate-spin" /> Searching...
+              </div>
+              <div v-else-if="availableScanObjects.length === 0" class="p-4 text-center text-xs text-muted-foreground">
+                No items found. Try a different search term.
+              </div>
+              <ul v-else class="max-h-48 overflow-y-auto">
+                <li
+                  v-for="obj in availableScanObjects"
+                  :key="`${obj.type}-${obj.id}`"
+                  @click="selectedScanObjectId = obj.id; selectedScanContentType = obj.type"
+                  :class="cn(
+                    'px-3 py-2 text-xs flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors border-b border-border/50 last:border-b-0',
+                    String(selectedScanObjectId) === String(obj.id) && selectedScanContentType === obj.type ? 'bg-primary/5 border-l-2 border-l-primary text-primary' : 'border-l-2 border-l-transparent'
+                  )"
+                >
+                  <div class="flex flex-col gap-0.5 max-w-[70%]">
+                    <span class="font-medium truncate">{{ obj.label }}</span>
+                    <span class="text-[10px] text-muted-foreground truncate">{{ obj.sublabel }}</span>
+                  </div>
+                  <UiBadge variant="secondary" class="text-[10px] whitespace-nowrap">{{ obj.typeLabel }}</UiBadge>
+                </li>
+              </ul>
+            </div>
             <p v-if="selectedScanObjectId" class="text-[11px] text-muted-foreground font-mono">
-              Selected Object ID: <strong class="text-foreground">{{ selectedScanObjectId }}</strong>
+              Selected: <strong class="text-foreground">{{ selectedScanContentType }} #{{ selectedScanObjectId }}</strong>
             </p>
           </div>
 
