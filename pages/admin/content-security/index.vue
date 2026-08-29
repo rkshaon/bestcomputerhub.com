@@ -102,7 +102,8 @@ import type {
   ContentScanFindingReviewRequest,
   ContentScanFindingResolveRequest,
   ContentScanFindingListItem,
-  ContentScanFindingsQueryParams
+  ContentScanFindingsQueryParams,
+  DetectionRulesSummary
 } from '@/types';
 
 definePageMeta({
@@ -209,6 +210,43 @@ const canResolveFinding = computed(() => hasPermission('content_security.resolve
 const contentSecurityService = useContentSecurityService();
 const isKeywordsLoading = computed(() => contentSecurityService.isLoading.value);
 const keywordsError = computed(() => contentSecurityService.error.value);
+
+// Detection Rules Summary State
+const detectionRulesSummary = ref<DetectionRulesSummary>({
+  keyword_rules: 0,
+  domain_rules: 0,
+  hidden_content_rules: 0,
+  obfuscation_rules: 0,
+  redirect_rules: 0,
+  html_attribute_rules: 0,
+  html_tag_rules: 0,
+  total: 0
+});
+const isDetectionRulesSummaryLoading = ref(false);
+
+const fetchDetectionRulesSummary = async () => {
+  if (
+    !canViewKeywords.value &&
+    !canViewDomains.value &&
+    !canViewHiddenContent.value &&
+    !canViewObfuscation.value &&
+    !canViewRedirects.value &&
+    !canViewHtmlAttributeRules.value &&
+    !canViewHtmlTagRules.value
+  ) {
+    return;
+  }
+
+  isDetectionRulesSummaryLoading.value = true;
+  try {
+    const data = await contentSecurityService.getDetectionRulesSummary();
+    detectionRulesSummary.value = data;
+  } catch (err: any) {
+    // Handled in service
+  } finally {
+    isDetectionRulesSummaryLoading.value = false;
+  }
+};
 
 // Keyword Rules Query/Data States
 const keywordSearchQuery = ref('');
@@ -1049,6 +1087,7 @@ const updateRouteQuery = () => {
 // Initial Sync
 onMounted(() => {
   syncFromRoute();
+  fetchDetectionRulesSummary();
   if (canViewKeywords.value) {
     fetchKeywordRules();
   }
@@ -1300,6 +1339,7 @@ watch(htmlTagPage, () => {
 watch([mainTab, rulesSubTab], () => {
   updateRouteQuery();
   if (mainTab.value === 'rules') {
+    fetchDetectionRulesSummary();
     if (rulesSubTab.value === 'keywords') {
       fetchKeywordRules();
     } else if (rulesSubTab.value === 'domains') {
@@ -1642,25 +1682,25 @@ const rules = ref<DetectionRule[]>([
 const visibleSubTabs = computed(() => {
   const tabs = [];
   if (canViewKeywords.value) {
-    tabs.push({ id: 'keywords', label: 'Keywords', count: keywordRulesCount.value });
+    tabs.push({ id: 'keywords', label: 'Keywords', count: detectionRulesSummary.value.keyword_rules });
   }
   if (canViewDomains.value) {
-    tabs.push({ id: 'domains', label: 'Domains', count: domainRulesCount.value });
+    tabs.push({ id: 'domains', label: 'Domains', count: detectionRulesSummary.value.domain_rules });
   }
   if (canViewHiddenContent.value) {
-    tabs.push({ id: 'hidden_content', label: 'Hidden Content', count: hiddenContentRulesCount.value });
+    tabs.push({ id: 'hidden_content', label: 'Hidden Content', count: detectionRulesSummary.value.hidden_content_rules });
   }
   if (canViewObfuscation.value) {
-    tabs.push({ id: 'obfuscation', label: 'Obfuscation', count: obfuscationRulesCount.value });
+    tabs.push({ id: 'obfuscation', label: 'Obfuscation', count: detectionRulesSummary.value.obfuscation_rules });
   }
   if (canViewRedirects.value) {
-    tabs.push({ id: 'redirects', label: 'Redirect Rules', count: redirectRulesCount.value });
+    tabs.push({ id: 'redirects', label: 'Redirect Rules', count: detectionRulesSummary.value.redirect_rules });
   }
   if (canViewHtmlAttributeRules.value) {
-    tabs.push({ id: 'attributes', label: 'Dangerous Attributes', count: htmlAttributeRulesCount.value });
+    tabs.push({ id: 'attributes', label: 'Dangerous Attributes', count: detectionRulesSummary.value.html_attribute_rules });
   }
   if (canViewHtmlTagRules.value) {
-    tabs.push({ id: 'html', label: 'Dangerous HTML', count: htmlTagRulesCount.value });
+    tabs.push({ id: 'html', label: 'Dangerous HTML', count: detectionRulesSummary.value.html_tag_rules });
   }
   return tabs;
 });
@@ -2564,6 +2604,7 @@ const executeDeleteHiddenContentRule = async () => {
     toastSuccess(`Hidden content rule "${deletingHiddenContentRule.value?.pattern || `#${targetId}`}" deleted successfully.`);
     await closeHiddenContentDeleteModal();
     await fetchHiddenContentRules();
+    await fetchDetectionRulesSummary();
 
     if (hiddenContentRulesData.value.length === 0 && hiddenContentPage.value > 1) {
       hiddenContentPage.value = Math.max(1, hiddenContentPage.value - 1);
@@ -2638,6 +2679,7 @@ const submitUpdateHiddenContentRule = async () => {
     toastSuccess('Hidden content rule updated successfully.');
     await closeHiddenContentEditModal();
     await fetchHiddenContentRules();
+    await fetchDetectionRulesSummary();
 
     if (selectedHiddenContentRule.value && String(selectedHiddenContentRule.value.id) === String(updated.id)) {
       selectedHiddenContentRule.value = updated;
@@ -2855,6 +2897,7 @@ const submitUpdateObfuscationRule = async () => {
     toastSuccess('Obfuscation rule updated successfully.');
     await closeObfuscationEditModal();
     await fetchObfuscationRules();
+    await fetchDetectionRulesSummary();
 
     if (selectedObfuscationRule.value && String(selectedObfuscationRule.value.id) === String(updated.id)) {
       selectedObfuscationRule.value = updated;
@@ -2903,6 +2946,7 @@ const executeDeleteObfuscationRule = async () => {
     toastSuccess(`Obfuscation rule "${deletingObfuscationRule.value?.pattern || `#${targetId}`}" deleted successfully.`);
     await closeObfuscationDeleteModal();
     await fetchObfuscationRules();
+    await fetchDetectionRulesSummary();
 
     if (obfuscationRulesData.value.length === 0 && obfuscationPage.value > 1) {
       obfuscationPage.value = Math.max(1, obfuscationPage.value - 1);
@@ -3121,6 +3165,7 @@ const submitUpdateRedirectRule = async () => {
     toastSuccess('Redirect rule updated successfully.');
     await closeRedirectEditModal();
     await fetchRedirectRules();
+    await fetchDetectionRulesSummary();
 
     if (selectedRedirectRule.value && String(selectedRedirectRule.value.id) === String(updated.id)) {
       selectedRedirectRule.value = updated;
@@ -3169,6 +3214,7 @@ const executeDeleteRedirectRule = async () => {
     toastSuccess(`Redirect rule "${deletingRedirectRule.value?.pattern || `#${targetId}`}" deleted successfully.`);
     await closeRedirectDeleteModal();
     await fetchRedirectRules();
+    await fetchDetectionRulesSummary();
 
     if (redirectRulesData.value.length === 0 && redirectPage.value > 1) {
       redirectPage.value = Math.max(1, redirectPage.value - 1);
@@ -3376,6 +3422,7 @@ const submitUpdateHtmlAttributeRule = async () => {
     toastSuccess('HTML attribute rule updated successfully.');
     await closeHtmlAttributeEditModal();
     await fetchHtmlAttributeRules();
+    await fetchDetectionRulesSummary();
     if (selectedHtmlAttributeRule.value && String(selectedHtmlAttributeRule.value.id) === String(updated.id)) {
       selectedHtmlAttributeRule.value = updated;
     }
@@ -3420,6 +3467,7 @@ const executeDeleteHtmlAttributeRule = async () => {
     toastSuccess(`HTML attribute rule "${deletingHtmlAttributeRule.value?.attribute || `#${targetId}`}" deleted successfully.`);
     await closeHtmlAttributeDeleteModal();
     await fetchHtmlAttributeRules();
+    await fetchDetectionRulesSummary();
 
     if (htmlAttributeRulesData.value.length === 0 && htmlAttributePage.value > 1) {
       htmlAttributePage.value = Math.max(1, htmlAttributePage.value - 1);
@@ -3636,6 +3684,7 @@ const submitUpdateHtmlTagRule = async () => {
     toastSuccess('HTML tag rule updated successfully.');
     await closeHtmlTagEditModal();
     await fetchHtmlTagRules();
+    await fetchDetectionRulesSummary();
     if (selectedHtmlTagRule.value && String(selectedHtmlTagRule.value.id) === String(updated.id)) {
       selectedHtmlTagRule.value = updated;
     }
@@ -3682,6 +3731,7 @@ const executeDeleteHtmlTagRule = async () => {
     toastSuccess(`HTML tag rule "${deletingHtmlTagRule.value?.tag || `#${targetId}`}" deleted successfully.`);
     await closeHtmlTagDeleteModal();
     await fetchHtmlTagRules();
+    await fetchDetectionRulesSummary();
 
     if (htmlTagRulesData.value.length === 0 && htmlTagPage.value > 1) {
       htmlTagPage.value = Math.max(1, htmlTagPage.value - 1);
@@ -3743,6 +3793,7 @@ const executeDeleteDomainRule = async () => {
     toastSuccess(`Domain rule "${deletingDomainRule.value?.domain || `#${targetId}`}" deleted successfully.`);
     await closeDomainDeleteModal();
     await fetchDomainRules();
+    await fetchDetectionRulesSummary();
 
     if (domainRulesData.value.length === 0 && domainPage.value > 1) {
       domainPage.value = Math.max(1, domainPage.value - 1);
@@ -3819,6 +3870,7 @@ const submitUpdateDomainRule = async () => {
     toastSuccess('Domain rule updated successfully.');
     await closeDomainEditModal();
     await fetchDomainRules();
+    await fetchDetectionRulesSummary();
 
     if (selectedDomainRule.value && String(selectedDomainRule.value.id) === String(updated.id)) {
       selectedDomainRule.value = updated;
@@ -3879,6 +3931,7 @@ const executeDeleteKeywordRule = async () => {
     toastSuccess(`Keyword rule "${deletingKeywordRule.value?.keyword || `#${targetId}`}" deleted successfully.`);
     await closeKeywordDeleteModal();
     await fetchKeywordRules();
+    await fetchDetectionRulesSummary();
 
     if (keywordRulesData.value.length === 0 && keywordPage.value > 1) {
       keywordPage.value = Math.max(1, keywordPage.value - 1);
@@ -3955,6 +4008,7 @@ const submitUpdateKeywordRule = async () => {
     toastSuccess('Keyword rule updated successfully.');
     await closeKeywordEditModal();
     await fetchKeywordRules();
+    await fetchDetectionRulesSummary();
 
     if (selectedKeywordRule.value && String(selectedKeywordRule.value.id) === String(updated.id)) {
       selectedKeywordRule.value = updated;
@@ -4250,6 +4304,7 @@ const saveRule = async () => {
       toastSuccess('Keyword rule created successfully.');
       isRuleModalOpen.value = false;
       await fetchKeywordRules();
+      await fetchDetectionRulesSummary();
     } catch (err: any) {
       toastError(err.message || 'Failed to create keyword rule.');
     } finally {
@@ -4288,6 +4343,7 @@ const saveRule = async () => {
       toastSuccess('Domain rule created successfully.');
       isRuleModalOpen.value = false;
       await fetchDomainRules();
+      await fetchDetectionRulesSummary();
     } catch (err: any) {
       toastError(err.message || 'Failed to create domain rule.');
     } finally {
@@ -4325,6 +4381,7 @@ const saveRule = async () => {
       toastSuccess('Hidden content rule created successfully.');
       isRuleModalOpen.value = false;
       await fetchHiddenContentRules();
+      await fetchDetectionRulesSummary();
     } catch (err: any) {
       toastError(err.message || 'Failed to create hidden content rule.');
     } finally {
@@ -4362,6 +4419,7 @@ const saveRule = async () => {
       toastSuccess('Obfuscation rule created successfully.');
       isRuleModalOpen.value = false;
       await fetchObfuscationRules();
+      await fetchDetectionRulesSummary();
     } catch (err: any) {
       toastError(err.message || 'Failed to create obfuscation rule.');
     } finally {
@@ -4399,6 +4457,7 @@ const saveRule = async () => {
       toastSuccess('Redirect rule created successfully.');
       isRuleModalOpen.value = false;
       await fetchRedirectRules();
+      await fetchDetectionRulesSummary();
     } catch (err: any) {
       toastError(err.message || 'Failed to create redirect rule.');
     } finally {
@@ -4436,6 +4495,7 @@ const saveRule = async () => {
       toastSuccess('HTML attribute rule created successfully.');
       isRuleModalOpen.value = false;
       await fetchHtmlAttributeRules();
+      await fetchDetectionRulesSummary();
     } catch (err: any) {
       toastError(err.message || 'Failed to create HTML attribute rule.');
     } finally {
@@ -4473,6 +4533,7 @@ const saveRule = async () => {
       toastSuccess('HTML tag rule created successfully.');
       isRuleModalOpen.value = false;
       await fetchHtmlTagRules();
+      await fetchDetectionRulesSummary();
     } catch (err: any) {
       toastError(err.message || 'Failed to create HTML tag rule.');
     } finally {
@@ -4712,7 +4773,7 @@ const getSeverityBadge = (severity: string) => {
         <Code2 class="w-4 h-4" />
         <span>Detection Rules</span>
         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground border border-border ml-1">
-          {{ rules.length }}
+          {{ detectionRulesSummary.total }}
         </span>
       </button>
     </div>

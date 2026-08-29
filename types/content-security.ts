@@ -675,5 +675,16 @@ export interface ContentScanRunResult {
   scans: ContentScan[];
 }
 
+export interface DetectionRulesSummary {
+  keyword_rules: number;
+  domain_rules: number;
+  hidden_content_rules: number;
+  obfuscation_rules: number;
+  redirect_rules: number;
+  html_attribute_rules: number;
+  html_tag_rules: number;
+  total: number;
+}
+
 
 

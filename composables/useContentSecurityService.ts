@@ -57,7 +57,8 @@ import type {
   ContentScanFindingResolveRequest,
   ContentScanFindingListItem,
   ContentScanFindingsQueryParams,
-  PaginatedContentScanFindings
+  PaginatedContentScanFindings,
+  DetectionRulesSummary
 } from '@/types';
 
 export const useContentSecurityService = () => {
@@ -3175,6 +3176,46 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const getFallbackDetectionRulesSummary = (): DetectionRulesSummary => {
+    return {
+      keyword_rules: 4,
+      domain_rules: 4,
+      hidden_content_rules: 3,
+      obfuscation_rules: 2,
+      redirect_rules: 3,
+      html_attribute_rules: 5,
+      html_tag_rules: 5,
+      total: 26
+    };
+  };
+
+  const getDetectionRulesSummary = async (): Promise<DetectionRulesSummary> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      isLoading.value = false;
+      return getFallbackDetectionRulesSummary();
+    }
+
+    try {
+      const data = await apiClient.request<DetectionRulesSummary>(
+        '/api/v1/content-security/detection-rules/summary/',
+        {
+          method: 'GET'
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to fetch detection rules summary.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -3219,6 +3260,7 @@ export const useContentSecurityService = () => {
     getContentScanFindings,
     getContentScanFindingDetails,
     reviewContentScanFinding,
-    resolveContentScanFinding
+    resolveContentScanFinding,
+    getDetectionRulesSummary
   };
 };
