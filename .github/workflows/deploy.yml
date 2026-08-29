@@ -59,7 +59,7 @@ jobs:
     # - Build and push the Docker image to GHCR
     # ---------------------------------------------------------
 
-    docker-release:
+  docker-release:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
     steps:
@@ -105,7 +105,7 @@ jobs:
     # Deployment waits for BOTH lint and Docker build/push.
     # ---------------------------------------------------------
 
-    deploy:
+  deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
 
