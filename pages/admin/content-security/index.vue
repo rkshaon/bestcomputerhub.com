@@ -3433,9 +3433,39 @@ const executeDeleteHtmlAttributeRule = async () => {
   }
 };
 
-// HTML Tag Rule Details Modal State
+// HTML Tag Rule Details & Edit & Delete Modal State
 const isHtmlTagDetailsLoading = ref(false);
 const selectedHtmlTagRule = ref<HtmlTagRuleDetail | null>(null);
+
+// HTML Tag Rule Delete Modal State
+const deletingHtmlTagRule = ref<{ id: number | string; tag: string } | null>(null);
+const isDeletingHtmlTagRule = ref(false);
+
+// HTML Tag Rule Edit Modal State
+const editingHtmlTagRuleId = ref<number | string | null>(null);
+const isSubmittingHtmlTagEdit = ref(false);
+
+const htmlTagEditForm = ref<{
+  tag: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+}>({
+  tag: '',
+  category: 'DANGEROUS_TAGS',
+  severity: 'CRITICAL',
+  is_enabled: true,
+  description: ''
+});
+
+const originalHtmlTagRuleData = ref<{
+  tag: string;
+  category: KeywordCategory;
+  severity: KeywordSeverity;
+  is_enabled: boolean;
+  description: string;
+} | null>(null);
 
 const htmlTagModalState = useAdminModalState<HtmlTagRuleDetail>({
   getItems: async (id) => {
@@ -3485,11 +3515,24 @@ watch(() => htmlTagModalState.activeEntity.value, (newEntity) => {
         description: newEntity.description || ''
       };
     }
+    if (htmlTagModalState.isDelete.value) {
+      if (!canDeleteHtmlTagRule.value) {
+        toastError('You do not have permission to delete HTML tag rules.');
+        htmlTagModalState.closeModal({ replace: true });
+        return;
+      }
+      if (!deletingHtmlTagRule.value) {
+        deletingHtmlTagRule.value = {
+          id: newEntity.id,
+          tag: newEntity.tag || newEntity.pattern || `Rule #${newEntity.id}`
+        };
+      }
+    }
   }
 }, { immediate: true });
 
 watch(() => htmlTagModalState.isView.value, (isView) => {
-  if (!isView && !htmlTagModalState.isEdit.value) {
+  if (!isView && !htmlTagModalState.isEdit.value && !htmlTagModalState.isDelete.value) {
     selectedHtmlTagRule.value = null;
   }
 }, { immediate: true });
@@ -3504,38 +3547,11 @@ watch(() => htmlTagModalState.isEdit.value, (isEdit) => {
 watch(() => htmlTagModalState.isDelete.value, (isDelete) => {
   if (!isDelete) {
     deletingHtmlTagRule.value = null;
+  } else if (!canDeleteHtmlTagRule.value) {
+    toastError('You do not have permission to delete HTML tag rules.');
+    htmlTagModalState.closeModal({ replace: true });
   }
 }, { immediate: true });
-
-// HTML Tag Rule Delete Modal State
-const deletingHtmlTagRule = ref<{ id: number | string; tag: string } | null>(null);
-const isDeletingHtmlTagRule = ref(false);
-
-// HTML Tag Rule Edit Modal State
-const editingHtmlTagRuleId = ref<number | string | null>(null);
-const isSubmittingHtmlTagEdit = ref(false);
-
-const htmlTagEditForm = ref<{
-  tag: string;
-  category: KeywordCategory;
-  severity: KeywordSeverity;
-  is_enabled: boolean;
-  description: string;
-}>({
-  tag: '',
-  category: 'DANGEROUS_TAGS',
-  severity: 'CRITICAL',
-  is_enabled: true,
-  description: ''
-});
-
-const originalHtmlTagRuleData = ref<{
-  tag: string;
-  category: KeywordCategory;
-  severity: KeywordSeverity;
-  is_enabled: boolean;
-  description: string;
-} | null>(null);
 
 const openHtmlTagViewModal = (id: number | string) => {
   if (!canViewHtmlTagRules.value) {
