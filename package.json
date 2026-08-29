@@ -7,6 +7,11 @@
     "node": ">=24.0.0",
     "pnpm": ">=11.25.0"
   },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.26"
+    }
+  },
   "type": "module",
   "scripts": {
     "build": "nuxt build",
@@ -36,11 +41,10 @@
     "motion": "^12.39.0",
     "nuxt": "^4.4.7",
     "pinia": "^3.0.4",
-    "postcss": "^8.5.23",
+    "postcss": "^8.5.26",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "tailwind-merge": "^3.6.0",
-    "vite": "^6.4.2",
     "vue": "^3.5.34",
     "vue-sonner": "^2.0.9"
   },
