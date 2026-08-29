@@ -1,5 +1,5 @@
 {
-  "name": "tech-core-enterprise",
+  "name": "bestcomputerhub.com",
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@11.25.0",
@@ -34,7 +34,7 @@
     "lucide-react": "^0.546.0",
     "lucide-vue-next": "^1.0.0",
     "motion": "^12.39.0",
-    "nuxt": "^4.4.6",
+    "nuxt": "^4.4.7",
     "pinia": "^3.0.4",
     "postcss": "^8.5.14",
     "react": "^19.0.1",
