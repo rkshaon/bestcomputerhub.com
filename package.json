@@ -23,7 +23,6 @@
     "type-check": "nuxt typecheck"
   },
   "dependencies": {
-    "@google/genai": "^1.29.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "@pinia/nuxt": "^0.11.3",
     "@tailwindcss/postcss": "^4.3.0",
