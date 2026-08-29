@@ -35,6 +35,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { cn } from '@/utils';
 import { markRaw } from 'vue';
 
+const route = useRoute();
 const authStore = useAuthStore();
 const uiStore = useUIStore();
 const { canViewModule } = useAdminPermissions();
@@ -145,7 +146,7 @@ const breadcrumbs = computed(() => {
             :to="item.href"
             :class="cn(
               'group flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm',
-              $route.path === item.href 
+              route.path === item.href 
                 ? 'bg-primary/10 text-primary font-bold' 
                 : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
             )"
@@ -165,7 +166,7 @@ const breadcrumbs = computed(() => {
             :to="item.href"
             :class="cn(
               'group flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm',
-              $route.path === item.href 
+              route.path === item.href 
                 ? 'bg-primary/10 text-primary font-bold' 
                 : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
             )"
@@ -356,7 +357,7 @@ const breadcrumbs = computed(() => {
               @click="isMobileMenuOpen = false"
               :class="cn(
                 'flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-medium text-sm',
-                $route.path === item.href 
+                route.path === item.href 
                   ? 'bg-primary/10 text-primary' 
                   : 'text-muted-foreground hover:bg-accent'
               )"

@@ -1,5 +1,5 @@
 {
-  "name": "TechCore Enterprise",
+  "name": "Best Computer Hub",
   "description": "High-performance enterprise hardware marketplace built with Nuxt 3, Tailwind CSS, and Lucide Icons.",
   "requestFramePermissions": [
     "camera",
