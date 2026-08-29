@@ -571,5 +571,20 @@ export interface PaginatedContentScans {
   previous?: string | null;
 }
 
+export interface ContentScanRunRequest {
+  content_type: string;
+  object_id: number;
+  field_names?: string[];
+}
+
+export interface ContentScanRunResult {
+  scanned_objects: any;
+  scanned_fields: any;
+  flagged_fields: any;
+  total_findings: number;
+  status_counts: any;
+  scans: ContentScan[];
+}
+
 
 

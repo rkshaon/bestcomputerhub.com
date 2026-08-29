@@ -47,7 +47,9 @@ import type {
   PaginatedHtmlTagRules,
   ContentScan,
   ContentScansQueryParams,
-  PaginatedContentScans
+  PaginatedContentScans,
+  ContentScanRunRequest,
+  ContentScanRunResult
 } from '@/types';
 
 export const useContentSecurityService = () => {
@@ -2619,6 +2621,43 @@ export const useContentSecurityService = () => {
     }
   };
 
+  const runContentScan = async (
+    payload: ContentScanRunRequest
+  ): Promise<ContentScanRunResult> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      isLoading.value = false;
+      return {
+        scanned_objects: {},
+        scanned_fields: {},
+        flagged_fields: {},
+        total_findings: 0,
+        status_counts: {},
+        scans: []
+      };
+    }
+
+    try {
+      const data = await apiClient.request<ContentScanRunResult>(
+        '/api/v1/content-security/scans/run/',
+        {
+          method: 'POST',
+          body: payload
+        }
+      );
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to run content scan.');
+      errorMsg.value = msg;
+      isLoading.value = false;
+      throw new Error(msg);
+    }
+  };
+
   return {
     isLoading,
     error: errorMsg,
@@ -2657,6 +2696,7 @@ export const useContentSecurityService = () => {
     getHtmlTagRuleDetails,
     updateHtmlTagRule,
     deleteHtmlTagRule,
-    getContentScans
+    getContentScans,
+    runContentScan
   };
 };

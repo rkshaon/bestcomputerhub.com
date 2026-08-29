@@ -1166,6 +1166,7 @@ const formatDate = (dateStr?: string | null): string => {
 
 // Scan State
 const isScanning = ref(false);
+const isRunScanModalOpen = ref(false);
 const scanProgress = ref(0);
 const scanStepText = ref('');
 const lastScanTimestamp = ref('14 minutes ago');
@@ -1641,10 +1642,38 @@ const rescanFinding = (finding: SecurityFinding) => {
 // Mock Scan Action
 // ==========================================
 const runFullScan = () => {
-  if (isScanning.value) return;
-  isScanning.value = true;
-  scanProgress.value = 0;
-  scanStepText.value = 'Initializing payload parser and rule registry...';
+  isRunScanModalOpen.value = true;
+};
+
+const isSubmittingScanRun = ref(false);
+const submitScanRun = async () => {
+  if (isSubmittingScanRun.value) return;
+  
+  if (!scanRunForm.value.content_type || !scanRunForm.value.object_id) {
+    return;
+  }
+
+  isSubmittingScanRun.value = true;
+  
+  try {
+    const payload: ContentScanRunRequest = {
+      content_type: scanRunForm.value.content_type,
+      object_id: Number(scanRunForm.value.object_id),
+    };
+    
+    if (scanRunForm.value.field_names) {
+      payload.field_names = scanRunForm.value.field_names.split(',').map(f => f.trim()).filter(f => f !== '');
+      if (payload.field_names.length === 0) delete payload.field_names;
+    }
+    
+    await contentSecurityService.runContentScan(payload);
+    isRunScanModalOpen.value = false;
+    fetchContentScans();
+  } catch (err: any) {
+  } finally {
+    isSubmittingScanRun.value = false;
+  }
+};
 
   const steps = [
     { progress: 15, text: 'Scanning 4,120 Product titles, descriptions & specification matrices...' },
