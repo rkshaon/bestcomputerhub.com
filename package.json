@@ -2,7 +2,11 @@
   "name": "tech-core-enterprise",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11.25.0"
+  },
   "type": "module",
   "scripts": {
     "build": "nuxt build",
