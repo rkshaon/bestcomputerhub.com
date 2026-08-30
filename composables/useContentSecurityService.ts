@@ -2650,11 +2650,16 @@ export const useContentSecurityService = () => {
     }
 
     try {
+      const formattedPayload: ContentScanRunRequest = {
+        ...payload,
+        ...(payload.content_type ? { content_type: payload.content_type.trim().toUpperCase() } : {})
+      };
+
       const data = await apiClient.request<ContentScanRunResult>(
         '/api/v1/content-security/scans/',
         {
           method: 'POST',
-          body: payload
+          body: formattedPayload
         }
       );
       isLoading.value = false;

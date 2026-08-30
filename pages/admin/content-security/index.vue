@@ -2241,7 +2241,7 @@ const submitScanRun = async () => {
 
     payload = {
       scan_type: 'OBJECT',
-      content_type: selectedScanContentType.value,
+      content_type: selectedScanContentType.value.trim().toUpperCase(),
       object_id: Number(selectedScanObjectId.value) || selectedScanObjectId.value
     };
 
@@ -2262,7 +2262,7 @@ const submitScanRun = async () => {
 
     payload = {
       scan_type: 'CONTENT_TYPE',
-      content_type: selectedScanContentType.value
+      content_type: selectedScanContentType.value.trim().toUpperCase()
     };
   } else if (scanMode.value === 'everything') {
     payload = {
