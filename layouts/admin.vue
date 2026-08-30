@@ -27,7 +27,8 @@ import {
   Monitor,
   Boxes,
   ExternalLink,
-  Globe
+  Globe,
+  Terminal
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
@@ -68,12 +69,13 @@ const navigation = [
 ];
 
 const secondaryNavigation = [
-  { name: 'Profile', iconKey: 'UserIcon', href: '/admin/profile' },
-  { name: 'Content Security', iconKey: 'ShieldAlert', href: '/admin/content-security' },
-  { name: 'Security', iconKey: 'ShieldAlert', href: '/admin/security' },
-  { name: 'SEO & Sitemap', iconKey: 'Globe', href: '/admin/seo' },
-  { name: 'Notifications', iconKey: 'Bell', href: '/admin/notifications' },
-  { name: 'Settings', iconKey: 'Settings', href: '/admin/settings' },
+  { name: 'Profile', iconKey: 'UserIcon', href: '/admin/profile/' },
+  { name: 'Content Security', iconKey: 'ShieldAlert', href: '/admin/content-security/' },
+  { name: 'Security', iconKey: 'ShieldAlert', href: '/admin/security/' },
+  { name: 'Request Logs', iconKey: 'Terminal', href: '/admin/request-logs/' },
+  { name: 'SEO & Sitemap', iconKey: 'Globe', href: '/admin/seo/' },
+  { name: 'Notifications', iconKey: 'Bell', href: '/admin/notifications/' },
+  { name: 'Settings', iconKey: 'Settings', href: '/admin/settings/' },
 ];
 
 const filteredNavigation = computed(() => {
@@ -98,7 +100,8 @@ const iconMap = {
   Bell,
   Settings,
   UserIcon,
-  Globe
+  Globe,
+  Terminal
 };
 
 const toggleSidebar = () => {

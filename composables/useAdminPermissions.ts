@@ -131,6 +131,13 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     iconKey: 'ShieldAlert',
     viewPermission: null
   },
+  'request-logs': {
+    key: 'request-logs',
+    route: '/admin/request-logs',
+    name: 'Request Logs',
+    iconKey: 'Terminal',
+    viewPermission: ['admin.view_logentry', 'view_logentry', 'security.view_security', 'request_log.view_requestlog', 'view_requestlog']
+  },
   notifications: {
     key: 'notifications',
     route: '/admin/notifications',
