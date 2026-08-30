@@ -41,6 +41,7 @@ import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
 import type { Product, Category, UpdateProductPayload } from '@/types';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
+import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 
@@ -513,23 +514,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
     <!-- Breadcrumbs -->
     <div class="bg-muted/30 border-b">
       <div class="container mx-auto px-4 py-3 sm:py-4">
-        <nav class="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium uppercase tracking-widest text-muted-foreground overflow-x-auto whitespace-nowrap custom-submenu-scrollbar" aria-label="Breadcrumb">
-          <NuxtLink to="/" class="hover:text-primary transition-colors shrink-0 flex items-center" aria-label="Home">
-            <Home class="w-3.5 h-3.5 shrink-0" />
-          </NuxtLink>
-
-          <template v-for="bc in categoryBreadcrumbs" :key="bc.url">
-            <ChevronRight class="w-3 h-3 shrink-0" />
-            <NuxtLink :to="bc.url" class="hover:text-primary transition-colors shrink-0">
-              {{ decodeHtmlEntities(bc.name) }}
-            </NuxtLink>
-          </template>
-
-          <ChevronRight class="w-3 h-3 shrink-0" />
-          <span class="text-foreground font-semibold truncate max-w-[160px] sm:max-w-[260px] md:max-w-none">
-            {{ decodeHtmlEntities(product?.name) || slug }}
-          </span>
-        </nav>
+        <UiBreadcrumbs :items="[...categoryBreadcrumbs, { name: product?.name || slug, url: route.path }]" />
       </div>
     </div>
 

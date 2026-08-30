@@ -13,6 +13,7 @@ import { cn } from '@/utils';
 import type { Category, Product } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import CommerceProductCard from '@/components/commerce/ProductCard.vue';
+import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 
 const route = useRoute();
@@ -487,23 +488,7 @@ const resetFilters = () => {
     <div class="bg-card border-b py-12 transition-all duration-300">
       <div class="container mx-auto px-4">
         <!-- Breadcrumbs Navigation -->
-        <nav class="flex items-center gap-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-6 overflow-x-auto whitespace-nowrap py-1">
-          <NuxtLink to="/" class="flex items-center gap-1.5 hover:text-primary transition-colors">
-            <Home class="w-3.5 h-3.5" />
-            Home
-          </NuxtLink>
-          <template v-for="(bc, index) in breadcrumbs" :key="bc.url">
-            <ChevronRight class="w-3.5 h-3.5 shrink-0" />
-            <NuxtLink 
-              v-if="index < breadcrumbs.length - 1" 
-              :to="bc.url" 
-              class="hover:text-primary transition-colors"
-            >
-              {{ decodeHtmlEntities(bc.name) }}
-            </NuxtLink>
-            <span v-else class="text-foreground font-extrabold truncate">{{ decodeHtmlEntities(bc.name) }}</span>
-          </template>
-        </nav>
+        <UiBreadcrumbs class="mb-6" :items="breadcrumbs" />
 
         <!-- Category Title & Info -->
         <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
