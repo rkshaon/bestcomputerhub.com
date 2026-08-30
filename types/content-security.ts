@@ -661,8 +661,9 @@ export interface ContentScanFindingResolveRequest {
 }
 
 export interface ContentScanRunRequest {
-  content_type: string;
-  object_id: number;
+  scan_type: 'OBJECT' | 'CONTENT_TYPE' | 'ALL' | string;
+  content_type?: string;
+  object_id?: number | string;
   field_names?: string[];
 }
 

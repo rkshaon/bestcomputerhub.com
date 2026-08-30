@@ -2231,43 +2231,66 @@ const isSubmittingScanRun = ref(false);
 const submitScanRun = async () => {
   if (isSubmittingScanRun.value) return;
 
+  let payload: ContentScanRunRequest;
+
   if (scanMode.value === 'specific') {
     if (!selectedScanContentType.value || selectedScanObjectId.value === '' || selectedScanObjectId.value === null || selectedScanObjectId.value === undefined) {
       toastError('Please select a valid content type and target object to scan.');
       return;
     }
 
-    isSubmittingScanRun.value = true;
+    payload = {
+      scan_type: 'OBJECT',
+      content_type: selectedScanContentType.value,
+      object_id: Number(selectedScanObjectId.value) || selectedScanObjectId.value
+    };
 
-    try {
-      const payload: ContentScanRunRequest = {
-        content_type: selectedScanContentType.value.trim().toUpperCase(),
-        object_id: Number(selectedScanObjectId.value)
-      };
-
-      if (scanFieldsInput.value.trim()) {
-        const fields = scanFieldsInput.value
-          .split(',')
-          .map((f: string) => f.trim())
-          .filter((f: string) => f !== '');
-        if (fields.length > 0) {
-          payload.field_names = fields;
-        }
+    if (scanFieldsInput.value.trim()) {
+      const fields = scanFieldsInput.value
+        .split(',')
+        .map((f: string) => f.trim())
+        .filter((f: string) => f !== '');
+      if (fields.length > 0) {
+        payload.field_names = fields;
       }
-
-      await contentSecurityService.runContentScan(payload);
-      toastSuccess('Content security scan completed successfully.');
-      isRunScanModalOpen.value = false;
-      fetchContentScans();
-    } catch (err: any) {
-      toastError(err.message || 'Failed to run content scan.');
-    } finally {
-      isSubmittingScanRun.value = false;
     }
   } else if (scanMode.value === 'content_type') {
-    toastError('Scanning an entire content type is not currently supported by the backend.');
+    if (!selectedScanContentType.value) {
+      toastError('Please select a content type to scan.');
+      return;
+    }
+
+    payload = {
+      scan_type: 'CONTENT_TYPE',
+      content_type: selectedScanContentType.value
+    };
   } else if (scanMode.value === 'everything') {
-    toastError('Full system scanning ("Everything") is not currently supported by the backend.');
+    payload = {
+      scan_type: 'ALL'
+    };
+  } else {
+    return;
+  }
+
+  isSubmittingScanRun.value = true;
+
+  try {
+    await contentSecurityService.runContentScan(payload);
+    const successMsg = scanMode.value === 'everything'
+      ? 'System-wide content security scan completed successfully.'
+      : scanMode.value === 'content_type'
+        ? `Content security scan for ${selectedScanContentType.value} completed successfully.`
+        : 'Content security scan completed successfully.';
+    toastSuccess(successMsg);
+    isRunScanModalOpen.value = false;
+    await fetchContentScans();
+    if (canViewFindings.value) {
+      await fetchFindings();
+    }
+  } catch (err: any) {
+    toastError(err.message || 'Failed to run content scan.');
+  } finally {
+    isSubmittingScanRun.value = false;
   }
 };
 
@@ -11263,16 +11286,6 @@ const getSeverityBadge = (severity: string) => {
             </select>
           </div>
 
-          <div class="space-y-1">
-            <label class="text-xs font-bold text-muted-foreground uppercase">Fields to Scan (Optional)</label>
-            <input
-              v-model="scanFieldsInput"
-              type="text"
-              class="w-full h-9 px-3 rounded-lg border border-input text-xs bg-background"
-              placeholder="e.g., title, description"
-            />
-          </div>
-
           <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400">
             <Info class="w-4 h-4 shrink-0 mt-0.5" />
             <span>Targeting all items of content type <strong>{{ selectedScanContentType }}</strong> across the store catalog.</span>
@@ -11287,7 +11300,7 @@ const getSeverityBadge = (severity: string) => {
               <span>Full System Content Security Inspection</span>
             </div>
             <p class="text-muted-foreground leading-relaxed">
-              Targeting all supported content types (Products, Categories, Brands, and Blog Posts) across the entire application workspace.
+              Targeting all supported content types across the system.
             </p>
           </div>
         </template>
