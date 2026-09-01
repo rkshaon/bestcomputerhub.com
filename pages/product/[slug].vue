@@ -336,15 +336,17 @@ const canEditProductFromStorefront = computed(() => {
 });
 
 // Inline editing state
-const editingField = ref<'name' | 'short_description' | 'description' | 'specifications' | null>(null);
-const isFieldSaving = ref<'name' | 'short_description' | 'description' | 'specifications' | null>(null);
+const editingField = ref<'name' | 'short_description' | 'description' | 'specifications' | 'price' | null>(null);
+const isFieldSaving = ref<'name' | 'short_description' | 'description' | 'specifications' | 'price' | null>(null);
 
 const editNameValue = ref('');
 const editShortDescValue = ref('');
 const editDescValue = ref('');
 const editSpecsValue = ref('');
+const editPriceValue = ref<number>(0);
 
 const nameInputRef = ref<HTMLInputElement | null>(null);
+const priceInputRef = ref<HTMLInputElement | null>(null);
 
 const cleanHtmlForComparison = (html: string): string => {
   if (!html) return '';
@@ -372,7 +374,7 @@ const isHtmlEquivalent = (h1: string, h2: string): boolean => {
   return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
 };
 
-const startEditing = (field: 'name' | 'short_description' | 'description' | 'specifications') => {
+const startEditing = (field: 'name' | 'short_description' | 'description' | 'specifications' | 'price') => {
   if (!canEditProductFromStorefront.value) return;
   
   editingField.value = field;
@@ -386,6 +388,11 @@ const startEditing = (field: 'name' | 'short_description' | 'description' | 'spe
     editShortDescValue.value = product.value?.short_description || '';
   } else if (field === 'description') {
     editDescValue.value = product.value?.description || '';
+  } else if (field === 'price') {
+    editPriceValue.value = product.value?.current_selling_price ?? product.value?.price ?? 0;
+    nextTick(() => {
+      priceInputRef.value?.focus();
+    });
   } else if (field === 'specifications') {
     const specs = product.value?.specifications;
     if (typeof specs === 'string') {
@@ -411,7 +418,7 @@ const cancelEditing = () => {
   isFieldSaving.value = null;
 };
 
-const saveField = async (field: 'name' | 'short_description' | 'description' | 'specifications') => {
+const saveField = async (field: 'name' | 'short_description' | 'description' | 'specifications' | 'price') => {
   if (isFieldSaving.value === field) return; // Prevent duplicate submissions
   
   const targetProduct = product.value;
@@ -419,10 +426,10 @@ const saveField = async (field: 'name' | 'short_description' | 'description' | '
   
   const targetIdentifier = targetProduct.id ?? targetProduct.slug ?? slug.value;
   if (!targetIdentifier) return;
-
+  
   let hasChanged = false;
   const payload: Partial<UpdateProductPayload> = {};
-
+  
   if (field === 'name') {
     const newVal = editNameValue.value.trim();
     const oldVal = (targetProduct.name || '').trim();
@@ -464,6 +471,13 @@ const saveField = async (field: 'name' | 'short_description' | 'description' | '
       payload.specifications = newVal;
       hasChanged = true;
     }
+  } else if (field === 'price') {
+    const newVal = editPriceValue.value;
+    const oldVal = targetProduct.current_selling_price ?? targetProduct.price ?? 0;
+    if (newVal !== oldVal) {
+      payload.current_selling_price = newVal;
+      hasChanged = true;
+    }
   }
 
   if (!hasChanged) {
@@ -486,6 +500,10 @@ const saveField = async (field: 'name' | 'short_description' | 'description' | '
         product.value.description = updated.description;
       } else if (field === 'specifications') {
         product.value.specifications = updated.specifications;
+      } else if (field === 'price') {
+        if (updated.current_selling_price !== undefined) {
+          product.value.current_selling_price = updated.current_selling_price;
+        }
       }
     }
     
@@ -744,16 +762,48 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
 
           <!-- Pricing & Actions -->
           <div class="p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl bg-muted/30 border border-muted space-y-5 sm:space-y-6 lg:space-y-8">
-            <div class="flex flex-wrap items-baseline gap-2 sm:gap-4">
-              <span class="text-3xl sm:text-4xl font-display font-extrabold text-foreground">
-                {{ formatCurrency(product.current_selling_price || product.price) }}
-              </span>
-              <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="text-lg sm:text-xl text-muted-foreground line-through decoration-destructive/30">
-                {{ formatCurrency(product.originalPrice) }}
-              </span>
-              <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold rounded-md">
-                SAVE {{ Math.round((1 - (product.current_selling_price || product.price) / product.originalPrice) * 100) }}%
-              </span>
+            <div class="relative group/edit flex flex-wrap items-baseline gap-2 sm:gap-4">
+              <template v-if="editingField === 'price'">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                  <div class="relative">
+                     <span class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-slate-400 pointer-events-none">৳</span>
+                     <input 
+                      v-model.number="editPriceValue"
+                      ref="priceInputRef"
+                      type="number"
+                      @blur="saveField('price')"
+                      @keydown.enter="saveField('price')"
+                      @keydown.esc="cancelEditing"
+                      :disabled="isFieldSaving === 'price'"
+                      class="text-3xl sm:text-4xl font-display font-extrabold tracking-tight leading-tight w-[200px] sm:w-[240px] bg-background border border-input rounded-xl pl-8 sm:pl-10 pr-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                  <div v-if="isFieldSaving === 'price'" class="flex items-center gap-1.5 text-xs text-amber-500 font-bold uppercase tracking-wider shrink-0 px-2 py-1">
+                    <Loader2 class="w-4 h-4 animate-spin" />
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <div class="flex items-center gap-2">
+                  <span class="text-3xl sm:text-4xl font-display font-extrabold text-foreground group-hover/edit:text-primary transition-colors">
+                    {{ formatCurrency(product.current_selling_price || product.price) }}
+                  </span>
+                  <button 
+                    v-if="canEditProductFromStorefront"
+                    @click="startEditing('price')"
+                    class="opacity-0 group-hover/edit:opacity-100 p-1.5 sm:p-2 bg-muted hover:bg-primary/20 rounded-lg text-muted-foreground hover:text-primary transition-all cursor-pointer"
+                    title="Edit Price"
+                  >
+                    <Edit2 class="w-4 h-4" />
+                  </button>
+                </div>
+                <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="text-lg sm:text-xl text-muted-foreground line-through decoration-destructive/30">
+                  {{ formatCurrency(product.originalPrice) }}
+                </span>
+                <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold rounded-md">
+                  SAVE {{ Math.round((1 - (product.current_selling_price || product.price) / product.originalPrice) * 100) }}%
+                </span>
+              </template>
             </div>
 
             <!-- Price History Note if available -->
