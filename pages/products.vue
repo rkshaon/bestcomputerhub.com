@@ -362,7 +362,7 @@ const activeFiltersCount = computed(() => {
 
             <!-- Price Range -->
             <div class="space-y-6">
-              <p class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Price Range (USD)</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Price Range (BDT)</p>
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <label class="text-[10px] font-bold text-muted-foreground uppercase">Min</label>

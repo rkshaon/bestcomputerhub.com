@@ -241,7 +241,7 @@ const handlePlaceOrder = () => {
               </div>
               <div class="flex justify-between text-sm">
                 <span class="text-muted-foreground">Estimated Tax</span>
-                <span>$0.00</span>
+                <span>৳0.00</span>
               </div>
               <div class="flex justify-between text-xl font-display font-bold pt-4 text-primary">
                 <span>Total Due</span>

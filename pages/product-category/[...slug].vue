@@ -629,8 +629,8 @@ const resetFilters = () => {
                 class="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary" 
               />
               <div class="flex items-center justify-between text-xs font-bold">
-                <span class="bg-muted px-2.5 py-1 rounded-md">$0</span>
-                <span class="text-primary bg-primary/10 px-3 py-1 rounded-md">Up to ${{ filters.maxPrice }}</span>
+                <span class="bg-muted px-2.5 py-1 rounded-md">৳0</span>
+                <span class="text-primary bg-primary/10 px-3 py-1 rounded-md">Up to ৳{{ filters.maxPrice }}</span>
               </div>
             </div>
           </div>

@@ -1658,7 +1658,7 @@ onUnmounted(() => {
             </label>
             <div class="relative">
               <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm pointer-events-none">
-                $
+                ৳
               </div>
               <input
                 v-model.number="modalCurrentSellingPrice"
@@ -1673,7 +1673,7 @@ onUnmounted(() => {
                 :disabled="isModalSubmitting"
               />
             </div>
-            <p class="text-[11px] text-muted-foreground">Standard retail unit price for transactions in USD.</p>
+            <p class="text-[11px] text-muted-foreground">Standard retail unit price for transactions in BDT (৳).</p>
           </div>
 
           <!-- Rich-Text HTML Fields in Edit Mode -->
