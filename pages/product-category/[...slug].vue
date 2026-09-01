@@ -365,29 +365,63 @@ watch(() => route.params.slug, async () => {
   await resolveCategory();
 }, { immediate: true, deep: true });
 
-// Breadcrumbs trail
-const breadcrumbs = computed(() => {
-  const trail: { name: string; url: string }[] = [];
-  if (!category.value) return trail;
-  
-  const list = allCategoriesList.value.length ? allCategoriesList.value : productService.getCategories();
-  
-  const buildTrail = (cat: Category) => {
-    trail.unshift({
-      name: cat.name,
-      url: categoryService.getCategoryUrl(cat, list)
-    });
-    
-    if (cat.parentCategoryId) {
-      const parent = list.find(p => p.id === cat.parentCategoryId);
-      if (parent) {
-        buildTrail(parent);
-      }
+// Target category identifier for category path API
+const targetCategoryIdentifier = computed(() => {
+  if (category.value?.id) {
+    return { id: category.value.id, slug: category.value.slug || categorySlug.value };
+  }
+  if (categorySlug.value) {
+    return categorySlug.value;
+  }
+  return null;
+});
+
+// Category path hierarchy fetched via Category Path API: GET /api/v1/categories/path/
+const { data: categoryPath } = await useAsyncData(
+  `category-page-path-${slugs.value.join('-') || 'root'}`,
+  async () => {
+    const target = targetCategoryIdentifier.value;
+    if (!target) return [];
+    try {
+      return await categoryService.getCategoryPath(target);
+    } catch (e) {
+      console.warn('Failed to load category path for category page:', e);
+      return [];
     }
-  };
-  
-  buildTrail(category.value);
-  return trail;
+  },
+  {
+    watch: [targetCategoryIdentifier]
+  }
+);
+
+interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
+// Breadcrumbs trail
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+  const items: BreadcrumbItem[] = [];
+  const path = categoryPath.value;
+
+  if (Array.isArray(path) && path.length > 0) {
+    // Render the returned path in its provided order:
+    // Parent Category → Sub Category → Current Category
+    path.forEach((catItem, idx) => {
+      const slugPath = path.slice(0, idx + 1).map(c => c.slug).filter(Boolean).join('/');
+      items.push({
+        name: catItem.name,
+        url: `/product-category/${slugPath}/`
+      });
+    });
+  } else if (category.value?.name) {
+    items.push({
+      name: category.value.name,
+      url: `/product-category/${category.value.slug || categorySlug.value}/`
+    });
+  }
+
+  return items;
 });
 
 const filters = reactive({
