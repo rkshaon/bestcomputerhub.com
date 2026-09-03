@@ -446,6 +446,51 @@ export const useProductService = () => {
     }
   };
 
+  const createProductImage = async (payload: { product: string | number; image: File; alt_text?: string; display_order?: number; is_default?: boolean }): Promise<any> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      isLoading.value = false;
+      return {
+        id: Math.floor(Math.random() * 100000),
+        product: payload.product,
+        image: URL.createObjectURL(payload.image),
+        alt_text: payload.alt_text || '',
+        display_order: payload.display_order ?? 0,
+        is_default: payload.is_default || false
+      };
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('product', payload.product.toString());
+      formData.append('image', payload.image);
+      
+      if (payload.alt_text?.trim()) {
+        formData.append('alt_text', payload.alt_text.trim());
+      }
+      if (payload.display_order !== undefined && payload.display_order !== null) {
+        formData.append('display_order', payload.display_order.toString());
+      }
+      if (payload.is_default !== undefined) {
+        formData.append('is_default', payload.is_default ? 'true' : 'false');
+      }
+
+      const data = await apiClient.request<any>('/api/v1/product-images/', {
+        method: 'POST',
+        body: formData
+      });
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not upload product image.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   // Administrative / Vendor mutation endpoints
   const createProduct = async (payload: CreateProductPayload | Partial<Product>): Promise<Product> => {
     isLoading.value = true;
@@ -671,6 +716,7 @@ export const useProductService = () => {
     getProductsList,
     getProductDetails,
     getProductImages,
+    createProductImage,
     createProduct,
     updateProduct,
     deleteProduct,

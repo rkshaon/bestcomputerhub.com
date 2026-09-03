@@ -24,6 +24,7 @@ import {
   Package,
   LayoutGrid,
   List,
+  Upload,
   Image as ImageIcon
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
@@ -66,6 +67,7 @@ const canViewProduct = computed(() => hasPermission('product_api.view_product') 
 const canCreateProduct = computed(() => hasPermission('product_api.add_product') || canCreateInModule('/admin/products'));
 const canEditProduct = computed(() => hasPermission('product_api.change_product') || canEditInModule('/admin/products'));
 const canDeleteProduct = computed(() => hasPermission('product_api.delete_product') || canDeleteInModule('/admin/products'));
+const canAddProductImage = computed(() => hasPermission('product_api.add_productimage'));
 
 // State managers initialized from URL query parameters
 const viewMode = ref<'grid' | 'list'>((route.query.view === 'grid' ? 'grid' : 'list'));
@@ -854,6 +856,7 @@ watch(
       modalProductImages.value = [];
       selectedGalleryImage.value = null;
       modalImageErrorMap.value = {};
+      cancelAddImage();
     }
   },
   { immediate: true }
@@ -905,6 +908,67 @@ const modalGalleryImages = computed<ProductImage[]>(() => {
 
   return [];
 });
+
+// Image Upload State
+const isAddingImage = ref(false);
+const newImageFile = ref<File | null>(null);
+const newImagePreview = ref<string | null>(null);
+const newImageAltText = ref('');
+const newImageIsDefault = ref(false);
+const isUploadingImage = ref(false);
+const imageFileInput = ref<HTMLInputElement | null>(null);
+
+const triggerImageUpload = () => {
+  imageFileInput.value?.click();
+};
+
+const onImageFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    newImageFile.value = target.files[0];
+    newImagePreview.value = URL.createObjectURL(newImageFile.value);
+    newImageAltText.value = '';
+    newImageIsDefault.value = modalGalleryImages.value.length === 0;
+    isAddingImage.value = true;
+    if (imageFileInput.value) {
+      imageFileInput.value.value = '';
+    }
+  }
+};
+
+const cancelAddImage = () => {
+  isAddingImage.value = false;
+  newImageFile.value = null;
+  if (newImagePreview.value) {
+    URL.revokeObjectURL(newImagePreview.value);
+    newImagePreview.value = null;
+  }
+  newImageAltText.value = '';
+  newImageIsDefault.value = false;
+};
+
+const confirmAddImage = async () => {
+  if (!newImageFile.value || !selectedProduct.value?.id) return;
+  
+  isUploadingImage.value = true;
+  try {
+    await productService.createProductImage({
+      product: selectedProduct.value.id,
+      image: newImageFile.value,
+      alt_text: newImageAltText.value,
+      display_order: modalGalleryImages.value.length,
+      is_default: newImageIsDefault.value
+    });
+    
+    toastSuccess('Product image added to gallery successfully');
+    await fetchModalProductImages(selectedProduct.value.id);
+    cancelAddImage();
+  } catch (error: any) {
+    handleApiError(error, toastError, 'Failed to upload product image');
+  } finally {
+    isUploadingImage.value = false;
+  }
+};
 
 // Synchronize selected gallery image: defaults to is_default image or first image
 watch(
@@ -1871,9 +1935,87 @@ onUnmounted(() => {
                     {{ modalGalleryImages.length }} {{ modalGalleryImages.length === 1 ? 'image' : 'images' }}
                   </span>
                 </div>
-                <div v-if="isModalImagesLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-                  <span class="text-[11px] font-medium">Fetching gallery...</span>
+                <div class="flex items-center gap-3">
+                  <div v-if="isModalImagesLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+                    <span class="text-[11px] font-medium hidden xs:inline">Fetching...</span>
+                  </div>
+                  <button 
+                    v-if="canAddProductImage"
+                    type="button" 
+                    @click="isAddingImage = !isAddingImage" 
+                    :class="cn('text-xs font-semibold px-2 py-1 rounded-md transition-colors flex items-center gap-1.5', isAddingImage ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary hover:bg-primary/20')"
+                  >
+                    <Upload class="w-3.5 h-3.5" />
+                    <span>{{ isAddingImage ? 'Cancel Upload' : 'Add Image' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Upload Form (Inline) -->
+              <div v-if="isAddingImage" class="p-4 border border-primary/20 bg-primary/5 rounded-xl space-y-4 mb-4">
+                <input 
+                  type="file" 
+                  ref="imageFileInput" 
+                  accept="image/jpeg,image/png,image/webp,image/gif" 
+                  class="hidden" 
+                  @change="onImageFileChange" 
+                />
+                
+                <div v-if="!newImageFile" class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-primary/30 rounded-xl bg-background/50 cursor-pointer hover:bg-primary/5 transition-colors" @click="triggerImageUpload">
+                  <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-3">
+                    <Upload class="w-5 h-5" />
+                  </div>
+                  <p class="text-sm font-semibold text-primary">Click to select an image</p>
+                  <p class="text-[11px] text-muted-foreground mt-1">Supports JPG, PNG, WEBP (Max 5MB)</p>
+                </div>
+
+                <div v-else class="flex gap-4">
+                  <div class="w-24 h-24 sm:w-32 sm:h-32 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs shrink-0 overflow-hidden relative">
+                    <img :src="newImagePreview!" alt="Preview" class="w-full h-full object-contain" />
+                    <button type="button" @click.stop="cancelAddImage" class="absolute top-1 right-1 bg-background/80 hover:bg-destructive hover:text-destructive-foreground text-foreground backdrop-blur-xs p-1 rounded-md shadow-xs transition-colors">
+                      <X class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  
+                  <div class="flex-1 space-y-3 min-w-0">
+                    <div class="space-y-1">
+                      <label class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground ml-1">Alt Text (Optional)</label>
+                      <input 
+                        v-model="newImageAltText" 
+                        type="text" 
+                        class="w-full h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20" 
+                        placeholder="Describe the image for accessibility and SEO..."
+                        :disabled="isUploadingImage"
+                      />
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                      <input 
+                        type="checkbox" 
+                        id="new-image-default" 
+                        v-model="newImageIsDefault"
+                        class="w-3.5 h-3.5 rounded border-input text-primary focus:ring-primary"
+                        :disabled="isUploadingImage || modalGalleryImages.length === 0"
+                      />
+                      <label for="new-image-default" class="text-[11px] font-medium text-foreground cursor-pointer select-none">
+                        Set as Default Image
+                      </label>
+                    </div>
+
+                    <div class="pt-1">
+                      <button 
+                        type="button"
+                        @click="confirmAddImage"
+                        :disabled="isUploadingImage"
+                        class="h-8 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Loader2 v-if="isUploadingImage" class="w-3.5 h-3.5 animate-spin" />
+                        <Upload v-else class="w-3.5 h-3.5" />
+                        <span>{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -2134,9 +2276,87 @@ onUnmounted(() => {
                   {{ modalGalleryImages.length }} {{ modalGalleryImages.length === 1 ? 'image' : 'images' }}
                 </span>
               </div>
-              <div v-if="isModalImagesLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-                <span class="text-[11px] font-medium">Fetching gallery...</span>
+              <div class="flex items-center gap-3">
+                <div v-if="isModalImagesLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+                  <span class="text-[11px] font-medium hidden xs:inline">Fetching...</span>
+                </div>
+                <button 
+                  v-if="canAddProductImage"
+                  type="button" 
+                  @click="isAddingImage = !isAddingImage" 
+                  :class="cn('text-xs font-semibold px-2 py-1 rounded-md transition-colors flex items-center gap-1.5', isAddingImage ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary hover:bg-primary/20')"
+                >
+                  <Upload class="w-3.5 h-3.5" />
+                  <span>{{ isAddingImage ? 'Cancel Upload' : 'Add Image' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Upload Form (Inline) -->
+            <div v-if="isAddingImage" class="p-4 border border-primary/20 bg-primary/5 rounded-xl space-y-4 mb-4">
+              <input 
+                type="file" 
+                ref="imageFileInput" 
+                accept="image/jpeg,image/png,image/webp,image/gif" 
+                class="hidden" 
+                @change="onImageFileChange" 
+              />
+              
+              <div v-if="!newImageFile" class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-primary/30 rounded-xl bg-background/50 cursor-pointer hover:bg-primary/5 transition-colors" @click="triggerImageUpload">
+                <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-3">
+                  <Upload class="w-5 h-5" />
+                </div>
+                <p class="text-sm font-semibold text-primary">Click to select an image</p>
+                <p class="text-[11px] text-muted-foreground mt-1">Supports JPG, PNG, WEBP (Max 5MB)</p>
+              </div>
+
+              <div v-else class="flex gap-4">
+                <div class="w-24 h-24 sm:w-32 sm:h-32 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs shrink-0 overflow-hidden relative">
+                  <img :src="newImagePreview!" alt="Preview" class="w-full h-full object-contain" />
+                  <button type="button" @click.stop="cancelAddImage" class="absolute top-1 right-1 bg-background/80 hover:bg-destructive hover:text-destructive-foreground text-foreground backdrop-blur-xs p-1 rounded-md shadow-xs transition-colors">
+                    <X class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                
+                <div class="flex-1 space-y-3 min-w-0">
+                  <div class="space-y-1">
+                    <label class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground ml-1">Alt Text (Optional)</label>
+                    <input 
+                      v-model="newImageAltText" 
+                      type="text" 
+                      class="w-full h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20" 
+                      placeholder="Describe the image for accessibility and SEO..."
+                      :disabled="isUploadingImage"
+                    />
+                  </div>
+                  
+                  <div class="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      id="new-image-default-view" 
+                      v-model="newImageIsDefault"
+                      class="w-3.5 h-3.5 rounded border-input text-primary focus:ring-primary"
+                      :disabled="isUploadingImage || modalGalleryImages.length === 0"
+                    />
+                    <label for="new-image-default-view" class="text-[11px] font-medium text-foreground cursor-pointer select-none">
+                      Set as Default Image
+                    </label>
+                  </div>
+
+                  <div class="pt-1">
+                    <button 
+                      type="button"
+                      @click="confirmAddImage"
+                      :disabled="isUploadingImage"
+                      class="h-8 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Loader2 v-if="isUploadingImage" class="w-3.5 h-3.5 animate-spin" />
+                      <Upload v-else class="w-3.5 h-3.5" />
+                      <span>{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
