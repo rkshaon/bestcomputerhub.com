@@ -2,6 +2,9 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
+  devServer: {
+    port: 3000
+  },
   app: {
     head: {
       titleTemplate: '%s | Best Computer Hub',
