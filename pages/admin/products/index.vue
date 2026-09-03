@@ -839,15 +839,18 @@ const fetchModalProductImages = async (targetIdOrSlug: string | number) => {
   }
 };
 
-// Watch view modal visibility and selected product ID
+// Watch view and edit modal visibility and selected product ID
 watch(
-  [() => modalState.isView.value, () => selectedProduct.value?.id],
-  ([isView, productId], [prevIsView, prevProductId]) => {
-    if (isView && productId) {
-      if (!prevIsView || productId !== prevProductId) {
+  [() => modalState.isView.value, () => modalState.isEdit.value, () => selectedProduct.value?.id],
+  ([isView, isEdit, productId], [prevIsView, prevIsEdit, prevProductId]) => {
+    const isOpen = isView || isEdit;
+    const prevIsOpen = prevIsView || prevIsEdit;
+    
+    if (isOpen && productId) {
+      if (!prevIsOpen || productId !== prevProductId) {
         fetchModalProductImages(productId);
       }
-    } else if (!isView) {
+    } else if (!isOpen) {
       modalProductImages.value = [];
       selectedGalleryImage.value = null;
       modalImageErrorMap.value = {};
@@ -1857,6 +1860,99 @@ onUnmounted(() => {
                 :allow-tables="true"
                 helper-text="HTML specification table containing structured technical hardware parameters."
               />
+            </div>
+
+            <!-- Dedicated Product Image Gallery Section -->
+            <div class="space-y-3 pt-6 border-t border-border/60 mt-4">
+              <div class="flex items-center justify-between border-b border-border pb-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Product Image Gallery</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
+                    {{ modalGalleryImages.length }} {{ modalGalleryImages.length === 1 ? 'image' : 'images' }}
+                  </span>
+                </div>
+                <div v-if="isModalImagesLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+                  <span class="text-[11px] font-medium">Fetching gallery...</span>
+                </div>
+              </div>
+
+              <!-- Loading Skeleton State -->
+              <div v-if="isModalImagesLoading && modalGalleryImages.length === 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <div v-for="i in 4" :key="i" class="aspect-square rounded-xl bg-muted/40 animate-pulse border border-border flex items-center justify-center">
+                  <Loader2 class="w-5 h-5 animate-spin text-muted-foreground/50" />
+                </div>
+              </div>
+
+              <!-- Gallery Cards Grid -->
+              <div v-else-if="modalGalleryImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <div
+                  v-for="(img, idx) in modalGalleryImages"
+                  :key="img.id ?? idx"
+                  @click="selectedGalleryImage = img"
+                  role="button"
+                  tabindex="0"
+                  @keydown.enter="selectedGalleryImage = img"
+                  @keydown.space.prevent="selectedGalleryImage = img"
+                  :class="cn(
+                    'group relative flex flex-col rounded-xl border bg-card overflow-hidden transition-all cursor-pointer select-none',
+                    selectedGalleryImage?.image === img.image
+                      ? 'border-primary ring-2 ring-primary/20 shadow-xs'
+                      : 'border-border hover:border-primary/50 hover:shadow-xs'
+                  )"
+                  :title="img.alt_text ? `${img.alt_text}${img.is_default ? ' (Default)' : ''}` : `Product Image ${idx + 1}${img.is_default ? ' (Default)' : ''}`"
+                  :aria-label="img.alt_text ? `Select ${img.alt_text}` : `Select product image ${idx + 1}`"
+                >
+                  <!-- Image Container with aspect ratio -->
+                  <div class="aspect-square bg-muted/20 relative flex items-center justify-center p-3 overflow-hidden">
+                    <img
+                      :src="modalImageErrorMap[img.image || ''] ? 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80' : img.image"
+                      :alt="img.alt_text || `Product image ${idx + 1}`"
+                      @error="handleModalImageError(img.image)"
+                      class="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+                    />
+                    <!-- Default Badge -->
+                    <span
+                      v-if="img.is_default"
+                      class="absolute top-2 left-2 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider leading-none"
+                      title="Default product image"
+                    >
+                      Default
+                    </span>
+                    <!-- Display Order Badge -->
+                    <span
+                      v-if="img.display_order !== undefined && img.display_order !== null"
+                      class="absolute top-2 right-2 bg-background/80 backdrop-blur-xs text-muted-foreground border border-border/60 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded leading-none"
+                      title="Display order"
+                    >
+                      #{{ img.display_order }}
+                    </span>
+                  </div>
+
+                  <!-- Card Footer / Caption -->
+                  <div class="p-2 bg-card border-t border-border/60 flex items-center justify-between gap-1 text-xs">
+                    <span class="truncate text-[11px] font-medium text-foreground" :title="img.alt_text || `Image ${idx + 1}`">
+                      {{ img.alt_text || `Image ${idx + 1}` }}
+                    </span>
+                    <span
+                      v-if="selectedGalleryImage?.image === img.image"
+                      class="text-[10px] font-bold text-primary shrink-0 flex items-center gap-0.5"
+                    >
+                      <Check class="w-3 h-3 stroke-[2.5]" />
+                      <span class="hidden xs:inline">Selected</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div v-else class="p-6 rounded-xl border border-dashed border-border bg-muted/20 flex flex-col items-center justify-center text-center gap-2">
+                <div class="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+                  <ImageIcon class="w-5 h-5" />
+                </div>
+                <p class="text-xs font-semibold text-foreground">No images available</p>
+                <p class="text-[11px] text-muted-foreground">No gallery images have been recorded for this product.</p>
+              </div>
             </div>
           </template>
         </div>
