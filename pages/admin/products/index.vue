@@ -925,13 +925,16 @@ const triggerImageUpload = () => {
 const onImageFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
-    newImageFile.value = target.files[0];
-    newImagePreview.value = URL.createObjectURL(newImageFile.value);
-    newImageAltText.value = '';
-    newImageIsDefault.value = modalGalleryImages.value.length === 0;
-    isAddingImage.value = true;
-    if (imageFileInput.value) {
-      imageFileInput.value.value = '';
+    const file = target.files[0];
+    if (file) {
+      newImageFile.value = file;
+      newImagePreview.value = URL.createObjectURL(file);
+      newImageAltText.value = '';
+      newImageIsDefault.value = modalGalleryImages.value.length === 0;
+      isAddingImage.value = true;
+      if (imageFileInput.value) {
+        imageFileInput.value.value = '';
+      }
     }
   }
 };
@@ -964,7 +967,7 @@ const confirmAddImage = async () => {
     await fetchModalProductImages(selectedProduct.value.id);
     cancelAddImage();
   } catch (error: any) {
-    handleApiError(error, toastError, 'Failed to upload product image');
+    handleApiError(error, 'Failed to upload product image');
   } finally {
     isUploadingImage.value = false;
   }
