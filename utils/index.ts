@@ -8,11 +8,12 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatCurrency(value: number): string {
   if (typeof value !== 'number' || isNaN(value)) {
-    return 'Tk 0.00';
+    return 'Tk 0';
   }
-  return `Tk ${value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+  const roundedValue = Math.round(value);
+  return `Tk ${roundedValue.toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   })}`;
 }
 
