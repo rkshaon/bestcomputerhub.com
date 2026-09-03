@@ -30,7 +30,7 @@ import {
   ChevronDown,
   Search
 } from 'lucide-vue-next';
-import { formatCurrency, cn } from '@/utils';
+import { formatCurrency, cn, decodeHtmlEntities } from '@/utils';
 import { useCartStore } from '@/stores/cart';
 import { useUIStore } from '@/stores/ui';
 import { useProductService } from '@/composables/useProductService';
@@ -39,7 +39,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAuthStore } from '@/stores/auth';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
-import type { Product, Category, UpdateProductPayload } from '@/types';
+import type { Product, ProductImage, Category, UpdateProductPayload } from '@/types';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
@@ -65,31 +65,119 @@ const { data: product, pending: isLoading, error, refresh } = await useAsyncData
   }
 );
 
+// Fetch product images for gallery: GET /api/v1/products/{id}/product-images/
+const { data: fetchedProductImages } = await useAsyncData(
+  `product-images-${slug.value}`,
+  async () => {
+    const targetId = product.value?.id || slug.value;
+    if (!targetId) return [];
+    try {
+      return await productService.getProductImages(targetId);
+    } catch (err) {
+      if (product.value?.slug && String(targetId) !== String(product.value.slug)) {
+        try {
+          return await productService.getProductImages(product.value.slug);
+        } catch {
+          // Ignore fallback error
+        }
+      }
+      return [];
+    }
+  },
+  {
+    watch: [slug, () => product.value?.id]
+  }
+);
+
+// Resolved gallery images: respects display_order with fallback to product data
+const galleryImages = computed<ProductImage[]>(() => {
+  if (fetchedProductImages.value && fetchedProductImages.value.length > 0) {
+    const valid = fetchedProductImages.value.filter(img => Boolean(img && img.image));
+    return [...valid].sort((a, b) => {
+      const orderA = typeof a.display_order === 'number' ? a.display_order : 999999;
+      const orderB = typeof b.display_order === 'number' ? b.display_order : 999999;
+      return orderA - orderB;
+    });
+  }
+
+  // Fallback to existing product images if endpoint returns none
+  if (product.value) {
+    if (product.value.images && product.value.images.length > 0) {
+      return product.value.images
+        .filter(Boolean)
+        .map((img, idx) => ({
+          id: idx,
+          image: typeof img === 'string' ? img : (img as any)?.image || '',
+          alt_text: product.value?.name || '',
+          is_default: idx === 0,
+          display_order: idx
+        }))
+        .filter(img => Boolean(img.image));
+    }
+    if (product.value.default_image) {
+      const defImgUrl = typeof product.value.default_image === 'string'
+        ? product.value.default_image
+        : product.value.default_image.image;
+      const defAlt = typeof product.value.default_image === 'object'
+        ? product.value.default_image.alt_text
+        : product.value?.name;
+      if (defImgUrl) {
+        return [{
+          id: 0,
+          image: defImgUrl,
+          alt_text: defAlt || product.value?.name || '',
+          is_default: true,
+          display_order: 0
+        }];
+      }
+    }
+  }
+
+  return [];
+});
+
 // Quantity & local state
 const quantity = ref(1);
 const activeTab = ref<'description' | 'specification' | 'reviews'>('description');
 const selectedImage = ref<string>('');
 const isWishlisted = ref(false);
 
-// Synchronize selected image and wishlist state when product data changes
+// Synchronize selected image based on is_default and gallery images
+watch(
+  galleryImages,
+  (images) => {
+    if (images.length > 0) {
+      const currentExists = images.some(img => img.image === selectedImage.value);
+      if (!currentExists || !selectedImage.value) {
+        const defaultImg = images.find(img => img.is_default) || images[0];
+        selectedImage.value = defaultImg?.image || '';
+      }
+    } else {
+      selectedImage.value = '';
+    }
+  },
+  { immediate: true }
+);
+
+// Synchronize wishlist state when product data changes
 watch(
   () => product.value,
   (newProd) => {
     if (newProd) {
-      if (newProd.images && newProd.images.length > 0 && newProd.images[0]) {
-        selectedImage.value = newProd.images[0];
-      } else if (newProd.default_image) {
-        selectedImage.value = typeof newProd.default_image === 'string'
-          ? newProd.default_image
-          : (newProd.default_image.image || '');
-      } else {
-        selectedImage.value = '';
-      }
       isWishlisted.value = Boolean(newProd.wishlist);
     }
   },
   { immediate: true }
 );
+
+// Resolved alt text for currently selected image
+const selectedImageAlt = computed(() => {
+  const current = galleryImages.value.find(img => img.image === selectedImage.value);
+  if (current && current.alt_text && current.alt_text.trim()) {
+    return current.alt_text.trim();
+  }
+  return product.value?.name ? decodeHtmlEntities(product.value.name) : 'Product image';
+});
 
 // Dynamic SEO metadata
 useSeoMeta({
@@ -586,7 +674,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             <img 
               v-if="selectedImage" 
               :src="selectedImage" 
-              :alt="decodeHtmlEntities(product.name)" 
+              :alt="selectedImageAlt" 
               class="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" 
             />
             <div v-else class="w-full h-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground/60 space-y-3">
@@ -617,18 +705,22 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
           </div>
           
           <!-- Image Thumbnails (if multiple images exist) -->
-          <div v-if="product.images && product.images.length > 1" class="flex gap-2 sm:gap-4 overflow-x-auto pb-2 custom-submenu-scrollbar">
+          <div v-if="galleryImages.length > 1" class="flex gap-2 sm:gap-4 overflow-x-auto pb-2 custom-submenu-scrollbar">
             <button 
-              v-for="(img, idx) in product.images" 
-              :key="idx" 
-              @click="selectedImage = img"
+              v-for="(img, idx) in galleryImages" 
+              :key="img.id ?? idx" 
+              @click="img.image && (selectedImage = img.image)"
               :class="[
                 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 shrink-0 rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all p-1 bg-muted/20 cursor-pointer',
-                selectedImage === img ? 'border-primary ring-2 ring-primary/20' : 'border-muted hover:border-primary/50'
+                selectedImage === img.image ? 'border-primary ring-2 ring-primary/20' : 'border-muted hover:border-primary/50'
               ]"
-              :aria-label="`View product image ${idx + 1}`"
+              :aria-label="img.alt_text ? `View ${img.alt_text}` : `View product image ${idx + 1}`"
             >
-              <img :src="img" :alt="`${decodeHtmlEntities(product.name)} thumbnail ${idx + 1}`" class="w-full h-full object-contain" />
+              <img 
+                :src="img.image" 
+                :alt="img.alt_text || `${decodeHtmlEntities(product.name)} thumbnail ${idx + 1}`" 
+                class="w-full h-full object-contain" 
+              />
             </button>
           </div>
         </div>

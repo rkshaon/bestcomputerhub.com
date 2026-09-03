@@ -5,6 +5,7 @@ export interface ProductImage {
   image?: string;
   alt_text?: string;
   is_default?: boolean;
+  display_order?: number;
 }
 
 export interface CategoryOrigin {

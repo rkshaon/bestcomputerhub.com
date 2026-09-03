@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { products as initialProducts, categories, brands } from '@/mock/data';
-import type { Product, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload, UpdateProductPayload } from '@/types';
+import type { Product, ProductImage, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload, UpdateProductPayload } from '@/types';
 import { useRuntimeConfig } from '#app';
 
 const PRODUCTS_STORAGE_KEY = 'techcore_mock_products_registry';
@@ -377,6 +377,59 @@ export const useProductService = () => {
     }
   };
 
+  // Fetch product image gallery: GET /api/v1/products/{id}/product-images/
+  const getProductImages = async (idOrSlug: string | number): Promise<ProductImage[]> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      isLoading.value = false;
+      const found = getMockProducts().find(p => String(p.id) === String(idOrSlug) || p.slug === String(idOrSlug));
+      if (!found) return [];
+      if (Array.isArray(found.images) && found.images.length > 0) {
+        return found.images.map((img, idx) => ({
+          id: idx + 1,
+          image: typeof img === 'string' ? img : (img as any)?.image,
+          alt_text: found.name,
+          is_default: idx === 0,
+          display_order: idx + 1
+        }));
+      }
+      return [];
+    }
+
+    try {
+      const response = await apiClient.request<any>(`/api/v1/products/${idOrSlug}/product-images/`, {
+        method: 'GET'
+      });
+      isLoading.value = false;
+
+      let list: any[] = [];
+      if (Array.isArray(response)) {
+        list = response;
+      } else if (response && typeof response === 'object') {
+        if (Array.isArray(response.results)) {
+          list = response.results;
+        } else if (Array.isArray(response.data)) {
+          list = response.data;
+        }
+      }
+
+      return list.map((item: any, idx: number) => ({
+        id: item.id ?? idx,
+        image: item.image || '',
+        alt_text: item.alt_text || '',
+        is_default: Boolean(item.is_default),
+        display_order: item.display_order !== undefined && item.display_order !== null ? Number(item.display_order) : idx
+      }));
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical failure loading product images.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   // Administrative / Vendor mutation endpoints
   const createProduct = async (payload: CreateProductPayload | Partial<Product>): Promise<Product> => {
     isLoading.value = true;
@@ -601,6 +654,7 @@ export const useProductService = () => {
     errorMsg,
     getProductsList,
     getProductDetails,
+    getProductImages,
     createProduct,
     updateProduct,
     deleteProduct,
