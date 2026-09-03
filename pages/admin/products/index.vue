@@ -1802,7 +1802,7 @@ onUnmounted(() => {
             </label>
             <div class="relative">
               <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm pointer-events-none">
-                ৳
+                Tk
               </div>
               <input
                 v-model.number="modalCurrentSellingPrice"
@@ -1811,13 +1811,13 @@ onUnmounted(() => {
                 min="0"
                 placeholder="0.00"
                 :class="cn(
-                  'w-full h-11 pl-8 pr-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2 font-mono',
+                  'w-full h-11 pl-9 pr-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2 font-mono',
                   modalFieldErrors.price ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
                 )"
                 :disabled="isModalSubmitting"
               />
             </div>
-            <p class="text-[11px] text-muted-foreground">Standard retail unit price for transactions in BDT (৳).</p>
+            <p class="text-[11px] text-muted-foreground">Standard retail unit price for transactions in BDT (Tk).</p>
           </div>
 
           <!-- Rich-Text HTML Fields in Edit Mode -->

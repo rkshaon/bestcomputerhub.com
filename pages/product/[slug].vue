@@ -858,7 +858,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               <template v-if="editingField === 'price'">
                 <div class="flex items-center gap-2 w-full sm:w-auto">
                   <div class="relative">
-                     <span class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-slate-400 pointer-events-none">৳</span>
+                     <span class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-slate-400 pointer-events-none">Tk</span>
                      <input 
                       v-model.number="editPriceValue"
                       ref="priceInputRef"
@@ -867,7 +867,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                       @keydown.enter="saveField('price')"
                       @keydown.esc="cancelEditing"
                       :disabled="isFieldSaving === 'price'"
-                      class="text-3xl sm:text-4xl font-display font-extrabold tracking-tight leading-tight w-[200px] sm:w-[240px] bg-background border border-input rounded-xl pl-8 sm:pl-10 pr-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      class="text-3xl sm:text-4xl font-display font-extrabold tracking-tight leading-tight w-[200px] sm:w-[240px] bg-background border border-input rounded-xl pl-10 sm:pl-12 pr-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                     />
                   </div>
                   <div v-if="isFieldSaving === 'price'" class="flex items-center gap-1.5 text-xs text-amber-500 font-bold uppercase tracking-wider shrink-0 px-2 py-1">
