@@ -393,8 +393,23 @@ export const useProductService = () => {
           image: typeof img === 'string' ? img : (img as any)?.image,
           alt_text: found.name,
           is_default: idx === 0,
-          display_order: idx + 1
+          display_order: idx + 1,
+          created_at: new Date().toISOString()
         }));
+      }
+      if (found.default_image) {
+        const imgUrl = typeof found.default_image === 'string' ? found.default_image : found.default_image.image;
+        const alt = typeof found.default_image === 'object' ? found.default_image.alt_text : found.name;
+        if (imgUrl) {
+          return [{
+            id: 1,
+            image: imgUrl,
+            alt_text: alt || found.name,
+            is_default: true,
+            display_order: 1,
+            created_at: new Date().toISOString()
+          }];
+        }
       }
       return [];
     }
@@ -421,7 +436,8 @@ export const useProductService = () => {
         image: item.image || '',
         alt_text: item.alt_text || '',
         is_default: Boolean(item.is_default),
-        display_order: item.display_order !== undefined && item.display_order !== null ? Number(item.display_order) : idx
+        display_order: item.display_order !== undefined && item.display_order !== null ? Number(item.display_order) : idx,
+        created_at: item.created_at || undefined
       }));
     } catch (err: any) {
       errorMsg.value = err.data?.message || err.message || 'Technical failure loading product images.';

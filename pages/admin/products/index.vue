@@ -32,7 +32,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
 import { formatCurrency, cn, decodeHtmlEntities } from '@/utils';
-import type { Product, Category, ProductCategoryRef, CreateProductPayload, UpdateProductPayload, PaginatedResponse } from '@/types';
+import type { Product, ProductImage, Category, ProductCategoryRef, CreateProductPayload, UpdateProductPayload, PaginatedResponse } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -801,6 +801,149 @@ const getProductImageAlt = (product: Product): string => {
   }
   return product.name || 'Product Image';
 };
+
+// Product Details Modal Gallery State
+const isModalImagesLoading = ref(false);
+const modalProductImages = ref<ProductImage[]>([]);
+const selectedGalleryImage = ref<ProductImage | null>(null);
+const modalImageErrorMap = ref<Record<string, boolean>>({});
+
+const handleModalImageError = (imageKey?: string) => {
+  if (imageKey) {
+    modalImageErrorMap.value[imageKey] = true;
+  }
+};
+
+// Demand-driven fetch for product image gallery when modal is opened in view mode
+const fetchModalProductImages = async (targetIdOrSlug: string | number) => {
+  if (!targetIdOrSlug) return;
+  isModalImagesLoading.value = true;
+  try {
+    const images = await productService.getProductImages(targetIdOrSlug);
+    modalProductImages.value = Array.isArray(images) ? images : [];
+  } catch {
+    // If ID fetch failed and product has a slug, try slug fallback
+    if (selectedProduct.value?.slug && String(targetIdOrSlug) !== String(selectedProduct.value.slug)) {
+      try {
+        const images = await productService.getProductImages(selectedProduct.value.slug);
+        modalProductImages.value = Array.isArray(images) ? images : [];
+      } catch {
+        modalProductImages.value = [];
+      }
+    } else {
+      modalProductImages.value = [];
+    }
+  } finally {
+    isModalImagesLoading.value = false;
+  }
+};
+
+// Watch view modal visibility and selected product ID
+watch(
+  [() => modalState.isView.value, () => selectedProduct.value?.id],
+  ([isView, productId], [prevIsView, prevProductId]) => {
+    if (isView && productId) {
+      if (!prevIsView || productId !== prevProductId) {
+        fetchModalProductImages(productId);
+      }
+    } else if (!isView) {
+      modalProductImages.value = [];
+      selectedGalleryImage.value = null;
+      modalImageErrorMap.value = {};
+    }
+  },
+  { immediate: true }
+);
+
+// Resolved gallery images: sorted by display_order with fallback to product data
+const modalGalleryImages = computed<ProductImage[]>(() => {
+  if (modalProductImages.value && modalProductImages.value.length > 0) {
+    const valid = modalProductImages.value.filter(img => Boolean(img && img.image));
+    return [...valid].sort((a, b) => {
+      const orderA = typeof a.display_order === 'number' ? a.display_order : 999999;
+      const orderB = typeof b.display_order === 'number' ? b.display_order : 999999;
+      return orderA - orderB;
+    });
+  }
+
+  // Fallback to existing product images if endpoint returns none
+  if (selectedProduct.value) {
+    if (selectedProduct.value.images && selectedProduct.value.images.length > 0) {
+      return selectedProduct.value.images
+        .filter(Boolean)
+        .map((img, idx) => ({
+          id: idx,
+          image: typeof img === 'string' ? img : (img as any)?.image || '',
+          alt_text: selectedProduct.value?.name || '',
+          is_default: idx === 0,
+          display_order: idx
+        }))
+        .filter(img => Boolean(img.image));
+    }
+    if (selectedProduct.value.default_image) {
+      const defImgUrl = typeof selectedProduct.value.default_image === 'string'
+        ? selectedProduct.value.default_image
+        : selectedProduct.value.default_image.image;
+      const defAlt = typeof selectedProduct.value.default_image === 'object'
+        ? selectedProduct.value.default_image.alt_text
+        : selectedProduct.value?.name;
+      if (defImgUrl) {
+        return [{
+          id: 0,
+          image: defImgUrl,
+          alt_text: defAlt || selectedProduct.value?.name || '',
+          is_default: true,
+          display_order: 0
+        }];
+      }
+    }
+  }
+
+  return [];
+});
+
+// Synchronize selected gallery image: defaults to is_default image or first image
+watch(
+  modalGalleryImages,
+  (images) => {
+    if (images.length > 0) {
+      const currentExists = selectedGalleryImage.value
+        ? images.some(img => img.image === selectedGalleryImage.value?.image || (img.id !== undefined && img.id === selectedGalleryImage.value?.id))
+        : false;
+      if (!currentExists || !selectedGalleryImage.value) {
+        const defaultImg = images.find(img => img.is_default) || images[0];
+        selectedGalleryImage.value = defaultImg || null;
+      }
+    } else {
+      selectedGalleryImage.value = null;
+    }
+  },
+  { immediate: true }
+);
+
+// Main displayed image URL and Alt
+const modalMainImageUrl = computed<string>(() => {
+  if (selectedGalleryImage.value?.image) {
+    if (modalImageErrorMap.value[selectedGalleryImage.value.image]) {
+      return 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80';
+    }
+    return selectedGalleryImage.value.image;
+  }
+  if (selectedProduct.value) {
+    return getProductImageUrl(selectedProduct.value);
+  }
+  return 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80';
+});
+
+const modalMainImageAlt = computed<string>(() => {
+  if (selectedGalleryImage.value?.alt_text) {
+    return selectedGalleryImage.value.alt_text;
+  }
+  if (selectedProduct.value) {
+    return getProductImageAlt(selectedProduct.value);
+  }
+  return 'Product Image';
+});
 
 const getCategoryName = (product: Product): string => {
   if (product.origin && typeof product.origin === 'object' && product.origin.name) {
@@ -1812,14 +1955,56 @@ onUnmounted(() => {
         <!-- Product Content Container -->
         <div v-else class="p-6 sm:p-8 space-y-6 overflow-y-auto max-h-[70vh]">
           <!-- Product Hero Card -->
-          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-5 bg-muted/40 rounded-2xl border border-border">
-            <div class="w-20 h-20 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs overflow-hidden shrink-0">
-              <img 
-                :src="getProductImageUrl(selectedProduct)" 
-                :alt="getProductImageAlt(selectedProduct)" 
-                @error="handleImageError(selectedProduct.id)"
-                class="w-full h-full object-contain" 
-              />
+          <div class="flex flex-col sm:flex-row items-start gap-5 p-5 bg-muted/40 rounded-2xl border border-border">
+            <!-- Product Gallery Display Area -->
+            <div class="flex flex-col gap-2 shrink-0">
+              <!-- Main Image Display Container -->
+              <div class="w-20 h-20 sm:w-24 sm:h-24 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs overflow-hidden relative group">
+                <div v-if="isModalImagesLoading" class="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-xs z-10">
+                  <Loader2 class="w-4 h-4 animate-spin text-primary" />
+                </div>
+                <img 
+                  :src="modalMainImageUrl" 
+                  :alt="modalMainImageAlt" 
+                  @error="handleModalImageError(selectedGalleryImage?.image)"
+                  class="w-full h-full object-contain" 
+                />
+                <span 
+                  v-if="selectedGalleryImage?.is_default" 
+                  class="absolute top-1 left-1 bg-primary text-primary-foreground text-[8px] font-bold px-1 py-0.5 rounded shadow-xs uppercase tracking-wider leading-none"
+                  title="Default Product Image"
+                >
+                  Default
+                </span>
+              </div>
+
+              <!-- Thumbnails Selector (when multiple images exist) -->
+              <div 
+                v-if="modalGalleryImages.length > 1" 
+                class="flex items-center gap-1.5 max-w-[80px] sm:max-w-[96px] overflow-x-auto py-0.5 px-0.5 custom-submenu-scrollbar"
+              >
+                <button
+                  v-for="(img, idx) in modalGalleryImages"
+                  :key="img.id ?? idx"
+                  type="button"
+                  @click="selectedGalleryImage = img"
+                  :class="cn(
+                    'w-6 h-6 sm:w-7 sm:h-7 rounded-md border flex items-center justify-center p-0.5 overflow-hidden bg-background shrink-0 transition-all cursor-pointer',
+                    selectedGalleryImage?.image === img.image
+                      ? 'border-primary ring-2 ring-primary/20 shadow-xs'
+                      : 'border-border hover:border-primary/50 opacity-70 hover:opacity-100'
+                  )"
+                  :title="img.alt_text ? `${img.alt_text}${img.is_default ? ' (Default)' : ''}` : `Image ${idx + 1}${img.is_default ? ' (Default)' : ''}`"
+                  :aria-label="img.alt_text ? `View ${img.alt_text}` : `View product image ${idx + 1}`"
+                >
+                  <img 
+                    :src="modalImageErrorMap[img.image || ''] ? 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80' : img.image" 
+                    :alt="img.alt_text || `Thumbnail ${idx + 1}`"
+                    @error="handleModalImageError(img.image)"
+                    class="w-full h-full object-contain" 
+                  />
+                </button>
+              </div>
             </div>
             <div class="flex-1 min-w-0 space-y-1.5">
               <div class="flex items-center gap-2 flex-wrap">
