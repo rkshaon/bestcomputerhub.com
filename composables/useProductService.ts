@@ -491,6 +491,28 @@ export const useProductService = () => {
     }
   };
 
+  const deleteProductImage = async (id: string | number): Promise<void> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      isLoading.value = false;
+      return;
+    }
+
+    try {
+      await apiClient.request<void>(`/api/v1/product-images/${id}/`, {
+        method: 'DELETE'
+      });
+      isLoading.value = false;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not delete product image.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   // Administrative / Vendor mutation endpoints
   const createProduct = async (payload: CreateProductPayload | Partial<Product>): Promise<Product> => {
     isLoading.value = true;
@@ -717,6 +739,7 @@ export const useProductService = () => {
     getProductDetails,
     getProductImages,
     createProductImage,
+    deleteProductImage,
     createProduct,
     updateProduct,
     deleteProduct,

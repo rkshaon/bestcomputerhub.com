@@ -68,6 +68,7 @@ const canCreateProduct = computed(() => hasPermission('product_api.add_product')
 const canEditProduct = computed(() => hasPermission('product_api.change_product') || canEditInModule('/admin/products'));
 const canDeleteProduct = computed(() => hasPermission('product_api.delete_product') || canDeleteInModule('/admin/products'));
 const canAddProductImage = computed(() => hasPermission('product_api.add_productimage'));
+const canDeleteProductImage = computed(() => hasPermission('product_api.add_productimage'));
 
 // State managers initialized from URL query parameters
 const viewMode = ref<'grid' | 'list'>((route.query.view === 'grid' ? 'grid' : 'list'));
@@ -857,6 +858,7 @@ watch(
       selectedGalleryImage.value = null;
       modalImageErrorMap.value = {};
       cancelAddImage();
+      cancelDeleteProductImage();
     }
   },
   { immediate: true }
@@ -970,6 +972,45 @@ const confirmAddImage = async () => {
     handleApiError(error, 'Failed to upload product image');
   } finally {
     isUploadingImage.value = false;
+  }
+};
+
+// Image Delete State & Handlers
+const imageToDelete = ref<ProductImage | null>(null);
+const isDeletingImage = ref(false);
+
+const promptDeleteProductImage = (img: ProductImage) => {
+  if (!canDeleteProductImage.value) {
+    toastError('You do not have permission to delete product images.');
+    return;
+  }
+  imageToDelete.value = img;
+};
+
+const cancelDeleteProductImage = () => {
+  if (isDeletingImage.value) return;
+  imageToDelete.value = null;
+};
+
+const confirmDeleteProductImage = async () => {
+  if (!imageToDelete.value?.id) return;
+
+  const targetId = imageToDelete.value.id;
+  const productId = selectedProduct.value?.id || modalState.activeId.value;
+  isDeletingImage.value = true;
+
+  try {
+    await productService.deleteProductImage(targetId);
+    toastSuccess('Product image deleted successfully');
+    imageToDelete.value = null;
+
+    if (productId) {
+      await fetchModalProductImages(productId);
+    }
+  } catch (error: any) {
+    handleApiError(error, 'Failed to delete product image');
+  } finally {
+    isDeletingImage.value = false;
   }
 };
 
@@ -1699,6 +1740,8 @@ onUnmounted(() => {
       :title="modalState.isEdit.value ? 'Edit Product' : 'Add Product'"
       :subtitle="modalState.isEdit.value ? 'Update product specifications, category classifications, descriptions, and pricing.' : 'Configure and register a new product in the catalog.'"
       :max-width="modalState.isEdit.value ? 'max-w-3xl' : 'max-w-xl'"
+      :close-on-escape="!imageToDelete"
+      :close-on-backdrop="!imageToDelete"
       @close="modalState.closeModal"
     >
       <!-- Loading State during Edit entity resolution -->
@@ -2079,13 +2122,25 @@ onUnmounted(() => {
                     <span class="truncate text-[11px] font-medium text-foreground" :title="img.alt_text || `Image ${idx + 1}`">
                       {{ img.alt_text || `Image ${idx + 1}` }}
                     </span>
-                    <span
-                      v-if="selectedGalleryImage?.image === img.image"
-                      class="text-[10px] font-bold text-primary shrink-0 flex items-center gap-0.5"
-                    >
-                      <Check class="w-3 h-3 stroke-[2.5]" />
-                      <span class="hidden xs:inline">Selected</span>
-                    </span>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <span
+                        v-if="selectedGalleryImage?.image === img.image"
+                        class="text-[10px] font-bold text-primary flex items-center gap-0.5"
+                      >
+                        <Check class="w-3 h-3 stroke-[2.5]" />
+                        <span class="hidden xs:inline">Selected</span>
+                      </span>
+                      <button
+                        v-if="canDeleteProductImage && img.id !== undefined && img.id !== null"
+                        type="button"
+                        @click.stop="promptDeleteProductImage(img)"
+                        class="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                        title="Delete image"
+                        aria-label="Delete image"
+                      >
+                        <Trash2 class="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2129,6 +2184,8 @@ onUnmounted(() => {
       :is-open="modalState.isView.value" 
       max-width="max-w-3xl" 
       :show-close-button="false" 
+      :close-on-escape="!imageToDelete"
+      :close-on-backdrop="!imageToDelete"
       @close="modalState.closeModal"
     >
       <div class="w-full relative overflow-hidden flex flex-col cursor-default">
@@ -2420,13 +2477,25 @@ onUnmounted(() => {
                   <span class="truncate text-[11px] font-medium text-foreground" :title="img.alt_text || `Image ${idx + 1}`">
                     {{ img.alt_text || `Image ${idx + 1}` }}
                   </span>
-                  <span
-                    v-if="selectedGalleryImage?.image === img.image"
-                    class="text-[10px] font-bold text-primary shrink-0 flex items-center gap-0.5"
-                  >
-                    <Check class="w-3 h-3 stroke-[2.5]" />
-                    <span class="hidden xs:inline">Selected</span>
-                  </span>
+                  <div class="flex items-center gap-1 shrink-0">
+                    <span
+                      v-if="selectedGalleryImage?.image === img.image"
+                      class="text-[10px] font-bold text-primary flex items-center gap-0.5"
+                    >
+                      <Check class="w-3 h-3 stroke-[2.5]" />
+                      <span class="hidden xs:inline">Selected</span>
+                    </span>
+                    <button
+                      v-if="canDeleteProductImage && img.id !== undefined && img.id !== null"
+                      type="button"
+                      @click.stop="promptDeleteProductImage(img)"
+                      class="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                      title="Delete image"
+                      aria-label="Delete image"
+                    >
+                      <Trash2 class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2626,6 +2695,66 @@ onUnmounted(() => {
             <Loader2 v-if="!!isDeleting" class="w-4 h-4 animate-spin" />
             <Trash2 v-else class="w-3.5 h-3.5" />
             <span>Delete Product</span>
+          </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- Product Image Delete Confirmation Modal -->
+    <UiAdminModal 
+      :is-open="!!imageToDelete"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="cancelDeleteProductImage"
+    >
+      <div class="p-6 space-y-6">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold text-foreground">Confirm Image Deletion</h3>
+          <p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            Are you sure you want to delete this product image from the gallery? This action cannot be undone.
+          </p>
+          <div v-if="imageToDelete?.image" class="mt-4 flex items-center gap-3 p-2.5 rounded-xl border border-border bg-muted/20">
+            <div class="w-12 h-12 rounded-lg border border-border overflow-hidden bg-muted/40 p-1 flex items-center justify-center shrink-0">
+              <img 
+                :src="modalImageErrorMap[imageToDelete.image] ? 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80' : imageToDelete.image" 
+                :alt="imageToDelete.alt_text || 'Image to delete'" 
+                class="w-full h-full object-contain" 
+              />
+            </div>
+            <div class="min-w-0 flex-1 text-xs">
+              <p class="font-medium text-foreground truncate">
+                {{ imageToDelete.alt_text || 'Product Image' }}
+              </p>
+              <div class="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                <span v-if="imageToDelete.is_default" class="text-primary font-bold uppercase text-[9px]">Default Image</span>
+                <span v-if="imageToDelete.display_order !== undefined">Order #{{ imageToDelete.display_order }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <UiButton 
+            variant="outline" 
+            class="rounded-xl h-10 px-5 text-xs font-bold"
+            @click="cancelDeleteProductImage"
+            :disabled="isDeletingImage"
+          >
+            Cancel
+          </UiButton>
+
+          <UiButton 
+            class="rounded-xl h-10 px-5 text-xs font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            @click="confirmDeleteProductImage"
+            :disabled="isDeletingImage"
+          >
+            <Loader2 v-if="isDeletingImage" class="w-4 h-4 animate-spin" />
+            <Trash2 v-else class="w-3.5 h-3.5" />
+            <span>{{ isDeletingImage ? 'Deleting...' : 'Delete Image' }}</span>
           </UiButton>
         </div>
       </div>
