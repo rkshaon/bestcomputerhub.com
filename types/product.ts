@@ -109,3 +109,15 @@ export interface ProductFilters {
   onSale?: boolean;
 }
 
+export interface BulkUploadProductImageItem {
+  image: File;
+  alt_text?: string;
+  display_order?: number;
+  is_default?: boolean;
+}
+
+export interface BulkUploadProductImagesPayload {
+  product: string | number;
+  images: BulkUploadProductImageItem[];
+}
+

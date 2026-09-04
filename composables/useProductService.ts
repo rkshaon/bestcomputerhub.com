@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { products as initialProducts, categories, brands } from '@/mock/data';
-import type { Product, ProductImage, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload, UpdateProductPayload } from '@/types';
+import type { Product, ProductImage, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload, UpdateProductPayload, BulkUploadProductImagesPayload, BulkUploadProductImageItem } from '@/types';
 import { useRuntimeConfig } from '#app';
 
 const PRODUCTS_STORAGE_KEY = 'techcore_mock_products_registry';
@@ -491,6 +491,73 @@ export const useProductService = () => {
     }
   };
 
+  const bulkUploadProductImages = async (payload: BulkUploadProductImagesPayload): Promise<ProductImage[]> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 600));
+      isLoading.value = false;
+      return payload.images.map((item, idx) => ({
+        id: Math.floor(Math.random() * 100000) + idx,
+        product: payload.product,
+        image: URL.createObjectURL(item.image),
+        alt_text: item.alt_text || '',
+        display_order: item.display_order ?? idx,
+        is_default: Boolean(item.is_default),
+        created_at: new Date().toISOString()
+      }));
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('product', payload.product.toString());
+
+      payload.images.forEach((item, index) => {
+        formData.append(`images[${index}][image]`, item.image);
+        if (item.alt_text?.trim()) {
+          formData.append(`images[${index}][alt_text]`, item.alt_text.trim());
+        }
+        if (item.display_order !== undefined && item.display_order !== null) {
+          formData.append(`images[${index}][display_order]`, item.display_order.toString());
+        }
+        if (item.is_default !== undefined) {
+          formData.append(`images[${index}][is_default]`, item.is_default ? 'true' : 'false');
+        }
+      });
+
+      const response = await apiClient.request<any>('/api/v1/product-images/bulk-upload/', {
+        method: 'POST',
+        body: formData
+      });
+      isLoading.value = false;
+
+      let list: any[] = [];
+      if (Array.isArray(response)) {
+        list = response;
+      } else if (response && typeof response === 'object') {
+        if (Array.isArray(response.results)) {
+          list = response.results;
+        } else if (Array.isArray(response.data)) {
+          list = response.data;
+        }
+      }
+
+      return list.map((item: any, idx: number) => ({
+        id: item.id ?? idx,
+        image: item.image || '',
+        alt_text: item.alt_text || '',
+        is_default: Boolean(item.is_default),
+        display_order: item.display_order !== undefined && item.display_order !== null ? Number(item.display_order) : idx,
+        created_at: item.created_at || undefined
+      }));
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not bulk upload product images.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   const deleteProductImage = async (id: string | number): Promise<void> => {
     isLoading.value = true;
     errorMsg.value = null;
@@ -739,6 +806,7 @@ export const useProductService = () => {
     getProductDetails,
     getProductImages,
     createProductImage,
+    bulkUploadProductImages,
     deleteProductImage,
     createProduct,
     updateProduct,

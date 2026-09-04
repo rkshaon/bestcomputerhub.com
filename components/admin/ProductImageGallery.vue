@@ -7,6 +7,7 @@ import {
   Loader2, 
   Check, 
   X, 
+  Plus,
   Image as ImageIcon,
   Images 
 } from 'lucide-vue-next';
@@ -43,6 +44,7 @@ const isLoadingModel = defineModel<boolean>('isLoading', { default: false });
 const emit = defineEmits<{
   (e: 'select', image: ProductImage): void;
   (e: 'image-uploaded', image: any): void;
+  (e: 'images-uploaded', images: ProductImage[]): void;
   (e: 'image-deleted', id: string | number): void;
 }>();
 
@@ -78,7 +80,7 @@ const openFullGalleryAndAdd = () => {
 };
 
 const closeFullGallery = () => {
-  if (isDeletingImage.value) return;
+  if (isDeletingImage.value || isUploadingImage.value) return;
   isFullGalleryOpen.value = false;
   cancelAddImage();
   cancelDeleteProductImage();
@@ -278,25 +280,53 @@ const selectImage = (img: ProductImage) => {
   activeSelectedImage.value = img;
 };
 
-// Upload State & Handlers
+// Bulk Upload State & Handlers
+interface PendingUploadImage {
+  id: string;
+  file: File;
+  previewUrl: string;
+  altText: string;
+  isDefault: boolean;
+}
+
 const isAddingImage = ref(false);
-const newImageFile = ref<File | null>(null);
-const newImagePreview = ref<string | null>(null);
-const newImageAltText = ref('');
-const newImageIsDefault = ref(false);
+const pendingImages = ref<PendingUploadImage[]>([]);
 const isUploadingImage = ref(false);
 const imageFileInput = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 const triggerImageUpload = () => {
   imageFileInput.value?.click();
 };
 
-const handleSelectedFile = (file: File) => {
-  newImageFile.value = file;
-  newImagePreview.value = URL.createObjectURL(file);
-  newImageAltText.value = '';
-  newImageIsDefault.value = galleryImages.value.length === 0;
+const handleSelectedFiles = (files: FileList | File[]) => {
+  const fileArray = Array.from(files).filter(f => f && f.type.startsWith('image/'));
+  if (fileArray.length === 0) return;
+
+  const startIndex = pendingImages.value.length;
+  const newItems: PendingUploadImage[] = fileArray.map((file, idx) => ({
+    id: `pending_${Date.now()}_${Math.random().toString(36).substring(2, 7)}_${startIndex + idx}`,
+    file,
+    previewUrl: URL.createObjectURL(file),
+    altText: '',
+    isDefault: false
+  }));
+
+  // If there are currently no gallery images and no pending images have isDefault set,
+  // automatically designate the first pending image as default.
+  const hasExistingGallery = galleryImages.value.length > 0;
+  const anyDefaultPending = pendingImages.value.some(p => p.isDefault);
+  if (!hasExistingGallery && !anyDefaultPending && newItems.length > 0) {
+    newItems[0].isDefault = true;
+  }
+
+  pendingImages.value.push(...newItems);
   isAddingImage.value = true;
   if (imageFileInput.value) {
     imageFileInput.value.value = '';
@@ -306,10 +336,7 @@ const handleSelectedFile = (file: File) => {
 const onImageFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
-    const file = target.files[0];
-    if (file) {
-      handleSelectedFile(file);
-    }
+    handleSelectedFiles(target.files);
   }
 };
 
@@ -326,45 +353,91 @@ const onDrop = (e: DragEvent) => {
   e.preventDefault();
   isDragging.value = false;
   if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      handleSelectedFile(file);
+    handleSelectedFiles(e.dataTransfer.files);
+  }
+};
+
+const setDefaultPendingImage = (targetId: string, value: boolean) => {
+  if (value) {
+    // Exactly one pending image is marked as default
+    pendingImages.value.forEach(item => {
+      item.isDefault = item.id === targetId;
+    });
+  } else {
+    // Unmark target
+    const target = pendingImages.value.find(item => item.id === targetId);
+    if (target) {
+      target.isDefault = false;
     }
+  }
+};
+
+const removePendingImage = (index: number) => {
+  const item = pendingImages.value[index];
+  if (!item) return;
+
+  const wasDefault = item.isDefault;
+  if (item.previewUrl) {
+    URL.revokeObjectURL(item.previewUrl);
+  }
+  pendingImages.value.splice(index, 1);
+
+  // If removed item was default, and product has no existing gallery images, designate first remaining item as default
+  if (wasDefault && galleryImages.value.length === 0 && pendingImages.value.length > 0) {
+    pendingImages.value[0].isDefault = true;
   }
 };
 
 const cancelAddImage = () => {
   isAddingImage.value = false;
-  newImageFile.value = null;
-  if (newImagePreview.value) {
-    URL.revokeObjectURL(newImagePreview.value);
-    newImagePreview.value = null;
-  }
-  newImageAltText.value = '';
-  newImageIsDefault.value = false;
+  pendingImages.value.forEach(item => {
+    if (item.previewUrl) {
+      URL.revokeObjectURL(item.previewUrl);
+    }
+  });
+  pendingImages.value = [];
   isDragging.value = false;
+  if (imageFileInput.value) {
+    imageFileInput.value.value = '';
+  }
 };
 
-const confirmAddImage = async () => {
+const confirmBulkUpload = async () => {
   const targetProductId = props.productId ?? props.product?.id;
-  if (!newImageFile.value || !targetProductId) return;
+  if (!targetProductId || pendingImages.value.length === 0 || isUploadingImage.value) return;
 
   isUploadingImage.value = true;
   try {
-    const result = await productService.createProductImage({
+    const maxOrder = galleryImages.value.reduce((max, img) => {
+      return typeof img.display_order === 'number' ? Math.max(max, img.display_order) : max;
+    }, -1);
+    const startOrder = maxOrder >= 0 ? maxOrder + 1 : galleryImages.value.length;
+
+    const payloadImages = pendingImages.value.map((item, idx) => ({
+      image: item.file,
+      alt_text: item.altText.trim() || undefined,
+      display_order: startOrder + idx,
+      is_default: item.isDefault
+    }));
+
+    const result = await productService.bulkUploadProductImages({
       product: targetProductId,
-      image: newImageFile.value,
-      alt_text: newImageAltText.value,
-      display_order: galleryImages.value.length,
-      is_default: newImageIsDefault.value
+      images: payloadImages
     });
 
-    toastSuccess('Product image added to gallery successfully');
-    emit('image-uploaded', result);
+    const count = result.length || pendingImages.value.length;
+    toastSuccess(`Successfully uploaded ${count} ${count === 1 ? 'image' : 'images'} to gallery`);
+    
+    emit('images-uploaded', result);
+    if (result.length > 0) {
+      emit('image-uploaded', result[0]);
+    }
+
     await fetchProductImages(targetProductId);
     cancelAddImage();
   } catch (error: any) {
-    handleApiError(error, 'Failed to upload product image');
+    // Preserve selected files and form data on error so user does not lose their work
+    handleApiError(error, 'Failed to upload product images');
   } finally {
     isUploadingImage.value = false;
   }
@@ -543,7 +616,7 @@ defineExpose({
         class="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs"
       >
         <Upload class="w-3.5 h-3.5" />
-        <span>Add Image</span>
+        <span>Add Images</span>
       </button>
     </div>
 
@@ -574,95 +647,179 @@ defineExpose({
             <button 
               v-if="canAddImageComputed"
               type="button" 
-              @click="isAddingImage = !isAddingImage" 
+              @click="isAddingImage ? cancelAddImage() : (isAddingImage = true)" 
               :class="cn(
                 'text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs',
                 isAddingImage ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary hover:bg-primary/20'
               )"
             >
               <Upload class="w-3.5 h-3.5" />
-              <span>{{ isAddingImage ? 'Cancel Upload' : 'Add Image' }}</span>
+              <span>{{ isAddingImage ? 'Cancel Upload' : 'Upload Images' }}</span>
             </button>
           </div>
         </div>
 
-        <!-- Upload Form (Inline inside modal) -->
-        <div v-if="isAddingImage" class="p-4 border border-primary/20 bg-primary/5 rounded-xl space-y-4">
+        <!-- Bulk Upload Form (Inline inside modal) -->
+        <div 
+          v-if="isAddingImage" 
+          :class="cn(
+            'p-4 border rounded-xl space-y-4 transition-colors',
+            isDragging ? 'border-primary bg-primary/10' : 'border-primary/20 bg-primary/5'
+          )"
+          @dragover="onDragOver"
+          @dragleave="onDragLeave"
+          @drop="onDrop"
+        >
           <input 
             type="file" 
             ref="imageFileInput" 
             accept="image/jpeg,image/png,image/webp,image/gif" 
+            multiple
             class="hidden" 
             @change="onImageFileChange" 
           />
           
+          <!-- Dropzone (Shown when no images have been staged yet) -->
           <div 
-            v-if="!newImageFile" 
+            v-if="pendingImages.length === 0" 
             @click="triggerImageUpload"
-            @dragover="onDragOver"
-            @dragleave="onDragLeave"
-            @drop="onDrop"
             :class="cn(
-              'flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl bg-background/50 cursor-pointer transition-colors',
-              isDragging ? 'border-primary bg-primary/10' : 'border-primary/30 hover:bg-primary/5'
+              'flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl bg-background/50 cursor-pointer transition-colors',
+              isDragging ? 'border-primary bg-primary/15' : 'border-primary/30 hover:bg-primary/10'
             )"
           >
             <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-3">
               <Upload class="w-5 h-5" />
             </div>
-            <p class="text-sm font-semibold text-primary">Click or drop to select an image</p>
-            <p class="text-[11px] text-muted-foreground mt-1">Supports JPG, PNG, WEBP, GIF (Max 5MB)</p>
+            <p class="text-sm font-semibold text-primary">Click or drop images to upload</p>
+            <p class="text-[11px] text-muted-foreground mt-1">Select multiple images at once (JPG, PNG, WEBP, GIF — Max 5MB each)</p>
           </div>
 
-          <div v-else class="flex gap-4">
-            <div class="w-24 h-24 sm:w-32 sm:h-32 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs shrink-0 overflow-hidden relative">
-              <img :src="newImagePreview!" alt="Preview" class="w-full h-full object-contain" />
-              <button 
-                type="button" 
-                @click.stop="cancelAddImage" 
-                class="absolute top-1 right-1 bg-background/80 hover:bg-destructive hover:text-destructive-foreground text-foreground backdrop-blur-xs p-1 rounded-md shadow-xs transition-colors cursor-pointer"
-                title="Remove image"
-                aria-label="Remove image"
-              >
-                <X class="w-3.5 h-3.5" />
-              </button>
-            </div>
-            
-            <div class="flex-1 space-y-3 min-w-0">
-              <div class="space-y-1">
-                <label class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground ml-1">Alt Text (Optional)</label>
-                <input 
-                  v-model="newImageAltText" 
-                  type="text" 
-                  class="w-full h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20" 
-                  placeholder="Describe the image for accessibility and SEO..."
-                  :disabled="isUploadingImage"
-                />
-              </div>
-              
+          <!-- Staged Images List (When 1 or more images are selected) -->
+          <div v-else class="space-y-4">
+            <!-- Staged Queue Header -->
+            <div class="flex items-center justify-between pb-2 border-b border-primary/15">
               <div class="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  :id="`new-image-default-${galleryInstanceId}`" 
-                  v-model="newImageIsDefault"
-                  class="w-3.5 h-3.5 rounded border-input text-primary focus:ring-primary cursor-pointer"
-                  :disabled="isUploadingImage || galleryImages.length === 0"
-                />
-                <label :for="`new-image-default-${galleryInstanceId}`" class="text-[11px] font-medium text-foreground cursor-pointer select-none">
-                  Set as Default Image
-                </label>
+                <span class="text-xs font-bold text-foreground">Selected Images</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary font-mono">
+                  {{ pendingImages.length }} {{ pendingImages.length === 1 ? 'file' : 'files' }}
+                </span>
               </div>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  @click="triggerImageUpload"
+                  :disabled="isUploadingImage"
+                  class="h-7 px-2.5 rounded-lg border border-input bg-background hover:bg-muted text-foreground text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Add more images to queue"
+                >
+                  <Plus class="w-3 h-3" />
+                  <span>Add More</span>
+                </button>
+                <button
+                  type="button"
+                  @click="cancelAddImage"
+                  :disabled="isUploadingImage"
+                  class="h-7 px-2.5 rounded-lg border border-destructive/20 text-destructive hover:bg-destructive/10 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Clear all selected images"
+                >
+                  <X class="w-3 h-3" />
+                  <span>Clear All</span>
+                </button>
+              </div>
+            </div>
 
-              <div class="pt-1">
+            <!-- Staged items list -->
+            <div class="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+              <div
+                v-for="(item, idx) in pendingImages"
+                :key="item.id"
+                class="p-3 bg-background border border-border/80 rounded-xl flex flex-col sm:flex-row gap-3 relative shadow-xs hover:border-primary/30 transition-colors"
+              >
+                <!-- Thumbnail -->
+                <div class="w-20 h-20 bg-muted/20 border border-border rounded-lg flex items-center justify-center p-1 shrink-0 overflow-hidden relative group">
+                  <img :src="item.previewUrl" alt="Staged image preview" class="w-full h-full object-contain" />
+                  <!-- Display Order Sequence Badge -->
+                  <span class="absolute top-1 left-1 bg-background/90 text-muted-foreground text-[9px] font-mono font-bold px-1 rounded shadow-xs">
+                    #{{ idx + 1 }}
+                  </span>
+                  <!-- Remove Item Button -->
+                  <button 
+                    type="button" 
+                    @click.stop="removePendingImage(idx)"
+                    :disabled="isUploadingImage"
+                    class="absolute top-1 right-1 bg-background/90 hover:bg-destructive hover:text-destructive-foreground text-foreground p-1 rounded-md shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                    title="Remove image from upload queue"
+                    aria-label="Remove image from upload queue"
+                  >
+                    <X class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <!-- Metadata Inputs -->
+                <div class="flex-1 space-y-2.5 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-semibold text-foreground truncate max-w-[200px] sm:max-w-xs" :title="item.file.name">
+                      {{ item.file.name }}
+                    </span>
+                    <span class="text-[10px] text-muted-foreground font-mono shrink-0">
+                      {{ formatFileSize(item.file.size) }}
+                    </span>
+                  </div>
+
+                  <div class="space-y-1">
+                    <input 
+                      v-model="item.altText" 
+                      type="text" 
+                      class="w-full h-8 px-2.5 bg-background border border-input rounded-lg outline-none text-xs text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20" 
+                      placeholder="Alt text / description (SEO & accessibility)..."
+                      :disabled="isUploadingImage"
+                    />
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      :id="`default-image-${galleryInstanceId}-${item.id}`" 
+                      :checked="item.isDefault"
+                      @change="(e: any) => setDefaultPendingImage(item.id, e.target.checked)"
+                      class="w-3.5 h-3.5 rounded border-input text-primary focus:ring-primary cursor-pointer"
+                      :disabled="isUploadingImage"
+                    />
+                    <label :for="`default-image-${galleryInstanceId}-${item.id}`" class="text-[11px] font-medium text-foreground cursor-pointer select-none flex items-center gap-1.5">
+                      <span>Set as Default Image</span>
+                      <span v-if="item.isDefault" class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-primary text-primary-foreground uppercase tracking-wider">
+                        Default
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload Action Footer -->
+            <div class="pt-2 border-t border-primary/15 flex items-center justify-between gap-3">
+              <p class="text-[11px] text-muted-foreground hidden xs:inline">
+                Sequence order is automatically preserved from this queue.
+              </p>
+              <div class="flex items-center gap-2 ml-auto shrink-0">
                 <button 
                   type="button" 
-                  @click="confirmAddImage" 
-                  :disabled="isUploadingImage" 
+                  @click="cancelAddImage" 
+                  :disabled="isUploadingImage"
+                  class="h-8 px-3 rounded-lg border border-input bg-background hover:bg-muted text-foreground text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  @click="confirmBulkUpload" 
+                  :disabled="isUploadingImage || pendingImages.length === 0" 
                   class="h-8 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
                 >
                   <Loader2 v-if="isUploadingImage" class="w-3.5 h-3.5 animate-spin" />
                   <Upload v-else class="w-3.5 h-3.5" />
-                  <span>{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</span>
+                  <span>{{ isUploadingImage ? 'Uploading...' : `Upload All (${pendingImages.length})` }}</span>
                 </button>
               </div>
             </div>
