@@ -322,8 +322,9 @@ const handleSelectedFiles = (files: FileList | File[]) => {
   // automatically designate the first pending image as default.
   const hasExistingGallery = galleryImages.value.length > 0;
   const anyDefaultPending = pendingImages.value.some(p => p.isDefault);
-  if (!hasExistingGallery && !anyDefaultPending && newItems.length > 0 && newItems[0]) {
-    newItems[0].isDefault = true;
+  const firstNewItem = newItems[0];
+  if (!hasExistingGallery && !anyDefaultPending && firstNewItem) {
+    firstNewItem.isDefault = true;
   }
 
   pendingImages.value.push(...newItems);
@@ -383,8 +384,9 @@ const removePendingImage = (index: number) => {
   pendingImages.value.splice(index, 1);
 
   // If removed item was default, and product has no existing gallery images, designate first remaining item as default
-  if (wasDefault && galleryImages.value.length === 0 && pendingImages.value.length > 0 && pendingImages.value[0]) {
-    pendingImages.value[0].isDefault = true;
+  const firstRemainingItem = pendingImages.value[0];
+  if (wasDefault && galleryImages.value.length === 0 && firstRemainingItem) {
+    firstRemainingItem.isDefault = true;
   }
 };
 
@@ -429,8 +431,9 @@ const confirmBulkUpload = async () => {
     toastSuccess(`Successfully uploaded ${count} ${count === 1 ? 'image' : 'images'} to gallery`);
     
     emit('images-uploaded', result);
-    if (result.length > 0 && result[0]) {
-      emit('image-uploaded', result[0]);
+    const firstResult = result[0];
+    if (result.length > 0 && firstResult) {
+      emit('image-uploaded', firstResult);
     }
 
     await fetchProductImages(targetProductId);
