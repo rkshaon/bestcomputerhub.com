@@ -7,7 +7,8 @@ import {
   Loader2, 
   Check, 
   X, 
-  Image as ImageIcon 
+  Image as ImageIcon,
+  Images 
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
@@ -58,6 +59,43 @@ const canAddImageComputed = computed(() => {
 const canDeleteImageComputed = computed(() => {
   if (props.canDelete !== undefined) return props.canDelete;
   return hasPermission('product_api.add_productimage') || canDeleteInModule('/admin/products');
+});
+
+const canManageComputed = computed(() => {
+  return canAddImageComputed.value || canDeleteImageComputed.value;
+});
+
+// Dedicated Full Gallery Modal State & Handlers
+const isFullGalleryOpen = ref(false);
+
+const openFullGallery = () => {
+  isFullGalleryOpen.value = true;
+};
+
+const openFullGalleryAndAdd = () => {
+  isFullGalleryOpen.value = true;
+  isAddingImage.value = true;
+};
+
+const closeFullGallery = () => {
+  if (isDeletingImage.value) return;
+  isFullGalleryOpen.value = false;
+  cancelAddImage();
+  cancelDeleteProductImage();
+};
+
+const onPreviewOverflowClick = (img: ProductImage) => {
+  selectImage(img);
+  openFullGallery();
+};
+
+const modalTitle = computed(() => 'Product Image Gallery');
+
+const modalSubtitle = computed(() => {
+  if (props.product?.name) {
+    return `${props.product.name} — Manage and organize catalog images, default badges, and display sequence.`;
+  }
+  return 'Manage and organize catalog images, default badges, and display sequence.';
 });
 
 // Gallery state
@@ -162,6 +200,19 @@ const galleryImages = computed<ProductImage[]>(() => {
   return [];
 });
 
+// Up to 4 preview thumbnails for the compact inline gallery
+const previewImages = computed<ProductImage[]>(() => {
+  return galleryImages.value.slice(0, 4);
+});
+
+// Additional images count beyond the 3 shown normally
+const remainingImagesCount = computed<number>(() => {
+  if (galleryImages.value.length > 4) {
+    return galleryImages.value.length - 3;
+  }
+  return 0;
+});
+
 // Synchronize default / first selected image
 watch(
   galleryImages,
@@ -186,6 +237,7 @@ watch(
   [() => props.productId, () => props.product?.id, () => props.isOpen],
   ([newId, newProdId, isOpen], [oldId, oldProdId, prevIsOpen]) => {
     if (isOpen === false) {
+      isFullGalleryOpen.value = false;
       cancelAddImage();
       cancelDeleteProductImage();
       return;
@@ -196,9 +248,11 @@ watch(
 
     if (currentId) {
       if (currentId !== prevId || (isOpen && !prevIsOpen)) {
+        isFullGalleryOpen.value = false;
         fetchProductImages(currentId);
       }
     } else {
+      isFullGalleryOpen.value = false;
       productImages.value = [];
       activeSelectedImage.value = null;
       imageErrorMap.value = {};
@@ -320,9 +374,13 @@ const confirmAddImage = async () => {
 const imageToDelete = ref<ProductImage | null>(null);
 const isDeletingImage = ref(false);
 
-watch(imageToDelete, (val) => {
-  isSubmodalOpen.value = !!val;
-});
+watch(
+  [isFullGalleryOpen, imageToDelete],
+  ([isFullOpen, toDelete]) => {
+    isSubmodalOpen.value = Boolean(isFullOpen || toDelete);
+  },
+  { immediate: true }
+);
 
 const promptDeleteProductImage = (img: ProductImage) => {
   if (!canDeleteImageComputed.value) {
@@ -364,131 +422,51 @@ defineExpose({
   fetchProductImages,
   refresh: fetchProductImages,
   galleryImages,
-  productImages
+  productImages,
+  isFullGalleryOpen,
+  openFullGallery,
+  closeFullGallery
 });
 </script>
 
 <template>
   <div :class="cn('space-y-3', props.class)">
-    <!-- Header with count, loading indicator, and Add Image trigger -->
+    <!-- 1. Compact Inline Image Gallery Preview -->
     <div class="flex items-center justify-between border-b border-border pb-1.5">
       <div class="flex items-center gap-2">
         <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Product Image Gallery</span>
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
           {{ galleryImages.length }} {{ galleryImages.length === 1 ? 'image' : 'images' }}
         </span>
-      </div>
-      <div class="flex items-center gap-3">
-        <div v-if="isLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div v-if="isLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-1">
           <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
           <span class="text-[11px] font-medium hidden xs:inline">Fetching...</span>
         </div>
+      </div>
+      <div class="flex items-center gap-2">
         <button 
-          v-if="canAddImageComputed"
           type="button" 
-          @click="isAddingImage = !isAddingImage" 
-          :class="cn('text-xs font-semibold px-2 py-1 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer', isAddingImage ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary hover:bg-primary/20')"
+          @click="openFullGallery" 
+          class="text-xs font-semibold px-2.5 py-1 rounded-lg border border-input bg-background hover:bg-muted text-foreground transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
         >
-          <Upload class="w-3.5 h-3.5" />
-          <span>{{ isAddingImage ? 'Cancel Upload' : 'Add Image' }}</span>
+          <Images class="w-3.5 h-3.5 text-muted-foreground" />
+          <span>{{ canManageComputed ? 'Manage Gallery' : 'View Gallery' }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Upload Form (Inline) -->
-    <div v-if="isAddingImage" class="p-4 border border-primary/20 bg-primary/5 rounded-xl space-y-4 mb-4">
-      <input 
-        type="file" 
-        ref="imageFileInput" 
-        accept="image/jpeg,image/png,image/webp,image/gif" 
-        class="hidden" 
-        @change="onImageFileChange" 
-      />
-      
-      <div 
-        v-if="!newImageFile" 
-        @click="triggerImageUpload"
-        @dragover="onDragOver"
-        @dragleave="onDragLeave"
-        @drop="onDrop"
-        :class="cn(
-          'flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl bg-background/50 cursor-pointer transition-colors',
-          isDragging ? 'border-primary bg-primary/10' : 'border-primary/30 hover:bg-primary/5'
-        )"
-      >
-        <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-3">
-          <Upload class="w-5 h-5" />
-        </div>
-        <p class="text-sm font-semibold text-primary">Click or drop to select an image</p>
-        <p class="text-[11px] text-muted-foreground mt-1">Supports JPG, PNG, WEBP, GIF (Max 5MB)</p>
-      </div>
-
-      <div v-else class="flex gap-4">
-        <div class="w-24 h-24 sm:w-32 sm:h-32 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs shrink-0 overflow-hidden relative">
-          <img :src="newImagePreview!" alt="Preview" class="w-full h-full object-contain" />
-          <button 
-            type="button" 
-            @click.stop="cancelAddImage" 
-            class="absolute top-1 right-1 bg-background/80 hover:bg-destructive hover:text-destructive-foreground text-foreground backdrop-blur-xs p-1 rounded-md shadow-xs transition-colors cursor-pointer"
-            title="Remove image"
-            aria-label="Remove image"
-          >
-            <X class="w-3.5 h-3.5" />
-          </button>
-        </div>
-        
-        <div class="flex-1 space-y-3 min-w-0">
-          <div class="space-y-1">
-            <label class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground ml-1">Alt Text (Optional)</label>
-            <input 
-              v-model="newImageAltText" 
-              type="text" 
-              class="w-full h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20" 
-              placeholder="Describe the image for accessibility and SEO..."
-              :disabled="isUploadingImage"
-            />
-          </div>
-          
-          <div class="flex items-center gap-2">
-            <input 
-              type="checkbox" 
-              :id="`new-image-default-${galleryInstanceId}`" 
-              v-model="newImageIsDefault"
-              class="w-3.5 h-3.5 rounded border-input text-primary focus:ring-primary cursor-pointer"
-              :disabled="isUploadingImage || galleryImages.length === 0"
-            />
-            <label :for="`new-image-default-${galleryInstanceId}`" class="text-[11px] font-medium text-foreground cursor-pointer select-none">
-              Set as Default Image
-            </label>
-          </div>
-
-          <div class="pt-1">
-            <button 
-              type="button"
-              @click="confirmAddImage"
-              :disabled="isUploadingImage"
-              class="h-8 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              <Loader2 v-if="isUploadingImage" class="w-3.5 h-3.5 animate-spin" />
-              <Upload v-else class="w-3.5 h-3.5" />
-              <span>{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    <!-- Compact Preview Body -->
     <!-- Loading Skeleton State -->
-    <div v-if="isLoading && galleryImages.length === 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-      <div v-for="i in 4" :key="i" class="aspect-square rounded-xl bg-muted/40 animate-pulse border border-border flex items-center justify-center">
-        <Loader2 class="w-5 h-5 animate-spin text-muted-foreground/50" />
+    <div v-if="isLoading && galleryImages.length === 0" class="flex items-center gap-2.5">
+      <div v-for="i in 4" :key="i" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-muted/40 animate-pulse border border-border flex items-center justify-center shrink-0">
+        <Loader2 class="w-4 h-4 animate-spin text-muted-foreground/50" />
       </div>
     </div>
 
-    <!-- Gallery Cards Grid -->
-    <div v-else-if="galleryImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+    <!-- Preview Thumbnails (Up to 4) -->
+    <div v-else-if="galleryImages.length > 0" class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
       <div
-        v-for="(img, idx) in galleryImages"
+        v-for="(img, idx) in previewImages"
         :key="img.id ?? idx"
         @click="selectImage(img)"
         role="button"
@@ -496,7 +474,7 @@ defineExpose({
         @keydown.enter="selectImage(img)"
         @keydown.space.prevent="selectImage(img)"
         :class="cn(
-          'group relative flex flex-col rounded-xl border bg-card overflow-hidden transition-all cursor-pointer select-none',
+          'group relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl border bg-card overflow-hidden transition-all cursor-pointer select-none shrink-0 flex items-center justify-center p-1',
           isSelected(img)
             ? 'border-primary ring-2 ring-primary/20 shadow-xs'
             : 'border-border hover:border-primary/50 hover:shadow-xs'
@@ -504,70 +482,299 @@ defineExpose({
         :title="img.alt_text ? `${img.alt_text}${img.is_default ? ' (Default)' : ''}` : `Product Image ${idx + 1}${img.is_default ? ' (Default)' : ''}`"
         :aria-label="img.alt_text ? `Select ${img.alt_text}` : `Select product image ${idx + 1}`"
       >
-        <!-- Image Container with aspect ratio -->
-        <div class="aspect-square bg-muted/20 relative flex items-center justify-center p-3 overflow-hidden">
-          <img
-            :src="imageErrorMap[img.image || ''] ? 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80' : img.image"
-            :alt="img.alt_text || `Product image ${idx + 1}`"
-            @error="handleImageError(img.image)"
-            class="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
-          />
-          <!-- Default Badge -->
-          <span
-            v-if="img.is_default"
-            class="absolute top-2 left-2 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider leading-none"
-            title="Default product image"
-          >
-            Default
-          </span>
-          <!-- Display Order Badge -->
-          <span
-            v-if="img.display_order !== undefined && img.display_order !== null"
-            class="absolute top-2 right-2 bg-background/80 backdrop-blur-xs text-muted-foreground border border-border/60 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded leading-none"
-            title="Display order"
-          >
-            #{{ img.display_order }}
-          </span>
-        </div>
+        <img
+          :src="imageErrorMap[img.image || ''] ? 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80' : img.image"
+          :alt="img.alt_text || `Product image ${idx + 1}`"
+          @error="handleImageError(img.image)"
+          class="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+        />
 
-        <!-- Card Footer / Caption -->
-        <div class="p-2 bg-card border-t border-border/60 flex items-center justify-between gap-1 text-xs">
-          <span class="truncate text-[11px] font-medium text-foreground" :title="img.alt_text || `Image ${idx + 1}`">
-            {{ img.alt_text || `Image ${idx + 1}` }}
-          </span>
-          <div class="flex items-center gap-1 shrink-0">
-            <span
-              v-if="isSelected(img)"
-              class="text-[10px] font-bold text-primary flex items-center gap-0.5"
-            >
-              <Check class="w-3 h-3 stroke-[2.5]" />
-              <span class="hidden xs:inline">Selected</span>
+        <!-- Default Badge -->
+        <span
+          v-if="img.is_default && !(idx === 3 && remainingImagesCount > 0)"
+          class="absolute top-1 left-1 bg-primary text-primary-foreground text-[8px] font-bold px-1 py-0.2 rounded shadow-xs uppercase tracking-wider leading-none"
+          title="Default product image"
+        >
+          Default
+        </span>
+
+        <!-- Selected Checkmark indicator -->
+        <span
+          v-if="isSelected(img) && !(idx === 3 && remainingImagesCount > 0)"
+          class="absolute bottom-1 right-1 bg-primary text-primary-foreground p-0.5 rounded shadow-xs"
+          title="Selected"
+        >
+          <Check class="w-2.5 h-2.5 stroke-[3]" />
+        </span>
+
+        <!-- 4th thumbnail overlay when more than 4 images exist -->
+        <div
+          v-if="idx === 3 && remainingImagesCount > 0"
+          @click.stop="onPreviewOverflowClick(img)"
+          role="button"
+          tabindex="0"
+          @keydown.enter.stop="onPreviewOverflowClick(img)"
+          @keydown.space.prevent.stop="onPreviewOverflowClick(img)"
+          class="absolute inset-0 bg-slate-950/75 backdrop-blur-[2px] flex flex-col items-center justify-center text-white text-center transition-colors hover:bg-slate-950/85 cursor-pointer p-0.5"
+          :title="`+${remainingImagesCount} more images in gallery. Click to view all.`"
+          aria-label="View all gallery images"
+        >
+          <span class="text-xs sm:text-sm font-extrabold tracking-tight font-mono leading-none">+{{ remainingImagesCount }}</span>
+          <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider leading-tight mt-0.5">more</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compact Empty State -->
+    <div v-else class="p-3.5 rounded-xl border border-dashed border-border bg-muted/20 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+          <ImageIcon class="w-4 h-4" />
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-foreground">No gallery images</p>
+          <p class="text-[11px] text-muted-foreground">No images have been added to this product's catalog.</p>
+        </div>
+      </div>
+      <button
+        v-if="canAddImageComputed"
+        type="button"
+        @click="openFullGalleryAndAdd"
+        class="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs"
+      >
+        <Upload class="w-3.5 h-3.5" />
+        <span>Add Image</span>
+      </button>
+    </div>
+
+    <!-- 2. Dedicated Full Gallery Modal -->
+    <UiAdminModal
+      :is-open="isFullGalleryOpen"
+      max-width="max-w-4xl"
+      :title="modalTitle"
+      :subtitle="modalSubtitle"
+      :close-on-escape="!imageToDelete"
+      :close-on-backdrop="!imageToDelete"
+      @close="closeFullGallery"
+    >
+      <div class="p-6 space-y-6 overflow-y-auto max-h-[75vh] flex flex-col cursor-default">
+        <!-- Gallery Action Bar inside modal -->
+        <div class="flex items-center justify-between border-b border-border pb-3 shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-foreground">Catalog Images</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
+              {{ galleryImages.length }} {{ galleryImages.length === 1 ? 'image' : 'images' }}
             </span>
-            <button
-              v-if="canDeleteImageComputed && img.id !== undefined && img.id !== null"
-              type="button"
-              @click.stop="promptDeleteProductImage(img)"
-              class="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-              title="Delete image"
-              aria-label="Delete image"
+            <div v-if="isLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
+              <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+              <span class="text-[11px] font-medium hidden xs:inline">Updating...</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button 
+              v-if="canAddImageComputed"
+              type="button" 
+              @click="isAddingImage = !isAddingImage" 
+              :class="cn(
+                'text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs',
+                isAddingImage ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary hover:bg-primary/20'
+              )"
             >
-              <Trash2 class="w-3.5 h-3.5" />
+              <Upload class="w-3.5 h-3.5" />
+              <span>{{ isAddingImage ? 'Cancel Upload' : 'Add Image' }}</span>
             </button>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Empty State -->
-    <div v-else class="p-6 rounded-xl border border-dashed border-border bg-muted/20 flex flex-col items-center justify-center text-center gap-2">
-      <div class="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
-        <ImageIcon class="w-5 h-5" />
-      </div>
-      <p class="text-xs font-semibold text-foreground">No images available</p>
-      <p class="text-[11px] text-muted-foreground">No gallery images have been recorded for this product.</p>
-    </div>
+        <!-- Upload Form (Inline inside modal) -->
+        <div v-if="isAddingImage" class="p-4 border border-primary/20 bg-primary/5 rounded-xl space-y-4">
+          <input 
+            type="file" 
+            ref="imageFileInput" 
+            accept="image/jpeg,image/png,image/webp,image/gif" 
+            class="hidden" 
+            @change="onImageFileChange" 
+          />
+          
+          <div 
+            v-if="!newImageFile" 
+            @click="triggerImageUpload"
+            @dragover="onDragOver"
+            @dragleave="onDragLeave"
+            @drop="onDrop"
+            :class="cn(
+              'flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl bg-background/50 cursor-pointer transition-colors',
+              isDragging ? 'border-primary bg-primary/10' : 'border-primary/30 hover:bg-primary/5'
+            )"
+          >
+            <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-3">
+              <Upload class="w-5 h-5" />
+            </div>
+            <p class="text-sm font-semibold text-primary">Click or drop to select an image</p>
+            <p class="text-[11px] text-muted-foreground mt-1">Supports JPG, PNG, WEBP, GIF (Max 5MB)</p>
+          </div>
 
-    <!-- Product Image Delete Confirmation Modal -->
+          <div v-else class="flex gap-4">
+            <div class="w-24 h-24 sm:w-32 sm:h-32 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs shrink-0 overflow-hidden relative">
+              <img :src="newImagePreview!" alt="Preview" class="w-full h-full object-contain" />
+              <button 
+                type="button" 
+                @click.stop="cancelAddImage" 
+                class="absolute top-1 right-1 bg-background/80 hover:bg-destructive hover:text-destructive-foreground text-foreground backdrop-blur-xs p-1 rounded-md shadow-xs transition-colors cursor-pointer"
+                title="Remove image"
+                aria-label="Remove image"
+              >
+                <X class="w-3.5 h-3.5" />
+              </button>
+            </div>
+            
+            <div class="flex-1 space-y-3 min-w-0">
+              <div class="space-y-1">
+                <label class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground ml-1">Alt Text (Optional)</label>
+                <input 
+                  v-model="newImageAltText" 
+                  type="text" 
+                  class="w-full h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20" 
+                  placeholder="Describe the image for accessibility and SEO..."
+                  :disabled="isUploadingImage"
+                />
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  :id="`new-image-default-${galleryInstanceId}`" 
+                  v-model="newImageIsDefault"
+                  class="w-3.5 h-3.5 rounded border-input text-primary focus:ring-primary cursor-pointer"
+                  :disabled="isUploadingImage || galleryImages.length === 0"
+                />
+                <label :for="`new-image-default-${galleryInstanceId}`" class="text-[11px] font-medium text-foreground cursor-pointer select-none">
+                  Set as Default Image
+                </label>
+              </div>
+
+              <div class="pt-1">
+                <button 
+                  type="button" 
+                  @click="confirmAddImage" 
+                  :disabled="isUploadingImage" 
+                  class="h-8 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                >
+                  <Loader2 v-if="isUploadingImage" class="w-3.5 h-3.5 animate-spin" />
+                  <Upload v-else class="w-3.5 h-3.5" />
+                  <span>{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading Skeleton in Full Modal -->
+        <div v-if="isLoading && galleryImages.length === 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div v-for="i in 4" :key="i" class="aspect-square rounded-xl bg-muted/40 animate-pulse border border-border flex items-center justify-center">
+            <Loader2 class="w-5 h-5 animate-spin text-muted-foreground/50" />
+          </div>
+        </div>
+
+        <!-- Full Gallery Cards Grid -->
+        <div v-else-if="galleryImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div
+            v-for="(img, idx) in galleryImages"
+            :key="img.id ?? idx"
+            @click="selectImage(img)"
+            role="button"
+            tabindex="0"
+            @keydown.enter="selectImage(img)"
+            @keydown.space.prevent="selectImage(img)"
+            :class="cn(
+              'group relative flex flex-col rounded-xl border bg-card overflow-hidden transition-all cursor-pointer select-none',
+              isSelected(img)
+                ? 'border-primary ring-2 ring-primary/20 shadow-xs'
+                : 'border-border hover:border-primary/50 hover:shadow-xs'
+            )"
+            :title="img.alt_text ? `${img.alt_text}${img.is_default ? ' (Default)' : ''}` : `Product Image ${idx + 1}${img.is_default ? ' (Default)' : ''}`"
+            :aria-label="img.alt_text ? `Select ${img.alt_text}` : `Select product image ${idx + 1}`"
+          >
+            <!-- Image Container with aspect ratio -->
+            <div class="aspect-square bg-muted/20 relative flex items-center justify-center p-3 overflow-hidden">
+              <img
+                :src="imageErrorMap[img.image || ''] ? 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80' : img.image"
+                :alt="img.alt_text || `Product image ${idx + 1}`"
+                @error="handleImageError(img.image)"
+                class="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+              />
+              <!-- Default Badge -->
+              <span
+                v-if="img.is_default"
+                class="absolute top-2 left-2 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider leading-none"
+                title="Default product image"
+              >
+                Default
+              </span>
+              <!-- Display Order Badge -->
+              <span
+                v-if="img.display_order !== undefined && img.display_order !== null"
+                class="absolute top-2 right-2 bg-background/80 backdrop-blur-xs text-muted-foreground border border-border/60 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded leading-none"
+                title="Display order"
+              >
+                #{{ img.display_order }}
+              </span>
+            </div>
+
+            <!-- Card Footer / Caption -->
+            <div class="p-2 bg-card border-t border-border/60 flex items-center justify-between gap-1 text-xs">
+              <span class="truncate text-[11px] font-medium text-foreground" :title="img.alt_text || `Image ${idx + 1}`">
+                {{ img.alt_text || `Image ${idx + 1}` }}
+              </span>
+              <div class="flex items-center gap-1 shrink-0">
+                <span
+                  v-if="isSelected(img)"
+                  class="text-[10px] font-bold text-primary flex items-center gap-0.5"
+                >
+                  <Check class="w-3 h-3 stroke-[2.5]" />
+                  <span class="hidden xs:inline">Selected</span>
+                </span>
+                <button
+                  v-if="canDeleteImageComputed && img.id !== undefined && img.id !== null"
+                  type="button"
+                  @click.stop="promptDeleteProductImage(img)"
+                  class="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                  title="Delete image"
+                  aria-label="Delete image"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State in Full Modal -->
+        <div v-else class="p-8 rounded-xl border border-dashed border-border bg-muted/20 flex flex-col items-center justify-center text-center gap-2">
+          <div class="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+            <ImageIcon class="w-6 h-6" />
+          </div>
+          <p class="text-sm font-semibold text-foreground">No images available</p>
+          <p class="text-xs text-muted-foreground max-w-sm">No gallery images have been recorded for this product yet. Click "Add Image" above to upload images.</p>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-4 border-t border-border flex items-center justify-between shrink-0 bg-card">
+          <span class="text-xs text-muted-foreground">
+            {{ canManageComputed ? 'Select an image to preview it as the main product image.' : 'Click any image to view it as the main image.' }}
+          </span>
+          <UiButton 
+            variant="outline" 
+            class="rounded-xl h-9 px-4 text-xs font-bold cursor-pointer"
+            @click="closeFullGallery"
+          >
+            Done
+          </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- 3. Product Image Delete Confirmation Modal -->
     <UiAdminModal 
       :is-open="!!imageToDelete"
       max-width="max-w-md"
