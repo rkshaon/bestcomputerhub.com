@@ -1993,8 +1993,9 @@ onUnmounted(() => {
         </div>
 
         <!-- Product Content Container -->
-        <!-- Scrollable Modal Body -->
-        <div class="p-6 sm:p-8 space-y-6 overflow-y-auto max-h-[70vh]">
+        <div v-else class="flex flex-col overflow-hidden">
+          <!-- Scrollable Modal Body -->
+          <div class="p-6 sm:p-8 space-y-6 overflow-y-auto max-h-[70vh]">
           <!-- Error Banner -->
           <div v-if="modalFormError" class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2.5 text-xs font-medium text-destructive">
             <AlertCircle class="w-4 h-4 shrink-0" />
@@ -2222,6 +2223,7 @@ onUnmounted(() => {
           >
             Close
           </button>
+        </div>
         </div>
       </div>
     </UiAdminModal>
