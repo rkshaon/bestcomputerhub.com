@@ -55,12 +55,12 @@ const { hasPermission, canEditInModule, canDeleteInModule } = useAdminPermission
 // Permissions
 const canAddImageComputed = computed(() => {
   if (props.canAdd !== undefined) return props.canAdd;
-  return hasPermission('product_api.add_productimage') || canEditInModule('/admin/products');
+  return hasPermission('product_api.add_productimage');
 });
 
 const canDeleteImageComputed = computed(() => {
   if (props.canDelete !== undefined) return props.canDelete;
-  return hasPermission('product_api.add_productimage') || canDeleteInModule('/admin/products');
+  return hasPermission('product_api.delete_productimage');
 });
 
 const canManageComputed = computed(() => {
