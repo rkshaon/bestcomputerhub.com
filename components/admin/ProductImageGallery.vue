@@ -9,7 +9,8 @@ import {
   X, 
   Plus,
   Image as ImageIcon,
-  Images 
+  Images,
+  Pencil
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
@@ -63,8 +64,12 @@ const canDeleteImageComputed = computed(() => {
   return hasPermission('product_api.delete_productimage');
 });
 
+const canEditImageComputed = computed(() => {
+  return hasPermission('product_api.change_productimage');
+});
+
 const canManageComputed = computed(() => {
-  return canAddImageComputed.value || canDeleteImageComputed.value;
+  return canAddImageComputed.value || canDeleteImageComputed.value || canEditImageComputed.value;
 });
 
 // Dedicated Full Gallery Modal State & Handlers
@@ -80,10 +85,11 @@ const openFullGalleryAndAdd = () => {
 };
 
 const closeFullGallery = () => {
-  if (isDeletingImage.value || isUploadingImage.value) return;
+  if (isDeletingImage.value || isUploadingImage.value || isUpdatingImage.value) return;
   isFullGalleryOpen.value = false;
   cancelAddImage();
   cancelDeleteProductImage();
+  cancelEditProductImage();
 };
 
 const onPreviewOverflowClick = (img: ProductImage) => {
@@ -450,10 +456,15 @@ const confirmBulkUpload = async () => {
 const imageToDelete = ref<ProductImage | null>(null);
 const isDeletingImage = ref(false);
 
+// Edit State & Handlers
+const imageToEdit = ref<ProductImage | null>(null);
+const editAltTextVal = ref('');
+const isUpdatingImage = ref(false);
+
 watch(
-  [isFullGalleryOpen, imageToDelete],
-  ([isFullOpen, toDelete]) => {
-    isSubmodalOpen.value = Boolean(isFullOpen || toDelete);
+  [isFullGalleryOpen, imageToDelete, imageToEdit],
+  ([isFullOpen, toDelete, toEdit]) => {
+    isSubmodalOpen.value = Boolean(isFullOpen || toDelete || toEdit);
   },
   { immediate: true }
 );
@@ -491,6 +502,52 @@ const confirmDeleteProductImage = async () => {
     handleApiError(error, 'Failed to delete product image');
   } finally {
     isDeletingImage.value = false;
+  }
+};
+
+const promptEditProductImage = (img: ProductImage) => {
+  if (!canEditImageComputed.value) {
+    toastError('You do not have permission to edit product images.');
+    return;
+  }
+  imageToEdit.value = img;
+  editAltTextVal.value = img.alt_text || '';
+};
+
+const cancelEditProductImage = () => {
+  if (isUpdatingImage.value) return;
+  imageToEdit.value = null;
+  editAltTextVal.value = '';
+};
+
+const confirmEditProductImage = async () => {
+  if (!imageToEdit.value || imageToEdit.value.id === undefined || imageToEdit.value.id === null || isUpdatingImage.value) return;
+
+  const targetImageId = imageToEdit.value.id;
+  const newAltText = editAltTextVal.value.trim();
+  isUpdatingImage.value = true;
+
+  try {
+    const updated = await productService.updateProductImage(targetImageId, { alt_text: newAltText });
+    const idx = productImages.value.findIndex(img => String(img.id) === String(targetImageId));
+    if (idx !== -1 && productImages.value[idx]) {
+      productImages.value[idx] = {
+        ...productImages.value[idx],
+        alt_text: updated.alt_text ?? newAltText
+      };
+    }
+    if (activeSelectedImage.value && String(activeSelectedImage.value.id) === String(targetImageId)) {
+      activeSelectedImage.value = {
+        ...activeSelectedImage.value,
+        alt_text: updated.alt_text ?? newAltText
+      };
+    }
+    toastSuccess('Product image alt text updated successfully.');
+    cancelEditProductImage();
+  } catch (error: any) {
+    handleApiError(error, 'Failed to update product image alt text');
+  } finally {
+    isUpdatingImage.value = false;
   }
 };
 
@@ -895,6 +952,16 @@ defineExpose({
                   <span class="hidden xs:inline">Selected</span>
                 </span>
                 <button
+                  v-if="canEditImageComputed && img.id !== undefined && img.id !== null"
+                  type="button"
+                  @click.stop="promptEditProductImage(img)"
+                  class="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                  title="Edit alt text"
+                  aria-label="Edit alt text"
+                >
+                  <Pencil class="w-3.5 h-3.5" />
+                </button>
+                <button
                   v-if="canDeleteImageComputed && img.id !== undefined && img.id !== null"
                   type="button"
                   @click.stop="promptDeleteProductImage(img)"
@@ -989,6 +1056,79 @@ defineExpose({
             <Loader2 v-if="isDeletingImage" class="w-4 h-4 animate-spin" />
             <Trash2 v-else class="w-3.5 h-3.5" />
             <span>{{ isDeletingImage ? 'Deleting...' : 'Delete Image' }}</span>
+          </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- 4. Product Image Edit Alt Text Modal -->
+    <UiAdminModal 
+      :is-open="!!imageToEdit"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="cancelEditProductImage"
+    >
+      <div class="p-6 space-y-6">
+        <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+          <Pencil class="w-6 h-6" />
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold text-foreground">Edit Image Alt Text</h3>
+          <p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            Update the descriptive alt text for accessibility and SEO.
+          </p>
+
+          <div v-if="imageToEdit?.image" class="mt-4 flex items-center gap-3 p-2.5 rounded-xl border border-border bg-muted/20">
+            <div class="w-12 h-12 rounded-lg border border-border overflow-hidden bg-muted/40 p-1 flex items-center justify-center shrink-0">
+              <img 
+                :src="imageErrorMap[imageToEdit.image] ? 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80' : imageToEdit.image" 
+                :alt="imageToEdit.alt_text || 'Image to edit'" 
+                class="w-full h-full object-contain" 
+              />
+            </div>
+            <div class="min-w-0 flex-1 text-xs">
+              <p class="font-medium text-foreground truncate">
+                {{ imageToEdit.alt_text || 'Product Image' }}
+              </p>
+              <div class="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                <span v-if="imageToEdit.is_default" class="text-primary font-bold uppercase text-[9px]">Default Image</span>
+                <span v-if="imageToEdit.display_order !== undefined">Order #{{ imageToEdit.display_order }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 space-y-1.5">
+            <label class="text-xs font-semibold text-foreground">Alt Text</label>
+            <input 
+              v-model="editAltTextVal" 
+              type="text" 
+              class="w-full h-10 px-3 bg-background border border-input rounded-xl outline-none text-xs text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20" 
+              placeholder="e.g. Front view of product in studio lighting"
+              :disabled="isUpdatingImage"
+              @keydown.enter.prevent="confirmEditProductImage"
+            />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <UiButton 
+            variant="outline" 
+            class="rounded-xl h-10 px-5 text-xs font-bold cursor-pointer"
+            @click="cancelEditProductImage"
+            :disabled="isUpdatingImage"
+          >
+            Cancel
+          </UiButton>
+
+          <UiButton 
+            class="rounded-xl h-10 px-5 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 gap-2 cursor-pointer"
+            @click="confirmEditProductImage"
+            :disabled="isUpdatingImage"
+          >
+            <Loader2 v-if="isUpdatingImage" class="w-4 h-4 animate-spin" />
+            <Check v-else class="w-3.5 h-3.5" />
+            <span>{{ isUpdatingImage ? 'Saving...' : 'Save Changes' }}</span>
           </UiButton>
         </div>
       </div>
