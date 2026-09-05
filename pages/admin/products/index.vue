@@ -1548,83 +1548,164 @@ onUnmounted(() => {
 
       <form v-else @submit.prevent="handleModalProductSubmit" class="flex flex-col">
         <!-- Scrollable Modal Body -->
-        <div class="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
+        <div class="p-6 sm:p-8 space-y-6 overflow-y-auto max-h-[70vh]">
           <!-- Error Banner -->
           <div v-if="modalFormError" class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2.5 text-xs font-medium text-destructive">
             <AlertCircle class="w-4 h-4 shrink-0" />
             <span>{{ modalFormError }}</span>
           </div>
 
-          <!-- Product Name -->
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Product Name <span class="text-destructive">*</span></span>
-              <span v-if="modalFieldErrors.name" class="text-destructive font-normal normal-case text-xs">{{ modalFieldErrors.name }}</span>
-            </label>
-            <input
-              ref="modalProductNameInputRef"
-              v-model="modalProductName"
-              type="text"
-              placeholder="e.g. GeForce RTX 4090 Gaming OC 24G"
-              :class="cn(
-                'w-full h-11 px-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2',
-                modalFieldErrors.name ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
-              )"
-              :disabled="isModalSubmitting"
-            />
-          </div>
-
-          <!-- Categories Selector -->
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Categories <span class="text-destructive">*</span></span>
-              <span v-if="modalFieldErrors.categories" class="text-destructive font-normal normal-case text-xs">{{ modalFieldErrors.categories }}</span>
-            </label>
-
-            <!-- Selected Category Pills / Chips -->
-            <div v-if="modalSelectedCategoryIds.length > 0" class="flex flex-wrap gap-1.5 mb-2">
-              <span 
-                v-for="catId in modalSelectedCategoryIds" 
-                :key="catId"
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-medium"
-              >
-                <Layers class="w-3 h-3" />
-                <span>{{ getModalCategoryNameById(catId) }}</span>
-                <button
-                  type="button"
-                  @click="removeModalCategorySelection(catId)"
-                  class="text-primary/70 hover:text-primary hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer"
-                  title="Remove category"
-                  aria-label="Remove category"
-                >
-                  <X class="w-3 h-3" />
-                </button>
-              </span>
+          <!-- Product Hero Card -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-5 bg-muted/40 rounded-2xl border border-border">
+            <div v-if="modalState.isEdit.value" class="w-20 h-20 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs overflow-hidden shrink-0 relative">
+              <div v-if="isModalImagesLoading" class="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-xs z-10">
+                <Loader2 class="w-4 h-4 animate-spin text-primary" />
+              </div>
+              <img 
+                :src="modalMainImageUrl" 
+                :alt="modalMainImageAlt" 
+                @error="handleModalImageError(selectedGalleryImage?.image)"
+                class="w-full h-full object-contain" 
+              />
             </div>
-
-            <!-- Modal Category Dropdown Trigger -->
-            <div ref="modalCategoryDropdownRef" class="relative">
-              <button
-                type="button"
-                @click.stop="toggleModalCategoryDropdown"
-                :class="cn(
-                  'w-full h-11 px-3.5 bg-background border rounded-xl text-left text-sm font-medium transition-all flex items-center justify-between gap-2 cursor-pointer focus:ring-2',
-                  modalFieldErrors.categories ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20',
-                  modalSelectedCategoryIds.length === 0 ? 'text-muted-foreground' : 'text-foreground'
-                )"
-                :disabled="isModalSubmitting"
-                aria-haspopup="listbox"
-                :aria-expanded="isModalCategoryDropdownOpen"
-              >
-                <div class="flex items-center gap-2 truncate">
-                  <Layers class="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span class="truncate">
-                    {{ modalSelectedCategoryIds.length === 0 ? 'Select one or more categories...' : `${modalSelectedCategoryIds.length} categories selected` }}
+            
+            <div class="flex-1 min-w-0 space-y-1.5 w-full">
+              <!-- Name is editable -->
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                  <span>Product Name <span class="text-destructive">*</span></span>
+                  <span v-if="modalFieldErrors.name" class="text-destructive font-normal normal-case text-xs">{{ modalFieldErrors.name }}</span>
+                </label>
+                <input
+                  ref="modalProductNameInputRef"
+                  v-model="modalProductName"
+                  type="text"
+                  placeholder="e.g. GeForce RTX 4090 Gaming OC 24G"
+                  :class="cn(
+                    'w-full h-11 px-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2',
+                    modalFieldErrors.name ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
+                  )"
+                  :disabled="isModalSubmitting"
+                />
+              </div>
+              <!-- Read-only context -->
+              <div v-if="modalState.isEdit.value && selectedProduct" class="flex items-center gap-2 flex-wrap text-xs pt-1">
+                <span class="font-mono text-primary font-bold bg-primary/10 px-2 py-0.5 rounded text-[11px]">
+                  {{ selectedProduct.slug }}
+                </span>
+                <span class="font-mono text-muted-foreground text-[11px] font-semibold">
+                  SKU: {{ selectedProduct.sku || 'N/A' }}
+                </span>
+                <div class="flex items-center gap-1.5 ml-auto">
+                  <span :class="cn(
+                    'w-2 h-2 rounded-full',
+                    selectedProduct.is_active !== false ? 'bg-emerald-500' : 'bg-muted-foreground'
+                  )"></span>
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {{ selectedProduct.is_active !== false ? 'Active' : 'Inactive' }}
                   </span>
                 </div>
-                <ChevronDown :class="cn('w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0', isModalCategoryDropdownOpen && 'rotate-180')" />
-              </button>
+              </div>
+            </div>
+          </div>
 
+          <!-- Pricing & Core Identifiers Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <!-- Selling Price is editable -->
+            <div class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1 sm:col-span-1">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex justify-between">
+                <span>Selling Price <span class="text-destructive">*</span></span>
+              </label>
+              <div class="relative mt-1">
+                <div class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-xs pointer-events-none">
+                  Tk
+                </div>
+                <input
+                  v-model.number="modalCurrentSellingPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  :class="cn(
+                    'w-full h-8 pl-8 pr-2.5 bg-background border rounded-lg outline-none text-xs font-mono font-bold text-foreground placeholder:text-muted-foreground transition-all focus:ring-2',
+                    modalFieldErrors.price ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
+                  )"
+                  :disabled="isModalSubmitting"
+                />
+              </div>
+            </div>
+            <!-- Read-only core identifiers -->
+            <div v-if="modalState.isEdit.value && selectedProduct" class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Product ID</span>
+              <p class="text-base font-bold text-foreground font-mono">
+                #{{ selectedProduct.id }}
+              </p>
+            </div>
+            <div v-if="modalState.isEdit.value && selectedProduct" class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Legacy ID</span>
+              <p class="text-base font-bold text-foreground font-mono">
+                {{ selectedProduct.legacy_id !== null && selectedProduct.legacy_id !== undefined ? `#${selectedProduct.legacy_id}` : 'N/A' }}
+              </p>
+            </div>
+            <div v-if="modalState.isEdit.value && selectedProduct" class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Inventory Stock</span>
+              <p class="text-base font-bold text-foreground font-mono">
+                {{ selectedProduct.stock ?? 0 }} units
+              </p>
+            </div>
+          </div>
+
+          <!-- Classifications Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Assigned Categories Editable -->
+            <div class="p-4 bg-muted/20 border border-border rounded-xl space-y-2" :class="modalState.isEdit.value && selectedProduct ? '' : 'sm:col-span-2'">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex justify-between">
+                <span>Assigned Categories <span class="text-destructive">*</span></span>
+                <span v-if="modalFieldErrors.categories" class="text-destructive font-normal normal-case">{{ modalFieldErrors.categories }}</span>
+              </span>
+              
+              <!-- Selected Category Pills / Chips -->
+              <div v-if="modalSelectedCategoryIds.length > 0" class="flex flex-wrap gap-1.5 mt-1">
+                <span 
+                  v-for="catId in modalSelectedCategoryIds" 
+                  :key="catId"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-medium"
+                >
+                  <Layers class="w-3 h-3" />
+                  <span>{{ getModalCategoryNameById(catId) }}</span>
+                  <button
+                    type="button"
+                    @click="removeModalCategorySelection(catId)"
+                    class="text-primary/70 hover:text-primary hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer"
+                    title="Remove category"
+                    aria-label="Remove category"
+                  >
+                    <X class="w-3 h-3" />
+                  </button>
+                </span>
+              </div>
+              
+              <!-- Modal Category Dropdown Trigger -->
+              <div ref="modalCategoryDropdownRef" class="relative mt-2">
+                <button
+                  type="button"
+                  @click.stop="toggleModalCategoryDropdown"
+                  :class="cn(
+                    'w-full h-10 px-3 bg-background border rounded-xl text-left text-xs font-medium transition-all flex items-center justify-between gap-2 cursor-pointer focus:ring-2',
+                    modalFieldErrors.categories ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20',
+                    modalSelectedCategoryIds.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                  )"
+                  :disabled="isModalSubmitting"
+                >
+                  <div class="flex items-center gap-2 truncate">
+                    <Layers class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span class="truncate">
+                      {{ modalSelectedCategoryIds.length === 0 ? 'Select categories...' : `Add more categories...` }}
+                    </span>
+                  </div>
+                  <ChevronDown :class="cn('w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0', isModalCategoryDropdownOpen && 'rotate-180')" />
+                </button>
+                
               <!-- Category Dropdown Popover -->
               <div 
                 v-if="isModalCategoryDropdownOpen"
@@ -1641,7 +1722,6 @@ onUnmounted(() => {
                     class="w-full h-8 pl-8 pr-2.5 text-xs bg-muted/50 border border-input rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring/20"
                   />
                 </div>
-
                 <!-- Header & Clear Option -->
                 <div class="flex items-center justify-between px-1 py-1 mb-1 border-b border-border/60 text-[11px]">
                   <span class="text-muted-foreground font-semibold">Available Categories</span>
@@ -1654,7 +1734,6 @@ onUnmounted(() => {
                     Clear selection ({{ modalSelectedCategoryIds.length }})
                   </button>
                 </div>
-
                 <!-- Infinite Scroll List of Categories -->
                 <div class="max-h-52 overflow-y-auto space-y-0.5 p-0.5 scrollbar-thin">
                   <button
@@ -1678,18 +1757,15 @@ onUnmounted(() => {
                       <Check v-if="isModalCategorySelected(cat.id)" class="w-3 h-3 stroke-[3]" />
                     </div>
                   </button>
-
                   <!-- Loading State -->
                   <div v-if="modalCategoryPagination.isLoading.value && modalCategoryPagination.items.value.length === 0" class="py-4 text-center text-muted-foreground flex items-center justify-center gap-2 text-xs">
                     <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
                     <span>Loading categories...</span>
                   </div>
-
                   <!-- Empty Category State -->
                   <div v-if="!modalCategoryPagination.isLoading.value && modalCategoryPagination.items.value.length === 0" class="py-4 text-center text-muted-foreground text-xs">
                     No matching categories found.
                   </div>
-
                   <!-- Infinite Scroll Sentinel -->
                   <UiInfiniteScroll
                     :has-more="modalCategoryPagination.hasMore.value"
@@ -1700,39 +1776,32 @@ onUnmounted(() => {
                   />
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- Current Selling Price -->
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Current Selling Price <span class="text-destructive">*</span></span>
-              <span v-if="modalFieldErrors.price" class="text-destructive font-normal normal-case text-xs">{{ modalFieldErrors.price }}</span>
-            </label>
-            <div class="relative">
-              <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm pointer-events-none">
-                Tk
               </div>
-              <input
-                v-model.number="modalCurrentSellingPrice"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                :class="cn(
-                  'w-full h-11 pl-9 pr-3.5 bg-background border rounded-xl outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:ring-2 font-mono',
-                  modalFieldErrors.price ? 'border-destructive focus:ring-destructive/20' : 'border-input focus:ring-ring/20'
-                )"
-                :disabled="isModalSubmitting"
-              />
             </div>
-            <p class="text-[11px] text-muted-foreground">Standard retail unit price for transactions in BDT (Tk).</p>
+            <!-- Category Origin Readonly -->
+            <div v-if="modalState.isEdit.value && selectedProduct" class="p-4 bg-muted/20 border border-border rounded-xl space-y-2 sm:col-span-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category Origin</span>
+              <div v-if="selectedProduct.origin" class="p-2.5 bg-muted/30 border border-border rounded-xl text-xs inline-block mt-1 w-full">
+                <div class="flex items-center gap-3">
+                  <span class="font-bold text-foreground">{{ typeof selectedProduct.origin === 'object' ? selectedProduct.origin.name : selectedProduct.origin }}</span>
+                  <span v-if="typeof selectedProduct.origin === 'object' && selectedProduct.origin.id" class="font-mono text-[10px] text-muted-foreground">ID: #{{ selectedProduct.origin.id }}</span>
+                </div>
+                <p v-if="typeof selectedProduct.origin === 'object' && selectedProduct.origin.slug" class="text-[11px] font-mono text-muted-foreground mt-0.5">
+                  Slug: {{ selectedProduct.origin.slug }}
+                </p>
+                <p v-if="typeof selectedProduct.origin === 'object' && selectedProduct.origin.parent" class="text-[11px] text-muted-foreground mt-0.5">
+                  Parent: {{ selectedProduct.origin.parent }}
+                </p>
+              </div>
+              <p v-else class="text-xs text-muted-foreground italic mt-1">No category origin recorded.</p>
+            </div>
           </div>
 
-          <!-- Rich-Text HTML Fields in Edit Mode -->
-          <template v-if="modalState.isEdit.value">
+          <!-- Rich-Text HTML Fields -->
+          <div>
             <!-- Short Description -->
-            <div class="space-y-1.5 pt-2 border-t border-border/60">
+            <div class="space-y-1.5 pt-4 border-t border-border/60">
               <UiRichTextEditor
                 v-model="modalShortDescription"
                 label="Short Description"
@@ -1742,9 +1811,8 @@ onUnmounted(() => {
                 helper-text="Concise summary displayed on product cards and catalog overviews."
               />
             </div>
-
             <!-- Full Description -->
-            <div class="space-y-1.5 pt-2 border-t border-border/60">
+            <div class="space-y-1.5 pt-4 border-t border-border/60">
               <UiRichTextEditor
                 v-model="modalDescription"
                 label="Description"
@@ -1754,9 +1822,8 @@ onUnmounted(() => {
                 helper-text="Full product details with headings, bullet points, formatting, and paragraphs."
               />
             </div>
-
             <!-- Technical Specifications -->
-            <div class="space-y-1.5 pt-2 border-t border-border/60">
+            <div class="space-y-1.5 pt-4 border-t border-border/60">
               <UiRichTextEditor
                 v-model="modalSpecifications"
                 label="Specifications"
@@ -1767,19 +1834,70 @@ onUnmounted(() => {
                 helper-text="HTML specification table containing structured technical hardware parameters."
               />
             </div>
-
-            <!-- Dedicated Product Image Gallery Section -->
+          </div>
+          <!-- Dedicated Product Image Gallery Section -->
+          <div v-if="modalState.isEdit.value" class="space-y-1.5 pt-4 border-t border-border/60">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Product Image Gallery</span>
             <ProductImageGallery
               :product="selectedProduct"
               :product-id="selectedProduct?.id"
               v-model:selected-image="selectedGalleryImage"
               v-model:is-submodal-open="isGallerySubmodalOpen"
               v-model:is-loading="isModalImagesLoading"
-              class="pt-6 border-t border-border/60 mt-4"
+              
+              class="pt-2"
             />
-          </template>
-        </div>
+          </div>
 
+          <!-- Price History Section (Read-Only) -->
+          <div v-if="modalState.isEdit.value && selectedProduct" class="space-y-2 pt-4 border-t border-border/60">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Price History</span>
+            <div v-if="selectedProduct.price_histories && selectedProduct.price_histories.length > 0" class="border border-border rounded-xl overflow-hidden divide-y divide-border text-xs">
+              <div class="grid grid-cols-3 bg-muted/40 p-2.5 font-bold text-[11px] uppercase tracking-wider text-muted-foreground">
+                <span>Price</span>
+                <span>Changed At</span>
+                <span class="text-right">Changed By</span>
+              </div>
+              <div 
+                v-for="(history, hIdx) in selectedProduct.price_histories" 
+                :key="hIdx"
+                class="grid grid-cols-3 p-2.5 bg-card hover:bg-muted/20 transition-colors items-center"
+              >
+                <span class="font-bold font-mono text-foreground">{{ typeof history.price === 'number' ? formatCurrency(history.price) : (!isNaN(Number(history.price)) ? formatCurrency(Number(history.price)) : history.price) }}</span>
+                <span class="text-muted-foreground text-[11px] font-mono">{{ formatDate(history.changed_at) }}</span>
+                <span class="text-right text-muted-foreground font-mono text-[11px]">{{ history.changed_by || 'System' }}</span>
+              </div>
+            </div>
+            <p v-else class="text-xs text-muted-foreground italic mt-1">No price modification history records available.</p>
+          </div>
+
+          <!-- Audit Metadata Grid (Read-Only) -->
+          <div v-if="modalState.isEdit.value && selectedProduct" class="pt-4 border-t border-border space-y-2.5 text-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audit & Governance</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="space-y-0.5">
+                <span class="text-[10px] text-muted-foreground font-semibold">Created At</span>
+                <p class="font-mono text-[11px] text-foreground">{{ formatDate(selectedProduct.created_at) }}</p>
+              </div>
+              <div class="space-y-0.5">
+                <span class="text-[10px] text-muted-foreground font-semibold">Updated At</span>
+                <p class="font-mono text-[11px] text-foreground">{{ formatDate(selectedProduct.updated_at) }}</p>
+              </div>
+              <div class="space-y-0.5">
+                <span class="text-[10px] text-muted-foreground font-semibold">Created By</span>
+                <p class="font-mono text-[11px] text-foreground">{{ selectedProduct.created_by ? `#${selectedProduct.created_by}` : 'System' }}</p>
+              </div>
+              <div class="space-y-0.5">
+                <span class="text-[10px] text-muted-foreground font-semibold">Updated By</span>
+                <p class="font-mono text-[11px] text-foreground">{{ selectedProduct.updated_by ? `#${selectedProduct.updated_by}` : 'System' }}</p>
+              </div>
+            </div>
+            <div v-if="selectedProduct.deleted_at" class="mt-3 p-2.5 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive flex items-center justify-between">
+              <span class="font-bold">Soft Deleted Timestamp</span>
+              <span class="font-mono">{{ formatDate(selectedProduct.deleted_at) }}</span>
+            </div>
+          </div>
+        </div>
         <!-- Modal Footer Controls -->
         <div class="px-6 py-4 border-t border-border flex items-center justify-end gap-3 bg-muted/20">
           <button 
@@ -1875,10 +1993,17 @@ onUnmounted(() => {
         </div>
 
         <!-- Product Content Container -->
-        <div v-else class="p-6 sm:p-8 space-y-6 overflow-y-auto max-h-[70vh]">
+        <!-- Scrollable Modal Body -->
+        <div class="p-6 sm:p-8 space-y-6 overflow-y-auto max-h-[70vh]">
+          <!-- Error Banner -->
+          <div v-if="modalFormError" class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2.5 text-xs font-medium text-destructive">
+            <AlertCircle class="w-4 h-4 shrink-0" />
+            <span>{{ modalFormError }}</span>
+          </div>
+
           <!-- Product Hero Card -->
           <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-5 bg-muted/40 rounded-2xl border border-border">
-            <div class="w-20 h-20 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs overflow-hidden shrink-0 relative">
+            <div v-if="true" class="w-20 h-20 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs overflow-hidden shrink-0 relative">
               <div v-if="isModalImagesLoading" class="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-xs z-10">
                 <Loader2 class="w-4 h-4 animate-spin text-primary" />
               </div>
@@ -1889,20 +2014,21 @@ onUnmounted(() => {
                 class="w-full h-full object-contain" 
               />
             </div>
-            <div class="flex-1 min-w-0 space-y-1.5">
+            
+            <div class="flex-1 min-w-0 space-y-1.5 w-full">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-lg font-bold font-display tracking-tight text-foreground leading-tight">
-                  {{ selectedProduct.name }}
+                  {{ selectedProduct?.name }}
                 </span>
-                <span v-if="selectedProduct.wishlist" class="shrink-0 text-rose-500" title="In Wishlist">
+                <span v-if="selectedProduct?.wishlist" class="shrink-0 text-rose-500" title="In Wishlist">
                   <Heart class="w-4 h-4 fill-rose-500" />
                 </span>
-                <span v-if="selectedProduct.in_cart" class="shrink-0 text-primary" title="In Cart">
+                <span v-if="selectedProduct?.in_cart" class="shrink-0 text-primary" title="In Cart">
                   <ShoppingCart class="w-4 h-4" />
                 </span>
               </div>
-
-              <div class="flex items-center gap-2 flex-wrap text-xs">
+              <!-- Read-only context -->
+              <div v-if="selectedProduct" class="flex items-center gap-2 flex-wrap text-xs pt-1">
                 <span class="font-mono text-primary font-bold bg-primary/10 px-2 py-0.5 rounded text-[11px]">
                   {{ selectedProduct.slug }}
                 </span>
@@ -1927,22 +2053,23 @@ onUnmounted(() => {
             <div class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
               <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Selling Price</span>
               <p class="text-base font-extrabold text-foreground font-mono">
-                {{ formatCurrency(getProductPrice(selectedProduct)) }}
+                {{ formatCurrency(getProductPrice(selectedProduct!)) }}
               </p>
             </div>
-            <div class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
+            <!-- Read-only core identifiers -->
+            <div v-if="selectedProduct" class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
               <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Product ID</span>
               <p class="text-base font-bold text-foreground font-mono">
                 #{{ selectedProduct.id }}
               </p>
             </div>
-            <div class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
+            <div v-if="selectedProduct" class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
               <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Legacy ID</span>
               <p class="text-base font-bold text-foreground font-mono">
                 {{ selectedProduct.legacy_id !== null && selectedProduct.legacy_id !== undefined ? `#${selectedProduct.legacy_id}` : 'N/A' }}
               </p>
             </div>
-            <div class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
+            <div v-if="selectedProduct" class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
               <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Inventory Stock</span>
               <p class="text-base font-bold text-foreground font-mono">
                 {{ selectedProduct.stock ?? 0 }} units
@@ -1950,98 +2077,95 @@ onUnmounted(() => {
             </div>
           </div>
 
+          <!-- Classifications Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Assigned Categories Read-Only in Details Mode -->
+            <div class="p-4 bg-muted/20 border border-border rounded-xl space-y-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Assigned Categories</span>
+              <div v-if="getProductDetailCategories.length > 0" class="flex flex-wrap gap-1.5 mt-1">
+                <span 
+                  v-for="cat in getProductDetailCategories" 
+                  :key="cat.id"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-medium"
+                >
+                  <Layers class="w-3 h-3" />
+                  <span>{{ cat.name }}</span>
+                  <span v-if="cat.slug" class="text-[10px] font-mono text-primary/70">/{{ cat.slug }}</span>
+                </span>
+              </div>
+              <p v-else class="text-xs text-muted-foreground italic mt-1">No categories assigned.</p>
+            </div>
+            <!-- Category Origin Readonly -->
+            <div v-if="selectedProduct" class="p-4 bg-muted/20 border border-border rounded-xl space-y-2 ">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category Origin</span>
+              <div v-if="selectedProduct.origin" class="p-2.5 bg-muted/30 border border-border rounded-xl text-xs inline-block mt-1 w-full">
+                <div class="flex items-center gap-3">
+                  <span class="font-bold text-foreground">{{ typeof selectedProduct.origin === 'object' ? selectedProduct.origin.name : selectedProduct.origin }}</span>
+                  <span v-if="typeof selectedProduct.origin === 'object' && selectedProduct.origin.id" class="font-mono text-[10px] text-muted-foreground">ID: #{{ selectedProduct.origin.id }}</span>
+                </div>
+                <p v-if="typeof selectedProduct.origin === 'object' && selectedProduct.origin.slug" class="text-[11px] font-mono text-muted-foreground mt-0.5">
+                  Slug: {{ selectedProduct.origin.slug }}
+                </p>
+                <p v-if="typeof selectedProduct.origin === 'object' && selectedProduct.origin.parent" class="text-[11px] text-muted-foreground mt-0.5">
+                  Parent: {{ selectedProduct.origin.parent }}
+                </p>
+              </div>
+              <p v-else class="text-xs text-muted-foreground italic mt-1">No category origin recorded.</p>
+            </div>
+          </div>
+
+          <!-- Rich-Text HTML Fields -->
+          <div class="space-y-6 pt-4 border-t border-border/60">
+            <!-- Short Description -->
+            <div v-if="selectedProduct?.short_description" class="space-y-1.5">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Short Description</span>
+              <div class="prose prose-sm prose-slate dark:prose-invert max-w-none text-xs text-foreground bg-muted/30 p-3.5 rounded-xl border border-border font-medium leading-relaxed" v-html="selectedProduct.short_description">
+              </div>
+            </div>
+            <!-- Full Description -->
+            <div class="space-y-1.5">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</span>
+              <div class="prose prose-sm prose-slate dark:prose-invert max-w-none text-xs text-foreground bg-muted/20 p-4 rounded-xl border border-border font-normal leading-relaxed max-h-48 overflow-y-auto">
+                <div v-if="selectedProduct?.description" v-html="selectedProduct.description"></div>
+                <p v-else class="text-xs text-muted-foreground italic m-0">No product description provided.</p>
+              </div>
+            </div>
+            <!-- Specifications Section -->
+            <div class="space-y-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Technical Specifications</span>
+              <div v-if="typeof selectedProduct?.specifications === 'string' && (selectedProduct.specifications.includes('<') && selectedProduct.specifications.includes('>'))" class="prose prose-sm prose-slate dark:prose-invert max-w-none">
+                <div v-html="selectedProduct.specifications" class="text-xs text-foreground bg-card border rounded-xl p-4 overflow-x-auto"></div>
+              </div>
+              <div v-else-if="parsedSpecifications.length > 0" class="border border-border rounded-xl overflow-hidden divide-y divide-border text-xs">
+                <div 
+                  v-for="(spec, idx) in parsedSpecifications" 
+                  :key="idx"
+                  class="flex items-start justify-between p-2.5 bg-card hover:bg-muted/30 transition-colors gap-4"
+                >
+                  <span class="font-bold text-muted-foreground w-1/3 shrink-0">{{ spec.key }}</span>
+                  <span class="font-medium text-foreground text-right break-words flex-1">{{ spec.value }}</span>
+                </div>
+              </div>
+              <p v-else class="text-xs text-muted-foreground italic">No specifications recorded for this product.</p>
+            </div>
+          </div>
           <!-- Dedicated Product Image Gallery Section -->
-          <ProductImageGallery
-            :product="selectedProduct"
-            :product-id="selectedProduct?.id"
-            v-model:selected-image="selectedGalleryImage"
-            v-model:is-submodal-open="isGallerySubmodalOpen"
-            v-model:is-loading="isModalImagesLoading"
-          />
-
-          <!-- Categories & Origin Section -->
-          <div class="space-y-3">
-            <div class="flex items-center justify-between border-b border-border pb-1.5">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Taxonomy & Classifications</span>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- Categories list -->
-              <div class="space-y-1.5">
-                <span class="text-xs font-semibold text-muted-foreground">Assigned Categories</span>
-                <div v-if="getProductDetailCategories.length > 0" class="flex flex-wrap gap-1.5">
-                  <span 
-                    v-for="cat in getProductDetailCategories" 
-                    :key="cat.id"
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-medium"
-                  >
-                    <Layers class="w-3 h-3" />
-                    <span>{{ cat.name }}</span>
-                    <span v-if="cat.slug" class="text-[10px] font-mono text-primary/70">/{{ cat.slug }}</span>
-                  </span>
-                </div>
-                <p v-else class="text-xs text-muted-foreground italic">No categories assigned.</p>
-              </div>
-
-              <!-- Origin -->
-              <div class="space-y-1.5">
-                <span class="text-xs font-semibold text-muted-foreground">Category Origin</span>
-                <div v-if="selectedProduct.origin" class="p-2.5 bg-muted/30 border border-border rounded-xl space-y-0.5 text-xs">
-                  <div class="flex items-center justify-between">
-                    <span class="font-bold text-foreground">{{ typeof selectedProduct.origin === 'object' ? selectedProduct.origin.name : selectedProduct.origin }}</span>
-                    <span v-if="typeof selectedProduct.origin === 'object' && selectedProduct.origin.id" class="font-mono text-[10px] text-muted-foreground">ID: #{{ selectedProduct.origin.id }}</span>
-                  </div>
-                  <p v-if="typeof selectedProduct.origin === 'object' && selectedProduct.origin.slug" class="text-[11px] font-mono text-muted-foreground">
-                    Slug: {{ selectedProduct.origin.slug }}
-                  </p>
-                  <p v-if="typeof selectedProduct.origin === 'object' && selectedProduct.origin.parent" class="text-[11px] text-muted-foreground">
-                    Parent: {{ selectedProduct.origin.parent }}
-                  </p>
-                </div>
-                <p v-else class="text-xs text-muted-foreground italic">No category origin recorded.</p>
-              </div>
-            </div>
+          <div v-if="true" class="space-y-1.5 pt-4 border-t border-border/60">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Product Image Gallery</span>
+            <ProductImageGallery
+              :product="selectedProduct"
+              :product-id="selectedProduct?.id"
+              v-model:selected-image="selectedGalleryImage"
+              v-model:is-submodal-open="isGallerySubmodalOpen"
+              v-model:is-loading="isModalImagesLoading"
+              :can-add="false"
+              :can-delete="false"
+              class="pt-2"
+            />
           </div>
 
-          <!-- Short Description -->
-          <div v-if="selectedProduct.short_description" class="space-y-1.5">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Short Description</span>
-            <div class="prose prose-sm prose-slate dark:prose-invert max-w-none text-xs text-foreground bg-muted/30 p-3.5 rounded-xl border border-border font-medium leading-relaxed" v-html="selectedProduct.short_description">
-            </div>
-          </div>
-
-          <!-- Full Description -->
-          <div class="space-y-1.5">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</span>
-            <div class="prose prose-sm prose-slate dark:prose-invert max-w-none text-xs text-foreground bg-muted/20 p-4 rounded-xl border border-border font-normal leading-relaxed max-h-48 overflow-y-auto">
-              <div v-if="selectedProduct.description" v-html="selectedProduct.description"></div>
-              <p v-else class="text-xs text-muted-foreground italic m-0">No product description provided.</p>
-            </div>
-          </div>
-
-          <!-- Specifications Section -->
-          <div class="space-y-2">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Technical Specifications</span>
-            <!-- If raw HTML specifications -->
-            <div v-if="typeof selectedProduct.specifications === 'string' && (selectedProduct.specifications.includes('<') && selectedProduct.specifications.includes('>'))" class="prose prose-sm prose-slate dark:prose-invert max-w-none">
-              <div v-html="selectedProduct.specifications" class="text-xs text-foreground bg-card border rounded-xl p-4 overflow-x-auto"></div>
-            </div>
-            <!-- Else fallback to parsedSpecifications if we have any -->
-            <div v-else-if="parsedSpecifications.length > 0" class="border border-border rounded-xl overflow-hidden divide-y divide-border text-xs">
-              <div 
-                v-for="(spec, idx) in parsedSpecifications" 
-                :key="idx"
-                class="flex items-start justify-between p-2.5 bg-card hover:bg-muted/30 transition-colors gap-4"
-              >
-                <span class="font-bold text-muted-foreground w-1/3 shrink-0">{{ spec.key }}</span>
-                <span class="font-medium text-foreground text-right break-words flex-1">{{ spec.value }}</span>
-              </div>
-            </div>
-            <p v-else class="text-xs text-muted-foreground italic">No specifications recorded for this product.</p>
-          </div>
-
-          <!-- Price History Section -->
-          <div class="space-y-2">
+          <!-- Price History Section (Read-Only) -->
+          <div v-if="selectedProduct" class="space-y-2 pt-4 border-t border-border/60">
             <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Price History</span>
             <div v-if="selectedProduct.price_histories && selectedProduct.price_histories.length > 0" class="border border-border rounded-xl overflow-hidden divide-y divide-border text-xs">
               <div class="grid grid-cols-3 bg-muted/40 p-2.5 font-bold text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -2059,11 +2183,11 @@ onUnmounted(() => {
                 <span class="text-right text-muted-foreground font-mono text-[11px]">{{ history.changed_by || 'System' }}</span>
               </div>
             </div>
-            <p v-else class="text-xs text-muted-foreground italic">No price modification history records available.</p>
+            <p v-else class="text-xs text-muted-foreground italic mt-1">No price modification history records available.</p>
           </div>
 
-          <!-- Audit Metadata Grid -->
-          <div class="pt-4 border-t border-border space-y-2.5 text-xs">
+          <!-- Audit Metadata Grid (Read-Only) -->
+          <div v-if="selectedProduct" class="pt-4 border-t border-border space-y-2.5 text-xs">
             <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audit & Governance</span>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div class="space-y-0.5">
@@ -2083,13 +2207,12 @@ onUnmounted(() => {
                 <p class="font-mono text-[11px] text-foreground">{{ selectedProduct.updated_by ? `#${selectedProduct.updated_by}` : 'System' }}</p>
               </div>
             </div>
-            <div v-if="selectedProduct.deleted_at" class="p-2.5 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive flex items-center justify-between">
+            <div v-if="selectedProduct.deleted_at" class="mt-3 p-2.5 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive flex items-center justify-between">
               <span class="font-bold">Soft Deleted Timestamp</span>
               <span class="font-mono">{{ formatDate(selectedProduct.deleted_at) }}</span>
             </div>
           </div>
         </div>
-
         <!-- Footer Control -->
         <div class="px-6 py-4 border-t border-border flex items-center justify-end gap-3 bg-muted/20">
           <button 
