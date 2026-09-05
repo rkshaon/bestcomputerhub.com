@@ -1,7 +1,0 @@
-/env
-/venv
-__pycache__
-/EcommerceBackend/env.py
-staticfiles/
-/media
-/.venv
