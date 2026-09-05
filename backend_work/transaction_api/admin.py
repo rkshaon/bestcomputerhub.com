@@ -1,0 +1,28 @@
+from django.contrib import admin
+
+from transaction_api.models import (
+    AccountingTransaction,
+    AccountingTransactionLine,
+)
+
+
+class AccountingTransactionLineInline(admin.TabularInline):
+    model = AccountingTransactionLine
+    extra = 0
+
+
+@admin.register(AccountingTransaction)
+class AccountingTransactionAdmin(admin.ModelAdmin):
+    list_display = (
+        'transaction_no',
+        'transaction_date',
+        'transaction_datetime',
+        'transaction_type',
+        'status',
+        'total_debit',
+        'total_credit',
+    )
+    search_fields = ('transaction_no', 'reference', 'description')
+    list_filter = ('transaction_type', 'status', 'transaction_date')
+    readonly_fields = ('created_at',)
+    inlines = [AccountingTransactionLineInline]
