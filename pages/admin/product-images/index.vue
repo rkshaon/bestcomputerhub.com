@@ -91,7 +91,10 @@ const fetchImageMetadata = async (url: string) => {
         }
         
         // Fallback: fetch blob and read its size if Content-Length is stripped
-        const getRes = await fetch(url, { method: 'GET' });
+        const getRes = await fetch(url, {
+          method: 'GET',
+          cache: 'no-store'
+        });
         if (!getRes.ok) return undefined;
         
         const blob = await getRes.blob();
