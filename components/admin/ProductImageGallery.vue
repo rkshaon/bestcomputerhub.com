@@ -30,6 +30,7 @@ interface Props {
   canDelete?: boolean;
   isOpen?: boolean;
   class?: string;
+  hideInlinePreview?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -38,7 +39,8 @@ const props = withDefaults(defineProps<Props>(), {
   canAdd: undefined,
   canDelete: undefined,
   isOpen: true,
-  class: ''
+  class: '',
+  hideInlinePreview: false,
 });
 
 const selectedImage = defineModel<ProductImage | null>('selectedImage', { default: null });
@@ -828,7 +830,7 @@ defineExpose({
 </script>
 
 <template>
-  <div :class="cn('space-y-3', props.class)">
+  <div :class="cn(!props.hideInlinePreview && 'space-y-3', props.class)">
     <!-- Hidden input for single image replacement -->
     <input
       type="file"
@@ -839,7 +841,7 @@ defineExpose({
     />
 
     <!-- 1. Compact Inline Image Gallery Preview -->
-    <div class="flex items-center justify-between border-b border-border pb-1.5">
+    <div v-if="!props.hideInlinePreview" class="flex items-center justify-between border-b border-border pb-1.5">
       <div class="flex items-center gap-2">
         <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Product Image Gallery</span>
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
@@ -899,14 +901,14 @@ defineExpose({
 
     <!-- Compact Preview Body -->
     <!-- Loading Skeleton State -->
-    <div v-if="isLoading && galleryImages.length === 0" class="flex items-center gap-2.5">
+    <div v-if="!props.hideInlinePreview && isLoading && galleryImages.length === 0" class="flex items-center gap-2.5">
       <div v-for="i in 4" :key="i" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-muted/40 animate-pulse border border-border flex items-center justify-center shrink-0">
         <Loader2 class="w-4 h-4 animate-spin text-muted-foreground/50" />
       </div>
     </div>
 
     <!-- Preview Thumbnails (Up to 4) -->
-    <div v-else-if="galleryImages.length > 0" class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+    <div v-else-if="!props.hideInlinePreview && galleryImages.length > 0" class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
       <div
         v-for="(img, idx) in previewImages"
         :key="img.id ?? idx"
@@ -982,7 +984,7 @@ defineExpose({
     </div>
 
     <!-- Compact Empty State -->
-    <div v-else class="p-3.5 rounded-xl border border-dashed border-border bg-muted/20 flex items-center justify-between gap-3">
+    <div v-else-if="!props.hideInlinePreview" class="p-3.5 rounded-xl border border-dashed border-border bg-muted/20 flex items-center justify-between gap-3">
       <div class="flex items-center gap-2.5">
         <div class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
           <ImageIcon class="w-4 h-4" />
@@ -1002,7 +1004,7 @@ defineExpose({
         <span>Add Images</span>
       </button>
     </div>
-
+    
     <!-- 2. Dedicated Full Gallery Modal -->
     <UiAdminModal
       :is-open="isFullGalleryOpen"

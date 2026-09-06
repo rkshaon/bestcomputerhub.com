@@ -747,6 +747,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
           v-if="canManageGallery"
           ref="galleryGalleryRef"
           :product="product"
+          :hide-inline-preview="true"
           @image-uploaded="() => refreshProductImages()"
           @images-uploaded="() => refreshProductImages()"
           @image-deleted="() => refreshProductImages()"
