@@ -3,7 +3,8 @@ import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
   devServer: {
-    port: 3000
+    port: 3000,
+    host: '0.0.0.0'
   },
   app: {
     head: {
@@ -72,6 +73,7 @@ export default defineNuxtConfig({
     }
   },
   nitro: {
+    preset: 'node-server',
     prerender: {
       failOnError: false
     }
