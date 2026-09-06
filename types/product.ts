@@ -2,6 +2,7 @@
 
 export interface ProductImage {
   id?: string | number;
+  product?: string | number;
   image?: string;
   alt_text?: string;
   is_default?: boolean;

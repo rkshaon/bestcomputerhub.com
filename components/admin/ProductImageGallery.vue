@@ -11,7 +11,8 @@ import {
   Image as ImageIcon,
   Images,
   Pencil,
-  GripVertical
+  GripVertical,
+  Star
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
@@ -73,8 +74,12 @@ const canReorderImagesComputed = computed(() => {
   return hasPermission('product_api.change_productimage');
 });
 
+const canSetDefaultImageComputed = computed(() => {
+  return hasPermission('product_api.change_productimage');
+});
+
 const canManageComputed = computed(() => {
-  return canAddImageComputed.value || canDeleteImageComputed.value || canEditImageComputed.value;
+  return canAddImageComputed.value || canDeleteImageComputed.value || canEditImageComputed.value || canSetDefaultImageComputed.value;
 });
 
 // Dedicated Full Gallery Modal State & Handlers
@@ -90,7 +95,7 @@ const openFullGalleryAndAdd = () => {
 };
 
 const closeFullGallery = () => {
-  if (isDeletingImage.value || isUploadingImage.value || isUpdatingImage.value || isReorderingImage.value) return;
+  if (isDeletingImage.value || isUploadingImage.value || isUpdatingImage.value || isReorderingImage.value || isSettingDefaultImage.value) return;
   isFullGalleryOpen.value = false;
   cancelAddImage();
   cancelDeleteProductImage();
@@ -664,6 +669,47 @@ const handleReorderImages = async (sourceId: string | number, targetImg: Product
   }
 };
 
+// Set Default Image State & Handlers
+const isSettingDefaultImage = ref(false);
+const settingDefaultImageId = ref<string | number | null>(null);
+
+const handleSetDefaultImage = async (img: ProductImage) => {
+  if (!hasPermission('product_api.change_productimage')) {
+    toastError('You do not have permission to change the default product image.');
+    return;
+  }
+  if (isSettingDefaultImage.value || img.id === undefined || img.id === null) {
+    return;
+  }
+  if (img.is_default) {
+    return;
+  }
+
+  const targetImageId = img.id;
+  const targetProductId = props.productId ?? props.product?.id;
+
+  isSettingDefaultImage.value = true;
+  settingDefaultImageId.value = targetImageId;
+
+  try {
+    // Exact endpoint POST /api/product-images/{id}/set-default/ with { is_default: true }
+    await productService.setDefaultProductImage(targetImageId);
+    toastSuccess('Default product image updated successfully.');
+
+    // Immediately re-fetch: GET /api/v1/products/{id}/product-images/
+    if (targetProductId) {
+      await fetchProductImages(targetProductId);
+    } else if (props.product?.slug) {
+      await fetchProductImages(props.product.slug);
+    }
+  } catch (error: any) {
+    handleApiError(error, 'Failed to set default product image');
+  } finally {
+    isSettingDefaultImage.value = false;
+    settingDefaultImageId.value = null;
+  }
+};
+
 defineExpose({
   fetchProductImages,
   refresh: fetchProductImages,
@@ -673,7 +719,10 @@ defineExpose({
   openFullGallery,
   closeFullGallery,
   isReorderingImage,
-  handleReorderImages
+  handleReorderImages,
+  isSettingDefaultImage,
+  handleSetDefaultImage,
+  canSetDefaultImageComputed
 });
 </script>
 
@@ -686,12 +735,24 @@ defineExpose({
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
           {{ galleryImages.length }} {{ galleryImages.length === 1 ? 'image' : 'images' }}
         </span>
-        <div v-if="isLoading || isReorderingImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-1">
+        <div v-if="isLoading || isReorderingImage || isSettingDefaultImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-1">
           <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-          <span class="text-[11px] font-medium hidden xs:inline">{{ isReorderingImage ? 'Reordering...' : 'Fetching...' }}</span>
+          <span class="text-[11px] font-medium hidden xs:inline">{{ isSettingDefaultImage ? 'Setting default...' : isReorderingImage ? 'Reordering...' : 'Fetching...' }}</span>
         </div>
       </div>
       <div class="flex items-center gap-2">
+        <button 
+          v-if="canSetDefaultImageComputed && activeSelectedImage && !activeSelectedImage.is_default && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
+          type="button" 
+          @click="handleSetDefaultImage(activeSelectedImage)" 
+          :disabled="isSettingDefaultImage"
+          class="text-xs font-semibold px-2.5 py-1 rounded-lg border border-border hover:border-amber-500/50 bg-background hover:bg-amber-500/10 text-foreground hover:text-amber-600 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+          title="Set selected image as default"
+        >
+          <Loader2 v-if="isSettingDefaultImage && settingDefaultImageId === activeSelectedImage.id" class="w-3.5 h-3.5 animate-spin text-amber-500" />
+          <Star v-else class="w-3.5 h-3.5 text-amber-500" />
+          <span class="hidden sm:inline">Set as Default</span>
+        </button>
         <button 
           type="button" 
           @click="openFullGallery" 
@@ -827,9 +888,9 @@ defineExpose({
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
               {{ galleryImages.length }} {{ galleryImages.length === 1 ? 'image' : 'images' }}
             </span>
-            <div v-if="isLoading || isReorderingImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
+            <div v-if="isLoading || isReorderingImage || isSettingDefaultImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
               <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-              <span class="text-[11px] font-medium hidden xs:inline">{{ isReorderingImage ? 'Reordering...' : 'Updating...' }}</span>
+              <span class="text-[11px] font-medium hidden xs:inline">{{ isSettingDefaultImage ? 'Setting default...' : isReorderingImage ? 'Reordering...' : 'Updating...' }}</span>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -1101,6 +1162,26 @@ defineExpose({
                   <Check class="w-3 h-3 stroke-[2.5]" />
                   <span class="hidden xs:inline">Selected</span>
                 </span>
+                <span
+                  v-if="img.is_default"
+                  class="p-1 text-amber-500 flex items-center"
+                  title="Default image"
+                  aria-label="Default image"
+                >
+                  <Star class="w-3.5 h-3.5 fill-amber-500 stroke-amber-500" />
+                </span>
+                <button
+                  v-else-if="canSetDefaultImageComputed && img.id !== undefined && img.id !== null"
+                  type="button"
+                  @click.stop="handleSetDefaultImage(img)"
+                  class="p-1 rounded-md text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors cursor-pointer disabled:opacity-50"
+                  :disabled="isSettingDefaultImage"
+                  title="Set as default image"
+                  aria-label="Set as default image"
+                >
+                  <Loader2 v-if="isSettingDefaultImage && settingDefaultImageId === img.id" class="w-3.5 h-3.5 animate-spin text-amber-500" />
+                  <Star v-else class="w-3.5 h-3.5" />
+                </button>
                 <button
                   v-if="canEditImageComputed && img.id !== undefined && img.id !== null"
                   type="button"
@@ -1140,13 +1221,27 @@ defineExpose({
           <span class="text-xs text-muted-foreground">
             {{ canReorderImagesComputed && galleryImages.length > 1 ? 'Drag images to reorder display sequence. Select an image to preview it as main.' : canManageComputed ? 'Select an image to preview it as the main product image.' : 'Click any image to view it as the main image.' }}
           </span>
-          <UiButton 
-            variant="outline" 
-            class="rounded-xl h-9 px-4 text-xs font-bold cursor-pointer"
-            @click="closeFullGallery"
-          >
-            Done
-          </UiButton>
+          <div class="flex items-center gap-2">
+            <UiButton
+              v-if="canSetDefaultImageComputed && activeSelectedImage && !activeSelectedImage.is_default && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
+              type="button"
+              variant="outline"
+              class="rounded-xl h-9 px-3.5 text-xs font-bold cursor-pointer border-border hover:border-amber-500/40 hover:text-amber-600 gap-1.5"
+              :disabled="isSettingDefaultImage"
+              @click="handleSetDefaultImage(activeSelectedImage)"
+            >
+              <Loader2 v-if="isSettingDefaultImage && settingDefaultImageId === activeSelectedImage.id" class="w-3.5 h-3.5 animate-spin text-amber-500" />
+              <Star v-else class="w-3.5 h-3.5 text-amber-500" />
+              <span>Set as Default</span>
+            </UiButton>
+            <UiButton 
+              variant="outline" 
+              class="rounded-xl h-9 px-4 text-xs font-bold cursor-pointer"
+              @click="closeFullGallery"
+            >
+              Done
+            </UiButton>
+          </div>
         </div>
       </div>
     </UiAdminModal>
