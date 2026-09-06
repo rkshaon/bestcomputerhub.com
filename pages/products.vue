@@ -12,7 +12,7 @@ import {
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useProductService } from '@/composables/useProductService';
-import { cn } from '@/utils';
+import { cn, decodeHtmlEntities } from '@/utils';
 import type { Product } from '@/types';
 
 const productService = useProductService();

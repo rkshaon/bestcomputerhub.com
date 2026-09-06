@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ShoppingBag, ArrowRight, Trash2, Plus, Minus, ArrowLeft, ShieldCheck, Truck } from 'lucide-vue-next';
 import { useCartStore } from '@/stores/cart';
-import { formatCurrency } from '@/utils';
+import { formatCurrency, decodeHtmlEntities } from '@/utils';
 
 useSeoMeta({
   title: 'Shopping Cart',

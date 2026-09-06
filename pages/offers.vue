@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Tag, Clock, ArrowRight, Zap, Percent, ShoppingCart } from 'lucide-vue-next';
-import { formatCurrency } from '@/utils';
+import { formatCurrency, decodeHtmlEntities } from '@/utils';
 import { useProductService } from '@/composables/useProductService';
 import { useCartStore } from '@/stores/cart';
 

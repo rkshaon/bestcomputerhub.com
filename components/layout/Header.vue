@@ -3,7 +3,7 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { refDebounced } from '@vueuse/core';
 import { Handbag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, ArrowRight, Tag, Sparkles, Zap, Clock } from 'lucide-vue-next';
-import { cn } from '@/utils';
+import { cn, decodeHtmlEntities } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
 import { useAuthStore } from '@/stores/auth';
