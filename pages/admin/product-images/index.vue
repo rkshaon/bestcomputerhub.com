@@ -83,9 +83,19 @@ const fetchImageMetadata = async (url: string) => {
     });
 
     const sizePromise = fetch(url, { method: 'HEAD' })
-      .then(res => {
+      .then(async (res) => {
         const length = res.headers.get('content-length');
-        return length ? parseInt(length, 10) : undefined;
+        const parsedLength = length ? parseInt(length, 10) : NaN;
+        if (!isNaN(parsedLength) && parsedLength > 0) {
+          return parsedLength;
+        }
+        
+        // Fallback: fetch blob and read its size if Content-Length is stripped
+        const getRes = await fetch(url, { method: 'GET' });
+        if (!getRes.ok) return undefined;
+        
+        const blob = await getRes.blob();
+        return blob.size > 0 ? blob.size : undefined;
       })
       .catch(() => undefined);
 
