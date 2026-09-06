@@ -28,7 +28,8 @@ import {
   Save,
   X,
   ChevronDown,
-  Search
+  Search,
+  Images
 } from 'lucide-vue-next';
 import { formatCurrency, cn, decodeHtmlEntities } from '@/utils';
 import { useCartStore } from '@/stores/cart';
@@ -44,6 +45,8 @@ import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
+import ProductImageGallery from '@/components/admin/ProductImageGallery.vue';
+import UiButton from '@/components/ui/Button.vue';
 
 const route = useRoute();
 const productService = useProductService();
@@ -66,7 +69,7 @@ const { data: product, pending: isLoading, error, refresh } = await useAsyncData
 );
 
 // Fetch product images for gallery: GET /api/v1/products/{id}/product-images/
-const { data: fetchedProductImages } = await useAsyncData(
+const { data: fetchedProductImages, refresh: refreshProductImages } = await useAsyncData(
   `product-images-${slug.value}`,
   async () => {
     const targetId = product.value?.id || slug.value;
@@ -141,6 +144,13 @@ const quantity = ref(1);
 const activeTab = ref<'description' | 'specification' | 'reviews'>('description');
 const selectedImage = ref<string>('');
 const isWishlisted = ref(false);
+const isManageGalleryOpen = ref(false);
+const galleryGalleryRef = ref<any>(null);
+
+const canManageGallery = computed(() => {
+  if (!authStore.isLoggedIn) return false;
+  return hasPermission(['product_api.add_productimage', 'product_api.change_productimage', 'product_api.delete_productimage']);
+});
 
 // Synchronize selected image based on is_default and gallery images
 watch(
@@ -724,6 +734,23 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </button>
           </div>
         </div>
+
+        <button
+          v-if="canManageGallery"
+          @click="galleryGalleryRef?.openFullGallery()"
+          class="mt-4 w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 text-sm font-bold cursor-pointer"
+        >
+          <Images class="w-4 h-4" /> Manage Gallery
+        </button>
+        
+        <ProductImageGallery
+          v-if="canManageGallery"
+          ref="galleryGalleryRef"
+          :product="product"
+          @image-uploaded="refreshProductImages"
+          @images-uploaded="refreshProductImages"
+          @image-deleted="refreshProductImages"
+        />
 
         <!-- Info & Actions -->
         <div class="space-y-6 sm:space-y-8 lg:space-y-10">
