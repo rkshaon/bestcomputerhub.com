@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, reactive } from 'vue';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useRoute, useRouter } from 'vue-router';
@@ -52,12 +52,69 @@ const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.page
 const tableColumns: UiTableColumn<ProductImage>[] = [
   { key: 'image', label: 'Image', width: '80px', headerClass: 'px-4 py-3 text-center', cellClass: 'px-4 py-2.5 text-center' },
   { key: 'alt_text', label: 'Alt Text', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'resolution', label: 'Resolution', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'size', label: 'Size', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'display_order', label: 'Order', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'is_default', label: 'Default', headerClass: 'px-4 py-3 text-center', cellClass: 'px-4 py-2.5 text-center' },
   { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' }
 ];
 
+const formatSize = (bytes?: number) => {
+  if (bytes === undefined || isNaN(bytes)) return '—';
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
+
+const imageMetadataCache = reactive<Record<string, { width?: number; height?: number; size?: number; loaded?: boolean; loading?: boolean }>>({});
+
+const fetchImageMetadata = async (url: string) => {
+  if (!url || imageMetadataCache[url]?.loaded || imageMetadataCache[url]?.loading) return;
+  imageMetadataCache[url] = { ...imageMetadataCache[url], loading: true };
+  
+  try {
+    const img = new Image();
+    const dimensionsPromise = new Promise<{width: number, height: number}>((resolve, reject) => {
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    const sizePromise = fetch(url, { method: 'HEAD' })
+      .then(res => {
+        const length = res.headers.get('content-length');
+        return length ? parseInt(length, 10) : undefined;
+      })
+      .catch(() => undefined);
+
+    const [dims, size] = await Promise.all([
+      dimensionsPromise.catch(() => ({ width: 0, height: 0 })),
+      sizePromise
+    ]);
+    
+    imageMetadataCache[url] = {
+      width: dims.width,
+      height: dims.height,
+      size: size,
+      loaded: true,
+      loading: false
+    };
+  } catch (err) {
+    imageMetadataCache[url] = { loaded: true, loading: false };
+  }
+};
+
 const images = ref<ProductImage[]>([]);
+
+watch(() => images.value, (newImages) => {
+  newImages.forEach(img => {
+    if (img.image) {
+      fetchImageMetadata(img.image);
+    }
+  });
+}, { immediate: true, deep: true });
 const totalItems = ref(0);
 const isFetching = ref(false);
 const errorMsg = ref<string | null>(null);
@@ -213,14 +270,42 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                 <p class="text-xs font-semibold text-foreground line-clamp-2 leading-tight" :title="img.alt_text">
                   {{ img.alt_text || 'No Alt Text' }}
                 </p>
-                <div class="flex items-center justify-between gap-2 mt-1 pt-2 border-t border-border/50">
-                  <div class="flex flex-col">
-                    <span class="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Order</span>
-                    <span class="text-[10px] font-mono text-foreground font-medium">{{ img.display_order }}</span>
+                <div class="flex flex-col gap-2 mt-1 pt-2 border-t border-border/50">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex flex-col">
+                      <span class="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Res</span>
+                      <span class="text-[10px] font-mono text-foreground font-medium inline-flex items-center">
+                        <template v-if="img.image && imageMetadataCache[img.image]?.loaded">
+                          <template v-if="imageMetadataCache[img.image]?.width">
+                            {{ imageMetadataCache[img.image]?.width }}&times;{{ imageMetadataCache[img.image]?.height }}
+                          </template>
+                          <template v-else>—</template>
+                        </template>
+                        <Loader2 v-else-if="img.image && imageMetadataCache[img.image]?.loading" class="w-3 h-3 animate-spin text-muted-foreground" />
+                        <template v-else>—</template>
+                      </span>
+                    </div>
+                    <div class="flex flex-col items-end text-right">
+                      <span class="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Size</span>
+                      <span class="text-[10px] font-mono text-foreground font-medium inline-flex items-center">
+                        <template v-if="img.image && imageMetadataCache[img.image]?.loaded">
+                          {{ formatSize(imageMetadataCache[img.image]?.size) }}
+                        </template>
+                        <Loader2 v-else-if="img.image && imageMetadataCache[img.image]?.loading" class="w-3 h-3 animate-spin text-muted-foreground" />
+                        <template v-else>—</template>
+                      </span>
+                    </div>
                   </div>
-                  <div class="flex flex-col items-end text-right">
-                    <span class="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Created</span>
-                    <span class="text-[10px] font-mono text-foreground font-medium whitespace-nowrap">{{ img.created_at ? formatDate(img.created_at) : '—' }}</span>
+                  
+                  <div class="flex items-center justify-between gap-2 border-t border-border/30 pt-1.5 mt-0.5">
+                    <div class="flex flex-col">
+                      <span class="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Order</span>
+                      <span class="text-[10px] font-mono text-foreground font-medium">{{ img.display_order }}</span>
+                    </div>
+                    <div class="flex flex-col items-end text-right">
+                      <span class="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Created</span>
+                      <span class="text-[10px] font-mono text-foreground font-medium whitespace-nowrap">{{ img.created_at ? formatDate(img.created_at) : '—' }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -247,6 +332,29 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           <template #cell(alt_text)="{ item }">
             <span class="text-sm text-foreground font-medium truncate max-w-[200px] block" :title="item.alt_text">
               {{ item.alt_text || '—' }}
+            </span>
+          </template>
+
+          <template #cell(resolution)="{ item }">
+            <span class="text-xs font-mono text-muted-foreground whitespace-nowrap inline-flex items-center">
+              <template v-if="item.image && imageMetadataCache[item.image]?.loaded">
+                <template v-if="imageMetadataCache[item.image]?.width">
+                  {{ imageMetadataCache[item.image]?.width }} &times; {{ imageMetadataCache[item.image]?.height }} px
+                </template>
+                <template v-else>—</template>
+              </template>
+              <Loader2 v-else-if="item.image && imageMetadataCache[item.image]?.loading" class="w-3 h-3 animate-spin text-muted-foreground" />
+              <template v-else>—</template>
+            </span>
+          </template>
+          
+          <template #cell(size)="{ item }">
+            <span class="text-xs font-mono text-muted-foreground whitespace-nowrap inline-flex items-center">
+              <template v-if="item.image && imageMetadataCache[item.image]?.loaded">
+                {{ formatSize(imageMetadataCache[item.image]?.size) }}
+              </template>
+              <Loader2 v-else-if="item.image && imageMetadataCache[item.image]?.loading" class="w-3 h-3 animate-spin text-muted-foreground" />
+              <template v-else>—</template>
             </span>
           </template>
 
