@@ -529,6 +529,7 @@ const promptEditProductImage = (img: ProductImage) => {
     toastError('You do not have permission to edit product images.');
     return;
   }
+  if (isUpdatingImage.value || img.id === undefined || img.id === null) return;
   imageToEdit.value = img;
   editAltTextVal.value = img.alt_text || '';
 };
@@ -540,6 +541,10 @@ const cancelEditProductImage = () => {
 };
 
 const confirmEditProductImage = async () => {
+  if (!canEditImageComputed.value) {
+    toastError('You do not have permission to edit product images.');
+    return;
+  }
   if (!imageToEdit.value || imageToEdit.value.id === undefined || imageToEdit.value.id === null || isUpdatingImage.value) return;
 
   const targetImageId = imageToEdit.value.id;
@@ -552,13 +557,17 @@ const confirmEditProductImage = async () => {
     if (idx !== -1 && productImages.value[idx]) {
       productImages.value[idx] = {
         ...productImages.value[idx],
-        alt_text: updated.alt_text ?? newAltText
+        ...updated
       };
+    } else if (productImages.value.length === 0 && galleryImages.value.length > 0) {
+      productImages.value = galleryImages.value.map(img => 
+        String(img.id) === String(targetImageId) ? { ...img, ...updated } : img
+      );
     }
     if (activeSelectedImage.value && String(activeSelectedImage.value.id) === String(targetImageId)) {
       activeSelectedImage.value = {
         ...activeSelectedImage.value,
-        alt_text: updated.alt_text ?? newAltText
+        ...updated
       };
     }
     toastSuccess('Product image alt text updated successfully.');
@@ -809,7 +818,12 @@ defineExpose({
   isReplacingImage,
   handleReplaceProductImage,
   triggerReplaceImage,
-  canReplaceImageComputed
+  canReplaceImageComputed,
+  isUpdatingImage,
+  promptEditProductImage,
+  confirmEditProductImage,
+  cancelEditProductImage,
+  canEditImageComputed
 });
 </script>
 
@@ -831,12 +845,23 @@ defineExpose({
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
           {{ galleryImages.length }} {{ galleryImages.length === 1 ? 'image' : 'images' }}
         </span>
-        <div v-if="isLoading || isReorderingImage || isSettingDefaultImage || isReplacingImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-1">
+        <div v-if="isLoading || isReorderingImage || isSettingDefaultImage || isReplacingImage || isUpdatingImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-1">
           <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-          <span class="text-[11px] font-medium hidden xs:inline">{{ isReplacingImage ? 'Replacing image...' : isSettingDefaultImage ? 'Setting default...' : isReorderingImage ? 'Reordering...' : 'Fetching...' }}</span>
+          <span class="text-[11px] font-medium hidden xs:inline">{{ isUpdatingImage ? 'Updating alt text...' : isReplacingImage ? 'Replacing image...' : isSettingDefaultImage ? 'Setting default...' : isReorderingImage ? 'Reordering...' : 'Fetching...' }}</span>
         </div>
       </div>
       <div class="flex items-center gap-2">
+        <button 
+          v-if="canEditImageComputed && activeSelectedImage && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
+          type="button" 
+          @click="promptEditProductImage(activeSelectedImage)" 
+          :disabled="isUpdatingImage"
+          class="text-xs font-semibold px-2.5 py-1 rounded-lg border border-border hover:border-primary/50 bg-background hover:bg-primary/10 text-foreground hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+          title="Edit selected image alt text"
+        >
+          <Pencil class="w-3.5 h-3.5 text-muted-foreground" />
+          <span class="hidden sm:inline">Alt Text</span>
+        </button>
         <button 
           v-if="canReplaceImageComputed && activeSelectedImage && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
           type="button" 
@@ -996,9 +1021,9 @@ defineExpose({
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
               {{ galleryImages.length }} {{ galleryImages.length === 1 ? 'image' : 'images' }}
             </span>
-            <div v-if="isLoading || isReorderingImage || isSettingDefaultImage || isReplacingImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
+            <div v-if="isLoading || isReorderingImage || isSettingDefaultImage || isReplacingImage || isUpdatingImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
               <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-              <span class="text-[11px] font-medium hidden xs:inline">{{ isReplacingImage ? 'Replacing image...' : isSettingDefaultImage ? 'Setting default...' : isReorderingImage ? 'Reordering...' : 'Updating...' }}</span>
+              <span class="text-[11px] font-medium hidden xs:inline">{{ isUpdatingImage ? 'Updating alt text...' : isReplacingImage ? 'Replacing image...' : isSettingDefaultImage ? 'Setting default...' : isReorderingImage ? 'Reordering...' : 'Updating...' }}</span>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -1306,7 +1331,8 @@ defineExpose({
                   v-if="canEditImageComputed && img.id !== undefined && img.id !== null"
                   type="button"
                   @click.stop="promptEditProductImage(img)"
-                  class="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                  class="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer disabled:opacity-50"
+                  :disabled="isUpdatingImage || isDeletingImage || isReorderingImage || isReplacingImage || isSettingDefaultImage"
                   title="Edit alt text"
                   aria-label="Edit alt text"
                 >
@@ -1342,6 +1368,17 @@ defineExpose({
             {{ canReorderImagesComputed && galleryImages.length > 1 ? 'Drag images to reorder display sequence. Select an image to preview it as main.' : canManageComputed ? 'Select an image to preview it as the main product image.' : 'Click any image to view it as the main image.' }}
           </span>
           <div class="flex items-center gap-2">
+            <UiButton
+              v-if="canEditImageComputed && activeSelectedImage && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
+              type="button"
+              variant="outline"
+              class="rounded-xl h-9 px-3.5 text-xs font-bold cursor-pointer border-border hover:border-primary/40 hover:text-primary gap-1.5"
+              :disabled="isUpdatingImage"
+              @click="promptEditProductImage(activeSelectedImage)"
+            >
+              <Pencil class="w-3.5 h-3.5 text-muted-foreground" />
+              <span>Edit Alt Text</span>
+            </UiButton>
             <UiButton
               v-if="canReplaceImageComputed && activeSelectedImage && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
               type="button"

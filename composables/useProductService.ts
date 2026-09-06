@@ -580,7 +580,7 @@ export const useProductService = () => {
     }
   };
 
-  const updateProductImage = async (id: string | number, payload: { alt_text?: string }): Promise<ProductImage> => {
+  const updateProductImage = async (id: string | number, payload: { alt_text: string }): Promise<ProductImage> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -589,7 +589,7 @@ export const useProductService = () => {
       isLoading.value = false;
       return {
         id: Number(id),
-        alt_text: payload.alt_text || '',
+        alt_text: payload.alt_text,
         image: '',
         is_default: false,
         display_order: 0
@@ -599,13 +599,17 @@ export const useProductService = () => {
     try {
       const response = await apiClient.request<any>(`/api/v1/product-images/${id}/`, {
         method: 'PATCH',
-        body: payload
+        body: {
+          alt_text: payload.alt_text
+        }
       });
       isLoading.value = false;
       return {
+        ...response,
         id: response.id ?? id,
-        image: response.image || '',
-        alt_text: response.alt_text || payload.alt_text || '',
+        product: response.product,
+        image: response.image ?? '',
+        alt_text: response.alt_text !== undefined ? response.alt_text : payload.alt_text,
         is_default: Boolean(response.is_default),
         display_order: response.display_order !== undefined && response.display_order !== null ? Number(response.display_order) : 0,
         created_at: response.created_at || undefined
