@@ -52,6 +52,7 @@ const emit = defineEmits<{
   (e: 'image-uploaded', image: any): void;
   (e: 'images-uploaded', images: ProductImage[]): void;
   (e: 'image-deleted', id: string | number): void;
+  (e: 'gallery-updated'): void;
 }>();
 
 const galleryInstanceId = useId ? useId() : Math.random().toString(36).substring(2, 9);
@@ -462,6 +463,7 @@ const confirmBulkUpload = async () => {
     if (result.length > 0 && firstResult) {
       emit('image-uploaded', firstResult);
     }
+    emit('gallery-updated');
 
     await fetchProductImages(targetProductId);
     cancelAddImage();
@@ -514,6 +516,7 @@ const confirmDeleteProductImage = async () => {
     await productService.deleteProductImage(targetImageId);
     toastSuccess('Product image deleted successfully');
     emit('image-deleted', targetImageId);
+    emit('gallery-updated');
     imageToDelete.value = null;
 
     if (targetProductId) {
@@ -573,6 +576,7 @@ const confirmEditProductImage = async () => {
       };
     }
     toastSuccess('Product image alt text updated successfully.');
+    emit('gallery-updated');
     cancelEditProductImage();
   } catch (error: any) {
     handleApiError(error, 'Failed to update product image alt text');
@@ -669,6 +673,7 @@ const handleReorderImages = async (sourceId: string | number, targetImg: Product
     // Exact endpoint POST /api/v1/product-images/{id}/reorder/
     await productService.reorderProductImage(draggedImg.id, newDisplayOrder);
     toastSuccess('Product images reordered successfully.');
+    emit('gallery-updated');
 
     // After a successful reorder, re-fetch the product-wise image list: GET /api/v1/products/{id}/product-images/
     if (targetProductId) {
@@ -711,6 +716,7 @@ const handleSetDefaultImage = async (img: ProductImage) => {
     // Exact endpoint POST /api/v1/product-images/{id}/set-default/ with { is_default: true }
     await productService.setDefaultProductImage(targetImageId);
     toastSuccess('Default product image updated successfully.');
+    emit('gallery-updated');
 
     // Immediately re-fetch: GET /api/v1/products/{id}/product-images/
     if (targetProductId) {
@@ -784,6 +790,7 @@ const handleReplaceProductImage = async (imageId: string | number, file: File) =
     // Exact endpoint POST /api/v1/product-images/{id}/replace-image/
     await productService.replaceProductImage(imageId, file);
     toastSuccess('Product image replaced successfully.');
+    emit('gallery-updated');
 
     // After a successful replacement, re-fetch: GET /api/v1/products/{productId}/product-images/
     // Treat the refreshed list response as the source of truth.

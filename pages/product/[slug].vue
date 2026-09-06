@@ -747,9 +747,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             ref="galleryGalleryRef"
             :product="product"
             :hide-inline-preview="true"
-            @image-uploaded="() => refreshProductImages()"
-            @images-uploaded="() => refreshProductImages()"
-            @image-deleted="() => refreshProductImages()"
+            @gallery-updated="() => refreshProductImages()"
           />
         </div>
 
