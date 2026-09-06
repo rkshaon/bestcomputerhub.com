@@ -696,6 +696,47 @@ export const useProductService = () => {
     }
   };
 
+  const replaceProductImage = async (id: string | number, image: File): Promise<ProductImage> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      isLoading.value = false;
+      return {
+        id: Number(id),
+        image: URL.createObjectURL(image),
+        alt_text: '',
+        is_default: false,
+        display_order: 0
+      };
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('image', image);
+
+      const response = await apiClient.request<any>(`/api/v1/product-images/${id}/replace-image/`, {
+        method: 'POST',
+        body: formData
+      });
+      isLoading.value = false;
+      return {
+        id: response.id ?? id,
+        product: response.product,
+        image: response.image || '',
+        alt_text: response.alt_text || '',
+        is_default: Boolean(response.is_default),
+        display_order: response.display_order !== undefined && response.display_order !== null ? Number(response.display_order) : 0,
+        created_at: response.created_at || undefined
+      };
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not replace product image.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   // Administrative / Vendor mutation endpoints
   const createProduct = async (payload: CreateProductPayload | Partial<Product>): Promise<Product> => {
     isLoading.value = true;
@@ -927,6 +968,7 @@ export const useProductService = () => {
     updateProductImage,
     reorderProductImage,
     setDefaultProductImage,
+    replaceProductImage,
     createProduct,
     updateProduct,
     deleteProduct,

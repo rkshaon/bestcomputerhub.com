@@ -12,7 +12,8 @@ import {
   Images,
   Pencil,
   GripVertical,
-  Star
+  Star,
+  RefreshCw
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
@@ -78,8 +79,12 @@ const canSetDefaultImageComputed = computed(() => {
   return hasPermission('product_api.change_productimage');
 });
 
+const canReplaceImageComputed = computed(() => {
+  return hasPermission('product_api.change_productimage');
+});
+
 const canManageComputed = computed(() => {
-  return canAddImageComputed.value || canDeleteImageComputed.value || canEditImageComputed.value || canSetDefaultImageComputed.value;
+  return canAddImageComputed.value || canDeleteImageComputed.value || canEditImageComputed.value || canSetDefaultImageComputed.value || canReplaceImageComputed.value;
 });
 
 // Dedicated Full Gallery Modal State & Handlers
@@ -95,7 +100,7 @@ const openFullGalleryAndAdd = () => {
 };
 
 const closeFullGallery = () => {
-  if (isDeletingImage.value || isUploadingImage.value || isUpdatingImage.value || isReorderingImage.value || isSettingDefaultImage.value) return;
+  if (isDeletingImage.value || isUploadingImage.value || isUpdatingImage.value || isReorderingImage.value || isSettingDefaultImage.value || isReplacingImage.value) return;
   isFullGalleryOpen.value = false;
   cancelAddImage();
   cancelDeleteProductImage();
@@ -710,6 +715,84 @@ const handleSetDefaultImage = async (img: ProductImage) => {
   }
 };
 
+// Replace Image State & Handlers
+const isReplacingImage = ref(false);
+const replacingImageId = ref<string | number | null>(null);
+const targetReplaceImageId = ref<string | number | null>(null);
+const replaceFileInput = ref<HTMLInputElement | null>(null);
+
+const triggerReplaceImage = (img: ProductImage) => {
+  if (!canReplaceImageComputed.value) {
+    toastError('You do not have permission to replace product images.');
+    return;
+  }
+  if (isReplacingImage.value || img.id === undefined || img.id === null) {
+    return;
+  }
+  targetReplaceImageId.value = img.id;
+  if (replaceFileInput.value) {
+    replaceFileInput.value.value = '';
+    replaceFileInput.value.click();
+  }
+};
+
+const onReplaceFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target?.files?.[0];
+  const targetId = targetReplaceImageId.value;
+
+  if (!file || targetId === null || targetId === undefined) {
+    targetReplaceImageId.value = null;
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    toastError('Please select a valid image file (JPEG, PNG, WebP, GIF).');
+    targetReplaceImageId.value = null;
+    if (replaceFileInput.value) replaceFileInput.value.value = '';
+    return;
+  }
+
+  await handleReplaceProductImage(targetId, file);
+};
+
+const handleReplaceProductImage = async (imageId: string | number, file: File) => {
+  if (!hasPermission('product_api.change_productimage')) {
+    toastError('You do not have permission to replace product images.');
+    return;
+  }
+  if (isReplacingImage.value || imageId === undefined || imageId === null) {
+    return;
+  }
+
+  const targetProductId = props.productId ?? props.product?.id;
+  isReplacingImage.value = true;
+  replacingImageId.value = imageId;
+
+  try {
+    // Exact endpoint POST /api/v1/product-images/{id}/replace-image/
+    await productService.replaceProductImage(imageId, file);
+    toastSuccess('Product image replaced successfully.');
+
+    // After a successful replacement, re-fetch: GET /api/v1/products/{productId}/product-images/
+    // Treat the refreshed list response as the source of truth.
+    if (targetProductId) {
+      await fetchProductImages(targetProductId);
+    } else if (props.product?.slug) {
+      await fetchProductImages(props.product.slug);
+    }
+  } catch (error: any) {
+    handleApiError(error, 'Failed to replace product image');
+  } finally {
+    isReplacingImage.value = false;
+    replacingImageId.value = null;
+    targetReplaceImageId.value = null;
+    if (replaceFileInput.value) {
+      replaceFileInput.value.value = '';
+    }
+  }
+};
+
 defineExpose({
   fetchProductImages,
   refresh: fetchProductImages,
@@ -722,12 +805,25 @@ defineExpose({
   handleReorderImages,
   isSettingDefaultImage,
   handleSetDefaultImage,
-  canSetDefaultImageComputed
+  canSetDefaultImageComputed,
+  isReplacingImage,
+  handleReplaceProductImage,
+  triggerReplaceImage,
+  canReplaceImageComputed
 });
 </script>
 
 <template>
   <div :class="cn('space-y-3', props.class)">
+    <!-- Hidden input for single image replacement -->
+    <input
+      type="file"
+      ref="replaceFileInput"
+      accept="image/jpeg,image/png,image/webp,image/gif"
+      class="hidden"
+      @change="onReplaceFileChange"
+    />
+
     <!-- 1. Compact Inline Image Gallery Preview -->
     <div class="flex items-center justify-between border-b border-border pb-1.5">
       <div class="flex items-center gap-2">
@@ -735,12 +831,24 @@ defineExpose({
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
           {{ galleryImages.length }} {{ galleryImages.length === 1 ? 'image' : 'images' }}
         </span>
-        <div v-if="isLoading || isReorderingImage || isSettingDefaultImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-1">
+        <div v-if="isLoading || isReorderingImage || isSettingDefaultImage || isReplacingImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-1">
           <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-          <span class="text-[11px] font-medium hidden xs:inline">{{ isSettingDefaultImage ? 'Setting default...' : isReorderingImage ? 'Reordering...' : 'Fetching...' }}</span>
+          <span class="text-[11px] font-medium hidden xs:inline">{{ isReplacingImage ? 'Replacing image...' : isSettingDefaultImage ? 'Setting default...' : isReorderingImage ? 'Reordering...' : 'Fetching...' }}</span>
         </div>
       </div>
       <div class="flex items-center gap-2">
+        <button 
+          v-if="canReplaceImageComputed && activeSelectedImage && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
+          type="button" 
+          @click="triggerReplaceImage(activeSelectedImage)" 
+          :disabled="isReplacingImage"
+          class="text-xs font-semibold px-2.5 py-1 rounded-lg border border-border hover:border-primary/50 bg-background hover:bg-primary/10 text-foreground hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+          title="Replace selected image file"
+        >
+          <Loader2 v-if="isReplacingImage && replacingImageId === activeSelectedImage.id" class="w-3.5 h-3.5 animate-spin text-primary" />
+          <RefreshCw v-else class="w-3.5 h-3.5 text-muted-foreground" />
+          <span class="hidden sm:inline">Replace</span>
+        </button>
         <button 
           v-if="canSetDefaultImageComputed && activeSelectedImage && !activeSelectedImage.is_default && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
           type="button" 
@@ -888,9 +996,9 @@ defineExpose({
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
               {{ galleryImages.length }} {{ galleryImages.length === 1 ? 'image' : 'images' }}
             </span>
-            <div v-if="isLoading || isReorderingImage || isSettingDefaultImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
+            <div v-if="isLoading || isReorderingImage || isSettingDefaultImage || isReplacingImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
               <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-              <span class="text-[11px] font-medium hidden xs:inline">{{ isSettingDefaultImage ? 'Setting default...' : isReorderingImage ? 'Reordering...' : 'Updating...' }}</span>
+              <span class="text-[11px] font-medium hidden xs:inline">{{ isReplacingImage ? 'Replacing image...' : isSettingDefaultImage ? 'Setting default...' : isReorderingImage ? 'Reordering...' : 'Updating...' }}</span>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -1183,6 +1291,18 @@ defineExpose({
                   <Star v-else class="w-3.5 h-3.5" />
                 </button>
                 <button
+                  v-if="canReplaceImageComputed && img.id !== undefined && img.id !== null"
+                  type="button"
+                  @click.stop="triggerReplaceImage(img)"
+                  class="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer disabled:opacity-50"
+                  :disabled="isReplacingImage"
+                  title="Replace image file"
+                  aria-label="Replace image file"
+                >
+                  <Loader2 v-if="isReplacingImage && replacingImageId === img.id" class="w-3.5 h-3.5 animate-spin text-primary" />
+                  <RefreshCw v-else class="w-3.5 h-3.5" />
+                </button>
+                <button
                   v-if="canEditImageComputed && img.id !== undefined && img.id !== null"
                   type="button"
                   @click.stop="promptEditProductImage(img)"
@@ -1222,6 +1342,18 @@ defineExpose({
             {{ canReorderImagesComputed && galleryImages.length > 1 ? 'Drag images to reorder display sequence. Select an image to preview it as main.' : canManageComputed ? 'Select an image to preview it as the main product image.' : 'Click any image to view it as the main image.' }}
           </span>
           <div class="flex items-center gap-2">
+            <UiButton
+              v-if="canReplaceImageComputed && activeSelectedImage && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
+              type="button"
+              variant="outline"
+              class="rounded-xl h-9 px-3.5 text-xs font-bold cursor-pointer border-border hover:border-primary/40 hover:text-primary gap-1.5"
+              :disabled="isReplacingImage"
+              @click="triggerReplaceImage(activeSelectedImage)"
+            >
+              <Loader2 v-if="isReplacingImage && replacingImageId === activeSelectedImage.id" class="w-3.5 h-3.5 animate-spin text-primary" />
+              <RefreshCw v-else class="w-3.5 h-3.5 text-muted-foreground" />
+              <span>Replace Image</span>
+            </UiButton>
             <UiButton
               v-if="canSetDefaultImageComputed && activeSelectedImage && !activeSelectedImage.is_default && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
               type="button"
