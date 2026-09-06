@@ -617,6 +617,45 @@ export const useProductService = () => {
     }
   };
 
+  const reorderProductImage = async (id: string | number, displayOrder: number): Promise<ProductImage> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+      return {
+        id: Number(id),
+        display_order: displayOrder,
+        image: '',
+        alt_text: '',
+        is_default: false
+      };
+    }
+
+    try {
+      const response = await apiClient.request<any>(`/api/v1/product-images/${id}/reorder/`, {
+        method: 'POST',
+        body: {
+          display_order: displayOrder
+        }
+      });
+      isLoading.value = false;
+      return {
+        id: response.id ?? id,
+        image: response.image || '',
+        alt_text: response.alt_text || '',
+        is_default: Boolean(response.is_default),
+        display_order: response.display_order !== undefined && response.display_order !== null ? Number(response.display_order) : displayOrder,
+        created_at: response.created_at || undefined
+      };
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not reorder product image.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   // Administrative / Vendor mutation endpoints
   const createProduct = async (payload: CreateProductPayload | Partial<Product>): Promise<Product> => {
     isLoading.value = true;
@@ -846,6 +885,7 @@ export const useProductService = () => {
     bulkUploadProductImages,
     deleteProductImage,
     updateProductImage,
+    reorderProductImage,
     createProduct,
     updateProduct,
     deleteProduct,

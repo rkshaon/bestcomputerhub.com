@@ -10,7 +10,8 @@ import {
   Plus,
   Image as ImageIcon,
   Images,
-  Pencil
+  Pencil,
+  GripVertical
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
@@ -68,6 +69,10 @@ const canEditImageComputed = computed(() => {
   return hasPermission('product_api.change_productimage');
 });
 
+const canReorderImagesComputed = computed(() => {
+  return hasPermission('product_api.change_productimage');
+});
+
 const canManageComputed = computed(() => {
   return canAddImageComputed.value || canDeleteImageComputed.value || canEditImageComputed.value;
 });
@@ -85,7 +90,7 @@ const openFullGalleryAndAdd = () => {
 };
 
 const closeFullGallery = () => {
-  if (isDeletingImage.value || isUploadingImage.value || isUpdatingImage.value) return;
+  if (isDeletingImage.value || isUploadingImage.value || isUpdatingImage.value || isReorderingImage.value) return;
   isFullGalleryOpen.value = false;
   cancelAddImage();
   cancelDeleteProductImage();
@@ -221,16 +226,20 @@ const remainingImagesCount = computed<number>(() => {
   return 0;
 });
 
-// Synchronize default / first selected image
+// Synchronize default / first selected image and preserve active selection
 watch(
   galleryImages,
   (images) => {
     if (images.length > 0) {
       const defaultImg = images.find(img => img.is_default) || images[0];
-      const currentExists = activeSelectedImage.value
-        ? images.some(img => img.image === activeSelectedImage.value?.image || (img.id !== undefined && img.id === activeSelectedImage.value?.id))
-        : false;
-      if (!currentExists || !activeSelectedImage.value) {
+      const matched = activeSelectedImage.value
+        ? images.find(img => (img.id !== undefined && activeSelectedImage.value?.id !== undefined && String(img.id) === String(activeSelectedImage.value.id)) || (img.image && activeSelectedImage.value?.image && img.image === activeSelectedImage.value.image))
+        : null;
+      if (matched) {
+        activeSelectedImage.value = matched;
+      } else if (!activeSelectedImage.value) {
+        activeSelectedImage.value = defaultImg || null;
+      } else {
         activeSelectedImage.value = defaultImg || null;
       }
     } else {
@@ -551,6 +560,110 @@ const confirmEditProductImage = async () => {
   }
 };
 
+// Reorder State & Handlers
+const isReorderingImage = ref(false);
+const draggedImageId = ref<string | number | null>(null);
+const dragOverImageId = ref<string | number | null>(null);
+
+const onImageDragStart = (event: DragEvent, img: ProductImage) => {
+  if (!canReorderImagesComputed.value || isReorderingImage.value) {
+    event.preventDefault();
+    return;
+  }
+  if (img.id === undefined || img.id === null) {
+    event.preventDefault();
+    return;
+  }
+  draggedImageId.value = img.id;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(img.id));
+  }
+};
+
+const onImageDragOver = (event: DragEvent, img: ProductImage) => {
+  if (!canReorderImagesComputed.value || isReorderingImage.value) return;
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+  if (draggedImageId.value !== null && String(draggedImageId.value) !== String(img.id)) {
+    dragOverImageId.value = img.id ?? null;
+  }
+};
+
+const onImageDragLeave = (_event: DragEvent, img: ProductImage) => {
+  if (dragOverImageId.value !== null && String(dragOverImageId.value) === String(img.id)) {
+    dragOverImageId.value = null;
+  }
+};
+
+const onImageDragEnd = (_event: DragEvent) => {
+  draggedImageId.value = null;
+  dragOverImageId.value = null;
+};
+
+const onImageDrop = async (event: DragEvent, targetImg: ProductImage) => {
+  event.preventDefault();
+  const sourceId = draggedImageId.value;
+  draggedImageId.value = null;
+  dragOverImageId.value = null;
+
+  if (!sourceId || targetImg.id === undefined || targetImg.id === null || String(sourceId) === String(targetImg.id)) {
+    return;
+  }
+
+  await handleReorderImages(sourceId, targetImg);
+};
+
+const handleReorderImages = async (sourceId: string | number, targetImg: ProductImage) => {
+  if (!hasPermission('product_api.change_productimage')) {
+    toastError('You do not have permission to reorder product images.');
+    return;
+  }
+  if (isReorderingImage.value) return;
+
+  const currentList = galleryImages.value;
+  const draggedIdx = currentList.findIndex(img => String(img.id) === String(sourceId));
+  const targetIdx = currentList.findIndex(img => String(img.id) === String(targetImg.id));
+
+  if (draggedIdx === -1 || targetIdx === -1 || draggedIdx === targetIdx) return;
+
+  const draggedImg = currentList[draggedIdx];
+  if (!draggedImg || draggedImg.id === undefined || draggedImg.id === null) return;
+
+  // Determine resulting display_order according to the gallery's ordering model
+  let newDisplayOrder = typeof targetImg.display_order === 'number'
+    ? targetImg.display_order
+    : targetIdx + 1;
+
+  if (typeof draggedImg.display_order === 'number' && newDisplayOrder === draggedImg.display_order) {
+    newDisplayOrder = targetIdx + 1;
+  }
+
+  const targetProductId = props.productId ?? props.product?.id;
+  isReorderingImage.value = true;
+
+  try {
+    // Exact endpoint POST /api/v1/product-images/{id}/reorder/
+    await productService.reorderProductImage(draggedImg.id, newDisplayOrder);
+    toastSuccess('Product images reordered successfully.');
+
+    // After a successful reorder, re-fetch the product-wise image list: GET /api/v1/products/{id}/product-images/
+    if (targetProductId) {
+      await fetchProductImages(targetProductId);
+    }
+  } catch (error: any) {
+    handleApiError(error, 'Failed to reorder product images');
+    // Ensure local gallery state matches backend state on error
+    if (targetProductId) {
+      await fetchProductImages(targetProductId);
+    }
+  } finally {
+    isReorderingImage.value = false;
+  }
+};
+
 defineExpose({
   fetchProductImages,
   refresh: fetchProductImages,
@@ -558,7 +671,9 @@ defineExpose({
   productImages,
   isFullGalleryOpen,
   openFullGallery,
-  closeFullGallery
+  closeFullGallery,
+  isReorderingImage,
+  handleReorderImages
 });
 </script>
 
@@ -571,9 +686,9 @@ defineExpose({
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
           {{ galleryImages.length }} {{ galleryImages.length === 1 ? 'image' : 'images' }}
         </span>
-        <div v-if="isLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-1">
+        <div v-if="isLoading || isReorderingImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-1">
           <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-          <span class="text-[11px] font-medium hidden xs:inline">Fetching...</span>
+          <span class="text-[11px] font-medium hidden xs:inline">{{ isReorderingImage ? 'Reordering...' : 'Fetching...' }}</span>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -606,11 +721,24 @@ defineExpose({
         tabindex="0"
         @keydown.enter="selectImage(img)"
         @keydown.space.prevent="selectImage(img)"
+        :draggable="canReorderImagesComputed && galleryImages.length > 1 && !isReorderingImage && !(idx === 3 && remainingImagesCount > 0)"
+        @dragstart="onImageDragStart($event, img)"
+        @dragover="onImageDragOver($event, img)"
+        @dragleave="onImageDragLeave($event, img)"
+        @dragend="onImageDragEnd($event)"
+        @drop="onImageDrop($event, img)"
         :class="cn(
           'group relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl border bg-card overflow-hidden transition-all cursor-pointer select-none shrink-0 flex items-center justify-center p-1',
+          canReorderImagesComputed && galleryImages.length > 1 && !(idx === 3 && remainingImagesCount > 0) ? 'cursor-grab active:cursor-grabbing' : '',
           isSelected(img)
             ? 'border-primary ring-2 ring-primary/20 shadow-xs'
-            : 'border-border hover:border-primary/50 hover:shadow-xs'
+            : 'border-border hover:border-primary/50 hover:shadow-xs',
+          draggedImageId !== null && String(draggedImageId) === String(img.id)
+            ? 'opacity-40 scale-[0.98]'
+            : '',
+          dragOverImageId !== null && String(dragOverImageId) === String(img.id)
+            ? 'border-primary/80 border-dashed bg-primary/5 ring-2 ring-primary/30'
+            : ''
         )"
         :title="img.alt_text ? `${img.alt_text}${img.is_default ? ' (Default)' : ''}` : `Product Image ${idx + 1}${img.is_default ? ' (Default)' : ''}`"
         :aria-label="img.alt_text ? `Select ${img.alt_text}` : `Select product image ${idx + 1}`"
@@ -619,7 +747,8 @@ defineExpose({
           :src="imageErrorMap[img.image || ''] ? 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80' : img.image"
           :alt="img.alt_text || `Product image ${idx + 1}`"
           @error="handleImageError(img.image)"
-          class="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+          draggable="false"
+          class="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105 pointer-events-none"
         />
 
         <!-- Default Badge -->
@@ -698,9 +827,9 @@ defineExpose({
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground font-mono">
               {{ galleryImages.length }} {{ galleryImages.length === 1 ? 'image' : 'images' }}
             </span>
-            <div v-if="isLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
+            <div v-if="isLoading || isReorderingImage" class="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
               <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-              <span class="text-[11px] font-medium hidden xs:inline">Updating...</span>
+              <span class="text-[11px] font-medium hidden xs:inline">{{ isReorderingImage ? 'Reordering...' : 'Updating...' }}</span>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -903,11 +1032,24 @@ defineExpose({
             tabindex="0"
             @keydown.enter="selectImage(img)"
             @keydown.space.prevent="selectImage(img)"
+            :draggable="canReorderImagesComputed && galleryImages.length > 1 && !isReorderingImage"
+            @dragstart="onImageDragStart($event, img)"
+            @dragover="onImageDragOver($event, img)"
+            @dragleave="onImageDragLeave($event, img)"
+            @dragend="onImageDragEnd($event)"
+            @drop="onImageDrop($event, img)"
             :class="cn(
               'group relative flex flex-col rounded-xl border bg-card overflow-hidden transition-all cursor-pointer select-none',
+              canReorderImagesComputed && galleryImages.length > 1 ? 'cursor-grab active:cursor-grabbing' : '',
               isSelected(img)
                 ? 'border-primary ring-2 ring-primary/20 shadow-xs'
-                : 'border-border hover:border-primary/50 hover:shadow-xs'
+                : 'border-border hover:border-primary/50 hover:shadow-xs',
+              draggedImageId !== null && String(draggedImageId) === String(img.id)
+                ? 'opacity-40 scale-[0.98]'
+                : '',
+              dragOverImageId !== null && String(dragOverImageId) === String(img.id)
+                ? 'border-primary/80 border-dashed bg-primary/5 ring-2 ring-primary/30'
+                : ''
             )"
             :title="img.alt_text ? `${img.alt_text}${img.is_default ? ' (Default)' : ''}` : `Product Image ${idx + 1}${img.is_default ? ' (Default)' : ''}`"
             :aria-label="img.alt_text ? `Select ${img.alt_text}` : `Select product image ${idx + 1}`"
@@ -918,7 +1060,8 @@ defineExpose({
                 :src="imageErrorMap[img.image || ''] ? 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80' : img.image"
                 :alt="img.alt_text || `Product image ${idx + 1}`"
                 @error="handleImageError(img.image)"
-                class="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+                draggable="false"
+                class="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105 pointer-events-none"
               />
               <!-- Default Badge -->
               <span
@@ -940,9 +1083,16 @@ defineExpose({
 
             <!-- Card Footer / Caption -->
             <div class="p-2 bg-card border-t border-border/60 flex items-center justify-between gap-1 text-xs">
-              <span class="truncate text-[11px] font-medium text-foreground" :title="img.alt_text || `Image ${idx + 1}`">
-                {{ img.alt_text || `Image ${idx + 1}` }}
-              </span>
+              <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                <GripVertical
+                  v-if="canReorderImagesComputed && galleryImages.length > 1"
+                  class="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0"
+                  aria-hidden="true"
+                />
+                <span class="truncate text-[11px] font-medium text-foreground" :title="img.alt_text || `Image ${idx + 1}`">
+                  {{ img.alt_text || `Image ${idx + 1}` }}
+                </span>
+              </div>
               <div class="flex items-center gap-1 shrink-0">
                 <span
                   v-if="isSelected(img)"
@@ -988,7 +1138,7 @@ defineExpose({
         <!-- Modal Footer -->
         <div class="pt-4 border-t border-border flex items-center justify-between shrink-0 bg-card">
           <span class="text-xs text-muted-foreground">
-            {{ canManageComputed ? 'Select an image to preview it as the main product image.' : 'Click any image to view it as the main image.' }}
+            {{ canReorderImagesComputed && galleryImages.length > 1 ? 'Drag images to reorder display sequence. Select an image to preview it as main.' : canManageComputed ? 'Select an image to preview it as the main product image.' : 'Click any image to view it as the main image.' }}
           </span>
           <UiButton 
             variant="outline" 
