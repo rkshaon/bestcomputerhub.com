@@ -28,7 +28,8 @@ import {
   Boxes,
   ExternalLink,
   Globe,
-  Terminal
+  Terminal,
+  Image as ImageIcon
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
@@ -58,6 +59,7 @@ if (process.client) {
 const navigation = [
   { name: 'Dashboard', iconKey: 'LayoutDashboard', href: '/admin' },
   { name: 'Products', iconKey: 'Package', href: '/admin/products' },
+  { name: 'Product Images', iconKey: 'ImageIcon', href: '/admin/product-images' },
   { name: 'Categories', iconKey: 'Layers', href: '/admin/categories' },
   { name: 'Brands', iconKey: 'Tag', href: '/admin/brands' },
   { name: 'Inventory', iconKey: 'Boxes', href: '/admin/inventory' },
@@ -89,6 +91,7 @@ const filteredSecondaryNavigation = computed(() => {
 const iconMap = {
   LayoutDashboard,
   Package,
+  ImageIcon,
   Layers,
   Tag,
   Boxes,

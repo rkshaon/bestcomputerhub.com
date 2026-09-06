@@ -377,6 +377,30 @@ export const useProductService = () => {
     }
   };
 
+  const getAllProductImages = async (page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<ProductImage>> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+      return { count: 0, next: null, previous: null, results: [] };
+    }
+
+    try {
+      const response = await apiClient.request<PaginatedResponse<ProductImage>>('/api/v1/product-images/', {
+        method: 'GET',
+        query: { page, page_size: pageSize }
+      });
+      isLoading.value = false;
+      return response;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not fetch product images list.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   // Fetch product image gallery: GET /api/v1/products/{id}/product-images/
   const getProductImages = async (idOrSlug: string | number): Promise<ProductImage[]> => {
     isLoading.value = true;
@@ -965,6 +989,7 @@ export const useProductService = () => {
     errorMsg,
     getProductsList,
     getProductDetails,
+    getAllProductImages,
     getProductImages,
     createProductImage,
     bulkUploadProductImages,

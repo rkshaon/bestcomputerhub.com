@@ -31,6 +31,13 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     editPermission: ['store.change_product', 'change_product', 'products.change_product', 'product_api.change_product'],
     deletePermission: ['store.delete_product', 'delete_product', 'products.delete_product', 'product_api.delete_product']
   },
+  productImages: {
+    key: 'productImages',
+    route: '/admin/product-images',
+    name: 'Product Images',
+    iconKey: 'ImageIcon',
+    viewPermission: ['product_api.view_productimage', 'view_productimage', 'product_api.change_productimage']
+  },
   categories: {
     key: 'categories',
     route: '/admin/categories',
