@@ -71,7 +71,7 @@ const formatSize = (bytes?: number) => {
 const imageMetadataCache = reactive<Record<string, { width?: number; height?: number; size?: number; loaded?: boolean; loading?: boolean }>>({});
 
 const fetchImageMetadata = async (url: string) => {
-  if (!url || imageMetadataCache[url]?.loaded || imageMetadataCache[url]?.loading) return;
+  if (import.meta.server || !url || imageMetadataCache[url]?.loaded || imageMetadataCache[url]?.loading) return;
   imageMetadataCache[url] = { ...imageMetadataCache[url], loading: true };
   
   try {
