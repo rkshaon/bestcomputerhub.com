@@ -11,7 +11,9 @@ import {
   Filter,
   RefreshCw,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  LayoutGrid,
+  List
 } from 'lucide-vue-next';
 import UiTable from '@/components/ui/UiTable.vue';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -43,6 +45,7 @@ const { hasPermission } = useAdminPermissions();
 const route = useRoute();
 const router = useRouter();
 
+const viewMode = ref<'grid' | 'list'>(route.query.view === 'grid' ? 'grid' : 'list');
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 
@@ -80,17 +83,23 @@ const fetchImages = async () => {
   }
 };
 
+// Sync URL on state change
 watch(
-  [currentPage, itemsPerPage],
-  () => {
+  [viewMode, currentPage, itemsPerPage],
+  (newValues, oldValues) => {
     router.replace({
       query: {
         ...route.query,
+        view: viewMode.value === 'grid' ? 'grid' : undefined,
         page: currentPage.value > 1 ? currentPage.value : undefined,
         pageSize: itemsPerPage.value !== 10 ? itemsPerPage.value : undefined
       }
     });
-    fetchImages();
+
+    // Only fetch if page or pageSize changed, not just viewMode
+    if (!oldValues || newValues[1] !== oldValues[1] || newValues[2] !== oldValues[2]) {
+      fetchImages();
+    }
   },
   { immediate: true }
 );
@@ -122,6 +131,40 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
 
       <div class="bg-card border border-border rounded-xl shadow-xs overflow-hidden flex flex-col">
         <div class="p-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <!-- View Toggle Buttons -->
+            <div class="flex items-center bg-muted/60 p-1 rounded-lg border border-border/80">
+              <button
+                type="button"
+                @click="viewMode = 'grid'"
+                :class="[
+                  'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
+                  viewMode === 'grid'
+                    ? 'bg-background text-primary shadow-2xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                ]"
+                title="Grid View"
+                aria-label="Grid view"
+              >
+                <LayoutGrid class="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                @click="viewMode = 'list'"
+                :class="[
+                  'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
+                  viewMode === 'list'
+                    ? 'bg-background text-primary shadow-2xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                ]"
+                title="List View"
+                aria-label="List view"
+              >
+                <List class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+          
           <div class="flex items-center gap-2 ml-auto">
             <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
             <select
@@ -142,7 +185,51 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           {{ errorMsg }}
         </div>
 
+        <div v-if="viewMode === 'grid'" class="p-4 bg-card flex-1">
+          <div v-if="isFetching && images.length === 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div v-for="i in itemsPerPage" :key="i" class="rounded-xl border border-border bg-muted/20 animate-pulse aspect-square"></div>
+          </div>
+          <div v-else-if="images.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+            <div class="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+              <ImageIcon class="w-6 h-6 text-muted-foreground/50" />
+            </div>
+            <h3 class="text-sm font-semibold text-foreground">No Product Images Found</h3>
+            <p class="text-xs text-muted-foreground mt-1 max-w-sm">There are currently no product images in the global registry.</p>
+          </div>
+          <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div
+              v-for="img in images"
+              :key="img.id"
+              class="group relative rounded-xl border border-border bg-background overflow-hidden flex flex-col hover:border-primary/50 hover:shadow-md transition-all duration-300"
+            >
+              <div class="relative aspect-square w-full bg-muted/10 flex items-center justify-center p-4 border-b border-border">
+                <img v-if="img.image" :src="img.image" :alt="img.alt_text || 'Product image'" class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110" />
+                <ImageIcon v-else class="w-8 h-8 text-muted-foreground/50" />
+                <div v-if="img.is_default" class="absolute top-2 left-2 flex items-center justify-center w-6 h-6 rounded-full bg-background shadow-xs border border-border text-amber-500 z-10" title="Default Image">
+                  <Star class="w-3.5 h-3.5 fill-amber-500" />
+                </div>
+              </div>
+              <div class="p-3 flex flex-col gap-1.5 flex-1 justify-between">
+                <p class="text-xs font-semibold text-foreground line-clamp-2 leading-tight" :title="img.alt_text">
+                  {{ img.alt_text || 'No Alt Text' }}
+                </p>
+                <div class="flex items-center justify-between gap-2 mt-1 pt-2 border-t border-border/50">
+                  <div class="flex flex-col">
+                    <span class="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Order</span>
+                    <span class="text-[10px] font-mono text-foreground font-medium">{{ img.display_order }}</span>
+                  </div>
+                  <div class="flex flex-col items-end text-right">
+                    <span class="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Created</span>
+                    <span class="text-[10px] font-mono text-foreground font-medium whitespace-nowrap">{{ img.created_at ? formatDate(img.created_at) : '—' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <UiTable
+          v-else
           :columns="tableColumns"
           :data="images"
           :is-loading="isFetching"
