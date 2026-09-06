@@ -268,18 +268,13 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           </template>
         </UiTable>
 
-        <div class="px-4 py-3 border-t border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p class="text-xs text-muted-foreground font-medium">
-            Showing {{ totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0 }}–{{ Math.min(currentPage * itemsPerPage, totalItems) }} of <span class="font-bold text-foreground">{{ totalItems }}</span>
-          </p>
-          <UiPagination
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            :total-count="totalItems"
-            :items-per-page="itemsPerPage"
-            @update:current-page="(p: number) => currentPage = p"
-          />
-        </div>
+        <UiPagination
+          v-model:current-page="currentPage"
+          :total-pages="totalPages"
+          :total-count="totalItems"
+          :items-per-page="itemsPerPage"
+          item-label="images"
+        />
       </div>
     </div>
   </NuxtLayout>
