@@ -1,5 +1,6 @@
 <!-- File: /components/home/BrandMarquee.vue -->
 <script setup lang="ts">
+import { decodeHtmlEntities } from '@/utils';
 import type { Brand } from '@/types';
 
 defineProps<{

@@ -1,5 +1,6 @@
 <!-- File: /pages/product-category/[...slug].vue -->
 <script setup lang="ts">
+import { decodeHtmlEntities } from '@/utils';
 import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue';
 import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft, Menu, Loader2, Edit2, Save } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';

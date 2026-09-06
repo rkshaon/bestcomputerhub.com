@@ -1,5 +1,6 @@
 <!-- File: /components/layout/HeaderCategorySubmenu.vue -->
 <script setup lang="ts">
+import { decodeHtmlEntities } from '@/utils';
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { ChevronRight } from 'lucide-vue-next';
 import type { Category } from '@/types';

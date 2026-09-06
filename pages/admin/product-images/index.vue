@@ -188,7 +188,9 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           <UiPagination
             :current-page="currentPage"
             :total-pages="totalPages"
-            @page-change="(p) => currentPage = p"
+            :total-count="totalItems"
+            :items-per-page="itemsPerPage"
+            @update:current-page="(p: number) => currentPage = p"
           />
         </div>
       </div>

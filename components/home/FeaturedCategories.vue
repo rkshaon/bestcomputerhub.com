@@ -1,5 +1,6 @@
 <!-- File: /components/home/FeaturedCategories.vue -->
 <script setup lang="ts">
+import { decodeHtmlEntities } from '@/utils';
 import { 
   ChevronRight, 
   Cpu, 

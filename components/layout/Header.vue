@@ -1,5 +1,6 @@
 <!-- File: /components/layout/Header.vue -->
 <script setup lang="ts">
+import { navigateTo } from '#app';
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { refDebounced } from '@vueuse/core';
 import { Handbag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, ArrowRight, Tag, Sparkles, Zap, Clock } from 'lucide-vue-next';

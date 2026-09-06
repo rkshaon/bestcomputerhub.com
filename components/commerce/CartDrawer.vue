@@ -1,6 +1,7 @@
 <!-- File: /components/commerce/CartDrawer.vue -->
 <script setup lang="ts">
 import { ref } from 'vue';
+import { decodeHtmlEntities } from '@/utils';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-vue-next';
 import { formatCurrency } from '@/utils';
 import { useUIStore } from '@/stores/ui';

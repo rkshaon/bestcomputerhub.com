@@ -384,7 +384,7 @@ export const useProductService = () => {
     if (checkMockMode()) {
       await new Promise(resolve => setTimeout(resolve, 300));
       isLoading.value = false;
-      return { count: 0, next: null, previous: null, results: [] };
+      return { count: 0, next: null, previous: null, results: [], page, pages: 0 };
     }
 
     try {
