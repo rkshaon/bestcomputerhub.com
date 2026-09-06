@@ -692,7 +692,7 @@ const handleSetDefaultImage = async (img: ProductImage) => {
   settingDefaultImageId.value = targetImageId;
 
   try {
-    // Exact endpoint POST /api/product-images/{id}/set-default/ with { is_default: true }
+    // Exact endpoint POST /api/v1/product-images/{id}/set-default/ with { is_default: true }
     await productService.setDefaultProductImage(targetImageId);
     toastSuccess('Default product image updated successfully.');
 

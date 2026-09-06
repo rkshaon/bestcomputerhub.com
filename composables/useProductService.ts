@@ -673,7 +673,7 @@ export const useProductService = () => {
     }
 
     try {
-      const response = await apiClient.request<any>(`/api/product-images/${id}/set-default/`, {
+      const response = await apiClient.request<any>(`/api/v1/product-images/${id}/set-default/`, {
         method: 'POST',
         body: {
           is_default: true
