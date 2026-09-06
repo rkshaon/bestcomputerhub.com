@@ -733,25 +733,25 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               />
             </button>
           </div>
-        </div>
 
-        <button
-          v-if="canManageGallery"
-          @click="galleryGalleryRef?.openFullGallery()"
-          class="mt-4 w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 text-sm font-bold cursor-pointer"
-        >
-          <Images class="w-4 h-4" /> Manage Gallery
-        </button>
-        
-        <ProductImageGallery
-          v-if="canManageGallery"
-          ref="galleryGalleryRef"
-          :product="product"
-          :hide-inline-preview="true"
-          @image-uploaded="() => refreshProductImages()"
-          @images-uploaded="() => refreshProductImages()"
-          @image-deleted="() => refreshProductImages()"
-        />
+          <button
+            v-if="canManageGallery"
+            @click="galleryGalleryRef?.openFullGallery()"
+            class="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 text-sm font-bold cursor-pointer"
+          >
+            <Images class="w-4 h-4" /> Manage Gallery
+          </button>
+          
+          <ProductImageGallery
+            v-if="canManageGallery"
+            ref="galleryGalleryRef"
+            :product="product"
+            :hide-inline-preview="true"
+            @image-uploaded="() => refreshProductImages()"
+            @images-uploaded="() => refreshProductImages()"
+            @image-deleted="() => refreshProductImages()"
+          />
+        </div>
 
         <!-- Info & Actions -->
         <div class="space-y-6 sm:space-y-8 lg:space-y-10">
