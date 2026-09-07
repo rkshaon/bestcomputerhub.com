@@ -40,3 +40,7 @@ export interface PaginatedBlogTags {
   results: BlogTag[];
 }
 
+export interface CreateBlogTagPayload {
+  name: string;
+}
+

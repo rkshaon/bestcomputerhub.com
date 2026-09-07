@@ -1,10 +1,12 @@
 <!-- File: /pages/admin/blog/tags/index.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import { Tag, Search, RefreshCw, AlertCircle } from 'lucide-vue-next';
+import { Tag, Search, RefreshCw, AlertCircle, Plus, X, Loader2 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useBlogService } from '@/composables/useBlogService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { useAdminModalState } from '@/composables/useAdminModalState';
+import { useToast } from '@/composables/useToast';
 import { cn, decodeHtmlEntities } from '@/utils';
 import type { BlogTag } from '@/types';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -13,12 +15,15 @@ import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiCard from '@/components/ui/UiCard.vue';
 import UiButton from '@/components/ui/Button.vue';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 
 definePageMeta({
   layout: false
 });
 
 const blogService = useBlogService();
+const modalState = useAdminModalState();
+const { toastSuccess, handleApiError, extractErrorMessage } = useToast();
 const route = useRoute();
 const router = useRouter();
 
@@ -27,6 +32,11 @@ const tagsList = ref<BlogTag[]>([]);
 const totalCount = ref<number>(0);
 const isLoading = ref<boolean>(false);
 const errorMsg = ref<string | null>(null);
+
+// Create form state
+const tagName = ref('');
+const formError = ref<string | null>(null);
+const isSubmitting = ref(false);
 
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
@@ -55,6 +65,8 @@ const formatDate = (dateStr?: string | null): string => {
 };
 
 const { hasPermission } = useAdminPermissions();
+
+const canCreateTag = computed(() => hasPermission('blog_api.add_blogtag'));
 
 const fetchTags = async () => {
   if (!hasPermission('blog_api.view_blogtag')) {
@@ -92,6 +104,46 @@ const fetchTags = async () => {
     isLoading.value = false;
   }
 };
+
+const handleCreateTag = async () => {
+  if (!hasPermission('blog_api.add_blogtag')) {
+    formError.value = 'Access denied. The blog_api.add_blogtag permission is required to create a blog tag.';
+    return;
+  }
+
+  const trimmedName = tagName.value.trim();
+  if (!trimmedName) {
+    formError.value = 'Tag name is required.';
+    return;
+  }
+
+  if (isSubmitting.value) return;
+
+  isSubmitting.value = true;
+  formError.value = null;
+
+  try {
+    await blogService.createBlogTag({ name: trimmedName });
+    toastSuccess('Blog tag created successfully.');
+    tagName.value = '';
+    formError.value = null;
+    modalState.closeModal();
+    await fetchTags();
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to create blog tag.');
+    formError.value = msg;
+    handleApiError(err, 'Failed to create blog tag.');
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+watch(() => modalState.isCreate.value, (isOpen) => {
+  if (isOpen) {
+    tagName.value = '';
+    formError.value = null;
+  }
+});
 
 const totalPages = computed(() => {
   return Math.ceil(totalCount.value / itemsPerPage.value) || 1;
@@ -177,6 +229,15 @@ const tableColumns: UiTableColumn<BlogTag>[] = [
 
     <template #header-actions>
       <div class="flex flex-wrap items-center gap-2">
+        <UiButton 
+          v-if="canCreateTag"
+          variant="primary"
+          class="rounded-xl h-9 px-3.5 gap-1.5 font-bold text-xs"
+          @click="modalState.openCreate()"
+        >
+          <Plus class="w-3.5 h-3.5" />
+          <span>Add Tag</span>
+        </UiButton>
         <UiButton 
           variant="outline" 
           class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
@@ -357,5 +418,75 @@ const tableColumns: UiTableColumn<BlogTag>[] = [
       </UiTable>
 
     </div>
+
+    <!-- Create Blog Tag Modal -->
+    <UiAdminModal
+      :is-open="modalState.isCreate.value"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="modalState.closeModal()"
+    >
+      <form @submit.prevent="handleCreateTag" class="w-full relative overflow-hidden flex flex-col cursor-default">
+        <!-- Header -->
+        <div class="p-6 border-b border-border flex items-center justify-between">
+          <div>
+            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-primary">Blog Management</span>
+            <h3 class="text-xl font-display font-black tracking-tight text-foreground mt-0.5">Create Blog Tag</h3>
+          </div>
+          <button 
+            type="button" 
+            @click="modalState.closeModal()" 
+            class="w-9 h-9 border border-border rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-4">
+          <div v-if="formError" class="p-3.5 bg-destructive/10 border border-destructive/20 flex items-start gap-3 rounded-xl text-destructive">
+            <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
+            <p class="text-xs font-semibold leading-relaxed">{{ formError }}</p>
+          </div>
+
+          <div>
+            <label for="tag-name" class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+              Tag Name <span class="text-destructive">*</span>
+            </label>
+            <input 
+              id="tag-name"
+              v-model="tagName"
+              type="text"
+              placeholder="e.g. Gaming Laptops"
+              class="w-full h-10 px-3.5 bg-background border border-input rounded-xl text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/20 transition-all"
+              :disabled="isSubmitting"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-6 border-t border-border bg-muted/20 flex items-center justify-end gap-3">
+          <UiButton 
+            type="button" 
+            variant="outline" 
+            class="rounded-xl h-9 px-4 font-bold text-xs"
+            @click="modalState.closeModal()"
+            :disabled="isSubmitting"
+          >
+            Cancel
+          </UiButton>
+          <UiButton 
+            type="submit" 
+            variant="primary" 
+            class="rounded-xl h-9 px-5 gap-2 font-bold text-xs"
+            :disabled="isSubmitting || !tagName.trim()"
+          >
+            <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isSubmitting ? 'Creating...' : 'Create Tag' }}</span>
+          </UiButton>
+        </div>
+      </form>
+    </UiAdminModal>
   </NuxtLayout>
 </template>
