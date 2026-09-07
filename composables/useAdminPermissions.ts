@@ -63,7 +63,7 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     route: '/admin/blog/tags',
     name: 'Blog Tags',
     iconKey: 'Tag',
-    viewPermission: ['blog.view_tag', 'view_tag', 'blog_api.view_tag', 'blog.view_blogtag']
+    viewPermission: 'blog_api.view_blogtag'
   },
   inventory: {
     key: 'inventory',

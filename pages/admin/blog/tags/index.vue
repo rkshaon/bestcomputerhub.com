@@ -4,6 +4,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { Tag, Search, RefreshCw, AlertCircle } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useBlogService } from '@/composables/useBlogService';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { cn, decodeHtmlEntities } from '@/utils';
 import type { BlogTag } from '@/types';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -53,7 +54,16 @@ const formatDate = (dateStr?: string | null): string => {
   }
 };
 
+const { hasPermission } = useAdminPermissions();
+
 const fetchTags = async () => {
+  if (!hasPermission('blog_api.view_blogtag')) {
+    errorMsg.value = 'Access denied. The blog_api.view_blogtag permission is required to view blog tags.';
+    tagsList.value = [];
+    totalCount.value = 0;
+    return;
+  }
+
   isLoading.value = true;
   errorMsg.value = null;
 
