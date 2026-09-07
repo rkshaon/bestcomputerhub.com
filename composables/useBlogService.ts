@@ -106,6 +106,26 @@ export const useBlogService = () => {
     }
   };
 
+  /**
+   * Delete a blog tag (DELETE /api/v1/blog/tags/{id}/)
+   */
+  const deleteBlogTag = async (id: number): Promise<void> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      await apiClient.request<void>(`/api/v1/blog/tags/${id}/`, {
+        method: 'DELETE'
+      });
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to delete blog tag.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const getPosts = (params?: { 
     category?: string; 
     query?: string;
@@ -150,6 +170,7 @@ export const useBlogService = () => {
     getBlogTags,
     createBlogTag,
     updateBlogTag,
+    deleteBlogTag,
     getPosts,
     getPostBySlug,
     getRecentPosts,

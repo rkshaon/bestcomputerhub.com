@@ -1,7 +1,7 @@
 <!-- File: /pages/admin/blog/tags/index.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import { Tag, Search, RefreshCw, AlertCircle, Plus, X, Loader2, Pencil } from 'lucide-vue-next';
+import { Tag, Search, RefreshCw, AlertCircle, Plus, X, Loader2, Pencil, Trash2 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useBlogService } from '@/composables/useBlogService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
@@ -43,6 +43,10 @@ const editTagName = ref('');
 const editFormError = ref<string | null>(null);
 const isEditSubmitting = ref(false);
 
+// Delete state
+const deleteFormError = ref<string | null>(null);
+const isDeleteSubmitting = ref(false);
+
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 
@@ -73,6 +77,7 @@ const { hasPermission } = useAdminPermissions();
 
 const canCreateTag = computed(() => hasPermission('blog_api.add_blogtag'));
 const canEditTag = computed(() => hasPermission('blog_api.change_blogtag'));
+const canDeleteTag = computed(() => hasPermission('blog_api.delete_blogtag'));
 
 const fetchTags = async () => {
   if (!hasPermission('blog_api.view_blogtag')) {
@@ -197,6 +202,49 @@ watch([() => modalState.isEdit.value, () => modalState.activeEntity.value], ([is
   }
 }, { immediate: true });
 
+watch(() => modalState.isDelete.value, (isOpen) => {
+  if (isOpen) {
+    deleteFormError.value = null;
+  }
+});
+
+const handleDeleteTag = async () => {
+  if (!hasPermission('blog_api.delete_blogtag')) {
+    deleteFormError.value = 'Access denied. The blog_api.delete_blogtag permission is required to delete a blog tag.';
+    return;
+  }
+
+  const currentTag = modalState.activeEntity.value;
+  if (!currentTag) {
+    deleteFormError.value = 'No tag selected for deletion.';
+    return;
+  }
+
+  if (isDeleteSubmitting.value) return;
+
+  isDeleteSubmitting.value = true;
+  deleteFormError.value = null;
+
+  try {
+    await blogService.deleteBlogTag(currentTag.id);
+    toastSuccess('Blog tag deleted successfully.');
+    deleteFormError.value = null;
+    modalState.closeModal();
+
+    if (tagsList.value.length === 1 && currentPage.value > 1) {
+      currentPage.value = currentPage.value - 1;
+    } else {
+      await fetchTags();
+    }
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to delete blog tag.');
+    deleteFormError.value = msg;
+    handleApiError(err, 'Failed to delete blog tag.');
+  } finally {
+    isDeleteSubmitting.value = false;
+  }
+};
+
 const totalPages = computed(() => {
   return Math.ceil(totalCount.value / itemsPerPage.value) || 1;
 });
@@ -268,7 +316,7 @@ const tableColumns = computed<UiTableColumn<BlogTag>[]>(() => {
     { key: 'created_at', label: 'Created Date', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   ];
 
-  if (canEditTag.value) {
+  if (canEditTag.value || canDeleteTag.value) {
     cols.push({
       key: 'actions',
       label: 'Actions',
@@ -469,6 +517,16 @@ const tableColumns = computed<UiTableColumn<BlogTag>[]>(() => {
             >
               <Pencil class="w-4 h-4" />
             </button>
+            <button
+              v-if="canDeleteTag"
+              type="button"
+              @click="modalState.openDelete(tag.id)"
+              class="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              title="Delete Tag"
+              aria-label="Delete Tag"
+            >
+              <Trash2 class="w-4 h-4" />
+            </button>
           </div>
         </template>
 
@@ -641,6 +699,54 @@ const tableColumns = computed<UiTableColumn<BlogTag>[]>(() => {
           </UiButton>
         </div>
       </form>
+    </UiAdminModal>
+
+    <!-- Delete Confirmation Modal -->
+    <UiAdminModal
+      :is-open="modalState.isDelete.value && !!modalState.activeEntity.value"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="modalState.closeModal()"
+    >
+      <div class="p-6 space-y-6">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold text-foreground">Confirm Tag Deletion</h3>
+          <p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            Are you sure you want to delete the blog tag <span class="font-bold text-foreground">"{{ decodeHtmlEntities(modalState.activeEntity.value?.name || '') }}"</span>? This action cannot be undone.
+          </p>
+        </div>
+
+        <div v-if="deleteFormError" class="p-3.5 bg-destructive/10 border border-destructive/20 flex items-start gap-3 rounded-xl text-destructive">
+          <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
+          <p class="text-xs font-semibold leading-relaxed">{{ deleteFormError }}</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <UiButton 
+            type="button" 
+            variant="outline" 
+            class="rounded-xl h-9 px-4 font-bold text-xs"
+            @click="modalState.closeModal()"
+            :disabled="isDeleteSubmitting"
+          >
+            Cancel
+          </UiButton>
+          <UiButton 
+            type="button" 
+            variant="destructive" 
+            class="rounded-xl h-9 px-5 gap-2 font-bold text-xs"
+            @click="handleDeleteTag"
+            :disabled="isDeleteSubmitting"
+          >
+            <Loader2 v-if="isDeleteSubmitting" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isDeleteSubmitting ? 'Deleting...' : 'Delete Tag' }}</span>
+          </UiButton>
+        </div>
+      </div>
     </UiAdminModal>
   </NuxtLayout>
 </template>
