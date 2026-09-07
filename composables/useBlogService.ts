@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { blogPosts } from '@/mock/data';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { BlogPost, BlogTag, BlogTagQueryParams, CreateBlogTagPayload, PaginatedBlogTags } from '@/types';
+import type { BlogPost, BlogTag, BlogTagQueryParams, CreateBlogTagPayload, UpdateBlogTagPayload, PaginatedBlogTags } from '@/types';
 
 const isLoading = ref(false);
 const errorMsg = ref<string | null>(null);
@@ -84,6 +84,28 @@ export const useBlogService = () => {
     }
   };
 
+  /**
+   * Update an existing blog tag (PATCH /api/v1/blog/tags/{id}/)
+   */
+  const updateBlogTag = async (id: number, payload: UpdateBlogTagPayload): Promise<BlogTag> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<BlogTag>(`/api/v1/blog/tags/${id}/`, {
+        method: 'PATCH',
+        body: payload
+      });
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to update blog tag.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const getPosts = (params?: { 
     category?: string; 
     query?: string;
@@ -127,6 +149,7 @@ export const useBlogService = () => {
   return {
     getBlogTags,
     createBlogTag,
+    updateBlogTag,
     getPosts,
     getPostBySlug,
     getRecentPosts,

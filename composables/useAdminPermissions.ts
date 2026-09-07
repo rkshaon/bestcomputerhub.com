@@ -64,7 +64,8 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     name: 'Blog Tags',
     iconKey: 'Tag',
     viewPermission: 'blog_api.view_blogtag',
-    createPermission: 'blog_api.add_blogtag'
+    createPermission: 'blog_api.add_blogtag',
+    editPermission: 'blog_api.change_blogtag'
   },
   inventory: {
     key: 'inventory',

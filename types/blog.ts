@@ -44,3 +44,7 @@ export interface CreateBlogTagPayload {
   name: string;
 }
 
+export interface UpdateBlogTagPayload {
+  name: string;
+}
+
