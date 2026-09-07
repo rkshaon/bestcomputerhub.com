@@ -17,3 +17,26 @@ export interface BlogPost {
   readingTime: string;
   tags: string[];
 }
+
+export interface BlogTag {
+  id: number;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface BlogTagQueryParams {
+  is_active?: boolean;
+  page?: number;
+  page_size?: number;
+  search?: string;
+}
+
+export interface PaginatedBlogTags {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: BlogTag[];
+}
+

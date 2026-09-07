@@ -58,6 +58,13 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     editPermission: ['store.change_brand', 'change_brand', 'brands.change_brand'],
     deletePermission: ['store.delete_brand', 'delete_brand', 'brands.delete_brand']
   },
+  blogTags: {
+    key: 'blogTags',
+    route: '/admin/blog/tags',
+    name: 'Blog Tags',
+    iconKey: 'Tag',
+    viewPermission: ['blog.view_tag', 'view_tag', 'blog_api.view_tag', 'blog.view_blogtag']
+  },
   inventory: {
     key: 'inventory',
     route: '/admin/inventory',

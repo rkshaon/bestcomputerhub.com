@@ -1,8 +1,67 @@
 // File: /composables/useBlogService.ts
+import { ref } from 'vue';
 import { blogPosts } from '@/mock/data';
-import type { BlogPost } from '@/types';
+import { useApiClient } from './useApiClient';
+import { extractErrorMessage } from './useToast';
+import type { BlogPost, BlogTag, BlogTagQueryParams, PaginatedBlogTags } from '@/types';
+
+const isLoading = ref(false);
+const errorMsg = ref<string | null>(null);
 
 export const useBlogService = () => {
+  const apiClient = useApiClient();
+
+  /**
+   * Fetch paginated list of blog tags (GET /api/v1/blog/tags/)
+   */
+  const getBlogTags = async (params?: BlogTagQueryParams): Promise<PaginatedBlogTags> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const queryObj: Record<string, any> = {};
+      if (params) {
+        if (params.page !== undefined && params.page !== null) queryObj.page = params.page;
+        if (params.page_size !== undefined && params.page_size !== null) queryObj.page_size = params.page_size;
+        if (params.search?.trim()) queryObj.search = params.search.trim();
+        if (params.is_active !== undefined && params.is_active !== null) queryObj.is_active = params.is_active;
+      }
+
+      const data = await apiClient.request<PaginatedBlogTags | BlogTag[]>('/api/v1/blog/tags/', {
+        method: 'GET',
+        params: queryObj
+      });
+
+      let results: BlogTag[] = [];
+      let count = 0;
+      let nextUrl: string | null = null;
+      let previousUrl: string | null = null;
+
+      if (Array.isArray(data)) {
+        results = data;
+        count = data.length;
+      } else if (data && typeof data === 'object' && 'results' in data) {
+        results = data.results || [];
+        count = typeof data.count === 'number' ? data.count : results.length;
+        nextUrl = data.next || null;
+        previousUrl = data.previous || null;
+      }
+
+      return {
+        count,
+        next: nextUrl,
+        previous: previousUrl,
+        results
+      };
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve blog tags.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const getPosts = (params?: { 
     category?: string; 
     query?: string;
@@ -44,9 +103,13 @@ export const useBlogService = () => {
   };
 
   return {
+    getBlogTags,
     getPosts,
     getPostBySlug,
     getRecentPosts,
-    getCategories
+    getCategories,
+    isLoading,
+    errorMsg
   };
 };
+
