@@ -17,6 +17,7 @@ import {
 } from 'lucide-vue-next';
 import UiTable from '@/components/ui/UiTable.vue';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
+import UiButton from '@/components/ui/Button.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import type { ProductImage } from '@/types';
 
@@ -167,26 +168,30 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
 
 <template>
   <NuxtLayout name="admin">
-    <div class="space-y-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-foreground flex items-center gap-2">
-            <ImageIcon class="w-6 h-6 text-muted-foreground" />
-            Product Images
-          </h1>
-          <p class="text-sm text-muted-foreground mt-1">
-            Global registry of all uploaded product imagery.
-          </p>
-        </div>
-        <button
-          @click="fetchImages"
-          class="h-9 px-4 border border-input bg-background hover:bg-muted text-foreground rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
-        >
-          <RefreshCw :class="['w-4 h-4', { 'animate-spin': isFetching }]" />
-          Refresh
-        </button>
+    <template #header-title>
+      <div class="flex items-center gap-2">
+        <span class="text-muted-foreground/40 font-light select-none">/</span>
+        <h1 class="text-xl font-display font-extrabold tracking-tight text-foreground">
+          Product Images
+        </h1>
       </div>
+    </template>
 
+    <template #header-actions>
+      <div class="flex flex-wrap items-center gap-2">
+        <UiButton 
+          variant="outline" 
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
+          @click="fetchImages"
+          :disabled="isFetching"
+        >
+          <RefreshCw :class="['w-3.5 h-3.5', isFetching && 'animate-spin']" />
+          <span>Refresh</span>
+        </UiButton>
+      </div>
+    </template>
+
+    <div class="space-y-4 animate-in fade-in duration-500">
       <div class="bg-card border border-border rounded-xl shadow-xs overflow-hidden flex flex-col">
         <div class="p-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
           <div class="flex items-center gap-2">
@@ -318,7 +323,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           v-else
           :columns="tableColumns"
           :data="images"
-          :is-loading="isFetching"
+          :loading="isFetching"
           empty-title="No Product Images Found"
           empty-description="There are currently no product images in the global registry."
           empty-icon="ImageIcon"

@@ -226,18 +226,39 @@ const handlePublishPost = async (post: BlogPostItem) => {
 
 <template>
   <NuxtLayout name="admin">
-    <div class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold">Blog Posts</h1>
-        <div class="flex items-center gap-2">
-          <UiButton v-if="hasPermission('blog_api.add_blogpost')" to="/admin/blog/posts/create/" class="gap-2">
-            <Plus class="w-4 h-4" /> Create Blog Post
-          </UiButton>
-          <UiButton variant="outline" class="gap-2" @click="fetchPosts">
-            <RefreshCw class="w-4 h-4" /> Refresh
-          </UiButton>
-        </div>
+    <template #header-title>
+      <div class="flex items-center gap-2">
+        <span class="text-muted-foreground/40 font-light select-none">/</span>
+        <h1 class="text-xl font-display font-extrabold tracking-tight text-foreground">
+          Blog Posts
+        </h1>
       </div>
+    </template>
+
+    <template #header-actions>
+      <div class="flex flex-wrap items-center gap-2">
+        <UiButton 
+          variant="outline" 
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
+          @click="fetchPosts"
+          :disabled="isLoading"
+        >
+          <RefreshCw :class="['w-3.5 h-3.5', isLoading && 'animate-spin']" />
+          <span>Refresh</span>
+        </UiButton>
+
+        <UiButton 
+          v-if="hasPermission('blog_api.add_blogpost')"
+          to="/admin/blog/posts/create/"
+          class="rounded-xl h-9 px-4 gap-1.5 shadow-md shadow-primary/20 bg-primary text-primary-foreground font-bold text-xs"
+        >
+          <Plus class="w-3.5 h-3.5" />
+          <span>Create Blog Post</span>
+        </UiButton>
+      </div>
+    </template>
+
+    <div class="space-y-4">
 
       <!-- Filters -->
       <UiCard class="p-3.5 flex flex-wrap gap-3 items-center">
@@ -265,7 +286,7 @@ const handlePublishPost = async (post: BlogPostItem) => {
       </UiCard>
 
       <UiCard class="p-0">
-        <UiTable :columns="tableColumns" :data="postsList" :is-loading="isLoading">
+        <UiTable :columns="tableColumns" :data="postsList" :loading="isLoading">
           <template #cell-featured_image="{ item: post }">
             <img :src="post.featured_image" :alt="post.featured_image_alt_text" class="w-12 h-12 object-cover rounded-lg" />
           </template>
