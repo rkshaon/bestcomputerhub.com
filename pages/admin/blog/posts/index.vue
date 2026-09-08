@@ -360,8 +360,18 @@ const handlePageChange = (page: number) => {
 };
 
 const formatDate = (dateString: string | null) => {
-  if (!dateString) return '-';
-  return new Date(dateString).toLocaleDateString();
+  if (!dateString) return '—';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch {
+    return '—';
+  }
 };
 
 const isDeleting = ref<number | null>(null);
@@ -533,10 +543,11 @@ const handlePublishPost = async (post: BlogPostItem) => {
       <UiCard class="p-0">
         <UiTable :columns="tableColumns" :data="postsList" :loading="isLoading">
           <template #cell-featured_image="{ item: post }">
-            <img :src="post.featured_image" :alt="post.featured_image_alt_text" class="w-12 h-12 object-cover rounded-lg" />
+            <img v-if="post.featured_image" :src="post.featured_image" :alt="post.featured_image_alt_text || post.title" class="w-12 h-12 object-cover rounded-lg" />
+            <span v-else class="text-muted-foreground">—</span>
           </template>
           <template #cell-author="{ item: post }">
-            {{ post.author.full_name }}
+            {{ post.author ? (post.author.full_name || post.author.username || '—') : '—' }}
           </template>
           <template #cell-published_at="{ item: post }">
             {{ formatDate(post.published_at) }}

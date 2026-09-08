@@ -37,11 +37,11 @@ export interface BlogPostItem {
   id: number;
   title: string;
   slug: string;
-  author: BlogAuthor;
+  author: BlogAuthor | null;
   status: string;
   published_at: string | null;
-  featured_image: string;
-  featured_image_alt_text: string;
+  featured_image: string | null;
+  featured_image_alt_text: string | null;
   categories: BlogCategory[];
   tags: BlogTag[];
   created_at: string;
