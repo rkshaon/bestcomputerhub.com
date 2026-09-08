@@ -1,7 +1,7 @@
 <!-- File: /pages/admin/blog/posts/index.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { FileText, Search, RefreshCw, AlertCircle, Plus, Pencil, Trash2, EyeOff } from 'lucide-vue-next';
+import { FileText, Search, RefreshCw, AlertCircle, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-vue-next';
 import { useBlogService } from '@/composables/useBlogService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
@@ -185,6 +185,43 @@ const handleUnpublishPost = async (post: BlogPostItem) => {
     isUnpublishing.value = null;
   }
 };
+
+const isPublishing = ref<number | null>(null);
+
+const handlePublishPost = async (post: BlogPostItem) => {
+  if (post.status === 'PUBLISHED') {
+    toastError('This blog post is already published.');
+    return;
+  }
+
+  if (!hasPermission('blog_api.publish_blog_post')) {
+    toastError('You do not have permission to publish blog posts.');
+    return;
+  }
+
+  const confirmMsg = `Are you sure you want to publish the blog post "${post.title}"? It will become visible to the public.`;
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  isPublishing.value = post.id;
+  try {
+    const updatedPost = await blogService.publishBlogPost(post.id);
+    toastSuccess(`Blog post "${post.title}" published successfully.`);
+    
+    // Update state using the existing list-fetching/state pattern so the status is immediately correct
+    const index = postsList.value.findIndex(p => p.id === post.id);
+    if (index !== -1) {
+      postsList.value[index] = updatedPost;
+    } else {
+      await fetchPosts();
+    }
+  } catch (err: any) {
+    handleApiError(err, 'Failed to publish blog post.');
+  } finally {
+    isPublishing.value = null;
+  }
+};
 </script>
 
 <template>
@@ -266,6 +303,19 @@ const handleUnpublishPost = async (post: BlogPostItem) => {
                 <span v-if="isUnpublishing === post.id" class="animate-spin border-2 border-amber-500/30 border-t-amber-500 rounded-full w-4 h-4"></span>
                 <EyeOff v-else class="w-4 h-4 text-amber-500" />
                 <span class="sr-only">Unpublish</span>
+              </UiButton>
+              <UiButton
+                v-if="post.status !== 'PUBLISHED' && hasPermission('blog_api.publish_blog_post')"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0"
+                title="Publish Blog Post"
+                :disabled="isPublishing === post.id"
+                @click="handlePublishPost(post)"
+              >
+                <span v-if="isPublishing === post.id" class="animate-spin border-2 border-emerald-500/30 border-t-emerald-500 rounded-full w-4 h-4"></span>
+                <Eye class="w-4 h-4 text-emerald-500" />
+                <span class="sr-only">Publish</span>
               </UiButton>
               <UiButton
                 v-if="hasPermission('blog_api.delete_blogpost')"
