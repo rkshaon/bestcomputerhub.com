@@ -30,6 +30,7 @@ definePageMeta({
 const route = useRoute();
 const router = useRouter();
 const postId = route.params.id as string;
+const isCreate = postId === 'create';
 
 const blogService = useBlogService();
 const categoryService = useCategoryService();
@@ -38,7 +39,8 @@ const { toastSuccess, toastError, handleApiError } = useToast();
 const { hasPermission } = useAdminPermissions();
 
 // Security Boundary Guard
-if (!hasPermission('blog_api.change_blogpost')) {
+const requiredPermission = isCreate ? 'blog_api.add_blogpost' : 'blog_api.change_blogpost';
+if (!hasPermission(requiredPermission)) {
   navigateTo('/admin/forbidden');
 }
 
@@ -82,6 +84,10 @@ const loadOptions = async () => {
 };
 
 const fetchPostDetails = async () => {
+  if (isCreate) {
+    isResolving.value = false;
+    return;
+  }
   isResolving.value = true;
   errorMsg.value = null;
   try {
@@ -142,8 +148,13 @@ const handleSave = async () => {
       seo_nofollow: seoNofollow.value
     };
 
-    await blogService.updateBlogPost(postId, payload);
-    toastSuccess('Blog post updated successfully.');
+    if (isCreate) {
+      await blogService.createBlogPost(payload);
+      toastSuccess('Blog post created successfully.');
+    } else {
+      await blogService.updateBlogPost(postId, payload);
+      toastSuccess('Blog post updated successfully.');
+    }
     router.push('/admin/blog/posts/');
   } catch (err: any) {
     handleApiError(err);
@@ -178,7 +189,7 @@ const toggleTag = (tagId: string | number) => {
     <!-- Loading State -->
     <div v-if="isResolving" class="flex flex-col items-center justify-center py-20 space-y-4">
       <span class="animate-spin border-4 border-primary/30 border-t-primary rounded-full w-12 h-12"></span>
-      <p class="text-sm text-muted-foreground font-medium">Resolving blog post metadata...</p>
+      <p class="text-sm text-muted-foreground font-medium">{{ isCreate ? 'Preparing blog post composer...' : 'Resolving blog post metadata...' }}</p>
     </div>
 
     <!-- Error State -->
@@ -201,10 +212,10 @@ const toggleTag = (tagId: string | number) => {
           </NuxtLink>
           <div>
             <div class="flex items-center gap-2 mb-1">
-              <span class="text-[10px] uppercase font-bold tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-md">Edit Configuration</span>
-              <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">ID: {{ postId }}</span>
+              <span class="text-[10px] uppercase font-bold tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-md">{{ isCreate ? 'New Publication' : 'Edit Configuration' }}</span>
+              <span v-if="!isCreate" class="text-[10px] uppercase font-bold tracking-widest text-slate-400">ID: {{ postId }}</span>
             </div>
-            <h1 class="text-3xl font-display font-extrabold tracking-tight">Edit Blog Post</h1>
+            <h1 class="text-3xl font-display font-extrabold tracking-tight">{{ isCreate ? 'Create Blog Post' : 'Edit Blog Post' }}</h1>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -218,7 +229,7 @@ const toggleTag = (tagId: string | number) => {
           >
             <span v-if="isSaving" class="animate-spin border-2 border-white/30 border-t-white rounded-full w-4 h-4"></span>
             <Save v-else class="w-4 h-4" />
-            {{ isSaving ? 'Saving...' : 'Patch Changes' }}
+            {{ isSaving ? 'Saving...' : (isCreate ? 'Create Publication' : 'Patch Changes') }}
           </UiButton>
         </div>
       </div>

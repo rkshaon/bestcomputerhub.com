@@ -91,6 +91,28 @@ export const useBlogService = () => {
   };
 
   /**
+   * Create a new blog post (POST /api/v1/blog/posts/)
+   */
+  const createBlogPost = async (payload: any): Promise<BlogPostItem> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<BlogPostItem>('/api/v1/blog/posts/', {
+        method: 'POST',
+        body: payload
+      });
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to create blog post.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
    * Fetch paginated list of blog tags (GET /api/v1/blog/tags/)
    */
   const getBlogTags = async (params?: BlogTagQueryParams): Promise<PaginatedBlogTags> => {
@@ -311,6 +333,7 @@ export const useBlogService = () => {
     getBlogPosts,
     getBlogPost,
     updateBlogPost,
+    createBlogPost,
     deleteBlogPost,
     unpublishBlogPost,
     publishBlogPost,
