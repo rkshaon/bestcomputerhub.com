@@ -665,7 +665,10 @@ onUnmounted(() => {
                     <img 
                       :src="item.featured_image || '/logo.svg'" 
                       :alt="item.featured_image_alt_text || item.title"
-                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      :class="[
+                        'w-full h-full group-hover:scale-105 transition-transform duration-500',
+                        item.featured_image ? 'object-cover' : 'object-contain p-2 opacity-50'
+                      ]" 
                     />
                   </NuxtLink>
                   <div class="space-y-1 flex-1 min-w-0">
@@ -772,7 +775,10 @@ onUnmounted(() => {
                 <img 
                   :src="item.featured_image || '/logo.svg'" 
                   :alt="item.featured_image_alt_text || item.title"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                  :class="[
+                    'w-full h-full group-hover:scale-105 transition-transform duration-500',
+                    item.featured_image ? 'object-cover' : 'object-contain p-8 opacity-40'
+                  ]" 
                 />
               </NuxtLink>
               <div class="space-y-2 flex-1">

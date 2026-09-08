@@ -172,9 +172,12 @@ onMounted(() => {
           <!-- Thumbnail & Categories -->
           <NuxtLink :to="`/blog/${post.slug}/`" class="block aspect-[16/10] overflow-hidden rounded-2xl bg-muted relative">
             <img 
-              :src="post.featured_image || '/placeholder-image.webp'" 
+              :src="post.featured_image || '/logo.svg'" 
               :alt="post.featured_image_alt_text || post.title"
-              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              :class="[
+                'w-full h-full group-hover:scale-105 transition-transform duration-500',
+                post.featured_image ? 'object-cover' : 'object-contain p-8 opacity-40'
+              ]"
               loading="lazy"
             />
             <div v-if="post.categories && post.categories.length > 0" class="absolute top-3 left-3 flex flex-wrap gap-1">
