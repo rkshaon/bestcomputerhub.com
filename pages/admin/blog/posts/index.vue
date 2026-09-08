@@ -130,18 +130,27 @@ const formatDate = (dateString: string | null) => {
 
       <!-- Filters -->
       <UiCard class="p-3.5 flex flex-wrap gap-3 items-center">
-        <input v-model="searchQuery" placeholder="Search posts..." class="h-9 px-3 text-sm border rounded-lg w-full sm:w-64" />
-        <select v-model="status" class="h-9 px-3 text-sm border rounded-lg">
+        <UiSearchInput v-model="searchQuery" placeholder="Search posts..." class="w-full sm:w-64" />
+        
+        <select v-model="status" class="h-9 px-3 text-sm border rounded-lg bg-background">
           <option :value="undefined">All Statuses</option>
           <option value="DRAFT">Draft</option>
           <option value="PUBLISHED">Published</option>
         </select>
-        <input v-model="publishedAfter" type="datetime-local" class="h-9 px-3 text-sm border rounded-lg" placeholder="Published After" />
-        <input v-model="publishedBefore" type="datetime-local" class="h-9 px-3 text-sm border rounded-lg" placeholder="Published Before" />
-        <!-- Simplified Selects for Author/Category/Tag IDs if I had lists -->
-        <input v-model.number="authorId" type="number" placeholder="Author ID" class="h-9 px-3 text-sm border rounded-lg w-24" />
-        <input v-model.number="categoryId" type="number" placeholder="Cat ID" class="h-9 px-3 text-sm border rounded-lg w-20" />
-        <input v-model.number="tagId" type="number" placeholder="Tag ID" class="h-9 px-3 text-sm border rounded-lg w-20" />
+
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-semibold text-muted-foreground">From:</label>
+          <input v-model="publishedAfter" type="datetime-local" class="h-9 px-3 text-sm border rounded-lg bg-background" />
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-semibold text-muted-foreground">To:</label>
+          <input v-model="publishedBefore" type="datetime-local" class="h-9 px-3 text-sm border rounded-lg bg-background" />
+        </div>
+
+        <input v-model.number="authorId" type="number" placeholder="Author ID" class="h-9 px-3 text-sm border rounded-lg w-24 bg-background" />
+        <input v-model.number="categoryId" type="number" placeholder="Cat ID" class="h-9 px-3 text-sm border rounded-lg w-20 bg-background" />
+        <input v-model.number="tagId" type="number" placeholder="Tag ID" class="h-9 px-3 text-sm border rounded-lg w-20 bg-background" />
       </UiCard>
 
       <UiCard class="p-0">
