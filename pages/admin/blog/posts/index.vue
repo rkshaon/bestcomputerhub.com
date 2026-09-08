@@ -1,7 +1,7 @@
 <!-- File: /pages/admin/blog/posts/index.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { FileText, Search, RefreshCw, AlertCircle } from 'lucide-vue-next';
+import { FileText, Search, RefreshCw, AlertCircle, Plus } from 'lucide-vue-next';
 import { useBlogService } from '@/composables/useBlogService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { cn } from '@/utils';
@@ -123,9 +123,14 @@ const formatDate = (dateString: string | null) => {
     <div class="space-y-4">
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold">Blog Posts</h1>
-        <UiButton variant="outline" class="gap-2" @click="fetchPosts">
-          <RefreshCw class="w-4 h-4" /> Refresh
-        </UiButton>
+        <div class="flex items-center gap-2">
+          <UiButton v-if="hasPermission('blog_api.add_blogpost')" to="/admin/blog/posts/create/" class="gap-2">
+            <Plus class="w-4 h-4" /> Create Blog Post
+          </UiButton>
+          <UiButton variant="outline" class="gap-2" @click="fetchPosts">
+            <RefreshCw class="w-4 h-4" /> Refresh
+          </UiButton>
+        </div>
       </div>
 
       <!-- Filters -->
