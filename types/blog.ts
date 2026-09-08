@@ -1,5 +1,19 @@
 // File: /types/blog.ts
 
+export interface BlogAuthor {
+  id: number;
+  full_name: string;
+  email: string;
+  username: string;
+}
+
+export interface BlogCategory {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+// Mock interface for existing storefront blog
 export interface BlogPost {
   id: string;
   title: string;
@@ -16,6 +30,33 @@ export interface BlogPost {
   publishedAt: string;
   readingTime: string;
   tags: string[];
+}
+
+// Backend interface for admin blog posts
+export interface BlogPostItem {
+  id: number;
+  title: string;
+  slug: string;
+  author: BlogAuthor;
+  status: string;
+  published_at: string | null;
+  featured_image: string;
+  featured_image_alt_text: string;
+  categories: BlogCategory[];
+  tags: BlogTag[];
+  created_at: string;
+}
+
+export interface BlogPostQueryParams {
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedBlogPosts {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: BlogPostItem[];
 }
 
 export interface BlogTag {
@@ -47,4 +88,3 @@ export interface CreateBlogTagPayload {
 export interface UpdateBlogTagPayload {
   name: string;
 }
-

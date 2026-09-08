@@ -3,13 +3,42 @@ import { ref } from 'vue';
 import { blogPosts } from '@/mock/data';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { BlogPost, BlogTag, BlogTagQueryParams, CreateBlogTagPayload, UpdateBlogTagPayload, PaginatedBlogTags } from '@/types';
+import type { BlogPost, BlogTag, BlogTagQueryParams, CreateBlogTagPayload, UpdateBlogTagPayload, PaginatedBlogTags, BlogPostQueryParams, PaginatedBlogPosts } from '@/types';
 
 const isLoading = ref(false);
 const errorMsg = ref<string | null>(null);
 
 export const useBlogService = () => {
   const apiClient = useApiClient();
+
+  /**
+   * Fetch paginated list of blog posts (GET /api/v1/blog/posts/)
+   */
+  const getBlogPosts = async (params?: BlogPostQueryParams): Promise<PaginatedBlogPosts> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const queryObj: Record<string, any> = {};
+      if (params) {
+        if (params.page !== undefined && params.page !== null) queryObj.page = params.page;
+        if (params.page_size !== undefined && params.page_size !== null) queryObj.page_size = params.page_size;
+      }
+
+      const data = await apiClient.request<PaginatedBlogPosts>('/api/v1/blog/posts/', {
+        method: 'GET',
+        params: queryObj
+      });
+
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, 'Failed to retrieve blog posts.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
 
   /**
    * Fetch paginated list of blog tags (GET /api/v1/blog/tags/)
@@ -167,6 +196,7 @@ export const useBlogService = () => {
   };
 
   return {
+    getBlogPosts,
     getBlogTags,
     createBlogTag,
     updateBlogTag,
