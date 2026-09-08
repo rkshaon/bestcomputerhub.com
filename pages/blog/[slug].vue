@@ -53,7 +53,7 @@ onUnmounted(() => {
       <div class="absolute inset-0 bg-primary/[0.01] pointer-events-none"></div>
       <div class="container mx-auto px-4 relative z-10">
         <div class="max-w-4xl mx-auto space-y-8">
-          <NuxtLink to="/blog" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
+          <NuxtLink to="/blog/" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
             <ArrowLeft class="w-4 h-4" />
             Back to Journal
           </NuxtLink>
@@ -127,19 +127,19 @@ onUnmounted(() => {
             <h3 class="text-xl font-display font-bold">Latest in Hardware</h3>
             <div class="space-y-8">
               <article v-for="item in recentPosts" :key="item.id" class="group flex gap-4">
-                <NuxtLink :to="`/blog/${item.slug}`" class="w-20 h-20 shrink-0 rounded-2xl overflow-hidden bg-muted border block">
+                <NuxtLink :to="`/blog/${item.slug}/`" class="w-20 h-20 shrink-0 rounded-2xl overflow-hidden bg-muted border block">
                   <img :src="item.image" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                 </NuxtLink>
                 <div class="space-y-1">
                   <span class="text-[10px] font-bold uppercase tracking-widest text-primary">{{ item.category }}</span>
-                  <NuxtLink :to="`/blog/${item.slug}`" class="block">
+                  <NuxtLink :to="`/blog/${item.slug}/`" class="block">
                     <h4 class="font-bold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">{{ item.title }}</h4>
                   </NuxtLink>
                   <span class="text-[10px] text-muted-foreground">{{ item.publishedAt }}</span>
                 </div>
               </article>
             </div>
-            <UiButton variant="outline" class="w-full rounded-2xl gap-2 h-12" @click="navigateTo('/blog')">
+            <UiButton variant="outline" class="w-full rounded-2xl gap-2 h-12" @click="navigateTo('/blog/')">
               Explore All Insights <ChevronRight class="w-4 h-4" />
             </UiButton>
           </div>
