@@ -55,6 +55,7 @@ const title = ref('');
 const content = ref('');
 const authorId = ref<number | null>(null);
 const featuredImage = ref('');
+const originalFeaturedImage = ref('');
 const featuredImageAltText = ref('');
 const selectedCategories = ref<number[]>([]);
 const selectedTags = ref<number[]>([]);
@@ -92,7 +93,7 @@ const triggerFileSelect = () => {
 
 const removeSelectedFile = () => {
   featuredImageFile.value = null;
-  featuredImage.value = '';
+  featuredImage.value = originalFeaturedImage.value || '';
   if (previewObjectUrl.value) {
     URL.revokeObjectURL(previewObjectUrl.value);
     previewObjectUrl.value = null;
@@ -136,6 +137,7 @@ const fetchPostDetails = async () => {
     content.value = post.content || '';
     authorId.value = post.author?.id || null;
     featuredImage.value = post.featured_image || '';
+    originalFeaturedImage.value = post.featured_image || '';
     featuredImageAltText.value = post.featured_image_alt_text || '';
     selectedCategories.value = post.categories ? post.categories.map((c: any) => Number(c.id)) : [];
     selectedTags.value = post.tags ? post.tags.map((t: any) => Number(t.id)) : [];
@@ -177,7 +179,7 @@ const handleSave = async () => {
       title: title.value,
       content: content.value,
       author: authorId.value,
-      featured_image: featuredImageFile.value || featuredImage.value,
+      featured_image: featuredImageFile.value,
       featured_image_alt_text: featuredImageAltText.value,
       categories: selectedCategories.value,
       tags: selectedTags.value,
@@ -408,19 +410,9 @@ const toggleTag = (tagId: string | number) => {
               <FileText class="w-5 h-5 text-primary" /> Visual Assets
             </h3>
 
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Featured Image URL</label>
-              <input 
-                v-model="featuredImage" 
-                type="text" 
-                placeholder="https://example.com/asset.png"
-                class="w-full h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-xs"
-              />
-            </div>
-
             <!-- Upload Option -->
             <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Or Upload Image File</label>
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Featured Image File</label>
               <div class="flex items-center gap-3">
                 <UiButton 
                   type="button"
@@ -443,7 +435,7 @@ const toggleTag = (tagId: string | number) => {
                   type="button"
                   variant="ghost"
                   class="h-10 px-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl shrink-0"
-                  title="Remove Uploaded File"
+                  title="Remove Selected File"
                   @click="removeSelectedFile"
                 >
                   <Trash2 class="w-4 h-4" />
