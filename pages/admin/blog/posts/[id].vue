@@ -11,7 +11,9 @@ import {
   Layers, 
   Tag, 
   User as UserIcon,
-  AlertCircle
+  AlertCircle,
+  Upload,
+  Trash2
 } from 'lucide-vue-next';
 import { useBlogService } from '@/composables/useBlogService';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -61,6 +63,44 @@ const seoDescription = ref('');
 const seoFocusKeyword = ref('');
 const seoNoindex = ref(false);
 const seoNofollow = ref(false);
+
+// File Upload Fields & Helpers
+const featuredImageFile = ref<File | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
+const previewObjectUrl = ref<string | null>(null);
+
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files[0]) {
+    const file = target.files[0];
+    if (file.size > 10 * 1024 * 1024) {
+      toastError('Featured image file size must not exceed 10MB.');
+      return;
+    }
+    featuredImageFile.value = file;
+    if (previewObjectUrl.value) {
+      URL.revokeObjectURL(previewObjectUrl.value);
+    }
+    previewObjectUrl.value = URL.createObjectURL(file);
+    featuredImage.value = previewObjectUrl.value;
+  }
+};
+
+const triggerFileSelect = () => {
+  fileInput.value?.click();
+};
+
+const removeSelectedFile = () => {
+  featuredImageFile.value = null;
+  featuredImage.value = '';
+  if (previewObjectUrl.value) {
+    URL.revokeObjectURL(previewObjectUrl.value);
+    previewObjectUrl.value = null;
+  }
+  if (fileInput.value) {
+    fileInput.value.value = '';
+  }
+};
 
 // Option Lists
 const categoriesList = ref<Category[]>([]);
@@ -137,7 +177,7 @@ const handleSave = async () => {
       title: title.value,
       content: content.value,
       author: authorId.value,
-      featured_image: featuredImage.value,
+      featured_image: featuredImageFile.value || featuredImage.value,
       featured_image_alt_text: featuredImageAltText.value,
       categories: selectedCategories.value,
       tags: selectedTags.value,
@@ -376,6 +416,42 @@ const toggleTag = (tagId: string | number) => {
                 placeholder="https://example.com/asset.png"
                 class="w-full h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-xs"
               />
+            </div>
+
+            <!-- Upload Option -->
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Or Upload Image File</label>
+              <div class="flex items-center gap-3">
+                <UiButton 
+                  type="button"
+                  variant="outline"
+                  class="rounded-xl h-10 px-4 font-bold text-xs border border-dashed border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 w-full flex items-center justify-center gap-2 cursor-pointer"
+                  @click="triggerFileSelect"
+                >
+                  <Upload class="w-4 h-4 text-primary" />
+                  <span>{{ featuredImageFile ? 'Change File' : 'Select File' }}</span>
+                </UiButton>
+                <input 
+                  ref="fileInput"
+                  type="file" 
+                  accept="image/*"
+                  class="hidden" 
+                  @change="handleFileSelect" 
+                />
+                <UiButton
+                  v-if="featuredImageFile"
+                  type="button"
+                  variant="ghost"
+                  class="h-10 px-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl shrink-0"
+                  title="Remove Uploaded File"
+                  @click="removeSelectedFile"
+                >
+                  <Trash2 class="w-4 h-4" />
+                </UiButton>
+              </div>
+              <p v-if="featuredImageFile" class="text-[10px] font-bold text-emerald-600 truncate ml-1">
+                Selected: {{ featuredImageFile.name }} ({{ (featuredImageFile.size / 1024).toFixed(1) }} KB)
+              </p>
             </div>
 
             <!-- Asset Preview Box -->

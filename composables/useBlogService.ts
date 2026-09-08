@@ -69,6 +69,57 @@ export const useBlogService = () => {
   };
 
   /**
+   * Helper to build FormData for blog post requests
+   */
+  const buildBlogPostFormData = (payload: any): FormData => {
+    const formData = new FormData();
+    if (payload.title !== undefined) {
+      formData.append('title', payload.title.trim());
+    }
+    if (payload.content !== undefined) {
+      formData.append('content', payload.content);
+    }
+    if (payload.author !== undefined && payload.author !== null) {
+      formData.append('author', payload.author.toString());
+    }
+    if (payload.featured_image instanceof File) {
+      formData.append('featured_image', payload.featured_image);
+    }
+    if (payload.featured_image_alt_text !== undefined) {
+      formData.append('featured_image_alt_text', payload.featured_image_alt_text);
+    }
+    if (payload.seo_title !== undefined) {
+      formData.append('seo_title', payload.seo_title);
+    }
+    if (payload.seo_description !== undefined) {
+      formData.append('seo_description', payload.seo_description);
+    }
+    if (payload.seo_focus_keyword !== undefined) {
+      formData.append('seo_focus_keyword', payload.seo_focus_keyword);
+    }
+    if (payload.seo_noindex !== undefined) {
+      formData.append('seo_noindex', payload.seo_noindex ? 'true' : 'false');
+    }
+    if (payload.seo_nofollow !== undefined) {
+      formData.append('seo_nofollow', payload.seo_nofollow ? 'true' : 'false');
+    }
+
+    if (Array.isArray(payload.categories)) {
+      payload.categories.forEach((catId: any) => {
+        formData.append('categories', catId.toString());
+      });
+    }
+
+    if (Array.isArray(payload.tags)) {
+      payload.tags.forEach((tagId: any) => {
+        formData.append('tags', tagId.toString());
+      });
+    }
+
+    return formData;
+  };
+
+  /**
    * Update an existing blog post (PATCH /api/v1/blog/posts/{id}/)
    */
   const updateBlogPost = async (id: number | string, payload: any): Promise<BlogPostItem> => {
@@ -76,9 +127,10 @@ export const useBlogService = () => {
     errorMsg.value = null;
 
     try {
+      const formData = buildBlogPostFormData(payload);
       const data = await apiClient.request<BlogPostItem>(`/api/v1/blog/posts/${id}/`, {
         method: 'PATCH',
-        body: payload
+        body: formData
       });
       return data;
     } catch (err: any) {
@@ -98,9 +150,10 @@ export const useBlogService = () => {
     errorMsg.value = null;
 
     try {
+      const formData = buildBlogPostFormData(payload);
       const data = await apiClient.request<BlogPostItem>('/api/v1/blog/posts/', {
         method: 'POST',
-        body: payload
+        body: formData
       });
       return data;
     } catch (err: any) {
