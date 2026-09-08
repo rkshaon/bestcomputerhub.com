@@ -48,8 +48,15 @@ export interface BlogPostItem {
 }
 
 export interface BlogPostQueryParams {
+  author?: number;
+  category?: number;
   page?: number;
   page_size?: number;
+  published_after?: string;
+  published_before?: string;
+  search?: string;
+  status?: 'DRAFT' | 'PUBLISHED';
+  tag?: number;
 }
 
 export interface PaginatedBlogPosts {

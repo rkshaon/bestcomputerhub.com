@@ -29,6 +29,15 @@ const errorMsg = ref<string | null>(null);
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 
+const searchQuery = ref(route.query.search ? String(route.query.search) : '');
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
+const authorId = ref(route.query.author ? parseInt(String(route.query.author)) : undefined);
+const categoryId = ref(route.query.category ? parseInt(String(route.query.category)) : undefined);
+const tagId = ref(route.query.tag ? parseInt(String(route.query.tag)) : undefined);
+const status = ref(route.query.status ? String(route.query.status) : undefined);
+const publishedAfter = ref(route.query.published_after ? String(route.query.published_after) : undefined);
+const publishedBefore = ref(route.query.published_before ? String(route.query.published_before) : undefined);
+
 const { hasPermission } = useAdminPermissions();
 
 const fetchPosts = async () => {
@@ -43,7 +52,14 @@ const fetchPosts = async () => {
   try {
     const data = await blogService.getBlogPosts({
       page: currentPage.value,
-      page_size: itemsPerPage.value
+      page_size: itemsPerPage.value,
+      search: debouncedSearchQuery.value,
+      author: authorId.value,
+      category: categoryId.value,
+      tag: tagId.value,
+      status: status.value as 'DRAFT' | 'PUBLISHED' | undefined,
+      published_after: publishedAfter.value,
+      published_before: publishedBefore.value,
     });
     postsList.value = data.results;
     totalCount.value = data.count;
@@ -52,7 +68,14 @@ const fetchPosts = async () => {
       query: {
         ...route.query,
         page: currentPage.value !== 1 ? currentPage.value : undefined,
-        pageSize: itemsPerPage.value !== 10 ? itemsPerPage.value : undefined
+        pageSize: itemsPerPage.value !== 10 ? itemsPerPage.value : undefined,
+        search: debouncedSearchQuery.value || undefined,
+        author: authorId.value || undefined,
+        category: categoryId.value || undefined,
+        tag: tagId.value || undefined,
+        status: status.value || undefined,
+        published_after: publishedAfter.value || undefined,
+        published_before: publishedBefore.value || undefined,
       }
     });
   } catch (err: any) {
@@ -61,6 +84,11 @@ const fetchPosts = async () => {
     isLoading.value = false;
   }
 };
+
+watch([debouncedSearchQuery, authorId, categoryId, tagId, status, publishedAfter, publishedBefore], () => {
+  currentPage.value = 1;
+  fetchPosts();
+});
 
 onMounted(() => {
   fetchPosts();
@@ -99,6 +127,22 @@ const formatDate = (dateString: string | null) => {
           <RefreshCw class="w-4 h-4" /> Refresh
         </UiButton>
       </div>
+
+      <!-- Filters -->
+      <UiCard class="p-3.5 flex flex-wrap gap-3 items-center">
+        <input v-model="searchQuery" placeholder="Search posts..." class="h-9 px-3 text-sm border rounded-lg w-full sm:w-64" />
+        <select v-model="status" class="h-9 px-3 text-sm border rounded-lg">
+          <option :value="undefined">All Statuses</option>
+          <option value="DRAFT">Draft</option>
+          <option value="PUBLISHED">Published</option>
+        </select>
+        <input v-model="publishedAfter" type="datetime-local" class="h-9 px-3 text-sm border rounded-lg" placeholder="Published After" />
+        <input v-model="publishedBefore" type="datetime-local" class="h-9 px-3 text-sm border rounded-lg" placeholder="Published Before" />
+        <!-- Simplified Selects for Author/Category/Tag IDs if I had lists -->
+        <input v-model.number="authorId" type="number" placeholder="Author ID" class="h-9 px-3 text-sm border rounded-lg w-24" />
+        <input v-model.number="categoryId" type="number" placeholder="Cat ID" class="h-9 px-3 text-sm border rounded-lg w-20" />
+        <input v-model.number="tagId" type="number" placeholder="Tag ID" class="h-9 px-3 text-sm border rounded-lg w-20" />
+      </UiCard>
 
       <UiCard class="p-0">
         <UiTable :columns="tableColumns" :data="postsList" :is-loading="isLoading">

@@ -21,8 +21,15 @@ export const useBlogService = () => {
     try {
       const queryObj: Record<string, any> = {};
       if (params) {
+        if (params.author) queryObj.author = params.author;
+        if (params.category) queryObj.category = params.category;
         if (params.page !== undefined && params.page !== null) queryObj.page = params.page;
         if (params.page_size !== undefined && params.page_size !== null) queryObj.page_size = params.page_size;
+        if (params.published_after) queryObj.published_after = params.published_after;
+        if (params.published_before) queryObj.published_before = params.published_before;
+        if (params.search?.trim()) queryObj.search = params.search.trim();
+        if (params.status) queryObj.status = params.status;
+        if (params.tag) queryObj.tag = params.tag;
       }
 
       const data = await apiClient.request<PaginatedBlogPosts>('/api/v1/blog/posts/', {
