@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { blogPosts } from '@/mock/data';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { BlogPost, BlogTag, BlogTagQueryParams, CreateBlogTagPayload, UpdateBlogTagPayload, PaginatedBlogTags, BlogPostQueryParams, PaginatedBlogPosts } from '@/types';
+import type { BlogPost, BlogPostItem, BlogTag, BlogTagQueryParams, CreateBlogTagPayload, UpdateBlogTagPayload, PaginatedBlogTags, BlogPostQueryParams, PaginatedBlogPosts } from '@/types';
 
 const isLoading = ref(false);
 const errorMsg = ref<string | null>(null);
@@ -40,6 +40,49 @@ export const useBlogService = () => {
       return data;
     } catch (err: any) {
       const msg = extractErrorMessage(err, 'Failed to retrieve blog posts.');
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Fetch a single blog post by ID (GET /api/v1/blog/posts/{id}/)
+   */
+  const getBlogPost = async (id: number | string): Promise<BlogPostItem> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<BlogPostItem>(`/api/v1/blog/posts/${id}/`, {
+        method: 'GET'
+      });
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, `Failed to retrieve blog post #${id}.`);
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Update an existing blog post (PATCH /api/v1/blog/posts/{id}/)
+   */
+  const updateBlogPost = async (id: number | string, payload: any): Promise<BlogPostItem> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<BlogPostItem>(`/api/v1/blog/posts/${id}/`, {
+        method: 'PATCH',
+        body: payload
+      });
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, `Failed to update blog post #${id}.`);
       errorMsg.value = msg;
       throw err;
     } finally {
@@ -204,6 +247,8 @@ export const useBlogService = () => {
 
   return {
     getBlogPosts,
+    getBlogPost,
+    updateBlogPost,
     getBlogTags,
     createBlogTag,
     updateBlogTag,

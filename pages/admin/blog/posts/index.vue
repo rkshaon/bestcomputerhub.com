@@ -1,7 +1,7 @@
 <!-- File: /pages/admin/blog/posts/index.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { FileText, Search, RefreshCw, AlertCircle, Plus } from 'lucide-vue-next';
+import { FileText, Search, RefreshCw, AlertCircle, Plus, Pencil } from 'lucide-vue-next';
 import { useBlogService } from '@/composables/useBlogService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { cn } from '@/utils';
@@ -105,6 +105,7 @@ const tableColumns: UiTableColumn<BlogPostItem>[] = [
   { key: 'status', label: 'Status', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'published_at', label: 'Published Date', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'created_at', label: 'Created Date', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'actions', label: 'Actions', headerClass: 'px-4 py-3 text-right', cellClass: 'px-4 py-2.5 text-right' },
 ];
 
 const handlePageChange = (page: number) => {
@@ -171,6 +172,21 @@ const formatDate = (dateString: string | null) => {
           </template>
           <template #cell-created_at="{ item: post }">
             {{ formatDate(post.created_at) }}
+          </template>
+          <template #cell-actions="{ item: post }">
+            <div class="flex items-center justify-end gap-2">
+              <UiButton
+                v-if="hasPermission('blog_api.change_blogpost')"
+                :to="`/admin/blog/posts/${post.id}/`"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0"
+                title="Edit Blog Post"
+              >
+                <Pencil class="w-4 h-4 text-primary" />
+                <span class="sr-only">Edit</span>
+              </UiButton>
+            </div>
           </template>
           <template #empty>
             <div class="text-center py-8 text-muted-foreground">No blog posts found.</div>

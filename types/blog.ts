@@ -45,6 +45,12 @@ export interface BlogPostItem {
   categories: BlogCategory[];
   tags: BlogTag[];
   created_at: string;
+  content?: string;
+  seo_title?: string;
+  seo_description?: string;
+  seo_focus_keyword?: string;
+  seo_noindex?: boolean;
+  seo_nofollow?: boolean;
 }
 
 export interface BlogPostQueryParams {
