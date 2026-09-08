@@ -225,6 +225,27 @@ export const useBlogService = () => {
     }
   };
 
+  /**
+   * Unpublish an existing blog post (POST /api/v1/blog/posts/{id}/unpublish/)
+   */
+  const unpublishBlogPost = async (id: number | string): Promise<BlogPostItem> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<BlogPostItem>(`/api/v1/blog/posts/${id}/unpublish/`, {
+        method: 'POST'
+      });
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, `Failed to unpublish blog post #${id}.`);
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const getPosts = (params?: { 
     category?: string; 
     query?: string;
@@ -270,6 +291,7 @@ export const useBlogService = () => {
     getBlogPost,
     updateBlogPost,
     deleteBlogPost,
+    unpublishBlogPost,
     getBlogTags,
     createBlogTag,
     updateBlogTag,

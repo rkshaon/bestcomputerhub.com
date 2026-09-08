@@ -1,7 +1,7 @@
 <!-- File: /pages/admin/blog/posts/index.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { FileText, Search, RefreshCw, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-vue-next';
+import { FileText, Search, RefreshCw, AlertCircle, Plus, Pencil, Trash2, EyeOff } from 'lucide-vue-next';
 import { useBlogService } from '@/composables/useBlogService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
@@ -148,6 +148,43 @@ const handleDeletePost = async (post: BlogPostItem) => {
     isDeleting.value = null;
   }
 };
+
+const isUnpublishing = ref<number | null>(null);
+
+const handleUnpublishPost = async (post: BlogPostItem) => {
+  if (post.status !== 'PUBLISHED') {
+    toastError('This blog post is not published.');
+    return;
+  }
+
+  if (!hasPermission('blog_api.unpublish_blog_post')) {
+    toastError('You do not have permission to unpublish blog posts.');
+    return;
+  }
+
+  const confirmMsg = `Are you sure you want to unpublish the blog post "${post.title}"? It will revert to draft status.`;
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  isUnpublishing.value = post.id;
+  try {
+    const updatedPost = await blogService.unpublishBlogPost(post.id);
+    toastSuccess(`Blog post "${post.title}" unpublished successfully.`);
+    
+    // Update state using the existing list-fetching/state pattern so the status is immediately correct
+    const index = postsList.value.findIndex(p => p.id === post.id);
+    if (index !== -1) {
+      postsList.value[index] = updatedPost;
+    } else {
+      await fetchPosts();
+    }
+  } catch (err: any) {
+    handleApiError(err, 'Failed to unpublish blog post.');
+  } finally {
+    isUnpublishing.value = null;
+  }
+};
 </script>
 
 <template>
@@ -216,6 +253,19 @@ const handleDeletePost = async (post: BlogPostItem) => {
               >
                 <Pencil class="w-4 h-4 text-primary" />
                 <span class="sr-only">Edit</span>
+              </UiButton>
+              <UiButton
+                v-if="post.status === 'PUBLISHED' && hasPermission('blog_api.unpublish_blog_post')"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0"
+                title="Unpublish Blog Post"
+                :disabled="isUnpublishing === post.id"
+                @click="handleUnpublishPost(post)"
+              >
+                <span v-if="isUnpublishing === post.id" class="animate-spin border-2 border-amber-500/30 border-t-amber-500 rounded-full w-4 h-4"></span>
+                <EyeOff v-else class="w-4 h-4 text-amber-500" />
+                <span class="sr-only">Unpublish</span>
               </UiButton>
               <UiButton
                 v-if="hasPermission('blog_api.delete_blogpost')"
