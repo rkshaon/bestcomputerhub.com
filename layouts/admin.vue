@@ -29,7 +29,8 @@ import {
   ExternalLink,
   Globe,
   Terminal,
-  Image as ImageIcon
+  Image as ImageIcon,
+  FileText
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
@@ -63,6 +64,7 @@ const navigation = [
   { name: 'Categories', iconKey: 'Layers', href: '/admin/categories' },
   { name: 'Brands', iconKey: 'Tag', href: '/admin/brands' },
   { name: 'Blog Tags', iconKey: 'Tag', href: '/admin/blog/tags' },
+  { name: 'Blog Posts', iconKey: 'FileText', href: '/admin/blog/posts' },
   { name: 'Inventory', iconKey: 'Boxes', href: '/admin/inventory' },
   { name: 'Orders', iconKey: 'ShoppingCart', href: '/admin/orders' },
   { name: 'Customers', iconKey: 'Users', href: '/admin/customers' },
@@ -105,7 +107,8 @@ const iconMap = {
   Settings,
   UserIcon,
   Globe,
-  Terminal
+  Terminal,
+  FileText
 };
 
 const toggleSidebar = () => {
