@@ -205,6 +205,26 @@ export const useBlogService = () => {
     }
   };
 
+  /**
+   * Delete an existing blog post (DELETE /api/v1/blog/posts/{id}/)
+   */
+  const deleteBlogPost = async (id: number | string): Promise<void> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      await apiClient.request<void>(`/api/v1/blog/posts/${id}/`, {
+        method: 'DELETE'
+      });
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, `Failed to delete blog post #${id}.`);
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const getPosts = (params?: { 
     category?: string; 
     query?: string;
@@ -249,6 +269,7 @@ export const useBlogService = () => {
     getBlogPosts,
     getBlogPost,
     updateBlogPost,
+    deleteBlogPost,
     getBlogTags,
     createBlogTag,
     updateBlogTag,

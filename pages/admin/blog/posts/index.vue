@@ -1,9 +1,10 @@
 <!-- File: /pages/admin/blog/posts/index.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { FileText, Search, RefreshCw, AlertCircle, Plus, Pencil } from 'lucide-vue-next';
+import { FileText, Search, RefreshCw, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-vue-next';
 import { useBlogService } from '@/composables/useBlogService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
 import { cn } from '@/utils';
 import type { BlogPostItem } from '@/types';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -117,6 +118,36 @@ const formatDate = (dateString: string | null) => {
   if (!dateString) return '-';
   return new Date(dateString).toLocaleDateString();
 };
+
+const isDeleting = ref<number | null>(null);
+
+const handleDeletePost = async (post: BlogPostItem) => {
+  if (!hasPermission('blog_api.delete_blogpost')) {
+    toastError('You do not have permission to delete blog posts.');
+    return;
+  }
+
+  const confirmMsg = `Verify Decommissioning: Are you sure you want to delete the blog post "${post.title}"? This action is permanent and cannot be undone.`;
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  isDeleting.value = post.id;
+  try {
+    await blogService.deleteBlogPost(post.id);
+    toastSuccess(`Blog post "${post.title}" deleted successfully.`);
+    
+    // Adjust page if we deleted the last item on current page
+    if (postsList.value.length === 1 && currentPage.value > 1) {
+      currentPage.value -= 1;
+    }
+    await fetchPosts();
+  } catch (err: any) {
+    handleApiError(err, 'Failed to delete blog post.');
+  } finally {
+    isDeleting.value = null;
+  }
+};
 </script>
 
 <template>
@@ -185,6 +216,19 @@ const formatDate = (dateString: string | null) => {
               >
                 <Pencil class="w-4 h-4 text-primary" />
                 <span class="sr-only">Edit</span>
+              </UiButton>
+              <UiButton
+                v-if="hasPermission('blog_api.delete_blogpost')"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0"
+                title="Delete Blog Post"
+                :disabled="isDeleting === post.id"
+                @click="handleDeletePost(post)"
+              >
+                <span v-if="isDeleting === post.id" class="animate-spin border-2 border-rose-500/30 border-t-rose-500 rounded-full w-4 h-4"></span>
+                <Trash2 v-else class="w-4 h-4 text-rose-500" />
+                <span class="sr-only">Delete</span>
               </UiButton>
             </div>
           </template>
