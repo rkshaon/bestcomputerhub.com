@@ -180,13 +180,6 @@ const loadMenuCategories = async () => {
   }
 };
 
-const isScrolled = ref(false);
-
-const handleScroll = () => {
-  if (typeof window !== 'undefined') {
-    isScrolled.value = window.scrollY > 20;
-  }
-};
 
 // Helper to get category by slug safely
 const getCategoryBySlug = (slug: string) => allCategories.value.find(c => c.slug === slug);
@@ -397,8 +390,6 @@ let navResizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
   loadMenuCategories();
-  handleScroll();
-  window.addEventListener('scroll', handleScroll, { passive: true });
 
   if (typeof window !== 'undefined') {
     nextTick(() => {
@@ -415,9 +406,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('scroll', handleScroll);
-  }
   if (navResizeObserver) {
     navResizeObserver.disconnect();
     navResizeObserver = null;
@@ -471,22 +459,10 @@ if (process.client) {
 
 <template>
   <header 
-    :class="cn(
-      'sticky top-0 z-50 w-full border-b py-0 sm:py-1 transition-colors transition-shadow duration-300',
-      isScrolled 
-        ? 'bg-card border-border shadow-md' 
-        : 'bg-background border-border/50 shadow-sm'
-    )"
+    class="sticky top-0 z-50 w-full border-b py-0 sm:py-1 bg-background border-border/50 shadow-sm"
   >
-    <div 
-      :class="cn(
-        'grid transition-all duration-300 ease-in-out overflow-hidden',
-        isScrolled ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'
-      )"
-    >
-      <div class="min-h-0">
-        <HeaderUtilityBar />
-      </div>
+    <div>
+      <HeaderUtilityBar />
     </div>
 
     <div 
