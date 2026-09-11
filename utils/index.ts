@@ -55,11 +55,17 @@ const HTML_ENTITIES: Record<string, string> = {
 const ENTITY_REGEX = /&(?:amp|lt|gt|quot|apos|nbsp|copy|reg|trade|ndash|mdash|hellip|lsquo|rsquo|ldquo|rdquo|bull|deg|plusmn|times|divide|cent|pound|euro|yen|laquo|raquo|frac12|frac14|frac34);|&#039;|&#39;/g;
 
 /**
- * Decodes HTML entities in a plain-text string (e.g. `Surveillance &amp; Security` -> `Surveillance & Security`).
- * Safely handles null, undefined, and non-string or empty values.
+ * Decodes HTML entities in a plain-text string or object (e.g. `Surveillance &amp; Security` -> `Surveillance & Security`).
+ * Safely handles null, undefined, objects with name attributes, and non-string or empty values.
  */
-export function decodeHtmlEntities(value: string | null | undefined): string {
-  if (!value || typeof value !== 'string') {
+export function decodeHtmlEntities(value: string | { name?: string } | any): string {
+  if (!value) {
+    return '';
+  }
+  if (typeof value === 'object' && value !== null) {
+    value = value.name || '';
+  }
+  if (typeof value !== 'string') {
     return '';
   }
   if (!value.includes('&')) {

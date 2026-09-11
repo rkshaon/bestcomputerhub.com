@@ -106,7 +106,7 @@ const fetchProducts = async () => {
 const products = computed(() => loadedProducts.value);
 
 const allCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
-const allBrands = Array.from(new Set(productService.getProducts().map(p => p.brand)));
+const allBrands = Array.from(new Set(productService.getProducts().map(p => typeof p.brand === 'object' && p.brand !== null ? (p.brand.name || '') : String(p.brand || '')))).filter(Boolean);
 
 const debouncedSearchQuery = refDebounced(computed(() => filters.value.query), 300);
 

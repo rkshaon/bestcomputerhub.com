@@ -169,6 +169,24 @@ watch(
   { immediate: true }
 );
 
+// Availability check: is_active === false OR deleted_at !== null
+const isUnavailable = computed(() => {
+  if (!product.value) return false;
+  return product.value.is_active === false || (product.value.deleted_at !== undefined && product.value.deleted_at !== null);
+});
+
+// Format date utility for price history records
+const formatDate = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return String(dateStr);
+  }
+};
+
 // Synchronize wishlist state when product data changes
 watch(
   () => product.value,
@@ -652,16 +670,16 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
       </div>
     </div>
 
-    <!-- Error / Not Found State -->
-    <div v-else-if="error || !product" class="container mx-auto px-4 mt-12 sm:mt-16 text-center max-w-lg">
+    <!-- Error / Not Found / Unavailable State -->
+    <div v-else-if="error || !product || isUnavailable" class="container mx-auto px-4 mt-12 sm:mt-16 text-center max-w-lg">
       <div class="p-8 sm:p-12 rounded-3xl bg-card border shadow-sm space-y-6">
         <div class="w-16 h-16 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
           <AlertCircle class="w-8 h-8" />
         </div>
         <div class="space-y-2">
-          <h1 class="text-2xl font-bold font-display">Product Specification Unavailable</h1>
+          <h1 class="text-2xl font-bold font-display">Product Unavailable</h1>
           <p class="text-sm text-muted-foreground leading-relaxed">
-            The requested product identifier <span class="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{{ slug }}</span> could not be loaded from the catalog database.
+            The requested product identifier <span class="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{{ slug }}</span> is currently unavailable or unlisted in the catalog.
           </p>
         </div>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -924,10 +942,27 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               </template>
             </div>
 
-            <!-- Price History Note if available -->
-            <div v-if="product.price_histories && product.price_histories.length > 0" class="flex items-center gap-2 text-xs text-muted-foreground bg-background/60 p-2.5 rounded-lg border border-border/40">
-              <Clock class="w-3.5 h-3.5 text-primary shrink-0" />
-              <span>Verified competitive price indexed against market benchmark records.</span>
+            <!-- Price History Timeline (Public Safe: price & changed_at only) -->
+            <div v-if="product.price_histories && product.price_histories.length > 0" class="space-y-2 text-xs text-muted-foreground bg-background/60 p-3 rounded-xl border border-border/40">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 font-medium text-foreground">
+                  <Clock class="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Price History</span>
+                </div>
+                <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                  {{ product.price_histories.length }} Record{{ product.price_histories.length > 1 ? 's' : '' }}
+                </span>
+              </div>
+              <div class="divide-y divide-border/20 max-h-32 overflow-y-auto pr-1 space-y-1 pt-1 custom-submenu-scrollbar">
+                <div 
+                  v-for="(history, idx) in product.price_histories" 
+                  :key="idx" 
+                  class="flex items-center justify-between py-1 text-[11px]"
+                >
+                  <span class="font-bold text-foreground">{{ formatCurrency(Number(history.price)) }}</span>
+                  <span class="text-muted-foreground">{{ formatDate(history.changed_at) }}</span>
+                </div>
+              </div>
             </div>
 
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">

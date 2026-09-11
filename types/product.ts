@@ -23,6 +23,12 @@ export interface ProductCategoryRef {
   slug: string;
 }
 
+export interface ProductBrandRef {
+  id: number | string;
+  name: string;
+  slug: string;
+}
+
 export interface ProductOriginRef {
   id: number | string;
   slug: string;
@@ -48,7 +54,8 @@ export interface Product {
   originalPrice?: number;
   category: string;
   subCategory?: string;
-  brand: string;
+  brand: string | ProductBrandRef;
+  brandObj?: ProductBrandRef | null;
   images: string[];
   default_image?: ProductImage | string | null;
   origin?: ProductOriginRef | CategoryOrigin | null;

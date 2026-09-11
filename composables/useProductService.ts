@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { products as initialProducts, categories, brands } from '@/mock/data';
-import type { Product, ProductImage, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload, UpdateProductPayload, BulkUploadProductImagesPayload, BulkUploadProductImageItem } from '@/types';
+import type { Product, ProductBrandRef, ProductImage, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload, UpdateProductPayload, BulkUploadProductImagesPayload, BulkUploadProductImageItem } from '@/types';
 import { useRuntimeConfig } from '#app';
 
 const PRODUCTS_STORAGE_KEY = 'techcore_mock_products_registry';
@@ -103,9 +103,39 @@ export const useProductService = () => {
       ? p.images.map((img: any) => typeof img === 'string' ? img : (img?.image || '')).filter(Boolean)
       : (primaryImgUrl ? [primaryImgUrl] : []);
 
-    const brandName = typeof p.brand === 'object' && p.brand !== null
-      ? (p.brand.name || '')
-      : (p.brand ? String(p.brand) : (p.specifications?.['Brand'] || p.specifications?.['brand'] || ''));
+    const getBrandName = (b: any): string => {
+      if (typeof b === 'object' && b !== null) return b.name || '';
+      return b ? String(b) : '';
+    };
+
+    let brandObj: any = null;
+    let brandVal: string | ProductBrandRef = '';
+
+    if (p.brand && typeof p.brand === 'object') {
+      brandObj = {
+        id: p.brand.id ?? '',
+        name: p.brand.name || '',
+        slug: p.brand.slug || ''
+      };
+      brandVal = brandObj;
+    } else if (p.brand) {
+      brandVal = String(p.brand);
+      brandObj = {
+        id: '',
+        name: String(p.brand),
+        slug: String(p.brand).toLowerCase().replace(/\s+/g, '-')
+      };
+    } else {
+      const specBrand = p.specifications?.['Brand'] || p.specifications?.['brand'] || '';
+      if (specBrand) {
+        brandVal = String(specBrand);
+        brandObj = {
+          id: '',
+          name: String(specBrand),
+          slug: String(specBrand).toLowerCase().replace(/\s+/g, '-')
+        };
+      }
+    }
 
     return {
       id: String(p.id ?? ''),
@@ -119,7 +149,8 @@ export const useProductService = () => {
       originalPrice: p.originalPrice ? Number(p.originalPrice) : (p.original_price ? Number(p.original_price) : undefined),
       category: catName,
       subCategory: String(p.subCategory ?? p.sub_category ?? ''),
-      brand: brandName,
+      brand: brandVal,
+      brandObj: brandObj,
       images: mappedImages,
       default_image: defaultImg || (primaryImgUrl ? { image: primaryImgUrl, alt_text: p.name ?? '' } : null),
       origin: originObj || (typeof p.category === 'object' ? p.category : null),
@@ -198,15 +229,19 @@ export const useProductService = () => {
 
       if (search) {
         const q = search.toLowerCase();
-        filtered = filtered.filter(p => 
-          p.name.toLowerCase().includes(q) || 
-          p.brand.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q)
-        );
+        filtered = filtered.filter(p => {
+          const bStr = typeof p.brand === 'object' && p.brand !== null ? (p.brand.name || '') : String(p.brand || '');
+          return p.name.toLowerCase().includes(q) || 
+            bStr.toLowerCase().includes(q) ||
+            p.description.toLowerCase().includes(q);
+        });
       }
 
       if (brandFilter) {
-        filtered = filtered.filter(p => p.brand.toLowerCase() === brandFilter.toLowerCase());
+        filtered = filtered.filter(p => {
+          const bStr = typeof p.brand === 'object' && p.brand !== null ? (p.brand.name || '') : String(p.brand || '');
+          return bStr.toLowerCase() === brandFilter.toLowerCase();
+        });
       }
 
       if (minPrice !== undefined) {
@@ -922,14 +957,18 @@ export const useProductService = () => {
 
     if (params?.query) {
       const q = params.query.toLowerCase();
-      filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(q) || 
-        p.brand.toLowerCase().includes(q)
-      );
+      filtered = filtered.filter(p => {
+        const bStr = typeof p.brand === 'object' && p.brand !== null ? (p.brand.name || '') : String(p.brand || '');
+        return p.name.toLowerCase().includes(q) || 
+          bStr.toLowerCase().includes(q);
+      });
     }
 
     if (params?.brand) {
-      filtered = filtered.filter(p => p.brand.toLowerCase() === params.brand!.toLowerCase());
+      filtered = filtered.filter(p => {
+        const bStr = typeof p.brand === 'object' && p.brand !== null ? (p.brand.name || '') : String(p.brand || '');
+        return bStr.toLowerCase() === params.brand!.toLowerCase();
+      });
     }
 
     if (params?.minPrice !== undefined) {
