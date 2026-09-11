@@ -118,23 +118,16 @@ export const useProductService = () => {
         slug: p.brand.slug || ''
       };
       brandVal = brandObj;
-    } else if (p.brand) {
-      brandVal = String(p.brand);
+    } else if (p.brand && String(p.brand).trim()) {
+      brandVal = String(p.brand).trim();
       brandObj = {
         id: '',
-        name: String(p.brand),
-        slug: String(p.brand).toLowerCase().replace(/\s+/g, '-')
+        name: String(p.brand).trim(),
+        slug: String(p.brand).trim().toLowerCase().replace(/\s+/g, '-')
       };
     } else {
-      const specBrand = p.specifications?.['Brand'] || p.specifications?.['brand'] || '';
-      if (specBrand) {
-        brandVal = String(specBrand);
-        brandObj = {
-          id: '',
-          name: String(specBrand),
-          slug: String(specBrand).toLowerCase().replace(/\s+/g, '-')
-        };
-      }
+      brandObj = null;
+      brandVal = '';
     }
 
     return {
@@ -196,7 +189,7 @@ export const useProductService = () => {
     const categoriesFilter = params.categories !== undefined && params.categories !== null
       ? (Array.isArray(params.categories) ? params.categories.filter(Boolean).join(',') : String(params.categories).trim())
       : (params.category !== undefined && params.category !== null && params.category !== '' && /^\d+$/.test(String(params.category).trim()) ? String(params.category).trim() : undefined);
-    const brandFilter = params.brand;
+    const brandFilter = params.brands || params.brand;
     const minPrice = params.minPrice;
     const maxPrice = params.maxPrice;
     const sort = params.sort;
@@ -238,9 +231,18 @@ export const useProductService = () => {
       }
 
       if (brandFilter) {
+        const target = String(brandFilter).trim().toLowerCase();
         filtered = filtered.filter(p => {
+          const bObjSlug = p.brandObj?.slug ? String(p.brandObj.slug).trim().toLowerCase() : '';
+          const bObjName = p.brandObj?.name ? String(p.brandObj.name).trim().toLowerCase() : '';
           const bStr = typeof p.brand === 'object' && p.brand !== null ? (p.brand.name || '') : String(p.brand || '');
-          return bStr.toLowerCase() === brandFilter.toLowerCase();
+          const bSlug = typeof p.brand === 'object' && p.brand !== null ? (p.brand.slug || '') : bStr.trim().toLowerCase().replace(/\s+/g, '-');
+          return (
+            bObjSlug === target ||
+            bObjName === target ||
+            bSlug === target ||
+            bStr.trim().toLowerCase() === target
+          );
         });
       }
 
@@ -316,6 +318,7 @@ export const useProductService = () => {
 
       // Forward brand filter
       if (brandFilter) {
+        qParams.append('brands', brandFilter);
         qParams.append('brand', brandFilter);
       }
 

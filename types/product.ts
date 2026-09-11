@@ -108,6 +108,7 @@ export interface ProductFilters {
   query?: string;
   search?: string;
   brand?: string;
+  brands?: string;
   minPrice?: number;
   maxPrice?: number;
   sort?: string;

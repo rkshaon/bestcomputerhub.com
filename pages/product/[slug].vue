@@ -175,6 +175,28 @@ const isUnavailable = computed(() => {
   return product.value.is_active === false || (product.value.deleted_at !== undefined && product.value.deleted_at !== null);
 });
 
+// Brand extraction computed properties (Strictly from product.brand / product.brandObj without fallback)
+const productBrandName = computed(() => {
+  if (!product.value) return '';
+  const b = product.value.brand;
+  if (typeof b === 'object' && b !== null) {
+    return b.name || '';
+  }
+  if (typeof b === 'string' && b.trim()) {
+    return b.trim();
+  }
+  return product.value.brandObj?.name || '';
+});
+
+const productBrandSlug = computed(() => {
+  if (!product.value) return '';
+  const b = product.value.brand;
+  if (typeof b === 'object' && b !== null) {
+    return b.slug || '';
+  }
+  return product.value.brandObj?.slug || '';
+});
+
 // Format date utility for price history records
 const formatDate = (dateStr?: string | null): string => {
   if (!dateStr) return '';
@@ -708,7 +730,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             <div v-else class="w-full h-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground/60 space-y-3">
               <Package class="w-16 h-16 stroke-1 text-muted-foreground/40" />
               <div class="space-y-1">
-                <p class="font-bold text-sm text-foreground uppercase tracking-wider">{{ decodeHtmlEntities(product.brand) || 'Authentic Hardware' }}</p>
+                <p class="font-bold text-sm text-foreground uppercase tracking-wider">{{ decodeHtmlEntities(productBrandName) || decodeHtmlEntities(product.name) }}</p>
                 <p class="text-xs text-muted-foreground">Standard Specification Unit</p>
               </div>
             </div>
@@ -773,11 +795,17 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
         <div class="space-y-6 sm:space-y-8 lg:space-y-10">
           <div class="space-y-3 sm:space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <span v-if="product.brand" class="text-xs sm:text-sm font-bold text-primary uppercase tracking-widest">
-                {{ decodeHtmlEntities(product.brand) }}
-              </span>
-              <span v-else class="text-xs sm:text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                {{ decodeHtmlEntities(categoryName) }}
+              <span v-if="productBrandName" class="text-xs sm:text-sm font-bold text-primary uppercase tracking-widest">
+                <NuxtLink 
+                  v-if="productBrandSlug" 
+                  :to="`/brand/${productBrandSlug}/`"
+                  class="hover:underline hover:text-primary/80 transition-colors"
+                >
+                  {{ decodeHtmlEntities(productBrandName) }}
+                </NuxtLink>
+                <template v-else>
+                  {{ decodeHtmlEntities(productBrandName) }}
+                </template>
               </span>
 
               <div v-if="product.rating" class="flex items-center gap-1.5 px-2.5 py-1 bg-muted/80 rounded-full">

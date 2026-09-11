@@ -23,7 +23,7 @@ const router = useRouter();
 const filters = ref({
   query: (route.query.q as string) || '',
   category: (route.query.category as string) || '',
-  brand: (route.query.brand as string) || '',
+  brand: (route.query.brand as string) || (route.query.brands as string) || '',
   minPrice: Number(route.query.minPrice) || 0,
   maxPrice: Number(route.query.maxPrice) || 10000,
   sort: (route.query.sort as string) || 'featured'
