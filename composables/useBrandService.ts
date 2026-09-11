@@ -125,7 +125,7 @@ export const useBrandService = () => {
   };
 
   // 1.2 Get Paginated Brands List via Generic paginated response
-  const getBrandsPaginatedList = async (filters: { page?: number; page_size?: number; search?: string; ordering?: string } = {}): Promise<PaginatedResponse<Brand>> => {
+  const getBrandsPaginatedList = async (filters: { page?: number; page_size?: number; search?: string; ordering?: string; status?: string } = {}): Promise<PaginatedResponse<Brand>> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -133,6 +133,7 @@ export const useBrandService = () => {
     const pageSize = filters.page_size || 5;
     const search = filters.search || '';
     const ordering = filters.ordering || '';
+    const status = filters.status || 'all';
 
     const sortByDisplayOrder = (list: Brand[]) => {
       return list.sort((a, b) => {
@@ -152,6 +153,13 @@ export const useBrandService = () => {
           b.name.toLowerCase().includes(search.toLowerCase()) || 
           b.slug.toLowerCase().includes(search.toLowerCase()) || 
           (b.description || '').toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      if (status && status !== 'all') {
+        list = list.filter(b => 
+          (status === 'active' && b.is_active !== false) ||
+          (status === 'inactive' && b.is_active === false)
         );
       }
 
@@ -196,6 +204,7 @@ export const useBrandService = () => {
       params.append('page_size', pageSize.toString());
       if (search) params.append('search', search);
       if (ordering) params.append('ordering', ordering);
+      if (status && status !== 'all') params.append('status', status);
 
       const endpoint = `/api/v1/brands/?${params.toString()}`;
       const data = await apiClient.request<any>(endpoint, {

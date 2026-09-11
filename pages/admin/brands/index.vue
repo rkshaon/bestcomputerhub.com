@@ -50,6 +50,7 @@ const router = useRouter();
 
 // State vectors initialized from URL query parameters
 const brandsList = ref<Brand[]>([]);
+const totalCount = ref(0);
 const isLoading = ref(false);
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
@@ -235,14 +236,21 @@ const {
 
 // Data integration lifecycles
 const fetchRegistry = async () => {
+  if (viewMode.value !== 'list') return;
   isLoading.value = true;
   try {
-    const list = await brandService.getBrandsList({ search: debouncedSearchQuery.value });
+    const res = await brandService.getBrandsPaginatedList({
+      page: currentPage.value,
+      page_size: itemsPerPage.value,
+      search: debouncedSearchQuery.value,
+      status: statusFilter.value
+    });
     // Default the is_active if undefined
-    brandsList.value = list.map(b => ({
+    brandsList.value = (res.results || []).map(b => ({
       ...b,
       is_active: b.is_active !== undefined ? b.is_active : true
     }));
+    totalCount.value = res.count || 0;
   } catch (error: any) {
     triggerToast(error.message || 'System error on catalog polling.', 'error');
   } finally {
@@ -285,26 +293,16 @@ watch([debouncedSearchQuery, statusFilter], async () => {
   }
 });
 
-// Reactivity filters for List View
-const filteredBrands = computed(() => {
-  return brandsList.value.filter(b => {
-    const matchesStatus = statusFilter.value === 'all' || 
-                          (statusFilter.value === 'active' && b.is_active) ||
-                          (statusFilter.value === 'inactive' && !b.is_active);
-    
-    return matchesStatus;
-  });
+// Refetch when currentPage or itemsPerPage changes in List View
+watch([currentPage, itemsPerPage], async () => {
+  if (viewMode.value === 'list') {
+    await fetchRegistry();
+  }
 });
 
 // Pagination computed bounds for List View
 const totalPages = computed(() => {
-  return Math.ceil(filteredBrands.value.length / itemsPerPage.value) || 1;
-});
-
-const paginatedBrands = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  const end = start + itemsPerPage.value;
-  return filteredBrands.value.slice(start, end);
+  return Math.ceil(totalCount.value / itemsPerPage.value) || 1;
 });
 
 // Auto-reset page on itemsPerPage trigger
@@ -908,7 +906,7 @@ const getTableRowAttrs = (brand: Brand) => ({
     <UiTable
       v-else
       :columns="tableColumns"
-      :data="paginatedBrands"
+      :data="brandsList"
       :loading="isLoading"
       key-field="id"
       :row-class="getTableRowClass"
@@ -1016,7 +1014,7 @@ const getTableRowAttrs = (brand: Brand) => ({
         <UiPagination
           v-model:current-page="currentPage"
           :total-pages="totalPages"
-          :total-count="filteredBrands.length"
+          :total-count="totalCount"
           :items-per-page="itemsPerPage"
           item-label="brands"
           prefix-label="Showing"
