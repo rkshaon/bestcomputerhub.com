@@ -11,21 +11,31 @@ import {
   ChevronLeft, 
   ChevronRight,
   ArrowLeft,
-  Tag
+  Tag,
+  AlertCircle
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
+import { useBrandService } from '@/composables/useBrandService';
 import { decodeHtmlEntities } from '@/utils';
-import type { Product } from '@/types';
+import type { Product, Brand } from '@/types';
 import ProductCard from '@/components/commerce/ProductCard.vue';
 
 const route = useRoute();
 const router = useRouter();
 const productService = useProductService();
+const brandService = useBrandService();
 
 const brandSlug = computed(() => (route.params.slug as string) || '');
 
-// Formatted brand title (e.g. "msi" -> "MSI", "asus-rog" -> "ASUS ROG")
+// Brand details fetched from GET /api/v1/brands/{brand-slug}/
+const brandDetail = ref<Brand | null>(null);
+const isBrandLoading = ref(true);
+
+// Formatted fallback title if brand object is loading
 const brandTitle = computed(() => {
+  if (brandDetail.value?.name) {
+    return decodeHtmlEntities(brandDetail.value.name);
+  }
   if (!brandSlug.value) return 'Brand Catalog';
   return brandSlug.value
     .replace(/-/g, ' ')
@@ -33,9 +43,12 @@ const brandTitle = computed(() => {
 });
 
 const pageTitle = computed(() => `${brandTitle.value} Products`);
-const pageDescription = computed(() => 
-  `Explore authentic ${brandTitle.value} products at Best Computer Hub. Official warranty, verified specifications, and competitive prices.`
-);
+const pageDescription = computed(() => {
+  if (brandDetail.value?.description && brandDetail.value.description.trim()) {
+    return brandDetail.value.description.trim();
+  }
+  return `Explore authentic ${brandTitle.value} products at Best Computer Hub. Official warranty, verified specifications, and competitive prices.`;
+});
 
 useSeoMeta({
   title: pageTitle,
@@ -44,7 +57,7 @@ useSeoMeta({
   ogDescription: pageDescription
 });
 
-// State
+// State for Products
 const products = ref<Product[]>([]);
 const isLoading = ref(true);
 const isError = ref(false);
@@ -56,6 +69,22 @@ const pageSize = ref(12);
 const viewMode = ref<'grid' | 'list'>('grid');
 const sortOption = ref('featured');
 
+// Fetch Brand Details (GET /api/v1/brands/{brand-slug}/)
+const fetchBrandDetails = async () => {
+  if (!brandSlug.value) return;
+  isBrandLoading.value = true;
+  try {
+    const data = await brandService.getBrandDetails(brandSlug.value);
+    brandDetail.value = data;
+  } catch (err: any) {
+    console.warn('Could not fetch brand details via slug endpoint:', err);
+    brandDetail.value = null;
+  } finally {
+    isBrandLoading.value = false;
+  }
+};
+
+// Fetch Products belonging to the Brand (GET /api/v1/products/?brands={brand-slug})
 const fetchBrandProducts = async () => {
   if (!brandSlug.value) return;
   isLoading.value = true;
@@ -110,11 +139,13 @@ watch(
   [() => route.params.slug, sortOption],
   () => {
     currentPage.value = 1;
+    fetchBrandDetails();
     fetchBrandProducts();
   }
 );
 
 onMounted(() => {
+  fetchBrandDetails();
   fetchBrandProducts();
 });
 </script>
@@ -133,28 +164,51 @@ onMounted(() => {
           <span class="text-foreground font-semibold whitespace-nowrap">{{ brandTitle }}</span>
         </nav>
 
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div class="space-y-1">
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                <Tag class="w-4 h-4" />
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div class="space-y-2 max-w-3xl">
+            <div class="flex items-center gap-3">
+              <!-- Brand Logo when available -->
+              <div 
+                v-if="brandDetail?.logo" 
+                class="w-12 h-12 rounded-xl bg-background p-1.5 border border-border/80 shadow-sm flex items-center justify-center shrink-0 overflow-hidden"
+              >
+                <img 
+                  :src="brandDetail.logo" 
+                  :alt="brandTitle" 
+                  class="w-full h-full object-contain" 
+                />
               </div>
+              <div v-else class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Tag class="w-5 h-5" />
+              </div>
+
               <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold font-display tracking-tight text-foreground">
                 {{ brandTitle }}
               </h1>
             </div>
-            <p class="text-xs sm:text-sm text-muted-foreground">
-              Official {{ brandTitle }} products available in catalog
+
+            <!-- Brand Description when available -->
+            <p v-if="brandDetail?.description" class="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-1">
+              {{ brandDetail.description }}
             </p>
+            <p v-else class="text-xs sm:text-sm text-muted-foreground">
+              Explore authentic {{ brandTitle }} products available in our commercial hardware catalog.
+            </p>
+
+            <!-- Inactive Status Notice -->
+            <div v-if="brandDetail && brandDetail.is_active === false" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-medium">
+              <AlertCircle class="w-4 h-4 shrink-0" />
+              <span>This brand is currently marked as inactive in the catalog system.</span>
+            </div>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 shrink-0">
             <NuxtLink 
               to="/products/" 
-              class="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg border border-border/60 hover:bg-muted/50 transition-colors"
+              class="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground px-3.5 py-2 rounded-xl border border-border/60 hover:bg-muted/50 transition-colors"
             >
               <ArrowLeft class="w-3.5 h-3.5" />
-              All Brands
+              All Products
             </NuxtLink>
           </div>
         </div>
@@ -241,9 +295,12 @@ onMounted(() => {
         </div>
         <h2 class="text-xl font-bold font-display text-foreground">Unable to Load Products</h2>
         <p class="text-xs text-muted-foreground leading-relaxed">{{ errorMessage }}</p>
-        <UiButton variant="outline" @click="fetchBrandProducts" class="gap-2">
+        <button 
+          @click="fetchBrandProducts" 
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
+        >
           <RefreshCw class="w-4 h-4" /> Try Again
-        </UiButton>
+        </button>
       </div>
 
       <!-- Empty State -->
@@ -258,9 +315,12 @@ onMounted(() => {
           </p>
         </div>
         <div class="pt-2">
-          <UiButton to="/products/" class="gap-2">
+          <NuxtLink 
+            to="/products/" 
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+          >
             <ArrowLeft class="w-4 h-4" /> Browse Catalog
-          </UiButton>
+          </NuxtLink>
         </div>
       </div>
 

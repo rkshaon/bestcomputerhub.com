@@ -893,10 +893,20 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               </div>
 
               <div class="p-3 bg-muted/20 rounded-xl border border-border/50 space-y-1">
-                <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Category</span>
-                <NuxtLink :to="categoryUrl" class="text-xs font-semibold text-primary hover:underline block truncate">
-                  {{ decodeHtmlEntities(categoryName) }}
+                <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Brand</span>
+                <NuxtLink 
+                  v-if="productBrandName && productBrandSlug" 
+                  :to="`/brand/${productBrandSlug}/`" 
+                  class="text-xs font-semibold text-primary hover:underline block truncate"
+                >
+                  {{ decodeHtmlEntities(productBrandName) }}
                 </NuxtLink>
+                <span v-else-if="productBrandName" class="text-xs font-semibold text-foreground block truncate">
+                  {{ decodeHtmlEntities(productBrandName) }}
+                </span>
+                <span v-else class="text-xs font-semibold text-muted-foreground/60 block truncate">
+                  N/A
+                </span>
               </div>
 
               <div class="p-3 bg-muted/20 rounded-xl border border-border/50 space-y-1 col-span-2 sm:col-span-1">
