@@ -233,11 +233,13 @@ export const useProductService = () => {
       if (brandFilter) {
         const target = String(brandFilter).trim().toLowerCase();
         filtered = filtered.filter(p => {
+          const bObjId = p.brandObj?.id !== undefined && p.brandObj?.id !== null ? String(p.brandObj.id).trim().toLowerCase() : '';
           const bObjSlug = p.brandObj?.slug ? String(p.brandObj.slug).trim().toLowerCase() : '';
           const bObjName = p.brandObj?.name ? String(p.brandObj.name).trim().toLowerCase() : '';
           const bStr = typeof p.brand === 'object' && p.brand !== null ? (p.brand.name || '') : String(p.brand || '');
           const bSlug = typeof p.brand === 'object' && p.brand !== null ? (p.brand.slug || '') : bStr.trim().toLowerCase().replace(/\s+/g, '-');
           return (
+            bObjId === target ||
             bObjSlug === target ||
             bObjName === target ||
             bSlug === target ||
@@ -317,9 +319,10 @@ export const useProductService = () => {
       }
 
       // Forward brand filter
-      if (brandFilter) {
-        qParams.append('brands', brandFilter);
-        qParams.append('brand', brandFilter);
+      if (params.brands !== undefined && params.brands !== null && String(params.brands).trim()) {
+        qParams.append('brands', String(params.brands).trim());
+      } else if (params.brand !== undefined && params.brand !== null && String(params.brand).trim()) {
+        qParams.append('brand', String(params.brand).trim());
       }
 
       // Forward price range filters (standard & alternative casings)

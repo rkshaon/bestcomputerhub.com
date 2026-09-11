@@ -84,17 +84,21 @@ const fetchBrandDetails = async () => {
   }
 };
 
-// Fetch Products belonging to the Brand (GET /api/v1/products/?brands={brand-slug})
+// Fetch Products belonging to the Brand (GET /api/v1/products/?brands={brand-id})
 const fetchBrandProducts = async () => {
   if (!brandSlug.value) return;
   isLoading.value = true;
   isError.value = false;
   errorMessage.value = '';
 
+  // Use Brand ID if available from brand Details response, otherwise fallback to slug
+  const brandIdentifier = brandDetail.value?.id !== undefined && brandDetail.value?.id !== null 
+    ? String(brandDetail.value.id) 
+    : brandSlug.value;
+
   try {
     const response = await productService.getProductsList({
-      brands: brandSlug.value,
-      brand: brandSlug.value,
+      brands: brandIdentifier,
       page: currentPage.value,
       page_size: pageSize.value,
       sort: sortOption.value
@@ -110,7 +114,7 @@ const fetchBrandProducts = async () => {
     // Fallback sync query in mock mode
     try {
       const fallback = productService.getProducts({
-        brand: brandSlug.value,
+        brand: brandIdentifier,
         sort: sortOption.value
       });
       products.value = fallback;
@@ -135,18 +139,29 @@ const changePage = (newPage: number) => {
   }
 };
 
+const loadBrandData = async () => {
+  await fetchBrandDetails();
+  await fetchBrandProducts();
+};
+
 watch(
-  [() => route.params.slug, sortOption],
+  () => route.params.slug,
   () => {
     currentPage.value = 1;
-    fetchBrandDetails();
+    loadBrandData();
+  }
+);
+
+watch(
+  sortOption,
+  () => {
+    currentPage.value = 1;
     fetchBrandProducts();
   }
 );
 
 onMounted(() => {
-  fetchBrandDetails();
-  fetchBrandProducts();
+  loadBrandData();
 });
 </script>
 
