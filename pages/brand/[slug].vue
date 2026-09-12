@@ -268,6 +268,7 @@ const loadAllCategories = async () => {
 // Fetch Brand Details (GET /api/v1/brands/{brand-slug}/)
 const fetchBrandDetails = async () => {
   if (!brandSlug.value) return;
+  brandDetail.value = null; // Clear stale state to prevent using old brand ID during transition
   isBrandLoading.value = true;
   try {
     const data = await brandService.getBrandDetails(brandSlug.value);
@@ -283,14 +284,17 @@ const fetchBrandDetails = async () => {
 // Fetch Products belonging to the Brand (GET /api/v1/products/?brands={brand-id})
 const fetchBrandProducts = async () => {
   if (!brandSlug.value) return;
+  
+  // Strictly require resolved Brand ID to avoid sending slug to the Product API
+  if (!brandDetail.value?.id) {
+    return;
+  }
+
   isLoading.value = true;
   isError.value = false;
   errorMessage.value = '';
 
-  // Use Brand ID if available from brand Details response, otherwise fallback to slug
-  const brandIdentifier = brandDetail.value?.id !== undefined && brandDetail.value?.id !== null 
-    ? String(brandDetail.value.id) 
-    : brandSlug.value;
+  const brandIdentifier = String(brandDetail.value.id);
 
   try {
     const response = await productService.getProductsList({
