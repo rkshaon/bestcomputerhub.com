@@ -18,6 +18,7 @@ import {
   LogOut, 
   ChevronLeft, 
   Menu,
+  X,
   ShieldCheck,
   ShieldAlert,
   Search,
@@ -58,6 +59,13 @@ if (process.client) {
     const target = e.target as HTMLElement;
     if (!target.closest('.theme-dropdown')) {
       isThemeMenuOpen.value = false;
+    }
+  });
+
+  // Close mobile menu on Escape key press
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isMobileMenuOpen.value) {
+      isMobileMenuOpen.value = false;
     }
   });
 }
@@ -141,7 +149,7 @@ const breadcrumbs = computed(() => {
     <!-- Sidebar for Desktop -->
     <aside 
       :class="cn(
-        'fixed top-0 left-0 z-40 h-screen transition-all duration-300 border-r border-border bg-card text-card-foreground',
+        'fixed top-0 left-0 z-40 h-screen transition-all duration-300 border-r border-border bg-card text-card-foreground hidden md:block',
         isSidebarOpen ? 'w-64' : 'w-20'
       )"
     >
@@ -222,10 +230,15 @@ const breadcrumbs = computed(() => {
       )"
     >
       <!-- Header -->
-      <header class="h-16 sticky top-0 z-30 bg-card/80 backdrop-blur-md border-b border-border px-6 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <!-- Mobile Menu Toggle -->
-          <button @click="isMobileMenuOpen = true" class="md:hidden p-2 text-muted-foreground" title="Open admin menu" aria-label="Open admin menu">
+      <header class="h-16 sticky top-0 z-30 bg-card/80 backdrop-blur-md border-b border-border px-4 sm:px-6 flex items-center justify-between">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <!-- Mobile Menu Toggle Button -->
+          <button 
+            @click="isMobileMenuOpen = !isMobileMenuOpen" 
+            class="md:hidden h-10 w-10 flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground rounded-xl transition-colors shrink-0" 
+            title="Open admin menu" 
+            aria-label="Open admin menu"
+          >
             <Menu class="w-6 h-6" />
           </button>
 
@@ -251,7 +264,7 @@ const breadcrumbs = computed(() => {
           <!-- Mobile Visit Website icon button -->
           <NuxtLink 
             to="/" 
-            class="sm:hidden p-2 hover:bg-accent border border-border text-muted-foreground hover:text-foreground rounded-xl transition-all shrink-0"
+            class="sm:hidden h-9 w-9 flex items-center justify-center hover:bg-accent border border-border text-muted-foreground hover:text-foreground rounded-xl transition-all shrink-0"
             title="Return to Main Marketplace"
             aria-label="Return to Main Marketplace"
           >
@@ -315,7 +328,7 @@ const breadcrumbs = computed(() => {
       </header>
 
       <!-- Content -->
-      <div class="flex-1 p-6 lg:p-8">
+      <div class="flex-1 p-4 sm:p-6 lg:p-8">
         <!-- Breadcrumbs & Header Row -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div class="flex items-center gap-3 flex-wrap">
@@ -349,38 +362,79 @@ const breadcrumbs = computed(() => {
       </div>
     </main>
 
-    <!-- Mobile Sidebar Backdrop -->
+    <!-- Mobile Sidebar Backdrop & Drawer -->
     <div v-if="isMobileMenuOpen" class="fixed inset-0 z-50 md:hidden overflow-hidden">
+      <!-- Backdrop -->
       <div 
-        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         @click="isMobileMenuOpen = false"
       ></div>
-      <div class="absolute inset-y-0 left-0 w-72 bg-card text-card-foreground shadow-2xl animate-in slide-in-from-left duration-300">
-        <!-- Re-use sidebar content for mobile -->
-        <div class="flex flex-col h-full">
-          <div class="h-16 flex items-center px-6 border-b border-border">
-            <span class="font-display font-bold text-lg tracking-tight">Admin<span class="text-primary">Core</span></span>
-            <button @click="isMobileMenuOpen = false" class="ml-auto p-2 text-muted-foreground" title="Close admin menu" aria-label="Close admin menu">
-              <ChevronLeft class="w-6 h-6" />
-            </button>
+
+      <!-- Drawer Panel -->
+      <div class="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-card text-card-foreground shadow-2xl flex flex-col h-full animate-in slide-in-from-left duration-300">
+        <!-- Drawer Header -->
+        <div class="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
+          <NuxtLink to="/admin" @click="isMobileMenuOpen = false" class="flex items-center gap-3">
+            <UiBrandLogo size="sm" :show-text="true" />
+          </NuxtLink>
+          <button 
+            @click="isMobileMenuOpen = false" 
+            class="h-10 w-10 flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground rounded-xl transition-colors" 
+            title="Close admin menu" 
+            aria-label="Close admin menu"
+          >
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Drawer Navigation -->
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
+          <NuxtLink 
+            v-for="item in filteredNavigation" 
+            :key="item.name"
+            :to="item.href"
+            @click="isMobileMenuOpen = false"
+            :class="cn(
+              'group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm',
+              route.path === item.href 
+                ? 'bg-primary/10 text-primary font-bold' 
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )"
+          >
+            <component :is="iconMap[item.iconKey as keyof typeof iconMap]" class="w-5 h-5 shrink-0" />
+            <span class="whitespace-nowrap">{{ item.name }}</span>
+          </NuxtLink>
+
+          <div v-if="filteredSecondaryNavigation.length > 0" class="pt-4 pb-1">
+            <div class="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">System</div>
           </div>
-          <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-            <NuxtLink 
-              v-for="item in filteredNavigation" 
-              :key="item.name"
-              :to="item.href"
-              @click="isMobileMenuOpen = false"
-              :class="cn(
-                'flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-medium text-sm',
-                route.path === item.href 
-                  ? 'bg-primary/10 text-primary' 
-                  : 'text-muted-foreground hover:bg-accent'
-              )"
-            >
-              <component :is="iconMap[item.iconKey as keyof typeof iconMap]" class="w-5 h-5" />
-              {{ item.name }}
-            </NuxtLink>
-          </nav>
+
+          <NuxtLink 
+            v-for="item in filteredSecondaryNavigation" 
+            :key="item.name"
+            :to="item.href"
+            @click="isMobileMenuOpen = false"
+            :class="cn(
+              'group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm',
+              route.path === item.href 
+                ? 'bg-primary/10 text-primary font-bold' 
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )"
+          >
+            <component :is="iconMap[item.iconKey as keyof typeof iconMap]" class="w-5 h-5 shrink-0" />
+            <span class="whitespace-nowrap">{{ item.name }}</span>
+          </NuxtLink>
+        </nav>
+
+        <!-- Drawer Footer -->
+        <div class="p-3 border-t border-border shrink-0">
+          <button 
+            @click="handleLogout(); isMobileMenuOpen = false"
+            class="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all text-sm font-medium"
+          >
+            <LogOut class="w-5 h-5 shrink-0" />
+            <span>Logout</span>
+          </button>
         </div>
       </div>
     </div>
