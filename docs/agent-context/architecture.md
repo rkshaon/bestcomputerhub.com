@@ -412,6 +412,23 @@ The repository maintains a dedicated component inventory document at `/docs/agen
   - **Encapsulated State Ownership**: The sub-tree manages complex, self-contained interactive state or lifecycle logic.
   - **Improved Maintainability & Testability**: Decoupling the component reduces cognitive complexity and improves stability.
 
+---
+
+## 16. Frontend Utility & Helper Inventory Guidelines
+
+The repository maintains a dedicated inventory of utilities, helpers, composables, and service boundaries at `/docs/agent-context/utility-inventory.md`.
+
+### Purpose & Mandates for Coding Agents
+- **Purpose**: `/docs/agent-context/utility-inventory.md` serves as the authoritative reference for all verified shared utilities, formatters, normalizers, validators, composables, and service helpers.
+- **Consult Before Creating**: Agents must read `/docs/agent-context/utility-inventory.md` before creating a new shared utility or helper function.
+- **Search Source Code**: Agents must search the codebase (specifically `/utils/`, `/composables/`, and domain service modules) for existing functions with similar responsibilities.
+- **Reuse & Extend**: Existing utilities and composables should be reused or extended when appropriate rather than reimplementing local variations.
+- **Avoid Overlapping Duplication**: Duplicate helpers with overlapping responsibilities must not be created without a clear, documented architectural reason.
+- **Maintain Inventory Currency**: The inventory must be updated whenever meaningful shared utilities are added, removed, renamed, or significantly refactored.
+- **Source Code Authority**: The application source code is always authoritative if the inventory becomes outdated.
+- **Exclusion of Trivial Functions**: Trivial, single-use local functions or small inline callbacks do not need to be added to the inventory.
+- **Utility Extraction Criteria**: Utility extraction must be driven by meaningful reuse, clear domain responsibility, or improved maintainability—never merely to reduce file length.
+
 
 
 
