@@ -65,7 +65,6 @@ export interface Product {
   rating: number;
   total_reviews?: number;
   reviewCount: number;
-  wishlist?: boolean;
   in_cart?: boolean;
   is_active?: boolean;
   stock: number;

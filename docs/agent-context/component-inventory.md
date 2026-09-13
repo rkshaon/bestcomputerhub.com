@@ -438,11 +438,11 @@ Components are classified using four standard metadata properties:
   - Render product primary image with hover secondary image cross-fade transition.
   - Render brand name, formatted title with `decodeHtmlEntities`, rating badge, regular price and sale price comparison via `formatCurrency`.
   - Render stock availability badge.
-  - Provide "Add to Cart" quick action button and wishlist toggle button.
+  - Provide "Add to Cart" quick action button.
 - **What It Explicitly Does Not Own**: Global cart persistence logic (delegates to `useCartStore`).
 - **State Owned**: Active image index on hover, adding-to-cart spinner state.
 - **Calls API**: No direct API call (delegates to stores).
-- **Related Composables/Services**: `useCartStore`, `useWishlistStore`, `formatCurrency`, `decodeHtmlEntities`.
+- **Related Composables/Services**: `useCartStore`, `formatCurrency`, `decodeHtmlEntities`.
 - **Responsive Responsibility**: Aspect-square image container (`aspect-square`), flexible grid child, touch-friendly CTA buttons.
 - **Reusability Level**: High
 - **Important Behavior to Preserve**: Must format prices using `formatCurrency`, decode HTML entities in title, and preserve trailing slash link URLs (`/product/${product.slug}/`).

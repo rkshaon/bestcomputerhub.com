@@ -15,7 +15,6 @@ import {
   Zap, 
   Cpu, 
   Globe, 
-  Heart, 
   Check, 
   Package, 
   AlertCircle, 
@@ -143,7 +142,6 @@ const galleryImages = computed<ProductImage[]>(() => {
 const quantity = ref(1);
 const activeTab = ref<'description' | 'specification' | 'reviews'>('description');
 const selectedImage = ref<string>('');
-const isWishlisted = ref(false);
 const isManageGalleryOpen = ref(false);
 const galleryGalleryRef = ref<any>(null);
 
@@ -208,17 +206,6 @@ const formatDate = (dateStr?: string | null): string => {
     return String(dateStr);
   }
 };
-
-// Synchronize wishlist state when product data changes
-watch(
-  () => product.value,
-  (newProd) => {
-    if (newProd) {
-      isWishlisted.value = Boolean(newProd.wishlist);
-    }
-  },
-  { immediate: true }
-);
 
 // Resolved alt text for currently selected image
 const selectedImageAlt = computed(() => {
@@ -443,15 +430,6 @@ const addToCart = () => {
   cartStore.addToCart(product.value, quantity.value);
   toastSuccess(`Added ${quantity.value} × "${product.value.name}" to cart.`);
   uiStore.isCartOpen = true;
-};
-
-const toggleWishlist = () => {
-  isWishlisted.value = !isWishlisted.value;
-  if (isWishlisted.value) {
-    toastSuccess(`Added "${product.value?.name}" to wishlist.`);
-  } else {
-    toastSuccess(`Removed from wishlist.`);
-  }
 };
 
 const isItemInCart = computed(() => {
@@ -743,15 +721,6 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <Check class="w-3 h-3" /> In Cart
               </span>
             </div>
-
-            <!-- Wishlist Action -->
-            <button 
-              @click="toggleWishlist"
-              class="absolute top-3 right-3 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-background/80 backdrop-blur-md border flex items-center justify-center text-foreground hover:text-destructive hover:scale-110 transition-all cursor-pointer shadow-md"
-              :aria-label="isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'"
-            >
-              <Heart :class="cn('w-5 h-5 transition-colors', isWishlisted ? 'fill-destructive text-destructive' : 'text-muted-foreground')" />
-            </button>
           </div>
           
           <!-- Image Thumbnails (if multiple images exist) -->

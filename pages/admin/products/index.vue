@@ -15,7 +15,6 @@ import {
   RefreshCw, 
   AlertCircle, 
   Loader2, 
-  Heart, 
   ShoppingCart,
   ChevronDown,
   Check,
@@ -1200,11 +1199,8 @@ onUnmounted(() => {
                   )">
                     {{ getStockStatus(product.stock).label }}
                   </span>
-                  <div v-if="product.wishlist || product.in_cart" class="flex items-center gap-1">
-                    <span v-if="product.wishlist" class="p-1 rounded-md bg-rose-500/10 text-rose-500" title="In Wishlist">
-                      <Heart class="w-3 h-3 fill-rose-500" />
-                    </span>
-                    <span v-if="product.in_cart" class="p-1 rounded-md bg-primary/10 text-primary" title="In Cart">
+                  <div v-if="product.in_cart" class="flex items-center gap-1">
+                    <span class="p-1 rounded-md bg-primary/10 text-primary" title="In Cart">
                       <ShoppingCart class="w-3 h-3" />
                     </span>
                   </div>
@@ -1397,9 +1393,6 @@ onUnmounted(() => {
               </button>
               <span v-else class="text-sm font-bold text-foreground leading-snug">
                 {{ decodeHtmlEntities(product.name) }}
-              </span>
-              <span v-if="product.wishlist" class="shrink-0 text-rose-500 mt-0.5" title="In Wishlist">
-                <Heart class="w-3.5 h-3.5 fill-rose-500" />
               </span>
               <span v-if="product.in_cart" class="shrink-0 text-primary mt-0.5" title="In Cart">
                 <ShoppingCart class="w-3.5 h-3.5" />
@@ -2020,9 +2013,6 @@ onUnmounted(() => {
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-lg font-bold font-display tracking-tight text-foreground leading-tight">
                   {{ selectedProduct?.name }}
-                </span>
-                <span v-if="selectedProduct?.wishlist" class="shrink-0 text-rose-500" title="In Wishlist">
-                  <Heart class="w-4 h-4 fill-rose-500" />
                 </span>
                 <span v-if="selectedProduct?.in_cart" class="shrink-0 text-primary" title="In Cart">
                   <ShoppingCart class="w-4 h-4" />

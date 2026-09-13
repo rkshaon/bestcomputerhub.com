@@ -155,7 +155,6 @@ export const useProductService = () => {
       rating: avgRating,
       total_reviews: totReviews,
       reviewCount: totReviews,
-      wishlist: Boolean(p.wishlist),
       in_cart: Boolean(p.in_cart),
       is_active: p.is_active !== undefined ? Boolean(p.is_active) : true,
       stock: p.stock !== undefined && p.stock !== null ? Number(p.stock) : 0,

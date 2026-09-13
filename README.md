@@ -176,7 +176,7 @@ useBlogService
 /stores/
 ```
 
-Contains Pinia stores for application-facing state such as authentication, cart, wishlist, and UI state.
+Contains Pinia stores for application-facing state such as authentication, cart, and UI state.
 
 Frontend state must not replace backend authority for commerce-critical information.
 
