@@ -1,6 +1,6 @@
 <!-- File: /pages/blog/[slug].vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -20,20 +20,25 @@ import {
   Sparkles,
   ShoppingBag,
   ExternalLink,
-  Laptop
+  Laptop,
+  Edit2,
+  Loader2
 } from 'lucide-vue-next';
 import { decodeHtmlEntities } from '@/utils';
 import { useBlogService } from '@/composables/useBlogService';
 import { useToast } from '@/composables/useToast';
+import { useAuthStore } from '@/stores/auth';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import type { BlogPostItem } from '@/types';
 import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
 import UiBadge from '@/components/ui/UiBadge.vue';
 import UiButton from '@/components/ui/Button.vue';
+import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 
 const route = useRoute();
 const router = useRouter();
 const blogService = useBlogService();
-const { toastSuccess, toastInfo } = useToast();
+const { toastSuccess, toastInfo, handleApiError } = useToast();
 
 const param = computed(() => String(route.params.slug || ''));
 
@@ -284,6 +289,153 @@ const copyToClipboard = () => {
   }
 };
 
+// Storefront Blog Editing state & permission-checks
+const authStore = useAuthStore();
+const { hasPermission, canEditInModule } = useAdminPermissions();
+
+const canEditBlogPostFromStorefront = computed(() => {
+  if (!authStore.isLoggedIn || !authStore.user) return false;
+  
+  const userRole = authStore.user.role;
+  const isOwnerOrStaff = userRole === 'OWNER' || userRole === 'STAFF' || authStore.user.is_staff || authStore.user.is_superuser || authStore.user.is_superadmin;
+  if (!isOwnerOrStaff) return false;
+  
+  return hasPermission('blog_api.change_blogpost') || canEditInModule('/admin/blog/posts');
+});
+
+// Inline editing state
+const editingField = ref<'title' | 'seo_description' | 'content' | null>(null);
+const isFieldSaving = ref<'title' | 'seo_description' | 'content' | null>(null);
+
+const editTitleValue = ref('');
+const editSeoDescValue = ref('');
+const editContentValue = ref('');
+
+const titleInputRef = ref<HTMLInputElement | null>(null);
+
+const cleanHtmlForComparison = (html: string): string => {
+  if (!html) return '';
+  let cleaned = html
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+
+  const emptyParagraphPattern = /^(<p>\s*(<br\s*\/?>)?\s*<\/p>|<br\s*\/?>|\s*)+$/gi;
+  if (emptyParagraphPattern.test(cleaned)) {
+    return '';
+  }
+
+  cleaned = cleaned
+    .replace(/\s+/g, ' ')
+    .replace(/>\s+</g, '><')
+    .trim();
+
+  return cleaned;
+};
+
+const isHtmlEquivalent = (h1: string, h2: string): boolean => {
+  return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
+};
+
+const startEditing = (field: 'title' | 'seo_description' | 'content') => {
+  if (!canEditBlogPostFromStorefront.value) return;
+  
+  editingField.value = field;
+  
+  if (field === 'title') {
+    editTitleValue.value = post.value?.title || '';
+    nextTick(() => {
+      titleInputRef.value?.focus();
+    });
+  } else if (field === 'seo_description') {
+    editSeoDescValue.value = post.value?.seo_description || '';
+  } else if (field === 'content') {
+    editContentValue.value = post.value?.content || '';
+  }
+};
+
+const cancelEditing = () => {
+  editingField.value = null;
+  isFieldSaving.value = null;
+};
+
+const saveField = async (field: 'title' | 'seo_description' | 'content') => {
+  if (isFieldSaving.value === field) return; // Prevent duplicate submissions
+  
+  const targetPost = post.value;
+  if (!targetPost) return;
+  
+  const targetIdentifier = targetPost.id;
+  if (!targetIdentifier) return;
+  
+  let hasChanged = false;
+  const payload: any = {};
+  
+  if (field === 'title') {
+    const newVal = editTitleValue.value.trim();
+    const oldVal = (targetPost.title || '').trim();
+    if (newVal && newVal !== oldVal) {
+      payload.title = newVal;
+      hasChanged = true;
+    }
+  } else if (field === 'seo_description') {
+    const newVal = editSeoDescValue.value.trim();
+    const oldVal = (targetPost.seo_description || '').trim();
+    if (newVal !== oldVal) {
+      payload.seo_description = newVal;
+      hasChanged = true;
+    }
+  } else if (field === 'content') {
+    const newVal = editContentValue.value;
+    const oldVal = targetPost.content || '';
+    if (!isHtmlEquivalent(newVal, oldVal)) {
+      payload.content = newVal;
+      hasChanged = true;
+    }
+  }
+
+  if (!hasChanged) {
+    editingField.value = null;
+    return;
+  }
+
+  isFieldSaving.value = field;
+
+  try {
+    const updated = await blogService.updateBlogPost(targetIdentifier, payload);
+    toastSuccess('Blog post updated successfully.');
+    
+    if (post.value) {
+      if (field === 'title') {
+        post.value.title = updated.title;
+      } else if (field === 'seo_description') {
+        post.value.seo_description = updated.seo_description;
+      } else if (field === 'content') {
+        post.value.content = updated.content;
+      }
+    }
+    
+    editingField.value = null;
+  } catch (err: any) {
+    handleApiError(err, 'Failed to update blog post.');
+  } finally {
+    isFieldSaving.value = null;
+  }
+};
+
+const handleFocusOut = (event: FocusEvent, field: 'content') => {
+  const container = event.currentTarget as HTMLElement | null;
+  const relatedTarget = event.relatedTarget as HTMLElement | null;
+  
+  if (container && relatedTarget && container.contains(relatedTarget)) {
+    return;
+  }
+  
+  saveField(field);
+};
+
 onMounted(() => {
   window.addEventListener('scroll', handleScroll);
 });
@@ -405,14 +557,74 @@ onUnmounted(() => {
           </div>
 
           <!-- Main Article Title -->
-          <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.12] text-foreground">
-            {{ decodeHtmlEntities(post.title) }}
-          </h1>
+          <div class="relative group/edit">
+            <template v-if="editingField === 'title'">
+              <div class="flex items-center gap-2">
+                <input 
+                  v-model="editTitleValue"
+                  ref="titleInputRef"
+                  type="text"
+                  @blur="saveField('title')"
+                  @keydown.enter="saveField('title')"
+                  @keydown.esc="cancelEditing"
+                  :disabled="isFieldSaving === 'title'"
+                  class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.12] w-full bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
+                />
+                <div v-if="isFieldSaving === 'title'" class="shrink-0">
+                  <Loader2 class="w-5 h-5 animate-spin text-primary" />
+                </div>
+              </div>
+            </template>
+            <template v-else>
+              <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.12] text-foreground flex items-center gap-2.5">
+                <span>{{ decodeHtmlEntities(post.title) }}</span>
+                <button 
+                  v-if="canEditBlogPostFromStorefront" 
+                  @click="startEditing('title')"
+                  class="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
+                  title="Edit Blog Title"
+                >
+                  <Edit2 class="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </h1>
+            </template>
+          </div>
 
           <!-- Article Subtitle / Excerpt Lead -->
-          <p v-if="post.seo_description" class="text-lg md:text-xl text-muted-foreground font-normal leading-relaxed border-l-4 border-primary/80 pl-5 py-1 bg-muted/20 rounded-r-2xl">
-            {{ post.seo_description }}
-          </p>
+          <div v-if="'seo_description' in post" class="space-y-2">
+            <div class="flex items-center gap-2" v-if="canEditBlogPostFromStorefront">
+              <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Excerpt / SEO Description</span>
+              <button 
+                v-if="editingField !== 'seo_description'"
+                @click="startEditing('seo_description')"
+                class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Edit SEO Description"
+              >
+                <Edit2 class="w-3 h-3" />
+              </button>
+              <div v-else-if="isFieldSaving === 'seo_description'" class="flex items-center gap-1 text-[10px] text-amber-500 font-bold uppercase tracking-wider">
+                <Loader2 class="w-3 h-3 animate-spin" /> Saving...
+              </div>
+            </div>
+
+            <div v-if="editingField === 'seo_description'" class="flex gap-2">
+              <textarea 
+                v-vmodel="editSeoDescValue"
+                v-model="editSeoDescValue"
+                @keydown.esc="cancelEditing"
+                @blur="saveField('seo_description')"
+                :disabled="isFieldSaving === 'seo_description'"
+                rows="3"
+                class="w-full text-base bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
+                placeholder="Enter excerpt / SEO description..."
+              ></textarea>
+            </div>
+            <div v-else>
+              <p v-if="post.seo_description" class="text-lg md:text-xl text-muted-foreground font-normal leading-relaxed border-l-4 border-primary/80 pl-5 py-1 bg-muted/20 rounded-r-2xl">
+                {{ post.seo_description }}
+              </p>
+            </div>
+          </div>
 
           <!-- Author Bylines & Quick Share Toolbar -->
           <div class="flex flex-wrap items-center justify-between gap-6 pt-6 border-t border-border/80">
@@ -539,27 +751,55 @@ onUnmounted(() => {
             </div>
 
             <!-- Rich Content Article Body -->
-            <article 
-              :class="[
-                'prose prose-lg dark:prose-invert max-w-none font-sans text-foreground/90 font-normal',
-                'prose-headings:font-display prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-foreground',
-                'prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:border-b prose-h2:pb-2',
-                'prose-h3:text-xl md:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-3',
-                'prose-p:leading-relaxed prose-p:mb-6',
-                'prose-a:text-primary prose-a:font-semibold prose-a:no-underline hover:prose-a:underline',
-                'prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/30 prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-medium',
-                'prose-code:bg-muted prose-code:px-2 prose-code:py-0.5 prose-code:rounded-md prose-code:text-sm prose-code:font-mono',
-                'prose-pre:bg-slate-950 prose-pre:text-slate-50 prose-pre:p-6 prose-pre:rounded-2xl prose-pre:shadow-lg',
-                'prose-img:rounded-2xl prose-img:shadow-md prose-img:border',
-                'prose-ul:list-disc prose-ol:list-decimal prose-li:my-1.5',
-                fontSizeClass
-              ]"
-            >
-              <div v-if="post.content" v-html="processedContent"></div>
-              <p v-else class="text-muted-foreground italic py-8 text-center">
-                No article content available.
-              </p>
-            </article>
+            <div class="space-y-4">
+              <div class="flex items-center gap-2" v-if="canEditBlogPostFromStorefront">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Body Content</span>
+                <button 
+                  v-if="editingField !== 'content'"
+                  @click="startEditing('content')"
+                  class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Edit Body Content"
+                >
+                  <Edit2 class="w-3 h-3" />
+                </button>
+                <div v-else-if="isFieldSaving === 'content'" class="flex items-center gap-1 text-[10px] text-amber-500 font-bold uppercase tracking-wider">
+                  <Loader2 class="w-3 h-3 animate-spin" /> Saving...
+                </div>
+              </div>
+
+              <div v-if="editingField === 'content'">
+                <div @focusout="handleFocusOut($event, 'content')" class="w-full">
+                  <UiRichTextEditor 
+                    v-model="editContentValue"
+                    min-height="min-h-[300px]"
+                    :disabled="isFieldSaving === 'content'"
+                    placeholder="Enter article body content..."
+                  />
+                </div>
+              </div>
+              <article 
+                v-else
+                :class="[
+                  'prose prose-lg dark:prose-invert max-w-none font-sans text-foreground/90 font-normal',
+                  'prose-headings:font-display prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-foreground',
+                  'prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:border-b prose-h2:pb-2',
+                  'prose-h3:text-xl md:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-3',
+                  'prose-p:leading-relaxed prose-p:mb-6',
+                  'prose-a:text-primary prose-a:font-semibold prose-a:no-underline hover:prose-a:underline',
+                  'prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/30 prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-medium',
+                  'prose-code:bg-muted prose-code:px-2 prose-code:py-0.5 prose-code:rounded-md prose-code:text-sm prose-code:font-mono',
+                  'prose-pre:bg-slate-950 prose-pre:text-slate-50 prose-pre:p-6 prose-pre:rounded-2xl prose-pre:shadow-lg',
+                  'prose-img:rounded-2xl prose-img:shadow-md prose-img:border',
+                  'prose-ul:list-disc prose-ol:list-decimal prose-li:my-1.5',
+                  fontSizeClass
+                ]"
+              >
+                <div v-if="post.content" v-html="processedContent"></div>
+                <p v-else class="text-muted-foreground italic py-8 text-center">
+                  No article content available.
+                </p>
+              </article>
+            </div>
 
             <!-- Tags Section -->
             <div v-if="post.tags && post.tags.length > 0" class="pt-8 border-t flex flex-wrap gap-2 items-center">

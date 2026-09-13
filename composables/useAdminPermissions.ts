@@ -73,7 +73,8 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     route: '/admin/blog/posts',
     name: 'Blog Posts',
     iconKey: 'FileText',
-    viewPermission: 'blog_api.view_blogpost'
+    viewPermission: 'blog_api.view_blogpost',
+    editPermission: 'blog_api.change_blogpost'
   },
   inventory: {
     key: 'inventory',
