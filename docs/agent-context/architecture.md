@@ -391,6 +391,28 @@ Presentation Components (/components/ui/UiPagination.vue)
 - **No Duplicate Pagination Logic**: `<UiPagination />` and domain services remain the sole pagination primitives. Individual pages simply supply their active `itemsPerPage` to these existing structures.
 - **View Mode Decoupling**: Page size is relevant strictly to discrete numbered pagination (`List / Table` mode). Grid view uses `useInfinitePagination` and `<UiInfiniteScroll />` where items are streamed dynamically.
 
+---
+
+## 15. Frontend Component Inventory & Extraction Guidelines
+
+The repository maintains a dedicated component inventory document at `/docs/agent-context/component-inventory.md`.
+
+### Agent Guidelines for Component Creation and Reuse
+- **Consult the Inventory First**: Agents must read `/docs/agent-context/component-inventory.md` before creating a new reusable component to understand what shared primitives and domain components already exist.
+- **Search Existing Code**: Always search the source code (in `/components/`, `/features/`, and `/composables/`) for components with similar responsibilities prior to implementation.
+- **Avoid Unnecessary Duplication**: Do not create duplicate components with overlapping responsibilities unless there is a clear, documented architectural reason to separate them.
+- **Maintain Inventory Currency**: Update `/docs/agent-context/component-inventory.md` whenever meaningful reusable components are added, removed, renamed, or substantially refactored.
+- **Source Code Authority**: The application source code is always authoritative if the inventory document becomes outdated or incomplete.
+
+### Component Extraction Criteria
+- **Do Not Extract Solely for File Length**: Components must not be extracted into separate files merely to shorten a parent file length or meet arbitrary line-count limits.
+- **Valid Extraction Reasons**: Components should be extracted only when supported by:
+  - **Meaningful Reuse**: The component is or will be used across multiple routes or parent contexts.
+  - **Independent Responsibility**: The sub-tree owns a clear, isolated domain or UI responsibility.
+  - **Encapsulated State Ownership**: The sub-tree manages complex, self-contained interactive state or lifecycle logic.
+  - **Improved Maintainability & Testability**: Decoupling the component reduces cognitive complexity and improves stability.
+
+
 
 
 
