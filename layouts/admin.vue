@@ -47,6 +47,11 @@ const isSidebarOpen = ref(true);
 const isMobileMenuOpen = ref(false);
 const isThemeMenuOpen = ref(false);
 
+// Automatically dismiss mobile menu overlay when route changes
+watch(() => route.path, () => {
+  isMobileMenuOpen.value = false;
+});
+
 if (process.client) {
   // Close theme menu on click outside
   window.addEventListener('click', (e) => {

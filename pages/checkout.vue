@@ -46,18 +46,26 @@ const handlePlaceOrder = () => {
   <div class="min-h-screen bg-muted/20 pb-20">
     <!-- Header Minimal -->
     <div class="bg-background border-b py-6 mb-12">
-      <div class="container mx-auto px-4 flex items-center justify-between">
-        <NuxtLink to="/">
+      <div class="container mx-auto px-4 flex items-center justify-between gap-2">
+        <NuxtLink to="/" class="shrink-0">
           <UiBrandLogo size="md" />
         </NuxtLink>
-        <div class="flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+
+        <!-- Desktop Steps -->
+        <div class="hidden md:flex items-center gap-4 lg:gap-8 text-xs font-bold uppercase tracking-widest text-muted-foreground">
           <span :class="{ 'text-primary': step >= 1 }">Shipping</span>
           <ChevronRight class="w-4 h-4" />
           <span :class="{ 'text-primary': step >= 2 }">Payment</span>
           <ChevronRight class="w-4 h-4" />
           <span>Success</span>
         </div>
-        <div class="flex items-center gap-2 text-xs font-medium bg-green-50 text-green-700 px-3 py-1.5 rounded-full">
+
+        <!-- Mobile Step Counter Badge -->
+        <div class="md:hidden text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full">
+          Step {{ step }} of 2
+        </div>
+
+        <div class="hidden sm:flex items-center gap-2 text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full shrink-0">
           <ShieldCheck class="w-4 h-4" />
           Secure Checkout
         </div>

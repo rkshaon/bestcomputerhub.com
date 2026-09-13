@@ -1043,7 +1043,7 @@ onUnmounted(() => {
             <div 
               v-if="isCategoryDropdownOpen"
               @click.stop
-              class="absolute left-0 z-30 mt-1.5 w-72 bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+              class="absolute left-0 z-30 mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
             >
               <!-- Category Search Input inside Popover -->
               <div class="relative mb-2">

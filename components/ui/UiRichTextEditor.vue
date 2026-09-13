@@ -200,9 +200,9 @@ const clearFormatting = () => {
       )"
     >
       <!-- Editor Toolbar -->
-      <div class="p-1.5 bg-muted/40 border-b border-border flex flex-wrap items-center justify-between gap-1 select-none">
+      <div class="p-1.5 bg-muted/40 border-b border-border flex items-center justify-between gap-1 select-none max-w-full overflow-x-auto scrollbar-none">
         <!-- Formatting Tools (Disabled in Source View) -->
-        <div class="flex flex-wrap items-center gap-0.5" :class="{ 'opacity-40 pointer-events-none': isSourceMode }">
+        <div class="flex items-center gap-1 shrink-0 overflow-x-auto scrollbar-none" :class="{ 'opacity-40 pointer-events-none': isSourceMode }">
           <!-- Text Styling Group -->
           <div class="flex items-center bg-background/80 border border-border/60 rounded-lg p-0.5">
             <button

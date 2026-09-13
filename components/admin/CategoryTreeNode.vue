@@ -192,10 +192,10 @@ const onNodeDrop = (e: DragEvent) => {
         draggedTreeNode?.id === node.id ? 'opacity-40 bg-muted/40' : '',
         dragOverTreeNodeId === String(node.id) ? 'border-primary/60 border-dashed bg-primary/5' : 'border-transparent hover:border-border/60'
       ]"
-      :style="{ paddingLeft: `${depth * 20 + 8}px` }"
+      :style="`padding-left: clamp(${depth * 8 + 6}px, ${depth * 1.5 + 0.5}rem, ${depth * 20 + 8}px);`"
     >
       <!-- Left side: Expand icon, Category Icon, Name, Slug, Status Badge -->
-      <div class="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
+      <div class="flex items-center gap-1.5 sm:gap-2.5 min-w-0 pr-2 flex-1">
         <!-- Grip Handle Icon -->
         <GripVertical class="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/80 cursor-grab active:cursor-grabbing shrink-0" />
 
@@ -227,16 +227,16 @@ const onNodeDrop = (e: DragEvent) => {
         />
 
         <!-- Category Emoji/Icon -->
-        <div class="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center shrink-0 text-base shadow-2xs">
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-background border border-border flex items-center justify-center shrink-0 text-xs sm:text-base shadow-2xs">
           <span>{{ node.icon || '📁' }}</span>
         </div>
 
         <!-- Title & Slug -->
-        <div class="flex items-center gap-2 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
-          <span class="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">
+        <div class="flex items-center gap-1.5 min-w-0 flex-1">
+          <span class="font-bold text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors truncate">
             {{ decodeHtmlEntities(node.name) }}
           </span>
-          <span class="font-mono text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 uppercase tracking-wider font-semibold shrink-0">
+          <span class="hidden sm:inline-block font-mono text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 uppercase tracking-wider font-semibold shrink-0">
             /{{ node.slug }}
           </span>
         </div>

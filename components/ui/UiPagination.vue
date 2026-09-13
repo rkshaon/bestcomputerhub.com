@@ -109,12 +109,12 @@ const paginationSlots = computed<PaginationSlot[]>(() => {
   <div 
     :class="cn(
       variant === 'card'
-        ? 'bg-card border border-border rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-4'
-        : 'bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-900/50 p-6 flex flex-col sm:flex-row items-center justify-between gap-4',
+        ? 'bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-full overflow-hidden'
+        : 'bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-900/50 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-full overflow-hidden',
       $attrs.class as string
     )"
   >
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3 shrink-0">
       <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
       <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
         Showing <span class="text-slate-800 dark:text-slate-200 font-bold">{{ startItem.toLocaleString() }}–{{ endItem.toLocaleString() }}</span> 
@@ -122,22 +122,22 @@ const paginationSlots = computed<PaginationSlot[]>(() => {
       </p>
     </div>
 
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-1.5 sm:gap-2 max-w-full overflow-x-auto py-1 scrollbar-none">
       <button 
         type="button"
         @click="setPage(currentPage - 1)" 
         :disabled="currentPage <= 1"
-        class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+        class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
         aria-label="Previous page"
       >
-        <ChevronLeft class="w-5 h-5" />
+        <ChevronLeft class="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
       
-      <div class="flex items-center gap-1 font-mono text-xs font-bold">
+      <div class="flex items-center gap-1 font-mono text-xs font-bold shrink-0">
         <template v-for="slot in paginationSlots" :key="slot.key">
           <span 
             v-if="slot.type === 'ellipsis'"
-            class="w-10 h-10 flex items-center justify-center text-slate-400 dark:text-slate-600 select-none"
+            class="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-slate-400 dark:text-slate-600 select-none text-xs"
           >
             ...
           </span>
@@ -146,7 +146,7 @@ const paginationSlots = computed<PaginationSlot[]>(() => {
             type="button"
             @click="setPage(slot.page)"
             :class="cn(
-              'w-10 h-10 rounded-xl font-bold transition-all cursor-pointer text-xs',
+              'w-8 h-8 sm:w-10 sm:h-10 rounded-xl font-bold transition-all cursor-pointer text-xs shrink-0',
               currentPage === slot.page 
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
                 : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500'
@@ -161,10 +161,10 @@ const paginationSlots = computed<PaginationSlot[]>(() => {
         type="button"
         @click="setPage(currentPage + 1)" 
         :disabled="currentPage >= totalPages || totalPages === 0"
-        class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+        class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
         aria-label="Next page"
       >
-        <ChevronRight class="w-5 h-5" />
+        <ChevronRight class="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
     </div>
   </div>
