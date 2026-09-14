@@ -76,5 +76,20 @@ This registry tracks application features that have been temporarily commented o
   4. Verify whether form submission and backend email service integration are required before re-enabling.
 
 ---
+
+## 4. Feature: Product Detail Value Highlights Grid
+
+- **Status**: Temporarily Disabled (Hidden)
+- **Reason**: Client specification requires hiding the two hardcoded marketing blocks ("Authentic Hardware" and "Enterprise Reliability") from the storefront product detail page.
+- **Scope**: Storefront product detail page (`/pages/product/[slug].vue`).
+- **Current State**: Hardcoded marketing text block commented out.
+- **File**: `/pages/product/[slug].vue`
+- **Preservation**: Original markup and structure preserved in HTML comments below the product availability/brand/SKU section.
+- **Restoration Steps**:
+  1. Open `/pages/product/[slug].vue`.
+  2. Locate `<!-- TEMPORARILY DISABLED: Product Detail Value Highlights Grid ... -->`.
+  3. Remove the HTML comment wrapper around the `<div class="grid grid-cols-1 sm:grid-cols-2 ...">` block.
+
+---
 *Date Registered*: September 14, 2026
 

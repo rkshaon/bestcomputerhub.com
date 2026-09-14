@@ -887,6 +887,9 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </div>
 
             <!-- Value Highlights Grid -->
+            <!-- TEMPORARILY DISABLED: Product Detail Value Highlights Grid (Authentic Hardware & Enterprise Reliability) -->
+            <!-- Restore when marketing value highlight blocks are required. -->
+            <!--
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-4 sm:pt-6 border-t mt-4 sm:mt-6">
               <div class="space-y-1.5 sm:space-y-2">
                 <h4 class="text-xs sm:text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-foreground">
@@ -901,6 +904,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <p class="text-xs text-muted-foreground leading-relaxed">Built for continuous operations, tested against standardized workloads to ensure stable thermal and power envelopes.</p>
               </div>
             </div>
+            -->
           </div>
 
           <!-- Pricing & Actions -->
