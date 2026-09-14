@@ -394,11 +394,11 @@ const handleCropAndSave = async () => {
             variant="primary"
             class="h-9 px-4 text-xs font-bold rounded-xl gap-1.5"
             @click="handleCropAndSave"
-            :disabled="isSubmitting"
+            :disabled="isSubmitting || !imageLoaded || !imageItem || Boolean(loadError)"
           >
             <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
             <Crop v-else class="w-3.5 h-3.5" />
-            <span>{{ isSubmitting ? 'Replacing Image...' : 'Crop & Replace Image' }}</span>
+            <span>{{ isSubmitting ? 'Replacing...' : 'Crop & Replace' }}</span>
           </UiButton>
         </div>
       </template>
