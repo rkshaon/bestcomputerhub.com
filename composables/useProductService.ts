@@ -418,20 +418,120 @@ export const useProductService = () => {
     }
   };
 
-  const getAllProductImages = async (page: number = 1, pageSize: number = 10, products?: string): Promise<PaginatedResponse<ProductImage>> => {
+  const getAllProductImages = async (
+    page: number = 1,
+    pageSize: number = 10,
+    products?: string,
+    filters?: { is_high_resolution?: boolean; is_ratio_mismatch?: boolean }
+  ): Promise<PaginatedResponse<ProductImage>> => {
     isLoading.value = true;
     errorMsg.value = null;
 
     if (checkMockMode()) {
       await new Promise(resolve => setTimeout(resolve, 300));
       isLoading.value = false;
-      return { count: 0, next: null, previous: null, results: [], page, pages: 0 };
+      const mockProducts = getMockProducts();
+      let allImgs: ProductImage[] = [];
+      let nextId = 1;
+
+      mockProducts.forEach(p => {
+        if (products && products.trim()) {
+          const ids = products.split(',').map(s => s.trim());
+          if (!ids.includes(String(p.id)) && (!p.slug || !ids.includes(p.slug))) {
+            return;
+          }
+        }
+        if (Array.isArray(p.images) && p.images.length > 0) {
+          p.images.forEach((img, idx) => {
+            const url = typeof img === 'string' ? img : (img as any)?.image;
+            if (url) {
+              allImgs.push({
+                id: nextId++,
+                product: p.id,
+                image: url,
+                alt_text: p.name,
+                is_default: idx === 0,
+                display_order: idx + 1,
+                created_at: new Date().toISOString()
+              });
+            }
+          });
+        } else if (p.default_image) {
+          const url = typeof p.default_image === 'string' ? p.default_image : (p.default_image as any)?.image;
+          if (url) {
+            allImgs.push({
+              id: nextId++,
+              product: p.id,
+              image: url,
+              alt_text: p.name,
+              is_default: true,
+              display_order: 1,
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+      });
+
+      if (filters?.is_high_resolution) {
+        allImgs = allImgs.filter(img => {
+          if (!img.image) return false;
+          let width: number | undefined;
+          let height: number | undefined;
+          try {
+            const parsed = new URL(img.image);
+            const w = parsed.searchParams.get('w');
+            const h = parsed.searchParams.get('h');
+            if (w && !isNaN(Number(w))) width = Number(w);
+            if (h && !isNaN(Number(h))) height = Number(h);
+          } catch {
+            // fallback
+          }
+          return isExceedingResolution(width, height, 500);
+        });
+      }
+
+      if (filters?.is_ratio_mismatch) {
+        allImgs = allImgs.filter(img => {
+          if (!img.image) return false;
+          let width: number | undefined;
+          let height: number | undefined;
+          try {
+            const parsed = new URL(img.image);
+            const w = parsed.searchParams.get('w');
+            const h = parsed.searchParams.get('h');
+            if (w && !isNaN(Number(w))) width = Number(w);
+            if (h && !isNaN(Number(h))) height = Number(h);
+          } catch {
+            // fallback
+          }
+          return isNonSquareAspect(width, height);
+        });
+      }
+
+      const total = allImgs.length;
+      const start = (page - 1) * pageSize;
+      const results = allImgs.slice(start, start + pageSize);
+
+      return {
+        count: total,
+        next: start + pageSize < total ? `?page=${page + 1}` : null,
+        previous: page > 1 ? `?page=${page - 1}` : null,
+        results,
+        page,
+        pages: Math.ceil(total / pageSize)
+      };
     }
 
     try {
       const query: Record<string, any> = { page, page_size: pageSize };
       if (products && products.trim()) {
         query.products = products.trim();
+      }
+      if (filters?.is_high_resolution) {
+        query.is_high_resolution = 'true';
+      }
+      if (filters?.is_ratio_mismatch) {
+        query.is_ratio_mismatch = 'true';
       }
 
       const response = await apiClient.request<PaginatedResponse<ProductImage>>('/api/v1/product-images/', {

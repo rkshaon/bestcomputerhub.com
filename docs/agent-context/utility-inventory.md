@@ -478,7 +478,7 @@ When selecting or implementing helper functions, agents must respect these struc
 
 | Composable Service | Primary Domain Responsibility | Endpoint Scope | Key Responsibilities & Normalizations |
 | :--- | :--- | :--- | :--- |
-| `useProductService` | Products & Images | `/api/v1/products/`, `/api/v1/product-images/`, `/api/v1/product-images/summary/` | Product list queries, price mapping (`current_selling_price`), primary image fallback, product image summary statistics (`getProductImageSummary`), trailing slashes, bulk product image uploads. |
+| `useProductService` | Products & Images | `/api/v1/products/`, `/api/v1/product-images/`, `/api/v1/product-images/summary/` | Product list queries, price mapping (`current_selling_price`), primary image fallback, product image summary statistics (`getProductImageSummary`), boolean filters (`is_high_resolution`, `is_ratio_mismatch`), trailing slashes, bulk product image uploads. |
 | `useCategoryService` | Categories & Tree | `/api/v1/categories/`, `/api/v1/categories/tree/` | Category hierarchy tree traversal, sibling-level accordion expansion (`expandedCategoryIds`), demand-driven lazy child batching, breadcrumb path construction (`getCategoryPath`), trailing slashes. |
 | `useBrandService` | Brands | `/api/v1/brands/` | Brand listing, active status filtering, brand CRUD operations, brand response mapping. |
 | `useBlogService` | Blog Posts & Tags | `/api/v1/blog/posts/`, `/api/v1/blog/tags/` | Blog post queries by tag/category/author, post detail by ID/slug, blog tag CRUD operations. |

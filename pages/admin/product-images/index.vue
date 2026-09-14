@@ -80,6 +80,31 @@ const parseProductsFromQuery = (queryVal: any): string[] => {
 };
 
 const selectedProductIds = ref<string[]>(parseProductsFromQuery(route.query.products));
+const isHighResolutionFilter = ref(route.query.is_high_resolution === 'true');
+const isRatioMismatchFilter = ref(route.query.is_ratio_mismatch === 'true');
+
+const hasActiveFilters = computed(() => {
+  return selectedProductIds.value.length > 0 || isHighResolutionFilter.value || isRatioMismatchFilter.value;
+});
+
+const handleSelectAllImages = () => {
+  isHighResolutionFilter.value = false;
+  isRatioMismatchFilter.value = false;
+};
+
+const handleToggleHighResolution = () => {
+  isHighResolutionFilter.value = !isHighResolutionFilter.value;
+};
+
+const handleToggleRatioMismatch = () => {
+  isRatioMismatchFilter.value = !isRatioMismatchFilter.value;
+};
+
+const clearAllFilters = () => {
+  selectedProductIds.value = [];
+  isHighResolutionFilter.value = false;
+  isRatioMismatchFilter.value = false;
+};
 
 const productsParam = computed(() => {
   return selectedProductIds.value.length > 0 ? selectedProductIds.value.join(',') : undefined;
@@ -388,7 +413,11 @@ const fetchImages = async () => {
     const res = await productService.getAllProductImages(
       currentPage.value,
       itemsPerPage.value,
-      productsParam.value
+      productsParam.value,
+      {
+        is_high_resolution: isHighResolutionFilter.value,
+        is_ratio_mismatch: isRatioMismatchFilter.value
+      }
     );
     if (res && Array.isArray(res.results)) {
       images.value = res.results;
@@ -408,15 +437,17 @@ const fetchImages = async () => {
 
 // Sync URL on state change
 watch(
-  [viewMode, currentPage, itemsPerPage, productsParam],
+  [viewMode, currentPage, itemsPerPage, productsParam, isHighResolutionFilter, isRatioMismatchFilter],
   (newValues, oldValues) => {
-    const [newView, newPage, newPageSize, newProducts] = newValues;
+    const [newView, newPage, newPageSize, newProducts, newHighRes, newRatioMismatch] = newValues;
     const oldProducts = oldValues ? oldValues[3] : undefined;
+    const oldHighRes = oldValues ? oldValues[4] : undefined;
+    const oldRatioMismatch = oldValues ? oldValues[5] : undefined;
     const oldPage = oldValues ? oldValues[1] : undefined;
     const oldPageSize = oldValues ? oldValues[2] : undefined;
 
-    // Reset pagination to page 1 when products filter changes
-    if (oldValues && newProducts !== oldProducts) {
+    // Reset pagination to page 1 when any filter changes
+    if (oldValues && (newProducts !== oldProducts || newHighRes !== oldHighRes || newRatioMismatch !== oldRatioMismatch)) {
       if (currentPage.value !== 1) {
         currentPage.value = 1;
         return;
@@ -429,15 +460,54 @@ watch(
         view: newView === 'grid' ? 'grid' : undefined,
         page: newPage > 1 ? newPage : undefined,
         pageSize: newPageSize !== 10 ? newPageSize : undefined,
-        products: newProducts
+        products: newProducts,
+        is_high_resolution: newHighRes ? 'true' : undefined,
+        is_ratio_mismatch: newRatioMismatch ? 'true' : undefined
       }
     });
 
-    if (!oldValues || newPage !== oldPage || newPageSize !== oldPageSize || newProducts !== oldProducts) {
+    if (
+      !oldValues ||
+      newPage !== oldPage ||
+      newPageSize !== oldPageSize ||
+      newProducts !== oldProducts ||
+      newHighRes !== oldHighRes ||
+      newRatioMismatch !== oldRatioMismatch
+    ) {
       fetchImages();
     }
   },
   { immediate: true }
+);
+
+watch(
+  () => route.query,
+  (newQuery) => {
+    const qHighRes = newQuery.is_high_resolution === 'true';
+    if (isHighResolutionFilter.value !== qHighRes) {
+      isHighResolutionFilter.value = qHighRes;
+    }
+    const qRatioMismatch = newQuery.is_ratio_mismatch === 'true';
+    if (isRatioMismatchFilter.value !== qRatioMismatch) {
+      isRatioMismatchFilter.value = qRatioMismatch;
+    }
+    const qProducts = parseProductsFromQuery(newQuery.products);
+    if (selectedProductIds.value.join(',') !== qProducts.join(',')) {
+      selectedProductIds.value = qProducts;
+    }
+    const qPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
+    if (currentPage.value !== qPage) {
+      currentPage.value = qPage;
+    }
+    const qPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 10 : 10;
+    if (itemsPerPage.value !== qPageSize) {
+      itemsPerPage.value = qPageSize;
+    }
+    const qView = newQuery.view === 'grid' ? 'grid' : 'list';
+    if (viewMode.value !== qView) {
+      viewMode.value = qView;
+    }
+  }
 );
 
 const isNonSquareImage = (imageUrl?: string | null): boolean => {
@@ -485,6 +555,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
     <div class="space-y-4 animate-in fade-in duration-500">
       <!-- Active Analytics row -->
       <div v-if="canViewSummary" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Total Products Card (Informational) -->
         <UiCard class="flex items-center gap-3 p-3">
           <div class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
             <Package class="w-4 h-4" />
@@ -495,34 +566,100 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           </div>
         </UiCard>
 
-        <UiCard class="flex items-center gap-3 p-3">
-          <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
-            <ImageIcon class="w-4 h-4" />
+        <!-- Total Images Card (Click to clear image status filters) -->
+        <UiCard
+          role="button"
+          tabindex="0"
+          :aria-pressed="!isHighResolutionFilter && !isRatioMismatchFilter"
+          @click="handleSelectAllImages"
+          @keydown.enter="handleSelectAllImages"
+          @keydown.space.prevent="handleSelectAllImages"
+          :class="[
+            'flex items-center justify-between gap-3 p-3 cursor-pointer transition-all select-none',
+            !isHighResolutionFilter && !isRatioMismatchFilter
+              ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500/40 shadow-xs'
+              : 'hover:border-emerald-500/40 hover:bg-muted/30'
+          ]"
+          title="Show all product images"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+              <ImageIcon class="w-4 h-4" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Total Images</p>
+              <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ summaryData.total_product_images }}</p>
+            </div>
           </div>
-          <div class="min-w-0">
-            <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Total Images</p>
-            <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ summaryData.total_product_images }}</p>
-          </div>
+          <span 
+            v-if="!isHighResolutionFilter && !isRatioMismatchFilter" 
+            class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"
+            title="All images active"
+          ></span>
         </UiCard>
 
-        <UiCard class="flex items-center gap-3 p-3">
-          <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
-            <Sparkles class="w-4 h-4" />
+        <!-- High Resolution Card (Click to filter high-resolution images) -->
+        <UiCard
+          role="button"
+          tabindex="0"
+          :aria-pressed="isHighResolutionFilter"
+          @click="handleToggleHighResolution"
+          @keydown.enter="handleToggleHighResolution"
+          @keydown.space.prevent="handleToggleHighResolution"
+          :class="[
+            'flex items-center justify-between gap-3 p-3 cursor-pointer transition-all select-none',
+            isHighResolutionFilter
+              ? 'ring-2 ring-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20 border-blue-500/40 shadow-xs'
+              : 'hover:border-blue-500/40 hover:bg-muted/30'
+          ]"
+          title="Filter high resolution images (>500px)"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
+              <Sparkles class="w-4 h-4" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">High Resolution (>500px)</p>
+              <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ summaryData.high_resolution_images }}</p>
+            </div>
           </div>
-          <div class="min-w-0">
-            <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">High Resolution (>500px)</p>
-            <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ summaryData.high_resolution_images }}</p>
-          </div>
+          <span 
+            v-if="isHighResolutionFilter" 
+            class="w-2 h-2 rounded-full bg-blue-500 shrink-0"
+            title="High resolution filter active"
+          ></span>
         </UiCard>
 
-        <UiCard class="flex items-center gap-3 p-3">
-          <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
-            <Crop class="w-4 h-4" />
+        <!-- Non-Square Ratio Card (Click to filter non-square images) -->
+        <UiCard
+          role="button"
+          tabindex="0"
+          :aria-pressed="isRatioMismatchFilter"
+          @click="handleToggleRatioMismatch"
+          @keydown.enter="handleToggleRatioMismatch"
+          @keydown.space.prevent="handleToggleRatioMismatch"
+          :class="[
+            'flex items-center justify-between gap-3 p-3 cursor-pointer transition-all select-none',
+            isRatioMismatchFilter
+              ? 'ring-2 ring-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20 border-amber-500/40 shadow-xs'
+              : 'hover:border-amber-500/40 hover:bg-muted/30'
+          ]"
+          title="Filter non-square ratio images"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+              <Crop class="w-4 h-4" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Non-Square Ratio</p>
+              <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ summaryData.ratio_mismatch_images }}</p>
+            </div>
           </div>
-          <div class="min-w-0">
-            <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Non-Square Ratio</p>
-            <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ summaryData.ratio_mismatch_images }}</p>
-          </div>
+          <span 
+            v-if="isRatioMismatchFilter" 
+            class="w-2 h-2 rounded-full bg-amber-500 shrink-0"
+            title="Non-square ratio filter active"
+          ></span>
         </UiCard>
       </div>
 
@@ -658,6 +795,41 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                 </div>
               </div>
             </div>
+
+            <!-- Boolean Status Toggle Filters -->
+            <div class="flex items-center gap-1.5">
+              <button
+                type="button"
+                @click="isHighResolutionFilter = !isHighResolutionFilter"
+                :class="[
+                  'h-9 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+                  isHighResolutionFilter
+                    ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
+                    : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                ]"
+                :aria-pressed="isHighResolutionFilter"
+                title="Filter to high resolution images only"
+              >
+                <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="isHighResolutionFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+                <span>High Resolution</span>
+              </button>
+
+              <button
+                type="button"
+                @click="isRatioMismatchFilter = !isRatioMismatchFilter"
+                :class="[
+                  'h-9 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+                  isRatioMismatchFilter
+                    ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
+                    : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                ]"
+                :aria-pressed="isRatioMismatchFilter"
+                title="Filter to non-square ratio images only"
+              >
+                <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="isRatioMismatchFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+                <span>Non-Square Ratio</span>
+              </button>
+            </div>
           </div>
           
           <div class="flex items-center gap-2 ml-auto">
@@ -676,8 +848,10 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
         </div>
 
         <!-- Active Filter Badges Bar -->
-        <div v-if="selectedProductIds.length > 0" class="flex flex-wrap items-center gap-1.5 px-3.5 py-2 bg-muted/10 border-b border-border text-xs">
+        <div v-if="hasActiveFilters" class="flex flex-wrap items-center gap-1.5 px-3.5 py-2 bg-muted/10 border-b border-border text-xs">
           <span class="text-[11px] font-semibold text-muted-foreground">Filtered by:</span>
+          
+          <!-- Product Badges -->
           <div 
             v-for="id in selectedProductIds" 
             :key="id"
@@ -693,12 +867,45 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
               <X class="w-3 h-3" />
             </button>
           </div>
+
+          <!-- High Resolution Badge -->
+          <div 
+            v-if="isHighResolutionFilter"
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 text-[11px] font-medium"
+          >
+            <span>High Resolution (>500px)</span>
+            <button 
+              type="button" 
+              @click="isHighResolutionFilter = false"
+              class="hover:bg-blue-500/20 rounded-full p-0.5 transition-colors cursor-pointer"
+              title="Remove high resolution filter"
+            >
+              <X class="w-3 h-3" />
+            </button>
+          </div>
+
+          <!-- Non-Square Ratio Badge -->
+          <div 
+            v-if="isRatioMismatchFilter"
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-[11px] font-medium"
+          >
+            <span>Non-Square Ratio</span>
+            <button 
+              type="button" 
+              @click="isRatioMismatchFilter = false"
+              class="hover:bg-amber-500/20 rounded-full p-0.5 transition-colors cursor-pointer"
+              title="Remove non-square ratio filter"
+            >
+              <X class="w-3 h-3" />
+            </button>
+          </div>
+
           <button 
             type="button" 
-            @click="clearProductSelection"
+            @click="clearAllFilters"
             class="text-[11px] font-bold text-destructive hover:underline ml-1 cursor-pointer"
           >
-            Clear Filter
+            Clear All
           </button>
         </div>
 
@@ -715,8 +922,21 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
             <div class="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
               <ImageIcon class="w-6 h-6 text-muted-foreground/50" />
             </div>
-            <h3 class="text-sm font-semibold text-foreground">No Product Images Found</h3>
-            <p class="text-xs text-muted-foreground mt-1 max-w-sm">There are currently no product images in the global registry.</p>
+            <h3 class="text-sm font-semibold text-foreground">
+              {{ hasActiveFilters ? 'No Matching Images Found' : 'No Product Images Found' }}
+            </h3>
+            <p class="text-xs text-muted-foreground mt-1 max-w-sm">
+              {{ hasActiveFilters ? 'No images match the current filter criteria. Try adjusting or clearing your active filters.' : 'There are currently no product images in the global registry.' }}
+            </p>
+            <UiButton
+              v-if="hasActiveFilters"
+              variant="outline"
+              size="sm"
+              class="mt-3 text-xs cursor-pointer"
+              @click="clearAllFilters"
+            >
+              Clear Filters
+            </UiButton>
           </div>
           <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             <div
@@ -817,8 +1037,8 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           :data="images"
           :loading="isFetching"
           :row-class="(item) => isNonSquareImage(item.image) ? 'bg-destructive/10 text-destructive-foreground hover:bg-destructive/15' : ''"
-          empty-title="No Product Images Found"
-          empty-description="There are currently no product images in the global registry."
+          :empty-title="hasActiveFilters ? 'No Matching Images Found' : 'No Product Images Found'"
+          :empty-description="hasActiveFilters ? 'No images match the current filter criteria. Try adjusting or clearing your active filters.' : 'There are currently no product images in the global registry.'"
           empty-icon="ImageIcon"
         >
           <template #cell(image)="{ item }">
