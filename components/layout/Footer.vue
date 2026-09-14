@@ -1,6 +1,7 @@
 <!-- File: /components/layout/Footer.vue -->
 <script setup lang="ts">
-import { Facebook, Twitter, Instagram, Youtube, Mail, PackageSearch, ArrowRight } from 'lucide-vue-next';
+// TEMPORARILY DISABLED: Newsletter Icons (Mail, ArrowRight)
+import { Facebook, Twitter, Instagram, Youtube /*, Mail, PackageSearch, ArrowRight */ } from 'lucide-vue-next';
 
 const currentYear = new Date().getFullYear();
 
@@ -105,7 +106,9 @@ const socialLinks = [
         </div>
       </div>
 
-      <!-- Newsletter -->
+      <!-- TEMPORARILY DISABLED: Footer Newsletter Subscription -->
+      <!-- Restore when the newsletter feature is required again. -->
+      <!--
       <div class="p-6 sm:p-8 md:p-12 bg-muted rounded-2xl sm:rounded-3xl lg:rounded-[2.5rem] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 sm:gap-8 mb-12 sm:mb-20">
         <div class="space-y-2 text-center md:text-left">
           <h3 class="text-xl sm:text-2xl font-display font-bold">Join Best Computer Hub Insider</h3>
@@ -121,6 +124,7 @@ const socialLinks = [
           </UiButton>
         </div>
       </div>
+      -->
 
       <!-- Bottom Bar -->
       <div class="pt-10 border-t flex flex-col md:flex-row justify-between items-center gap-6">

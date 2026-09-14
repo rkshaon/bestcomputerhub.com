@@ -59,4 +59,22 @@ This registry tracks application features that have been temporarily commented o
 4. Optionally remove or reconcile relocated utility links in main header desktop actions if top bar is restored.
 
 ---
+
+## 3. Feature: Footer Newsletter Subscription
+
+- **Status**: Temporarily Disabled (Hidden)
+- **Reason**: Client does not currently require the newsletter feature.
+- **Scope**: Storefront footer (`/components/layout/Footer.vue`).
+- **Current State**: Design-only and non-functional (static input and button without form submission, reactive state, or API bindings).
+- **File**: `/components/layout/Footer.vue`
+- **Backend Support**: None required.
+- **Preservation**: Original markup and structure preserved in HTML comments.
+- **Restoration Steps**:
+  1. Open `/components/layout/Footer.vue`.
+  2. Uncomment `Mail` and `ArrowRight` icon imports in `<script setup>`.
+  3. Remove HTML comment wrapper around the newsletter `<div>` block in template.
+  4. Verify whether form submission and backend email service integration are required before re-enabling.
+
+---
 *Date Registered*: September 14, 2026
+
