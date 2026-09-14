@@ -1036,11 +1036,10 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
           </div>
           
           <div v-if="similarProducts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
-            <CommerceProductCard 
+            <CommerceRelatedProductCard 
               v-for="p in similarProducts" 
               :key="p.id" 
               :product="p" 
-              compact
             />
           </div>
           <div v-else class="p-6 bg-muted/20 rounded-2xl border border-dashed text-center">
