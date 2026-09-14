@@ -309,8 +309,8 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                             <span>{{ imageMetadataCache[img.image]?.width }}&times;{{ imageMetadataCache[img.image]?.height }}</span>
                             <AlertCircle
                               v-if="isHighResolutionImage(img.image)"
-                              class="w-3 h-3 text-amber-500 inline-block shrink-0"
-                              title="Resolution exceeds 500px"
+                              class="w-3 h-3 text-amber-500 inline-block shrink-0 cursor-help"
+                              title="Please keep the image height and width below or equal to 500 pixels."
                             />
                           </template>
                           <template v-else>—</template>
@@ -377,8 +377,8 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                   <span>{{ imageMetadataCache[item.image]?.width }} &times; {{ imageMetadataCache[item.image]?.height }} px</span>
                   <AlertCircle
                     v-if="isHighResolutionImage(item.image)"
-                    class="w-3.5 h-3.5 text-amber-500 inline-block shrink-0"
-                    title="Resolution exceeds 500px"
+                    class="w-3.5 h-3.5 text-amber-500 inline-block shrink-0 cursor-help"
+                    title="Please keep the image height and width below or equal to 500 pixels."
                   />
                 </template>
                 <template v-else>—</template>
