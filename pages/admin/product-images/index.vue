@@ -163,6 +163,24 @@ watch(
   { immediate: true }
 );
 
+const isNonSquareImage = (imageUrl?: string | null): boolean => {
+  if (!imageUrl) return false;
+  const meta = imageMetadataCache[imageUrl];
+  if (!meta?.loaded) return false;
+  const w = meta.width ?? 0;
+  const h = meta.height ?? 0;
+  return w > 0 && h > 0 && w !== h;
+};
+
+const isHighResolutionImage = (imageUrl?: string | null): boolean => {
+  if (!imageUrl) return false;
+  const meta = imageMetadataCache[imageUrl];
+  if (!meta?.loaded) return false;
+  const w = meta.width ?? 0;
+  const h = meta.height ?? 0;
+  return w > 500 || h > 500;
+};
+
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value) || 1);
 </script>
 
@@ -263,7 +281,12 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
             <div
               v-for="img in images"
               :key="img.id"
-              class="group relative rounded-xl border border-border bg-background overflow-hidden flex flex-col hover:border-primary/50 hover:shadow-md transition-all duration-300"
+              :class="[
+                'group relative rounded-xl border overflow-hidden flex flex-col transition-all duration-300',
+                isNonSquareImage(img.image)
+                  ? 'border-destructive/40 bg-destructive/10 text-destructive-foreground shadow-2xs hover:border-destructive'
+                  : 'border-border bg-background hover:border-primary/50 hover:shadow-md'
+              ]"
             >
               <div class="relative aspect-square w-full bg-muted/10 flex items-center justify-center p-4 border-b border-border">
                 <img v-if="img.image" :src="img.image" :alt="img.alt_text || 'Product image'" class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110" />
@@ -280,10 +303,15 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex flex-col">
                       <span class="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Res</span>
-                      <span class="text-[10px] font-mono text-foreground font-medium inline-flex items-center">
+                      <span class="text-[10px] font-mono text-foreground font-medium inline-flex items-center gap-1">
                         <template v-if="img.image && imageMetadataCache[img.image]?.loaded">
                           <template v-if="imageMetadataCache[img.image]?.width">
-                            {{ imageMetadataCache[img.image]?.width }}&times;{{ imageMetadataCache[img.image]?.height }}
+                            <span>{{ imageMetadataCache[img.image]?.width }}&times;{{ imageMetadataCache[img.image]?.height }}</span>
+                            <AlertCircle
+                              v-if="isHighResolutionImage(img.image)"
+                              class="w-3 h-3 text-amber-500 inline-block shrink-0"
+                              title="Resolution exceeds 500px"
+                            />
                           </template>
                           <template v-else>—</template>
                         </template>
@@ -324,6 +352,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           :columns="tableColumns"
           :data="images"
           :loading="isFetching"
+          :row-class="(item) => isNonSquareImage(item.image) ? 'bg-destructive/10 text-destructive-foreground hover:bg-destructive/15' : ''"
           empty-title="No Product Images Found"
           empty-description="There are currently no product images in the global registry."
           empty-icon="ImageIcon"
@@ -342,10 +371,15 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           </template>
 
           <template #cell(resolution)="{ item }">
-            <span class="text-xs font-mono text-muted-foreground whitespace-nowrap inline-flex items-center">
+            <span class="text-xs font-mono text-muted-foreground whitespace-nowrap inline-flex items-center gap-1">
               <template v-if="item.image && imageMetadataCache[item.image]?.loaded">
                 <template v-if="imageMetadataCache[item.image]?.width">
-                  {{ imageMetadataCache[item.image]?.width }} &times; {{ imageMetadataCache[item.image]?.height }} px
+                  <span>{{ imageMetadataCache[item.image]?.width }} &times; {{ imageMetadataCache[item.image]?.height }} px</span>
+                  <AlertCircle
+                    v-if="isHighResolutionImage(item.image)"
+                    class="w-3.5 h-3.5 text-amber-500 inline-block shrink-0"
+                    title="Resolution exceeds 500px"
+                  />
                 </template>
                 <template v-else>—</template>
               </template>
