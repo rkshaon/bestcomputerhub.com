@@ -1035,11 +1035,12 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             <p class="text-xs text-muted-foreground leading-relaxed">Frequently evaluated alongside this component for related deployments.</p>
           </div>
           
-          <div v-if="similarProducts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6">
+          <div v-if="similarProducts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
             <CommerceProductCard 
               v-for="p in similarProducts" 
               :key="p.id" 
               :product="p" 
+              compact
             />
           </div>
           <div v-else class="p-6 bg-muted/20 rounded-2xl border border-dashed text-center">
