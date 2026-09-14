@@ -135,6 +135,46 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `cropAndResizeSquareImage`
+- **File Location**: `/utils/imageCropper.ts`
+- **Category**: Canvas / Image processing utility
+- **Scope**: Shared image workflows (Admin Product Images, upload modals, replacement tools)
+- **Purpose**: Crops a 1:1 square region from an HTMLImageElement and resizes the output to be at most `maxOutputSize` (default 500px) using an offscreen HTML5 `<canvas>`. Produces a `File` object ready for `multipart/form-data` API submissions.
+- **Parameters & Return Value**:
+  - `imageSource: HTMLImageElement` — Source HTML image element containing loaded natural dimensions.
+  - `options: CropOptions`:
+    - `cropX: number` — Origin X coordinate in source image pixels.
+    - `cropY: number` — Origin Y coordinate in source image pixels.
+    - `cropSize: number` — 1:1 square dimension in source image pixels.
+    - `maxOutputSize?: number` — Output resolution cap in pixels (default 500).
+    - `mimeType?: string` — Image MIME type (default `'image/jpeg'`).
+    - `quality?: number` — Canvas export compression quality (default `0.92`).
+    - `fileName?: string` — Target `File` name string.
+  - Returns `Promise<File>` — Asynchronous promise resolving to a browser `File` object.
+- **Example Usage**:
+  ```ts
+  import { cropAndResizeSquareImage } from '@/utils/imageCropper';
+
+  const file = await cropAndResizeSquareImage(imgElement, {
+    cropX: 50,
+    cropY: 0,
+    cropSize: 800,
+    maxOutputSize: 500
+  });
+  ```
+- **Files or Features Currently Using It**: `/pages/admin/product-images/index.vue` (Admin product image crop & replacement modal).
+- **Side Effects**: Creates offscreen DOM `<canvas>` element for export.
+- **Accesses Browser State**: Yes (DOM `<canvas>`, `HTMLImageElement`, `URL.createObjectURL`).
+- **Performs Network Work**: No.
+- **Related Utilities**: `isNonSquareAspect`, `isExceedingResolution`.
+- **What It Explicitly Does Not Do**: Does not issue HTTP network requests or perform Vue component rendering.
+- **Reusability Level**: High.
+- **Edge Cases & Behavior**:
+  - Automatically clamps crop bounding box (`safeCropX`, `safeCropY`, `safeCropSize`) within source image bounds.
+  - Automatically caps final output dimensions at `maxOutputSize` (500×500px).
+
+---
+
 ## 2. Central HTTP Transport & Network Helpers
 
 ### `useApiClient`

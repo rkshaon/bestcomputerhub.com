@@ -4,6 +4,7 @@ import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useRoute, useRouter } from 'vue-router';
 import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
+import ProductImageCropModal from '@/components/admin/ProductImageCropModal.vue';
 import {
   Image as ImageIcon,
   Check,
@@ -14,7 +15,8 @@ import {
   Loader2,
   AlertCircle,
   LayoutGrid,
-  List
+  List,
+  Crop
 } from 'lucide-vue-next';
 import UiTable from '@/components/ui/UiTable.vue';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -58,8 +60,33 @@ const tableColumns: UiTableColumn<ProductImage>[] = [
   { key: 'size', label: 'Size', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'display_order', label: 'Order', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'is_default', label: 'Default', headerClass: 'px-4 py-3 text-center', cellClass: 'px-4 py-2.5 text-center' },
-  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' }
+  { key: 'created_at', label: 'Created At', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'actions', label: 'Actions', headerClass: 'px-4 py-3 text-right', cellClass: 'px-4 py-2.5 text-right' }
 ];
+
+const isCropModalOpen = ref(false);
+const selectedImageToCrop = ref<ProductImage | null>(null);
+
+const openCropModal = (item: ProductImage) => {
+  selectedImageToCrop.value = item;
+  isCropModalOpen.value = true;
+};
+
+const closeCropModal = () => {
+  isCropModalOpen.value = false;
+  selectedImageToCrop.value = null;
+};
+
+const handleImageReplaced = async (updatedItem: ProductImage) => {
+  if (selectedImageToCrop.value?.image) {
+    delete imageMetadataCache[selectedImageToCrop.value.image];
+  }
+  if (updatedItem.image) {
+    delete imageMetadataCache[updatedItem.image];
+    fetchImageMetadata(updatedItem.image);
+  }
+  await fetchImages();
+};
 
 const formatSize = (bytes?: number) => {
   if (bytes === undefined || isNaN(bytes)) return '—';
@@ -338,6 +365,29 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                       <span class="text-[10px] font-mono text-foreground font-medium whitespace-nowrap">{{ img.created_at ? formatDate(img.created_at) : '—' }}</span>
                     </div>
                   </div>
+
+                  <!-- Always-visible Resolution Warning Message -->
+                  <div v-if="isHighResolutionImage(img.image)" class="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[10px] leading-snug">
+                    <p class="font-bold flex items-center gap-1">
+                      <AlertCircle class="w-3 h-3 shrink-0 text-amber-500" />
+                      <span>Image resolution is too large</span>
+                    </p>
+                    <p class="mt-0.5 text-[9.5px] text-muted-foreground font-normal">
+                      Please replace this image with one where both width and height are 500px or less.
+                    </p>
+                  </div>
+
+                  <!-- Always-visible Crop Image Action for Non-Square Images -->
+                  <UiButton
+                    v-if="isNonSquareImage(img.image)"
+                    variant="outline"
+                    size="sm"
+                    class="w-full h-7 mt-2 text-[11px] font-bold border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive gap-1.5 cursor-pointer justify-center"
+                    @click="openCropModal(img)"
+                  >
+                    <Crop class="w-3.5 h-3.5" />
+                    <span>Crop image</span>
+                  </UiButton>
                 </div>
               </div>
             </div>
@@ -368,21 +418,34 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           </template>
 
           <template #cell(resolution)="{ item }">
-            <span class="text-xs font-mono text-muted-foreground whitespace-nowrap inline-flex items-center gap-1">
-              <template v-if="item.image && imageMetadataCache[item.image]?.loaded">
-                <template v-if="imageMetadataCache[item.image]?.width">
-                  <span>{{ imageMetadataCache[item.image]?.width }} &times; {{ imageMetadataCache[item.image]?.height }} px</span>
-                  <AlertCircle
-                    v-if="isHighResolutionImage(item.image)"
-                    class="w-3.5 h-3.5 text-amber-500 inline-block shrink-0 cursor-help"
-                    title="Please keep the image height and width below or equal to 500 pixels."
-                  />
+            <div class="flex flex-col">
+              <span class="text-xs font-mono text-muted-foreground whitespace-nowrap inline-flex items-center gap-1">
+                <template v-if="item.image && imageMetadataCache[item.image]?.loaded">
+                  <template v-if="imageMetadataCache[item.image]?.width">
+                    <span>{{ imageMetadataCache[item.image]?.width }} &times; {{ imageMetadataCache[item.image]?.height }} px</span>
+                    <AlertCircle
+                      v-if="isHighResolutionImage(item.image)"
+                      class="w-3.5 h-3.5 text-amber-500 inline-block shrink-0 cursor-help"
+                      title="Please keep the image height and width below or equal to 500 pixels."
+                    />
+                  </template>
+                  <template v-else>—</template>
                 </template>
+                <Loader2 v-else-if="item.image && imageMetadataCache[item.image]?.loading" class="w-3 h-3 animate-spin text-muted-foreground" />
                 <template v-else>—</template>
-              </template>
-              <Loader2 v-else-if="item.image && imageMetadataCache[item.image]?.loading" class="w-3 h-3 animate-spin text-muted-foreground" />
-              <template v-else>—</template>
-            </span>
+              </span>
+
+              <!-- Always-visible Resolution Warning Message for Table List View -->
+              <div v-if="isHighResolutionImage(item.image)" class="mt-1.5 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[10px] leading-snug max-w-[240px]">
+                <p class="font-bold flex items-center gap-1">
+                  <AlertCircle class="w-3 h-3 shrink-0 text-amber-500" />
+                  <span>Image resolution is too large</span>
+                </p>
+                <p class="mt-0.5 text-[9.5px] text-muted-foreground font-normal whitespace-normal">
+                  Please replace this image with one where both width and height are 500px or less.
+                </p>
+              </div>
+            </div>
           </template>
           
           <template #cell(size)="{ item }">
@@ -411,6 +474,22 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
               {{ item.created_at ? formatDate(item.created_at) : '—' }}
             </span>
           </template>
+
+          <template #cell(actions)="{ item }">
+            <div class="flex items-center justify-end">
+              <UiButton
+                v-if="isNonSquareImage(item.image)"
+                variant="outline"
+                size="sm"
+                class="h-7 px-2.5 text-[11px] font-bold border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive gap-1 cursor-pointer"
+                @click="openCropModal(item)"
+              >
+                <Crop class="w-3.5 h-3.5" />
+                <span>Crop image</span>
+              </UiButton>
+              <span v-else class="text-xs text-muted-foreground/40">—</span>
+            </div>
+          </template>
         </UiTable>
 
         <UiPagination
@@ -422,5 +501,13 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
         />
       </div>
     </div>
+
+    <!-- Product Image Crop Modal -->
+    <ProductImageCropModal
+      :is-open="isCropModalOpen"
+      :image-item="selectedImageToCrop"
+      @close="closeCropModal"
+      @success="handleImageReplaced"
+    />
   </NuxtLayout>
 </template>
