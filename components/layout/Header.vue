@@ -4,7 +4,7 @@ import { navigateTo } from '#app';
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { refDebounced } from '@vueuse/core';
 // TEMPORARILY DISABLED: Storefront Theme Mode Icons (Sun, Moon, Monitor)
-import { Handbag, Search, User, Menu, X, /* Sun, Moon, Monitor, */ PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, ArrowRight, Tag, Sparkles, Zap, Clock } from 'lucide-vue-next';
+import { Handbag, Search, User, Menu, X, /* Sun, Moon, Monitor, */ PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, ArrowRight, Tag, Sparkles, Zap, Clock, MapPin, BookOpen } from 'lucide-vue-next';
 import { cn, decodeHtmlEntities } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -14,7 +14,9 @@ import { useCategoryService } from '@/composables/useCategoryService';
 import { useToast } from '@/composables/useToast';
 import type { Category, Product } from '@/types';
 import HeaderMegaMenu from '@/components/layout/HeaderMegaMenu.vue';
-import HeaderUtilityBar from '@/components/layout/HeaderUtilityBar.vue';
+// TEMPORARILY DISABLED: Storefront Top Utility Bar Import
+// Restore when the utility bar is required again.
+// import HeaderUtilityBar from '@/components/layout/HeaderUtilityBar.vue';
 
 const uiStore = useUIStore();
 const cartStore = useCartStore();
@@ -464,9 +466,13 @@ if (process.client) {
   <header 
     class="sticky top-0 z-50 w-full border-b py-0 sm:py-1 bg-background border-border/50 shadow-sm"
   >
+    <!-- TEMPORARILY DISABLED: Storefront Top Utility Bar -->
+    <!-- Restore when the utility bar is required again. -->
+    <!--
     <div>
       <HeaderUtilityBar />
     </div>
+    -->
 
     <div 
       ref="searchContainerRef" 
@@ -765,6 +771,53 @@ if (process.client) {
             <ArrowLeftRight class="w-4 h-4 text-primary shrink-0" />
             <span>Compare</span>
           </button>
+
+          <!-- Relocated Utility Bar Links -->
+          <!-- Track Your Order -->
+          <NuxtLink 
+            to="/account/" 
+            class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            title="Track Your Order"
+            aria-label="Track Your Order"
+          >
+            <PackageSearch class="w-3.5 h-3.5 text-primary shrink-0" />
+            <span>Track Order</span>
+          </NuxtLink>
+
+          <!-- Insights -->
+          <NuxtLink 
+            to="/blog/" 
+            class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            title="Tech Insights"
+            aria-label="Tech Insights"
+          >
+            <BookOpen class="w-3.5 h-3.5 text-primary shrink-0" />
+            <span>Insights</span>
+          </NuxtLink>
+
+          <!-- Store Location -->
+          <a 
+            href="https://www.google.com/maps/place/G.M+Plaza/@23.7388697,90.386565,17z/data=!3m1!5s0x3755b8c81091d773:0x601a730b2bf4e399!4m16!1m9!3m8!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!2sG.M+Plaza!8m2!3d23.7388697!4d90.386565!9m1!1b1!16s%2Fg%2F11c2p4g0df!3m5!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!8m2!3d23.7388697!4d90.386565!16s%2Fg%2F11c2p4g0df?hl=en-US&entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            title="Store Location"
+            aria-label="Store Location on Google Maps"
+          >
+            <MapPin class="w-3.5 h-3.5 text-primary shrink-0" />
+            <span>Store</span>
+          </a>
+
+          <!-- Relocated Login / Account Action -->
+          <NuxtLink 
+            :to="authStore.isLoggedIn ? '/account/' : '/login/'" 
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            :title="authStore.isLoggedIn ? 'Account Dashboard' : 'Login or Sign Up'"
+            :aria-label="authStore.isLoggedIn ? 'Account Dashboard' : 'Login'"
+          >
+            <User class="w-4 h-4 text-primary shrink-0" />
+            <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
+          </NuxtLink>
 
           <!-- Bag (Cart) -->
           <button 
@@ -1198,6 +1251,24 @@ if (process.client) {
             <User class="w-4 h-4 text-primary" />
             <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
           </NuxtLink>
+          <NuxtLink 
+            to="/account/" 
+            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
+            @click="uiStore.closeMobileMenu()"
+          >
+            <PackageSearch class="w-4 h-4 text-primary" />
+            <span>Track Your Order</span>
+          </NuxtLink>
+          <a 
+            href="https://www.google.com/maps/place/G.M+Plaza/@23.7388697,90.386565,17z/data=!3m1!5s0x3755b8c81091d773:0x601a730b2bf4e399!4m16!1m9!3m8!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!2sG.M+Plaza!8m2!3d23.7388697!4d90.386565!9m1!1b1!16s%2Fg%2F11c2p4g0df!3m5!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!8m2!3d23.7388697!4d90.386565!16s%2Fg%2F11c2p4g0df?hl=en-US&entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D" 
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
+            @click="uiStore.closeMobileMenu()"
+          >
+            <MapPin class="w-4 h-4 text-primary" />
+            <span>Store Location</span>
+          </a>
           <NuxtLink 
             to="/products/" 
             class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
