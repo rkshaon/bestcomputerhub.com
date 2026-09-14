@@ -233,175 +233,178 @@ const handleCropAndSave = async () => {
     max-width="max-w-xl"
     @close="emit('close')"
   >
-    <div class="p-6 space-y-5">
-      <!-- Loading & Error States -->
-      <div v-if="!imageLoaded && !loadError" class="py-16 flex flex-col items-center justify-center text-center">
-        <Loader2 class="w-8 h-8 animate-spin text-primary mb-3" />
-        <p class="text-sm font-medium text-muted-foreground">Loading image for cropping...</p>
-      </div>
+    <div class="flex flex-col max-h-[80vh]">
+      <!-- Scrollable Main Content -->
+      <div class="p-6 space-y-5 overflow-y-auto flex-1">
+        <!-- Loading & Error States -->
+        <div v-if="!imageLoaded && !loadError" class="py-16 flex flex-col items-center justify-center text-center">
+          <Loader2 class="w-8 h-8 animate-spin text-primary mb-3" />
+          <p class="text-sm font-medium text-muted-foreground">Loading image for cropping...</p>
+        </div>
 
-      <div v-else-if="loadError" class="p-4 rounded-xl bg-destructive/10 text-destructive text-sm font-medium flex items-center gap-2">
-        <AlertCircle class="w-5 h-5 shrink-0" />
-        <span>{{ loadError }}</span>
-      </div>
+        <div v-else-if="loadError" class="p-4 rounded-xl bg-destructive/10 text-destructive text-sm font-medium flex items-center gap-2">
+          <AlertCircle class="w-5 h-5 shrink-0" />
+          <span>{{ loadError }}</span>
+        </div>
 
-      <!-- Main Cropper Interface -->
-      <template v-else>
-        <div class="space-y-4">
-          <!-- Viewport Box with 1:1 Overlay -->
-          <div
-            id="crop-viewport-container"
-            class="relative w-full aspect-square bg-slate-950/90 rounded-2xl overflow-hidden cursor-move border border-border select-none flex items-center justify-center"
-            @mousedown="startDrag"
-            @mousemove="onDrag"
-            @mouseup="endDrag"
-            @mouseleave="endDrag"
-            @touchstart="startDrag"
-            @touchmove="onDrag"
-            @touchend="endDrag"
-          >
-            <!-- Background Image with Dim Overlay -->
-            <img
-              v-if="imageItem?.image"
-              :src="imageItem.image"
-              alt="Source crop target"
-              class="w-full h-full object-contain pointer-events-none opacity-40 blur-[1px]"
-            />
-
-            <!-- Highlighted Crop Bounding Box -->
+        <!-- Main Cropper Interface -->
+        <template v-else>
+          <div class="space-y-4">
+            <!-- Viewport Box with 1:1 Overlay -->
             <div
-              class="absolute border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] pointer-events-none transition-all duration-75 flex items-center justify-center"
-              :style="{
-                left: `${(cropX / naturalWidth) * 100}%`,
-                top: `${(cropY / naturalHeight) * 100}%`,
-                width: `${(effectiveCropSize / naturalWidth) * 100}%`,
-                height: `${(effectiveCropSize / naturalHeight) * 100}%`
-              }"
+              id="crop-viewport-container"
+              class="relative w-full aspect-square max-h-[340px] bg-slate-950/90 rounded-2xl overflow-hidden cursor-move border border-border select-none flex items-center justify-center mx-auto"
+              @mousedown="startDrag"
+              @mousemove="onDrag"
+              @mouseup="endDrag"
+              @mouseleave="endDrag"
+              @touchstart="startDrag"
+              @touchmove="onDrag"
+              @touchend="endDrag"
             >
-              <!-- 1:1 Grid Lines -->
-              <div class="w-full h-full grid grid-cols-3 grid-rows-3 border border-white/20">
-                <div v-for="i in 9" :key="i" class="border border-white/10"></div>
-              </div>
-              <span class="absolute bottom-1 right-1.5 px-1.5 py-0.5 text-[9px] font-mono font-bold bg-primary text-primary-foreground rounded shadow-xs">
-                1:1 Square
-              </span>
-            </div>
+              <!-- Background Image with Dim Overlay -->
+              <img
+                v-if="imageItem?.image"
+                :src="imageItem.image"
+                alt="Source crop target"
+                class="w-full h-full object-contain pointer-events-none opacity-40 blur-[1px]"
+              />
 
-            <!-- Hint overlay -->
-            <div class="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-xs text-slate-200 text-[10px] font-medium flex items-center gap-1.5 pointer-events-none">
-              <Move class="w-3 h-3 text-primary" />
-              <span>Drag the crop box to select the area to keep.</span>
-            </div>
-          </div>
-
-          <!-- Zoom & Reposition Controls -->
-          <div class="p-4 bg-muted/30 border border-border rounded-xl space-y-3">
-            <!-- Zoom Slider -->
-            <div class="flex items-center justify-between gap-4">
-              <label class="text-xs font-bold text-foreground flex items-center gap-1.5 shrink-0">
-                <ZoomIn class="w-3.5 h-3.5 text-primary" />
-                <span>Zoom Scale</span>
-              </label>
-              <div class="flex items-center gap-3 flex-1 max-w-xs">
-                <input
-                  type="range"
-                  v-model.number="zoomScale"
-                  min="1.0"
-                  max="3.0"
-                  step="0.05"
-                  class="w-full accent-primary h-1.5 bg-muted rounded-lg cursor-pointer"
-                />
-                <span class="text-xs font-mono font-bold text-foreground w-10 text-right">
-                  {{ zoomScale.toFixed(2) }}x
+              <!-- Highlighted Crop Bounding Box -->
+              <div
+                class="absolute border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] pointer-events-none transition-all duration-75 flex items-center justify-center"
+                :style="{
+                  left: `${(cropX / naturalWidth) * 100}%`,
+                  top: `${(cropY / naturalHeight) * 100}%`,
+                  width: `${(effectiveCropSize / naturalWidth) * 100}%`,
+                  height: `${(effectiveCropSize / naturalHeight) * 100}%`
+                }"
+              >
+                <!-- 1:1 Grid Lines -->
+                <div class="w-full h-full grid grid-cols-3 grid-rows-3 border border-white/20">
+                  <div v-for="i in 9" :key="i" class="border border-white/10"></div>
+                </div>
+                <span class="absolute bottom-1 right-1.5 px-1.5 py-0.5 text-[9px] font-mono font-bold bg-primary text-primary-foreground rounded shadow-xs">
+                  1:1 Square
                 </span>
               </div>
-            </div>
 
-            <!-- Alignment Presets -->
-            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
-              <span class="text-[11px] font-semibold text-muted-foreground">Quick Align:</span>
-              <div class="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  @click="alignCenter"
-                  class="h-7 px-2.5 text-[11px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground flex items-center gap-1 transition-colors cursor-pointer"
-                >
-                  <AlignCenter class="w-3 h-3 text-primary" />
-                  Center
-                </button>
-                <button
-                  type="button"
-                  @click="alignCorner('tl')"
-                  class="h-7 px-2 font-mono text-[10px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
-                  title="Top-Left"
-                >
-                  Top-L
-                </button>
-                <button
-                  type="button"
-                  @click="alignCorner('tr')"
-                  class="h-7 px-2 font-mono text-[10px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
-                  title="Top-Right"
-                >
-                  Top-R
-                </button>
-                <button
-                  type="button"
-                  @click="alignCorner('bl')"
-                  class="h-7 px-2 font-mono text-[10px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
-                  title="Bottom-Left"
-                >
-                  Bot-L
-                </button>
-                <button
-                  type="button"
-                  @click="alignCorner('br')"
-                  class="h-7 px-2 font-mono text-[10px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
-                  title="Bottom-Right"
-                >
-                  Bot-R
-                </button>
+              <!-- Hint overlay -->
+              <div class="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-xs text-slate-200 text-[10px] font-medium flex items-center gap-1.5 pointer-events-none">
+                <Move class="w-3 h-3 text-primary" />
+                <span>Drag the crop box to select the area to keep.</span>
               </div>
             </div>
-          </div>
 
-          <!-- Metadata & Output Spec Summary -->
-          <div class="flex items-center justify-between px-1 text-xs text-muted-foreground font-medium">
-            <span class="inline-flex items-center gap-1">
-              <span>Original:</span>
-              <span class="font-mono font-bold text-foreground">{{ naturalWidth }} × {{ naturalHeight }} px</span>
-            </span>
-            <span class="inline-flex items-center gap-1">
-              <span>Output Size:</span>
-              <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                {{ outputResolution }} × {{ outputResolution }} px (1:1)
+            <!-- Zoom & Reposition Controls -->
+            <div class="p-4 bg-muted/30 border border-border rounded-xl space-y-3">
+              <!-- Zoom Slider -->
+              <div class="flex items-center justify-between gap-4">
+                <label class="text-xs font-bold text-foreground flex items-center gap-1.5 shrink-0">
+                  <ZoomIn class="w-3.5 h-3.5 text-primary" />
+                  <span>Zoom Scale</span>
+                </label>
+                <div class="flex items-center gap-3 flex-1 max-w-xs">
+                  <input
+                    type="range"
+                    v-model.number="zoomScale"
+                    min="1.0"
+                    max="3.0"
+                    step="0.05"
+                    class="w-full accent-primary h-1.5 bg-muted rounded-lg cursor-pointer"
+                  />
+                  <span class="text-xs font-mono font-bold text-foreground w-10 text-right">
+                    {{ zoomScale.toFixed(2) }}x
+                  </span>
+                </div>
+              </div>
+
+              <!-- Alignment Presets -->
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
+                <span class="text-[11px] font-semibold text-muted-foreground">Quick Align:</span>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    @click="alignCenter"
+                    class="h-7 px-2.5 text-[11px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <AlignCenter class="w-3 h-3 text-primary" />
+                    Center
+                  </button>
+                  <button
+                    type="button"
+                    @click="alignCorner('tl')"
+                    class="h-7 px-2 font-mono text-[10px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
+                    title="Top-Left"
+                  >
+                    Top-L
+                  </button>
+                  <button
+                    type="button"
+                    @click="alignCorner('tr')"
+                    class="h-7 px-2 font-mono text-[10px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
+                    title="Top-Right"
+                  >
+                    Top-R
+                  </button>
+                  <button
+                    type="button"
+                    @click="alignCorner('bl')"
+                    class="h-7 px-2 font-mono text-[10px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
+                    title="Bottom-Left"
+                  >
+                    Bot-L
+                  </button>
+                  <button
+                    type="button"
+                    @click="alignCorner('br')"
+                    class="h-7 px-2 font-mono text-[10px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
+                    title="Bottom-Right"
+                  >
+                    Bot-R
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Metadata & Output Spec Summary -->
+            <div class="flex items-center justify-between px-1 text-xs text-muted-foreground font-medium">
+              <span class="inline-flex items-center gap-1">
+                <span>Original:</span>
+                <span class="font-mono font-bold text-foreground">{{ naturalWidth }} × {{ naturalHeight }} px</span>
               </span>
-            </span>
+              <span class="inline-flex items-center gap-1">
+                <span>Output Size:</span>
+                <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                  {{ outputResolution }} × {{ outputResolution }} px (1:1)
+                </span>
+              </span>
+            </div>
           </div>
-        </div>
+        </template>
+      </div>
 
-        <!-- Dialog Footer Actions -->
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
-          <UiButton
-            variant="outline"
-            class="h-9 px-4 text-xs font-bold rounded-xl"
-            @click="emit('close')"
-            :disabled="isSubmitting"
-          >
-            Cancel
-          </UiButton>
-          <UiButton
-            variant="primary"
-            class="h-9 px-4 text-xs font-bold rounded-xl gap-1.5"
-            @click="handleCropAndSave"
-            :disabled="isSubmitting || !imageLoaded || !imageItem || Boolean(loadError)"
-          >
-            <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
-            <Crop v-else class="w-3.5 h-3.5" />
-            <span>{{ isSubmitting ? 'Replacing...' : 'Crop & Replace' }}</span>
-          </UiButton>
-        </div>
-      </template>
+      <!-- Pinned Dialog Footer Actions -->
+      <div class="px-6 py-4 border-t border-border bg-card shrink-0 flex items-center justify-end gap-3">
+        <UiButton
+          variant="outline"
+          class="h-9 px-4 text-xs font-bold rounded-xl"
+          @click="emit('close')"
+          :disabled="isSubmitting"
+        >
+          Cancel
+        </UiButton>
+        <UiButton
+          variant="primary"
+          class="h-9 px-4 text-xs font-bold rounded-xl gap-1.5"
+          @click="handleCropAndSave"
+          :disabled="isSubmitting || !imageLoaded || !imageItem || Boolean(loadError)"
+        >
+          <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
+          <Crop v-else class="w-3.5 h-3.5" />
+          <span>{{ isSubmitting ? 'Replacing...' : 'Crop & Replace' }}</span>
+        </UiButton>
+      </div>
     </div>
   </UiAdminModal>
 </template>
