@@ -698,49 +698,55 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16">
         <!-- Gallery / Image View -->
         <div class="space-y-4 sm:space-y-6">
-          <div class="w-[500px] h-[500px] max-w-full aspect-square mx-auto rounded-2xl sm:rounded-3xl lg:rounded-[2rem] overflow-hidden bg-muted/40 border group relative flex items-center justify-center p-4">
-            <img 
-              v-if="selectedImage" 
-              :src="selectedImage" 
-              :alt="selectedImageAlt" 
-              class="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" 
-            />
-            <div v-else class="w-full h-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground/60 space-y-3">
-              <Package class="w-16 h-16 stroke-1 text-muted-foreground/40" />
-              <div class="space-y-1">
-                <p class="font-bold text-sm text-foreground uppercase tracking-wider">{{ decodeHtmlEntities(productBrandName) || decodeHtmlEntities(product.name) }}</p>
-                <p class="text-xs text-muted-foreground">Standard Specification Unit</p>
-              </div>
+          <div class="flex flex-col-reverse sm:flex-row items-center sm:items-start justify-center sm:justify-start gap-3 sm:gap-4">
+            <!-- Image Thumbnails (if multiple images exist) -->
+            <div 
+              v-if="galleryImages.length > 1" 
+              class="flex sm:flex-col gap-2 sm:gap-3 overflow-x-auto sm:overflow-y-auto max-h-[500px] shrink-0 custom-submenu-scrollbar pb-2 sm:pb-0 pr-0 sm:pr-1 w-full sm:w-auto justify-center sm:justify-start"
+            >
+              <button 
+                v-for="(img, idx) in galleryImages" 
+                :key="img.id ?? idx" 
+                @click="img.image && (selectedImage = img.image)"
+                :class="[
+                  'w-16 h-16 sm:w-20 sm:h-20 md:w-20 md:h-20 shrink-0 rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all p-1 bg-muted/20 cursor-pointer',
+                  selectedImage === img.image ? 'border-primary ring-2 ring-primary/20' : 'border-muted hover:border-primary/50'
+                ]"
+                :aria-label="img.alt_text ? `View ${img.alt_text}` : `View product image ${idx + 1}`"
+              >
+                <img 
+                  :src="img.image" 
+                  :alt="img.alt_text || `${decodeHtmlEntities(product.name)} thumbnail ${idx + 1}`" 
+                  class="w-full h-full object-contain" 
+                />
+              </button>
             </div>
 
-            <!-- Badges -->
-            <div class="absolute top-3 left-3 sm:top-6 sm:left-6 flex flex-col gap-2 sm:gap-3">
-              <span v-if="product.isNew" class="bg-primary text-primary-foreground px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-xl">New Arrival</span>
-              <span v-if="product.onSale || (product.originalPrice && product.originalPrice > product.price)" class="bg-destructive text-destructive-foreground px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-xl">Promotional Pricing</span>
-              <span v-if="isItemInCart || product.in_cart" class="bg-emerald-600 text-white px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-xl flex items-center gap-1">
-                <Check class="w-3 h-3" /> In Cart
-              </span>
-            </div>
-          </div>
-          
-          <!-- Image Thumbnails (if multiple images exist) -->
-          <div v-if="galleryImages.length > 1" class="flex gap-2 sm:gap-4 overflow-x-auto pb-2 custom-submenu-scrollbar">
-            <button 
-              v-for="(img, idx) in galleryImages" 
-              :key="img.id ?? idx" 
-              @click="img.image && (selectedImage = img.image)"
-              :class="[
-                'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 shrink-0 rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all p-1 bg-muted/20 cursor-pointer',
-                selectedImage === img.image ? 'border-primary ring-2 ring-primary/20' : 'border-muted hover:border-primary/50'
-              ]"
-              :aria-label="img.alt_text ? `View ${img.alt_text}` : `View product image ${idx + 1}`"
-            >
+            <!-- Main Product Image -->
+            <div class="w-[500px] h-[500px] max-w-full aspect-square mx-auto sm:mx-0 rounded-2xl sm:rounded-3xl lg:rounded-[2rem] overflow-hidden bg-muted/40 border group relative flex items-center justify-center p-4 shrink-0">
               <img 
-                :src="img.image" 
-                :alt="img.alt_text || `${decodeHtmlEntities(product.name)} thumbnail ${idx + 1}`" 
-                class="w-full h-full object-contain" 
+                v-if="selectedImage" 
+                :src="selectedImage" 
+                :alt="selectedImageAlt" 
+                class="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" 
               />
-            </button>
+              <div v-else class="w-full h-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground/60 space-y-3">
+                <Package class="w-16 h-16 stroke-1 text-muted-foreground/40" />
+                <div class="space-y-1">
+                  <p class="font-bold text-sm text-foreground uppercase tracking-wider">{{ decodeHtmlEntities(productBrandName) || decodeHtmlEntities(product.name) }}</p>
+                  <p class="text-xs text-muted-foreground">Standard Specification Unit</p>
+                </div>
+              </div>
+
+              <!-- Badges -->
+              <div class="absolute top-3 left-3 sm:top-6 sm:left-6 flex flex-col gap-2 sm:gap-3">
+                <span v-if="product.isNew" class="bg-primary text-primary-foreground px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-xl">New Arrival</span>
+                <span v-if="product.onSale || (product.originalPrice && product.originalPrice > product.price)" class="bg-destructive text-destructive-foreground px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-xl">Promotional Pricing</span>
+                <span v-if="isItemInCart || product.in_cart" class="bg-emerald-600 text-white px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-xl flex items-center gap-1">
+                  <Check class="w-3 h-3" /> In Cart
+                </span>
+              </div>
+            </div>
           </div>
 
           <button
