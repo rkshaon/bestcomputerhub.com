@@ -63,6 +63,20 @@ Domain services own API-specific operations.
 
 useApiClient owns shared HTTP concerns.
 
+### Reusable Logic & Utility-First Development
+
+* Before implementing any new task that requires a helper function, calculation, validation, formatting, transformation, or other reusable logic, first read `/docs/agent-context/utility-inventory.md`.
+* Search the utility inventory and existing implementation for a suitable utility or helper.
+* If an existing utility solves the requirement, reuse it. Do not create a duplicate utility or rewrite equivalent logic.
+* Reusable calculation and domain-independent logic must be implemented in a reusable utility function rather than directly inside Vue components or templates.
+* Keep components focused on presentation, user interaction, and component-specific UI state.
+* Keep page-specific orchestration, reactive state, API fetching, and workflow coordination in the appropriate page, composable, store, or service layer.
+* Do not create a shared utility for trivial, one-off presentation logic that has no meaningful reuse value.
+* If no suitable existing utility exists and reusable logic is genuinely needed, create a new utility following the project's established conventions.
+* Whenever a new reusable utility file or function is created, update `/docs/agent-context/utility-inventory.md` in the same task.
+* The inventory entry must accurately document the utility's file location, purpose, exported functions, parameters, return values, and relevant behavior according to the existing inventory format.
+* Before creating a new utility, inspect the existing utility inventory and project conventions to avoid unnecessary duplication or over-engineering.
+
 ## TypeScript
 
 TypeScript strict mode is enabled.
