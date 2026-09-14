@@ -13,15 +13,19 @@ import {
   Pencil,
   GripVertical,
   Star,
-  RefreshCw
+  RefreshCw,
+  Crop,
+  AlertCircle
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
+import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
 import { cn } from '@/utils';
 import type { Product, ProductImage } from '@/types';
 import UiButton from '@/components/ui/Button.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
+import ProductImageCropModal from '@/components/admin/ProductImageCropModal.vue';
 
 interface Props {
   productId?: string | number | null;
@@ -129,6 +133,60 @@ const isLoading = ref(false);
 const productImages = ref<ProductImage[]>([]);
 const internalSelectedImage = ref<ProductImage | null>(null);
 const imageErrorMap = ref<Record<string, boolean>>({});
+
+// Client-side image metadata cache for resolution and aspect ratio validation
+const imageMetadataCache = reactive<Record<string, { width?: number; height?: number; size?: number; loaded?: boolean; loading?: boolean }>>({});
+
+const fetchImageMetadata = async (url: string) => {
+  if (import.meta.server || !url || imageMetadataCache[url]?.loaded || imageMetadataCache[url]?.loading) return;
+  imageMetadataCache[url] = { ...imageMetadataCache[url], loading: true };
+
+  try {
+    const img = new Image();
+    const dimensionsPromise = new Promise<{ width: number; height: number }>((resolve, reject) => {
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    const sizePromise = fetch(url, { method: 'HEAD' })
+      .then((res) => {
+        const length = res.headers.get('content-length');
+        const parsedLength = length ? parseInt(length, 10) : NaN;
+        return !isNaN(parsedLength) && parsedLength > 0 ? parsedLength : undefined;
+      })
+      .catch(() => undefined);
+
+    const [dims, size] = await Promise.all([
+      dimensionsPromise.catch(() => ({ width: 0, height: 0 })),
+      sizePromise
+    ]);
+
+    imageMetadataCache[url] = {
+      width: dims.width,
+      height: dims.height,
+      size: size,
+      loaded: true,
+      loading: false
+    };
+  } catch {
+    imageMetadataCache[url] = { loaded: true, loading: false };
+  }
+};
+
+const isNonSquareImage = (imageUrl?: string | null): boolean => {
+  if (!imageUrl) return false;
+  const meta = imageMetadataCache[imageUrl];
+  if (!meta?.loaded) return false;
+  return isNonSquareAspect(meta.width, meta.height);
+};
+
+const isHighResolutionImage = (imageUrl?: string | null): boolean => {
+  if (!imageUrl) return false;
+  const meta = imageMetadataCache[imageUrl];
+  if (!meta?.loaded) return false;
+  return isExceedingResolution(meta.width, meta.height, 500);
+};
 
 // Sync external and internal selection
 const activeSelectedImage = computed({
@@ -260,6 +318,21 @@ watch(
     }
   },
   { immediate: true }
+);
+
+// Auto-fetch dimension metadata whenever gallery images are updated
+watch(
+  () => galleryImages.value,
+  (newImages) => {
+    if (Array.isArray(newImages)) {
+      newImages.forEach(img => {
+        if (img && img.image) {
+          fetchImageMetadata(img.image);
+        }
+      });
+    }
+  },
+  { immediate: true, deep: true }
 );
 
 // Watch props for re-fetching
@@ -811,6 +884,46 @@ const handleReplaceProductImage = async (imageId: string | number, file: File) =
   }
 };
 
+// Crop & Replace Sub-Modal State & Handlers
+const imageToCrop = ref<ProductImage | null>(null);
+
+const triggerCropImage = (img: ProductImage) => {
+  if (!canReplaceImageComputed.value) {
+    toastError('You do not have permission to crop/replace product images.');
+    return;
+  }
+  if (!img || img.id === undefined || img.id === null) return;
+  imageToCrop.value = img;
+};
+
+const closeCropModal = () => {
+  imageToCrop.value = null;
+};
+
+const handleCropSuccess = async (updated: ProductImage) => {
+  if (imageToCrop.value?.image) {
+    delete imageMetadataCache[imageToCrop.value.image];
+  }
+  if (updated?.image) {
+    delete imageMetadataCache[updated.image];
+  }
+
+  imageToCrop.value = null;
+  emit('gallery-updated');
+
+  const targetProductId = props.productId ?? props.product?.id;
+  if (targetProductId) {
+    await fetchProductImages(targetProductId);
+  } else if (props.product?.slug) {
+    await fetchProductImages(props.product.slug);
+  }
+};
+
+// Keep parent informed of submodal state without changing URL parameters
+watch([imageToCrop, imageToDelete, imageToEdit], ([crop, del, edit]) => {
+  isSubmodalOpen.value = Boolean(crop || del || edit);
+});
+
 defineExpose({
   fetchProductImages,
   refresh: fetchProductImages,
@@ -827,6 +940,12 @@ defineExpose({
   isReplacingImage,
   handleReplaceProductImage,
   triggerReplaceImage,
+  triggerCropImage,
+  closeCropModal,
+  imageToCrop,
+  isNonSquareImage,
+  isHighResolutionImage,
+  imageMetadataCache,
   canReplaceImageComputed,
   isUpdatingImage,
   promptEditProductImage,
@@ -874,14 +993,24 @@ defineExpose({
         <button 
           v-if="canReplaceImageComputed && activeSelectedImage && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
           type="button" 
+          @click="triggerCropImage(activeSelectedImage)" 
+          class="text-xs font-semibold px-2.5 py-1 rounded-lg border border-border hover:border-primary/50 bg-background hover:bg-primary/10 text-foreground hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+          title="Crop & replace selected image"
+        >
+          <Crop class="w-3.5 h-3.5 text-muted-foreground" />
+          <span class="hidden sm:inline">Crop & Replace</span>
+        </button>
+        <button 
+          v-if="canReplaceImageComputed && activeSelectedImage && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
+          type="button" 
           @click="triggerReplaceImage(activeSelectedImage)" 
           :disabled="isReplacingImage"
           class="text-xs font-semibold px-2.5 py-1 rounded-lg border border-border hover:border-primary/50 bg-background hover:bg-primary/10 text-foreground hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
-          title="Replace selected image file"
+          title="Direct replace selected image file"
         >
           <Loader2 v-if="isReplacingImage && replacingImageId === activeSelectedImage.id" class="w-3.5 h-3.5 animate-spin text-primary" />
           <RefreshCw v-else class="w-3.5 h-3.5 text-muted-foreground" />
-          <span class="hidden sm:inline">Replace</span>
+          <span class="hidden sm:inline">Direct Replace</span>
         </button>
         <button 
           v-if="canSetDefaultImageComputed && activeSelectedImage && !activeSelectedImage.is_default && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
@@ -966,11 +1095,31 @@ defineExpose({
         <!-- Selected Checkmark indicator -->
         <span
           v-if="isSelected(img) && !(idx === 3 && remainingImagesCount > 0)"
-          class="absolute bottom-1 right-1 bg-primary text-primary-foreground p-0.5 rounded shadow-xs"
+          class="absolute bottom-1 right-1 bg-primary text-primary-foreground p-0.5 rounded shadow-xs z-10"
           title="Selected"
         >
           <Check class="w-2.5 h-2.5 stroke-[3]" />
         </span>
+
+        <!-- Validation Badges -->
+        <div v-if="img.image && !(idx === 3 && remainingImagesCount > 0)" class="absolute bottom-1 left-1 flex flex-col gap-0.5 z-10 pointer-events-none">
+          <span
+            v-if="isNonSquareImage(img.image)"
+            class="inline-flex items-center gap-0.5 bg-amber-500/90 text-amber-950 font-bold text-[7.5px] px-1 py-0.2 rounded shadow-xs uppercase tracking-wider leading-none"
+            title="Non-1:1 aspect ratio. 1:1 square required."
+          >
+            <AlertCircle class="w-2 h-2 stroke-[2.5]" />
+            <span>Ratio</span>
+          </span>
+          <span
+            v-if="isHighResolutionImage(img.image)"
+            class="inline-flex items-center gap-0.5 bg-amber-500/90 text-amber-950 font-bold text-[7.5px] px-1 py-0.2 rounded shadow-xs uppercase tracking-wider leading-none"
+            title="Resolution exceeds 500×500 max limit."
+          >
+            <AlertCircle class="w-2 h-2 stroke-[2.5]" />
+            <span>>500px</span>
+          </span>
+        </div>
 
         <!-- 4th thumbnail overlay when more than 4 images exist -->
         <div
@@ -1282,6 +1431,25 @@ defineExpose({
               >
                 #{{ img.display_order }}
               </span>
+              <!-- Validation Badges -->
+              <div v-if="img.image" class="absolute bottom-2 left-2 flex flex-col gap-1 z-10 pointer-events-none">
+                <span
+                  v-if="isNonSquareImage(img.image)"
+                  class="inline-flex items-center gap-1 bg-amber-500/95 text-amber-950 dark:bg-amber-500/90 dark:text-slate-950 font-bold text-[8.5px] px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider leading-none"
+                  title="Non-1:1 aspect ratio. 1:1 square required."
+                >
+                  <AlertCircle class="w-2.5 h-2.5 stroke-[2.5]" />
+                  <span>Non-Square</span>
+                </span>
+                <span
+                  v-if="isHighResolutionImage(img.image)"
+                  class="inline-flex items-center gap-1 bg-amber-500/95 text-amber-950 dark:bg-amber-500/90 dark:text-slate-950 font-bold text-[8.5px] px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider leading-none"
+                  title="Resolution exceeds 500×500 max limit."
+                >
+                  <AlertCircle class="w-2.5 h-2.5 stroke-[2.5]" />
+                  <span>> 500px</span>
+                </span>
+              </div>
             </div>
 
             <!-- Card Footer / Caption -->
@@ -1327,11 +1495,21 @@ defineExpose({
                 <button
                   v-if="canReplaceImageComputed && img.id !== undefined && img.id !== null"
                   type="button"
+                  @click.stop="triggerCropImage(img)"
+                  class="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Crop & replace image"
+                  aria-label="Crop and replace image"
+                >
+                  <Crop class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  v-if="canReplaceImageComputed && img.id !== undefined && img.id !== null"
+                  type="button"
                   @click.stop="triggerReplaceImage(img)"
                   class="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer disabled:opacity-50"
                   :disabled="isReplacingImage"
-                  title="Replace image file"
-                  aria-label="Replace image file"
+                  title="Direct replace image file"
+                  aria-label="Direct replace image file"
                 >
                   <Loader2 v-if="isReplacingImage && replacingImageId === img.id" class="w-3.5 h-3.5 animate-spin text-primary" />
                   <RefreshCw v-else class="w-3.5 h-3.5" />
@@ -1393,12 +1571,22 @@ defineExpose({
               type="button"
               variant="outline"
               class="rounded-xl h-9 px-3.5 text-xs font-bold cursor-pointer border-border hover:border-primary/40 hover:text-primary gap-1.5"
+              @click="triggerCropImage(activeSelectedImage)"
+            >
+              <Crop class="w-3.5 h-3.5 text-muted-foreground" />
+              <span>Crop & Replace</span>
+            </UiButton>
+            <UiButton
+              v-if="canReplaceImageComputed && activeSelectedImage && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
+              type="button"
+              variant="outline"
+              class="rounded-xl h-9 px-3.5 text-xs font-bold cursor-pointer border-border hover:border-primary/40 hover:text-primary gap-1.5"
               :disabled="isReplacingImage"
               @click="triggerReplaceImage(activeSelectedImage)"
             >
               <Loader2 v-if="isReplacingImage && replacingImageId === activeSelectedImage.id" class="w-3.5 h-3.5 animate-spin text-primary" />
               <RefreshCw v-else class="w-3.5 h-3.5 text-muted-foreground" />
-              <span>Replace Image</span>
+              <span>Direct Replace</span>
             </UiButton>
             <UiButton
               v-if="canSetDefaultImageComputed && activeSelectedImage && !activeSelectedImage.is_default && activeSelectedImage.id !== undefined && activeSelectedImage.id !== null"
@@ -1556,5 +1744,13 @@ defineExpose({
         </div>
       </div>
     </UiAdminModal>
+
+    <!-- 5. Product Image Crop & Replace Sub-Modal -->
+    <ProductImageCropModal
+      :is-open="!!imageToCrop"
+      :image-item="imageToCrop"
+      @close="closeCropModal"
+      @success="handleCropSuccess"
+    />
   </div>
 </template>
