@@ -690,6 +690,38 @@ export const useProductService = () => {
     }
   };
 
+  const getProductImageDetail = async (id: string | number): Promise<ProductImage | null> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      isLoading.value = false;
+      return null;
+    }
+
+    try {
+      const response = await apiClient.request<any>(`/api/v1/product-images/${id}/`, {
+        method: 'GET'
+      });
+      isLoading.value = false;
+      if (!response) return null;
+      return {
+        id: response.id ?? id,
+        image: response.image || '',
+        alt_text: response.alt_text || '',
+        is_default: Boolean(response.is_default),
+        display_order: response.display_order !== undefined && response.display_order !== null ? Number(response.display_order) : 0,
+        created_at: response.created_at || undefined,
+        product: response.product
+      };
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not fetch product image details.';
+      isLoading.value = false;
+      return null;
+    }
+  };
+
   const reorderProductImage = async (id: string | number, displayOrder: number): Promise<ProductImage> => {
     isLoading.value = true;
     errorMsg.value = null;
@@ -1040,6 +1072,7 @@ export const useProductService = () => {
     getProductDetails,
     getAllProductImages,
     getProductImages,
+    getProductImageDetail,
     createProductImage,
     bulkUploadProductImages,
     deleteProductImage,

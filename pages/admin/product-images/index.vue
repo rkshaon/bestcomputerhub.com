@@ -2,6 +2,8 @@
 import { ref, computed, watch, reactive, onMounted, onUnmounted } from 'vue';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { useAdminModalState } from '@/composables/useAdminModalState';
+import { toastError } from '@/composables/useToast';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useRoute, useRouter } from 'vue-router';
 import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
@@ -233,17 +235,37 @@ const tableColumns: UiTableColumn<ProductImage>[] = [
   { key: 'actions', label: 'Actions', headerClass: 'px-4 py-3 text-right', cellClass: 'px-4 py-2.5 text-right' }
 ];
 
-const isCropModalOpen = ref(false);
-const selectedImageToCrop = ref<ProductImage | null>(null);
+const modalState = useAdminModalState<ProductImage>({
+  modalParam: 'modal',
+  idParam: 'id',
+  getItems: async (id) => {
+    const idStr = String(id);
+    const found = images.value.find((img) => String(img.id) === idStr);
+    if (found) return found;
+
+    try {
+      const singleImg = await productService.getProductImageDetail(id);
+      if (singleImg) return singleImg;
+    } catch {
+      // Fallthrough to null
+    }
+    return null;
+  },
+  onResolveError: (id) => {
+    toastError(`Product image #${id} could not be resolved.`);
+    modalState.closeModal({ replace: true });
+  }
+});
+
+const isCropModalOpen = computed(() => modalState.isOpen.value && modalState.activeMode.value === 'crop');
+const selectedImageToCrop = computed(() => modalState.activeEntity.value);
 
 const openCropModal = (item: ProductImage) => {
-  selectedImageToCrop.value = item;
-  isCropModalOpen.value = true;
+  modalState.openModal('crop', item.id);
 };
 
 const closeCropModal = () => {
-  isCropModalOpen.value = false;
-  selectedImageToCrop.value = null;
+  modalState.closeModal();
 };
 
 const handleImageReplaced = async (updatedItem: ProductImage) => {
@@ -255,6 +277,7 @@ const handleImageReplaced = async (updatedItem: ProductImage) => {
     fetchImageMetadata(updatedItem.image);
   }
   await fetchImages();
+  await modalState.closeModal();
 };
 
 const formatSize = (bytes?: number) => {
