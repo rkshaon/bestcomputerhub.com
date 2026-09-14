@@ -185,9 +185,9 @@ const onDrag = (e: MouseEvent | TouchEvent) => {
   const scaleRatioX = naturalWidth.value / rect.width;
   const scaleRatioY = naturalHeight.value / rect.height;
 
-  // Inverted delta because moving the mouse right moves the crop box left relative to image
-  let nextX = Math.round(initialCropX.value - dx * scaleRatioX);
-  let nextY = Math.round(initialCropY.value - dy * scaleRatioY);
+  // Calculate crop box target position based on pointer delta
+  let nextX = Math.round(initialCropX.value + dx * scaleRatioX);
+  let nextY = Math.round(initialCropY.value + dy * scaleRatioY);
 
   const size = effectiveCropSize.value;
   cropX.value = Math.max(0, Math.min(nextX, naturalWidth.value - size));
@@ -290,7 +290,7 @@ const handleCropAndSave = async () => {
             <!-- Hint overlay -->
             <div class="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-xs text-slate-200 text-[10px] font-medium flex items-center gap-1.5 pointer-events-none">
               <Move class="w-3 h-3 text-primary" />
-              <span>Drag to reposition crop box</span>
+              <span>Drag the crop box to select the area to keep.</span>
             </div>
           </div>
 
