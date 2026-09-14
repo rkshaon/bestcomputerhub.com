@@ -3,7 +3,8 @@
 import { navigateTo } from '#app';
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { refDebounced } from '@vueuse/core';
-import { Handbag, Search, User, Menu, X, Sun, Moon, Monitor, PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, ArrowRight, Tag, Sparkles, Zap, Clock } from 'lucide-vue-next';
+// TEMPORARILY DISABLED: Storefront Theme Mode Icons (Sun, Moon, Monitor)
+import { Handbag, Search, User, Menu, X, /* Sun, Moon, Monitor, */ PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, ArrowRight, Tag, Sparkles, Zap, Clock } from 'lucide-vue-next';
 import { cn, decodeHtmlEntities } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -230,7 +231,8 @@ const getSubCategories = (cat: Category): Category[] => {
   return [];
 };
 
-const isThemeMenuOpen = ref(false);
+// TEMPORARILY DISABLED: Storefront Theme Mode Selection State
+// const isThemeMenuOpen = ref(false);
 
 const activeMegaMenuId = ref<string | null>(null);
 let megaMenuTimer: ReturnType<typeof setTimeout> | null = null;
@@ -422,9 +424,10 @@ if (process.client) {
   // Close theme menu & mega menu on click outside / escape
   const handleWindowClick = (e: MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (!target.closest('.theme-dropdown')) {
-      isThemeMenuOpen.value = false;
-    }
+    // TEMPORARILY DISABLED: Storefront Theme Dropdown Click-Outside
+    // if (!target.closest('.theme-dropdown')) {
+    //   isThemeMenuOpen.value = false;
+    // }
     if (
       isSearchExpanded.value &&
       searchContainerRef.value &&
@@ -497,7 +500,9 @@ if (process.client) {
         </NuxtLink>
 
         <div class="flex items-center gap-1 shrink-0">
-          <!-- Theme Toggle -->
+          <!-- TEMPORARILY DISABLED: Storefront Theme Mode Selection (Mobile) -->
+          <!-- Restore when storefront theme selection is required again. -->
+          <!--
           <button 
             @click="isThemeMenuOpen = !isThemeMenuOpen" 
             class="p-2 hover:bg-accent rounded-full transition-colors text-muted-foreground hover:text-foreground flex items-center"
@@ -507,6 +512,7 @@ if (process.client) {
             <Moon v-else-if="uiStore.themeMode === 'dark'" class="w-5 h-5" />
             <Monitor v-else class="w-5 h-5" />
           </button>
+          -->
 
           <!-- Shopping Bag -->
           <button 
@@ -620,7 +626,9 @@ if (process.client) {
 
         <!-- Normal Header Actions (Hidden when Search is Expanded) -->
         <div v-if="!isSearchExpanded" class="flex items-center gap-1 sm:gap-2 shrink-0 transition-opacity duration-200">
-          <!-- Theme Dropdown -->
+          <!-- TEMPORARILY DISABLED: Storefront Theme Mode Selection (Desktop) -->
+          <!-- Restore when storefront theme selection is required again. -->
+          <!--
           <div 
             :class="cn(
               'relative theme-dropdown transition-opacity duration-200',
@@ -665,6 +673,7 @@ if (process.client) {
               </div>
             </transition>
           </div>
+          -->
           
           <!-- Admin Panel Button (Super Admin Exclusive) -->
           <NuxtLink 
