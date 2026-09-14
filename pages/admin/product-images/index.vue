@@ -3,6 +3,7 @@ import { ref, computed, watch, reactive } from 'vue';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useRoute, useRouter } from 'vue-router';
+import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
 import {
   Image as ImageIcon,
   Check,
@@ -167,18 +168,14 @@ const isNonSquareImage = (imageUrl?: string | null): boolean => {
   if (!imageUrl) return false;
   const meta = imageMetadataCache[imageUrl];
   if (!meta?.loaded) return false;
-  const w = meta.width ?? 0;
-  const h = meta.height ?? 0;
-  return w > 0 && h > 0 && w !== h;
+  return isNonSquareAspect(meta.width, meta.height);
 };
 
 const isHighResolutionImage = (imageUrl?: string | null): boolean => {
   if (!imageUrl) return false;
   const meta = imageMetadataCache[imageUrl];
   if (!meta?.loaded) return false;
-  const w = meta.width ?? 0;
-  const h = meta.height ?? 0;
-  return w > 500 || h > 500;
+  return isExceedingResolution(meta.width, meta.height, 500);
 };
 
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value) || 1);
