@@ -1026,31 +1026,8 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
         </div>
       </div>
 
-      <!-- Split Layout: Similar Products Sidebar + Tabs Content -->
+      <!-- Split Layout: Details Tabs Content + Similar Products Sidebar -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-16 pt-10 sm:pt-14 lg:pt-20 border-t items-start mt-8 sm:mt-12 lg:mt-16">
-        <!-- Sidebar: Similar Trending Products -->
-        <aside class="lg:col-span-4 xl:col-span-3 space-y-6 sm:space-y-8 lg:sticky lg:top-28">
-          <div class="space-y-1.5 sm:space-y-2">
-            <h3 class="text-xl sm:text-2xl font-display font-bold">Similar <span class="text-primary italic">Product</span></h3>
-            <p class="text-xs text-muted-foreground leading-relaxed">Frequently evaluated alongside this component for related deployments.</p>
-          </div>
-          
-          <div v-if="similarProducts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
-            <CommerceRelatedProductCard 
-              v-for="p in similarProducts" 
-              :key="p.id" 
-              :product="p" 
-            />
-          </div>
-          <div v-else class="p-6 bg-muted/20 rounded-2xl border border-dashed text-center">
-            <p class="text-xs text-muted-foreground">Browse our full hardware catalog for matching components.</p>
-          </div>
-
-          <UiButton variant="ghost" class="w-full rounded-full font-bold group h-11 text-xs sm:text-sm" :to="categoryUrl">
-            View Category Products <ChevronRight class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-          </UiButton>
-        </aside>
-
         <!-- Main: Details Tabs -->
         <main class="lg:col-span-8 xl:col-span-9">
           <!-- Tabs Navigation -->
@@ -1237,6 +1214,29 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </div>
           </div>
         </main>
+
+        <!-- Sidebar: Similar Trending Products -->
+        <aside class="lg:col-span-4 xl:col-span-3 space-y-6 sm:space-y-8 lg:sticky lg:top-28">
+          <div class="space-y-1.5 sm:space-y-2">
+            <h3 class="text-xl sm:text-2xl font-display font-bold">Similar <span class="text-primary italic">Product</span></h3>
+            <p class="text-xs text-muted-foreground leading-relaxed">Frequently evaluated alongside this component for related deployments.</p>
+          </div>
+          
+          <div v-if="similarProducts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
+            <CommerceRelatedProductCard 
+              v-for="p in similarProducts" 
+              :key="p.id" 
+              :product="p" 
+            />
+          </div>
+          <div v-else class="p-6 bg-muted/20 rounded-2xl border border-dashed text-center">
+            <p class="text-xs text-muted-foreground">Browse our full hardware catalog for matching components.</p>
+          </div>
+
+          <UiButton variant="ghost" class="w-full rounded-full font-bold group h-11 text-xs sm:text-sm" :to="categoryUrl">
+            View Category Products <ChevronRight class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+          </UiButton>
+        </aside>
       </div>
     </div>
 
