@@ -107,6 +107,34 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `isNonSquareAspect` & `isExceedingResolution`
+- **File Location**: `/utils/imageValidation.ts`
+- **Category**: Pure utility
+- **Scope**: Shared image workflows (Admin Product Images, Admin Product Details, upload modals, storefront image pickers)
+- **Purpose**: Validates image aspect ratios (identifying non-1:1 images) and detects whether image dimensions exceed maximum resolution thresholds (default 500px).
+- **Parameters & Return Values**:
+  - `isNonSquareAspect(width?: number | null, height?: number | null): boolean` — Returns `true` if width and height are valid positive numbers and `width !== height`.
+  - `isExceedingResolution(width?: number | null, height?: number | null, maxDimension: number = 500): boolean` — Returns `true` if either valid positive `width` or `height` exceeds `maxDimension`.
+- **Example Usage**:
+  ```ts
+  import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
+
+  const isInvalidRatio = isNonSquareAspect(600, 400); // true
+  const isTooLarge = isExceedingResolution(600, 400, 500); // true
+  ```
+- **Files or Features Currently Using It**: `/pages/admin/product-images/index.vue` (Admin Product Images registry list and grid views).
+- **Side Effects**: None (Pure functions).
+- **Accesses Browser State**: No.
+- **Performs Network Work**: No.
+- **Related Utilities**: None.
+- **What It Explicitly Does Not Do**: Does not load images, extract file metadata, issue network requests, or handle Vue reactive state (metadata fetching and reactive state belong in page/component orchestrators).
+- **Reusability Level**: High.
+- **Edge Cases & Behavior**:
+  - Safely handles `undefined`, `null`, `NaN`, zero, and negative dimension values by returning `false`.
+  - Only returns `true` when both dimensions are strictly positive numbers (`> 0`).
+
+---
+
 ## 2. Central HTTP Transport & Network Helpers
 
 ### `useApiClient`
