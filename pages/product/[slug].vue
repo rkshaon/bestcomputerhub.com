@@ -698,7 +698,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16">
         <!-- Gallery / Image View -->
         <div class="space-y-4 sm:space-y-6">
-          <div class="aspect-square rounded-2xl sm:rounded-3xl lg:rounded-[2rem] overflow-hidden bg-muted/40 border group relative flex items-center justify-center p-4">
+          <div class="w-[500px] h-[500px] max-w-full aspect-square mx-auto rounded-2xl sm:rounded-3xl lg:rounded-[2rem] overflow-hidden bg-muted/40 border group relative flex items-center justify-center p-4">
             <img 
               v-if="selectedImage" 
               :src="selectedImage" 
