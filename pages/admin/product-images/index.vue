@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, watch, reactive } from 'vue';
+import { ref, computed, watch, reactive, onMounted, onUnmounted } from 'vue';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useRoute, useRouter } from 'vue-router';
 import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
+import { decodeHtmlEntities } from '@/utils';
 import ProductImageCropModal from '@/components/admin/ProductImageCropModal.vue';
+import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import {
   Image as ImageIcon,
   Check,
@@ -16,13 +19,15 @@ import {
   AlertCircle,
   LayoutGrid,
   List,
-  Crop
+  Crop,
+  ChevronDown,
+  X
 } from 'lucide-vue-next';
 import UiTable from '@/components/ui/UiTable.vue';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiButton from '@/components/ui/Button.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
-import type { ProductImage } from '@/types';
+import type { ProductImage, Product } from '@/types';
 
 definePageMeta({
   layout: false
@@ -52,6 +57,170 @@ const router = useRouter();
 const viewMode = ref<'grid' | 'list'>(route.query.view === 'grid' ? 'grid' : 'list');
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
+
+// Product multi-select filter state
+const parseProductsFromQuery = (queryVal: any): string[] => {
+  if (!queryVal) return [];
+  if (Array.isArray(queryVal)) {
+    return queryVal
+      .map(String)
+      .flatMap(v => v.split(','))
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  return String(queryVal)
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+};
+
+const selectedProductIds = ref<string[]>(parseProductsFromQuery(route.query.products));
+
+const productsParam = computed(() => {
+  return selectedProductIds.value.length > 0 ? selectedProductIds.value.join(',') : undefined;
+});
+
+const productSearchQuery = ref('');
+const isProductDropdownOpen = ref(false);
+const productDropdownRef = ref<HTMLElement | null>(null);
+
+const productPagination = useInfinitePagination<Product>({
+  fetcher: async (params) => {
+    return await productService.getProductsList({
+      page: params.page,
+      page_size: 10,
+      search: params.search
+    });
+  },
+  search: productSearchQuery,
+  pageSize: 10,
+  dedupeKey: (p) => String(p.id),
+  autoFetch: false
+});
+
+const knownProductsMap = reactive<Record<string, Product>>({});
+
+watch(
+  () => productPagination.items.value,
+  (newItems) => {
+    newItems.forEach((p) => {
+      if (p.id) knownProductsMap[String(p.id)] = p;
+      if (p.slug) knownProductsMap[String(p.slug)] = p;
+    });
+  },
+  { immediate: true, deep: true }
+);
+
+const resolveSelectedProductDetails = async () => {
+  for (const id of selectedProductIds.value) {
+    if (!knownProductsMap[id]) {
+      try {
+        const prod = await productService.getProductDetails(id);
+        if (prod) {
+          if (prod.id) knownProductsMap[String(prod.id)] = prod;
+          if (prod.slug) knownProductsMap[String(prod.slug)] = prod;
+        }
+      } catch {
+        // Fallback label used if resolution fails
+      }
+    }
+  }
+};
+
+watch(
+  selectedProductIds,
+  () => {
+    resolveSelectedProductDetails();
+  },
+  { immediate: true, deep: true }
+);
+
+const toggleProductDropdown = () => {
+  isProductDropdownOpen.value = !isProductDropdownOpen.value;
+  if (isProductDropdownOpen.value && productPagination.items.value.length === 0) {
+    productPagination.refresh();
+  }
+};
+
+const closeProductDropdown = () => {
+  isProductDropdownOpen.value = false;
+};
+
+const toggleProductSelection = (product: Product) => {
+  const idStr = String(product.id);
+  const index = selectedProductIds.value.indexOf(idStr);
+  if (index > -1) {
+    selectedProductIds.value.splice(index, 1);
+  } else {
+    selectedProductIds.value.push(idStr);
+    knownProductsMap[idStr] = product;
+    if (product.slug) {
+      knownProductsMap[product.slug] = product;
+    }
+  }
+};
+
+const removeProductSelection = (id: string) => {
+  const index = selectedProductIds.value.indexOf(id);
+  if (index > -1) {
+    selectedProductIds.value.splice(index, 1);
+  }
+};
+
+const isProductSelected = (product: Product) => {
+  const idStr = String(product.id);
+  const slugStr = product.slug ? String(product.slug) : '';
+  return selectedProductIds.value.includes(idStr) || (slugStr !== '' && selectedProductIds.value.includes(slugStr));
+};
+
+const clearProductSelection = () => {
+  selectedProductIds.value = [];
+};
+
+const getSelectedProductName = (id: string): string => {
+  const found = knownProductsMap[id];
+  if (found) {
+    return decodeHtmlEntities(found.name);
+  }
+  return `Product #${id}`;
+};
+
+const activeProductsButtonLabel = computed(() => {
+  if (selectedProductIds.value.length === 0) {
+    return 'All Products';
+  }
+  const firstId = selectedProductIds.value[0];
+  if (selectedProductIds.value.length === 1 && firstId) {
+    return getSelectedProductName(firstId);
+  }
+  return `${selectedProductIds.value.length} Products selected`;
+});
+
+const onDocumentClick = (e: MouseEvent) => {
+  if (productDropdownRef.value && !productDropdownRef.value.contains(e.target as Node)) {
+    closeProductDropdown();
+  }
+};
+
+const onDocumentKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    closeProductDropdown();
+  }
+};
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    document.addEventListener('click', onDocumentClick);
+    document.addEventListener('keydown', onDocumentKeydown);
+  }
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    document.removeEventListener('click', onDocumentClick);
+    document.removeEventListener('keydown', onDocumentKeydown);
+  }
+});
 
 const tableColumns: UiTableColumn<ProductImage>[] = [
   { key: 'image', label: 'Image', width: '80px', headerClass: 'px-4 py-3 text-center', cellClass: 'px-4 py-2.5 text-center' },
@@ -145,6 +314,7 @@ watch(() => images.value, (newImages) => {
     }
   });
 }, { immediate: true, deep: true });
+
 const totalItems = ref(0);
 const isFetching = ref(false);
 const errorMsg = ref<string | null>(null);
@@ -153,7 +323,11 @@ const fetchImages = async () => {
   isFetching.value = true;
   errorMsg.value = null;
   try {
-    const res = await productService.getAllProductImages(currentPage.value, itemsPerPage.value);
+    const res = await productService.getAllProductImages(
+      currentPage.value,
+      itemsPerPage.value,
+      productsParam.value
+    );
     if (res && Array.isArray(res.results)) {
       images.value = res.results;
       totalItems.value = res.count || 0;
@@ -172,19 +346,32 @@ const fetchImages = async () => {
 
 // Sync URL on state change
 watch(
-  [viewMode, currentPage, itemsPerPage],
+  [viewMode, currentPage, itemsPerPage, productsParam],
   (newValues, oldValues) => {
+    const [newView, newPage, newPageSize, newProducts] = newValues;
+    const oldProducts = oldValues ? oldValues[3] : undefined;
+    const oldPage = oldValues ? oldValues[1] : undefined;
+    const oldPageSize = oldValues ? oldValues[2] : undefined;
+
+    // Reset pagination to page 1 when products filter changes
+    if (oldValues && newProducts !== oldProducts) {
+      if (currentPage.value !== 1) {
+        currentPage.value = 1;
+        return;
+      }
+    }
+
     router.replace({
       query: {
         ...route.query,
-        view: viewMode.value === 'grid' ? 'grid' : undefined,
-        page: currentPage.value > 1 ? currentPage.value : undefined,
-        pageSize: itemsPerPage.value !== 10 ? itemsPerPage.value : undefined
+        view: newView === 'grid' ? 'grid' : undefined,
+        page: newPage > 1 ? newPage : undefined,
+        pageSize: newPageSize !== 10 ? newPageSize : undefined,
+        products: newProducts
       }
     });
 
-    // Only fetch if page or pageSize changed, not just viewMode
-    if (!oldValues || newValues[1] !== oldValues[1] || newValues[2] !== oldValues[2]) {
+    if (!oldValues || newPage !== oldPage || newPageSize !== oldPageSize || newProducts !== oldProducts) {
       fetchImages();
     }
   },
@@ -235,8 +422,8 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
 
     <div class="space-y-4 animate-in fade-in duration-500">
       <div class="bg-card border border-border rounded-xl shadow-xs overflow-hidden flex flex-col">
-        <div class="p-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-2">
+        <div class="p-3 border-b border-border bg-muted/20 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
             <!-- View Toggle Buttons -->
             <div class="flex items-center bg-muted/60 p-1 rounded-lg border border-border/80">
               <button
@@ -268,6 +455,104 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                 <List class="w-3.5 h-3.5" />
               </button>
             </div>
+
+            <!-- Product Multi-Select Filter Popover -->
+            <div ref="productDropdownRef" class="relative">
+              <button
+                type="button"
+                @click.stop="toggleProductDropdown"
+                class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs font-medium cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[180px]"
+                :class="selectedProductIds.length > 0 ? 'border-primary/50 text-foreground font-semibold' : 'text-muted-foreground'"
+              >
+                <div class="flex items-center gap-1.5 truncate">
+                  <Filter class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <span class="truncate">{{ activeProductsButtonLabel }}</span>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <span 
+                    v-if="selectedProductIds.length > 0" 
+                    class="px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full leading-none"
+                  >
+                    {{ selectedProductIds.length }}
+                  </span>
+                  <ChevronDown :class="['w-3.5 h-3.5 transition-transform duration-200', isProductDropdownOpen && 'rotate-180']" />
+                </div>
+              </button>
+
+              <!-- Product Options Popover Menu -->
+              <div 
+                v-if="isProductDropdownOpen"
+                @click.stop
+                class="absolute left-0 z-30 mt-1.5 w-80 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+              >
+                <div class="relative mb-2">
+                  <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    v-model="productSearchQuery"
+                    type="text"
+                    placeholder="Search products by name, SKU..."
+                    class="w-full h-8 pl-8 pr-2.5 text-xs bg-muted/50 border border-input rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring/20"
+                  />
+                </div>
+
+                <div class="flex items-center justify-between px-1 py-1 mb-1 border-b border-border/60 text-[11px]">
+                  <span class="text-muted-foreground font-semibold">Filter by Product</span>
+                  <button
+                    v-if="selectedProductIds.length > 0"
+                    type="button"
+                    @click="clearProductSelection"
+                    class="text-primary hover:underline font-bold cursor-pointer"
+                  >
+                    Clear all ({{ selectedProductIds.length }})
+                  </button>
+                </div>
+
+                <div class="max-h-60 overflow-y-auto space-y-0.5 p-0.5 scrollbar-thin">
+                  <button
+                    type="button"
+                    @click="clearProductSelection"
+                    :class="[
+                      'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
+                      selectedProductIds.length === 0 ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
+                    ]"
+                  >
+                    <span>All Products</span>
+                    <Check v-if="selectedProductIds.length === 0" class="w-3.5 h-3.5 text-primary" />
+                  </button>
+
+                  <button
+                    v-for="prod in productPagination.items.value"
+                    :key="prod.id"
+                    type="button"
+                    @click="toggleProductSelection(prod)"
+                    :class="[
+                      'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between gap-2',
+                      isProductSelected(prod) ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
+                    ]"
+                  >
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-xs font-medium">{{ decodeHtmlEntities(prod.name) }}</div>
+                      <div v-if="prod.sku || prod.slug" class="text-[10px] text-muted-foreground truncate">
+                        <span v-if="prod.sku">SKU: {{ prod.sku }}</span>
+                        <span v-else-if="prod.slug">Slug: {{ prod.slug }}</span>
+                      </div>
+                    </div>
+                    <div 
+                      class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
+                      :class="isProductSelected(prod) ? 'bg-primary border-primary text-primary-foreground' : 'border-input bg-background'"
+                    >
+                      <Check v-if="isProductSelected(prod)" class="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </button>
+
+                  <UiInfiniteScroll
+                    :has-more="productPagination.hasMore.value"
+                    :is-fetching="productPagination.isFetchingNextPage.value"
+                    @load-more="productPagination.loadNextPage"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
           
           <div class="flex items-center gap-2 ml-auto">
@@ -283,6 +568,33 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
               <option :value="100">100 / page</option>
             </select>
           </div>
+        </div>
+
+        <!-- Active Filter Badges Bar -->
+        <div v-if="selectedProductIds.length > 0" class="flex flex-wrap items-center gap-1.5 px-3.5 py-2 bg-muted/10 border-b border-border text-xs">
+          <span class="text-[11px] font-semibold text-muted-foreground">Filtered by:</span>
+          <div 
+            v-for="id in selectedProductIds" 
+            :key="id"
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[11px] font-medium"
+          >
+            <span class="truncate max-w-[180px]">{{ getSelectedProductName(id) }}</span>
+            <button 
+              type="button" 
+              @click="removeProductSelection(id)"
+              class="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer"
+              title="Remove product filter"
+            >
+              <X class="w-3 h-3" />
+            </button>
+          </div>
+          <button 
+            type="button" 
+            @click="clearProductSelection"
+            class="text-[11px] font-bold text-destructive hover:underline ml-1 cursor-pointer"
+          >
+            Clear Filter
+          </button>
         </div>
 
         <div v-if="errorMsg" class="p-4 border-b border-border bg-destructive/10 text-destructive flex items-center gap-2 text-sm font-medium">

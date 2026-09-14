@@ -417,7 +417,7 @@ export const useProductService = () => {
     }
   };
 
-  const getAllProductImages = async (page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<ProductImage>> => {
+  const getAllProductImages = async (page: number = 1, pageSize: number = 10, products?: string): Promise<PaginatedResponse<ProductImage>> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -428,9 +428,14 @@ export const useProductService = () => {
     }
 
     try {
+      const query: Record<string, any> = { page, page_size: pageSize };
+      if (products && products.trim()) {
+        query.products = products.trim();
+      }
+
       const response = await apiClient.request<PaginatedResponse<ProductImage>>('/api/v1/product-images/', {
         method: 'GET',
-        query: { page, page_size: pageSize }
+        query
       });
       isLoading.value = false;
       return response;
