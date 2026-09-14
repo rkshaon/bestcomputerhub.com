@@ -1031,7 +1031,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
         <!-- Sidebar: Similar Trending Products -->
         <aside class="lg:col-span-4 xl:col-span-3 space-y-6 sm:space-y-8 lg:sticky lg:top-28">
           <div class="space-y-1.5 sm:space-y-2">
-            <h3 class="text-xl sm:text-2xl font-display font-bold">Similar <span class="text-primary italic">Hardware</span></h3>
+            <h3 class="text-xl sm:text-2xl font-display font-bold">Similar <span class="text-primary italic">Product</span></h3>
             <p class="text-xs text-muted-foreground leading-relaxed">Frequently evaluated alongside this component for related deployments.</p>
           </div>
           
