@@ -2,7 +2,8 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { products as initialProducts, categories, brands } from '@/mock/data';
-import type { Product, ProductBrandRef, ProductImage, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload, UpdateProductPayload, BulkUploadProductImagesPayload, BulkUploadProductImageItem } from '@/types';
+import type { Product, ProductBrandRef, ProductImage, Category, Brand, PaginatedResponse, ProductFilters, CreateProductPayload, UpdateProductPayload, BulkUploadProductImagesPayload, BulkUploadProductImageItem, ProductImageSummaryResponse } from '@/types';
+import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
 import { useRuntimeConfig } from '#app';
 
 const PRODUCTS_STORAGE_KEY = 'techcore_mock_products_registry';
@@ -441,6 +442,89 @@ export const useProductService = () => {
       return response;
     } catch (err: any) {
       errorMsg.value = err.data?.message || err.message || 'Technical error: Could not fetch product images list.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  // Fetch product images summary: GET /api/v1/product-images/summary/
+  const getProductImageSummary = async (): Promise<ProductImageSummaryResponse> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      isLoading.value = false;
+      const mockProducts = getMockProducts();
+      const productIds = new Set<string>();
+      let totalImages = 0;
+      let highResImages = 0;
+      let ratioMismatchImages = 0;
+
+      const processImageUrl = (url: string) => {
+        let width: number | undefined;
+        let height: number | undefined;
+        try {
+          const parsed = new URL(url);
+          const w = parsed.searchParams.get('w');
+          const h = parsed.searchParams.get('h');
+          if (w && !isNaN(Number(w))) width = Number(w);
+          if (h && !isNaN(Number(h))) height = Number(h);
+        } catch {
+          // not a valid url or simple path
+        }
+        if (isExceedingResolution(width, height, 500)) {
+          highResImages++;
+        }
+        if (isNonSquareAspect(width, height)) {
+          ratioMismatchImages++;
+        }
+      };
+
+      mockProducts.forEach(p => {
+        let hasImages = false;
+        if (Array.isArray(p.images) && p.images.length > 0) {
+          hasImages = true;
+          totalImages += p.images.length;
+          p.images.forEach(img => {
+            const url = typeof img === 'string' ? img : (img as any)?.image;
+            if (url) processImageUrl(url);
+          });
+        }
+        if (p.default_image) {
+          if (!hasImages) {
+            hasImages = true;
+            totalImages += 1;
+            const url = typeof p.default_image === 'string' ? p.default_image : (p.default_image as any)?.image;
+            if (url) processImageUrl(url);
+          }
+        }
+        if (hasImages) {
+          productIds.add(String(p.id));
+        }
+      });
+
+      return {
+        total_products: productIds.size,
+        total_product_images: totalImages,
+        high_resolution_images: highResImages,
+        ratio_mismatch_images: ratioMismatchImages
+      };
+    }
+
+    try {
+      const response = await apiClient.request<ProductImageSummaryResponse>('/api/v1/product-images/summary/', {
+        method: 'GET'
+      });
+      isLoading.value = false;
+      return {
+        total_products: Number(response?.total_products || 0),
+        total_product_images: Number(response?.total_product_images || 0),
+        high_resolution_images: Number(response?.high_resolution_images || 0),
+        ratio_mismatch_images: Number(response?.ratio_mismatch_images || 0)
+      };
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not fetch product images summary.';
       isLoading.value = false;
       throw err;
     }
@@ -1071,6 +1155,7 @@ export const useProductService = () => {
     getProductsList,
     getProductDetails,
     getAllProductImages,
+    getProductImageSummary,
     getProductImages,
     getProductImageDetail,
     createProductImage,

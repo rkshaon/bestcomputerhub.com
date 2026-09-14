@@ -23,13 +23,16 @@ import {
   List,
   Crop,
   ChevronDown,
-  X
+  X,
+  Package,
+  Sparkles
 } from 'lucide-vue-next';
+import UiCard from '@/components/ui/UiCard.vue';
 import UiTable from '@/components/ui/UiTable.vue';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiButton from '@/components/ui/Button.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
-import type { ProductImage, Product } from '@/types';
+import type { ProductImage, Product, ProductImageSummaryResponse } from '@/types';
 
 definePageMeta({
   layout: false
@@ -215,6 +218,7 @@ onMounted(() => {
     document.addEventListener('click', onDocumentClick);
     document.addEventListener('keydown', onDocumentKeydown);
   }
+  fetchProductImageSummary();
 });
 
 onUnmounted(() => {
@@ -276,7 +280,7 @@ const handleImageReplaced = async (updatedItem: ProductImage) => {
     delete imageMetadataCache[updatedItem.image];
     fetchImageMetadata(updatedItem.image);
   }
-  await fetchImages();
+  await Promise.all([fetchImages(), fetchProductImageSummary()]);
   await modalState.closeModal();
 };
 
@@ -341,6 +345,41 @@ watch(() => images.value, (newImages) => {
 const totalItems = ref(0);
 const isFetching = ref(false);
 const errorMsg = ref<string | null>(null);
+
+// Product images summary state
+const summaryData = ref<ProductImageSummaryResponse>({
+  total_products: 0,
+  total_product_images: 0,
+  high_resolution_images: 0,
+  ratio_mismatch_images: 0
+});
+const isSummaryLoading = ref(false);
+
+const canViewSummary = computed(() => hasPermission('product_api.view_productimage'));
+
+const fetchProductImageSummary = async () => {
+  if (!canViewSummary.value) return;
+  isSummaryLoading.value = true;
+  try {
+    const res = await productService.getProductImageSummary();
+    if (res) {
+      summaryData.value = {
+        total_products: Number(res.total_products || 0),
+        total_product_images: Number(res.total_product_images || 0),
+        high_resolution_images: Number(res.high_resolution_images || 0),
+        ratio_mismatch_images: Number(res.ratio_mismatch_images || 0)
+      };
+    }
+  } catch (err: any) {
+    console.warn('Product images summary indexing latency:', err?.message || err);
+  } finally {
+    isSummaryLoading.value = false;
+  }
+};
+
+const handleRefresh = async () => {
+  await Promise.all([fetchImages(), fetchProductImageSummary()]);
+};
 
 const fetchImages = async () => {
   isFetching.value = true;
@@ -434,16 +473,59 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
         <UiButton 
           variant="outline" 
           class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
-          @click="fetchImages"
-          :disabled="isFetching"
+          @click="handleRefresh"
+          :disabled="isFetching || isSummaryLoading"
         >
-          <RefreshCw :class="['w-3.5 h-3.5', isFetching && 'animate-spin']" />
+          <RefreshCw :class="['w-3.5 h-3.5', (isFetching || isSummaryLoading) && 'animate-spin']" />
           <span>Refresh</span>
         </UiButton>
       </div>
     </template>
 
     <div class="space-y-4 animate-in fade-in duration-500">
+      <!-- Active Analytics row -->
+      <div v-if="canViewSummary" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <UiCard class="flex items-center gap-3 p-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
+            <Package class="w-4 h-4" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Total Products</p>
+            <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ summaryData.total_products }}</p>
+          </div>
+        </UiCard>
+
+        <UiCard class="flex items-center gap-3 p-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+            <ImageIcon class="w-4 h-4" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Total Images</p>
+            <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ summaryData.total_product_images }}</p>
+          </div>
+        </UiCard>
+
+        <UiCard class="flex items-center gap-3 p-3">
+          <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
+            <Sparkles class="w-4 h-4" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">High Resolution (>500px)</p>
+            <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ summaryData.high_resolution_images }}</p>
+          </div>
+        </UiCard>
+
+        <UiCard class="flex items-center gap-3 p-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+            <Crop class="w-4 h-4" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Non-Square Ratio</p>
+            <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ summaryData.ratio_mismatch_images }}</p>
+          </div>
+        </UiCard>
+      </div>
+
       <div class="bg-card border border-border rounded-xl shadow-xs overflow-hidden flex flex-col">
         <div class="p-3 border-b border-border bg-muted/20 flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2">

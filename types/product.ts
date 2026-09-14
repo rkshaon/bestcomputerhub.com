@@ -129,3 +129,10 @@ export interface BulkUploadProductImagesPayload {
   images: BulkUploadProductImageItem[];
 }
 
+export interface ProductImageSummaryResponse {
+  total_products: number;
+  total_product_images: number;
+  high_resolution_images: number;
+  ratio_mismatch_images: number;
+}
+
