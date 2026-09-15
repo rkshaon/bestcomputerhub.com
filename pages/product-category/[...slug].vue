@@ -664,7 +664,7 @@ const resetFilters = () => {
 
           <!-- Brands Selection -->
           <div class="space-y-3">
-            <h4 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Strategic Manufacturer</h4>
+            <h4 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Brands</h4>
             
             <!-- Loading State -->
             <div v-if="isBrandsLoading" class="space-y-2 py-1">
