@@ -1,6 +1,9 @@
 // File: /nuxt.config.ts
 import { defineNuxtConfig } from 'nuxt/config'
 
+const buildTime = new Date().toISOString()
+const appVersion = process.env.APP_VERSION || process.env.npm_package_version || `v-${Date.now()}`
+
 export default defineNuxtConfig({
   devServer: {
     port: 3000,
@@ -81,7 +84,28 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       appUrl: '',
-      apiBase: ''
+      apiBase: '',
+      appVersion,
+      buildTime
+    }
+  },
+  hooks: {
+    'build:before': async () => {
+      try {
+        const fs = await import('node:fs')
+        const path = await import('node:path')
+        const publicDir = path.resolve(process.cwd(), 'public')
+        if (!fs.existsSync(publicDir)) {
+          fs.mkdirSync(publicDir, { recursive: true })
+        }
+        fs.writeFileSync(
+          path.join(publicDir, 'version.json'),
+          JSON.stringify({ version: appVersion, buildTime }, null, 2),
+          'utf-8'
+        )
+      } catch {
+        // Ignore fallback if filesystem is read-only
+      }
     }
   },
   compatibilityDate: '2025-11-01'

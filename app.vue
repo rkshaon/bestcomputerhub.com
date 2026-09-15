@@ -40,6 +40,7 @@ onMounted(() => {
     <LayoutCookieBanner />
     <LayoutFloatingActions />
     <LayoutBackToTop />
+    <LayoutUpdateNotification />
     <Toaster position="top-center" :richColors="true" :closeButton="true" />
   </div>
 </template>

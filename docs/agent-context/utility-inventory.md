@@ -474,6 +474,41 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `useVersionCheck`
+- **File Location**: `/composables/useVersionCheck.ts`
+- **Category**: Composable / System Lifecycle Helper
+- **Scope**: Shared (Storefront & Admin)
+- **Purpose**: Detects frontend deployment version updates by periodically fetching and comparing deployed `/version.json` against the currently loaded application runtime version. Handles non-intrusive update notification state, background polling, tab visibility revalidation, cleanup, and full browser refresh.
+- **Parameters & Return Value**:
+  - Composable hook returning:
+    - `currentVersion: Readonly<Ref<string>>` — Current client-loaded application build version.
+    - `latestVersion: Readonly<Ref<string>>` — Latest version detected from deployed `/version.json`.
+    - `latestBuildTime: Readonly<Ref<string>>` — Build timestamp of detected deployment.
+    - `hasUpdate: Readonly<Ref<boolean>>` — True when a newer deployed version is available and not dismissed.
+    - `isChecking: Readonly<Ref<boolean>>` — True when a version check request is in-flight.
+    - `lastChecked: Readonly<Ref<Date | null>>` — Timestamp of the last successful version check.
+    - `checkForUpdates(): Promise<boolean>` — Fetches `/version.json` with cache-busting headers to check for updates.
+    - `refreshApp(): void` — Executes full browser window reload (`window.location.reload()`) to load new Vue components, layouts, CSS, and JS chunks.
+    - `dismissUpdate(): void` — Dismisses the update banner for the current detected version string to prevent repeated popups.
+    - `startPeriodicCheck(intervalMs?: number): () => void` — Starts periodic interval check (default 60s) and tab `visibilitychange` listener; returns cleanup function.
+- **Example Usage**:
+  ```ts
+  const { hasUpdate, refreshApp, dismissUpdate, startPeriodicCheck } = useVersionCheck();
+  onMounted(() => {
+    const cleanup = startPeriodicCheck(60000);
+    onBeforeUnmount(cleanup);
+  });
+  ```
+- **Files or Features Currently Using It**: `<LayoutUpdateNotification>`, `/app.vue`.
+- **Side Effects**: Sets module-scoped reactive refs (`hasUpdate`, `latestVersion`, `lastChecked`).
+- **Accesses Browser State**: `document.visibilityState`, `window.location.reload()`, `fetch()`.
+- **Performs Network Work**: Yes (`fetch('/version.json')` with anti-cache query param and headers).
+- **Related Utilities**: `server/routes/version.json.ts`, `public/version.json`.
+- **What It Explicitly Does Not Do**: Does not force unexpected automatic reloads in admin or storefront (reloads only on explicit user interaction).
+- **Reusability Level**: High (Global application lifecycle).
+
+---
+
 ## 8. Domain Service Composables Summary
 
 | Composable Service | Primary Domain Responsibility | Endpoint Scope | Key Responsibilities & Normalizations |

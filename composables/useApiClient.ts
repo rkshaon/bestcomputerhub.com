@@ -170,7 +170,7 @@ export const useApiClient = () => {
 
       isSuccess.value = true;
       isLoading.value = false;
-      return response;
+      return response as T;
     } catch (err: any) {
       const status = err.status || err.statusCode || err.response?.status;
       
@@ -258,7 +258,7 @@ export const useApiClient = () => {
             const retryResponse = await $fetch<T>(fullUrl, retryOpts);
             isSuccess.value = true;
             isLoading.value = false;
-            return retryResponse;
+            return retryResponse as T;
           } catch (retryErr) {
             isLoading.value = false;
             throw retryErr;
