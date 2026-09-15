@@ -7,11 +7,12 @@ import { useRoute } from 'vue-router';
 import { refDebounced } from '@vueuse/core';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
+import { useBrandService } from '@/composables/useBrandService';
 import { useAuthStore } from '@/stores/auth';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
 import { cn } from '@/utils';
-import type { Category, Product } from '@/types';
+import type { Category, Product, Brand } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import CommerceProductCard from '@/components/commerce/ProductCard.vue';
 import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
@@ -20,6 +21,7 @@ import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 const route = useRoute();
 const productService = useProductService();
 const categoryService = useCategoryService();
+const brandService = useBrandService();
 const authStore = useAuthStore();
 const { hasPermission } = useAdminPermissions();
 const { toastSuccess, handleApiError } = useToast();
@@ -435,6 +437,25 @@ const filters = reactive({
 const searchQuery = ref('');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 
+const categoryBrands = ref<Brand[]>([]);
+const isBrandsLoading = ref(false);
+
+const fetchCategoryBrands = async () => {
+  if (!category.value?.id) {
+    categoryBrands.value = [];
+    return;
+  }
+  isBrandsLoading.value = true;
+  try {
+    const brandsList = await brandService.getBrandsByCategory(category.value.id);
+    categoryBrands.value = Array.isArray(brandsList) ? brandsList : [];
+  } catch {
+    categoryBrands.value = [];
+  } finally {
+    isBrandsLoading.value = false;
+  }
+};
+
 const viewMode = ref<'grid' | 'list'>('grid');
 const loadedProducts = ref<Product[]>([]);
 const isProductsLoading = ref(false);
@@ -483,10 +504,15 @@ const fetchProducts = async () => {
   }
 };
 
-watch(category, () => {
+watch(category, (newCat, oldCat) => {
   currentPage.value = 1;
+  // If category changed, reset brand filter unless it's the exact same category id
+  if (!oldCat || !newCat || oldCat.id !== newCat.id) {
+    filters.brand = '';
+    fetchCategoryBrands();
+  }
   fetchProducts();
-}, { deep: true });
+}, { deep: true, immediate: true });
 
 watch(
   [debouncedSearchQuery, () => filters.brand, () => filters.minPrice, () => filters.maxPrice, () => filters.sort],
@@ -639,21 +665,31 @@ const resetFilters = () => {
           <!-- Brands Selection -->
           <div class="space-y-3">
             <h4 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Strategic Manufacturer</h4>
-            <div class="space-y-2">
+            
+            <!-- Loading State -->
+            <div v-if="isBrandsLoading" class="space-y-2 py-1">
+              <div v-for="i in 4" :key="i" class="flex items-center gap-3 animate-pulse">
+                <div class="w-4 h-4 rounded-full bg-muted"></div>
+                <div class="h-3.5 bg-muted rounded w-24"></div>
+              </div>
+            </div>
+
+            <!-- Dynamic Brands List -->
+            <div v-else-if="categoryBrands.length > 0" class="space-y-2">
               <label 
-                v-for="brand in ['NVIDIA', 'AMD', 'Intel', 'Supermicro']" 
-                :key="brand" 
+                v-for="brand in categoryBrands" 
+                :key="brand.id || brand.slug || brand.name" 
                 class="flex items-center gap-3 cursor-pointer group/label"
               >
                 <input 
                   type="radio" 
                   name="brand_filter" 
-                  :value="brand" 
+                  :value="brand.slug || brand.name" 
                   v-model="filters.brand"
                   class="w-4 h-4 rounded-full border-muted text-primary focus:ring-primary" 
                 />
                 <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground group-hover/label:text-foreground transition-colors">
-                  {{ brand }}
+                  {{ brand.name }}
                 </span>
               </label>
               <label class="flex items-center gap-3 cursor-pointer group/label">
@@ -668,6 +704,11 @@ const resetFilters = () => {
                   All Brands
                 </span>
               </label>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="text-xs text-muted-foreground italic py-1">
+              No brand filters for this category.
             </div>
           </div>
         </aside>

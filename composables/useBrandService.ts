@@ -261,6 +261,84 @@ export const useBrandService = () => {
     }
   };
 
+  // 1.3 Fetch Brands for a specific Category
+  const getBrandsByCategory = async (categoryId: string | number): Promise<Brand[]> => {
+    if (!categoryId) return [];
+
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      isLoading.value = false;
+
+      const mockProducts = productService.getProducts({ category: String(categoryId) });
+      const brandNamesOrSlugs = new Set<string>();
+      mockProducts.forEach(p => {
+        if (p.brand) {
+          const bStr = typeof p.brand === 'object' ? (p.brand.name || p.brand.slug || '') : String(p.brand);
+          if (bStr) brandNamesOrSlugs.add(bStr.toLowerCase());
+        }
+      });
+
+      const allMock = getMockBrands();
+      const matched = allMock.filter(b => 
+        brandNamesOrSlugs.has(b.name.toLowerCase()) || 
+        brandNamesOrSlugs.has(b.slug.toLowerCase())
+      );
+
+      return matched.length > 0 ? matched : allMock;
+    }
+
+    try {
+      const data = await apiClient.request<any>(`/api/v1/brands/category/${categoryId}/`, {
+        method: 'GET'
+      });
+
+      isLoading.value = false;
+
+      let results: Brand[] = [];
+      if (data && typeof data === 'object') {
+        if ('results' in data && Array.isArray(data.results)) {
+          results = data.results;
+        } else if ('data' in data && Array.isArray(data.data)) {
+          results = data.data;
+        } else if (Array.isArray(data)) {
+          results = data;
+        }
+      }
+
+      // Sort by display_order if available, otherwise by name
+      return results.sort((a, b) => {
+        const orderA = a.display_order !== undefined ? a.display_order : 999999;
+        const orderB = b.display_order !== undefined ? b.display_order : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve category brands.');
+      isLoading.value = false;
+
+      // Fallback matching products in this category
+      const mockProducts = productService.getProducts({ category: String(categoryId) });
+      const brandNamesOrSlugs = new Set<string>();
+      mockProducts.forEach(p => {
+        if (p.brand) {
+          const bStr = typeof p.brand === 'object' ? (p.brand.name || p.brand.slug || '') : String(p.brand);
+          if (bStr) brandNamesOrSlugs.add(bStr.toLowerCase());
+        }
+      });
+
+      const allMock = getMockBrands();
+      const matched = allMock.filter(b => 
+        brandNamesOrSlugs.has(b.name.toLowerCase()) || 
+        brandNamesOrSlugs.has(b.slug.toLowerCase())
+      );
+
+      return matched;
+    }
+  };
+
   // 2. Fetch Brand Details
   const getBrandDetails = async (id: string | number): Promise<Brand | null> => {
     isLoading.value = true;
@@ -475,6 +553,7 @@ export const useBrandService = () => {
   return {
     getBrandsList,
     getBrandsPaginatedList,
+    getBrandsByCategory,
     getBrandDetails,
     createBrand,
     updateBrand,
