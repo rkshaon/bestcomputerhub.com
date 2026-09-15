@@ -518,6 +518,7 @@ When selecting or implementing helper functions, agents must respect these struc
 | `useBrandService` | Brands | `/api/v1/brands/` | Brand listing, active status filtering, brand CRUD operations, brand response mapping. |
 | `useBlogService` | Blog Posts & Tags | `/api/v1/blog/posts/`, `/api/v1/blog/tags/` | Blog post queries by tag/category/author, post detail by ID/slug, blog tag CRUD operations. |
 | `useUserService` | Users & Staff | `/api/v1/users/` | User account listing, staff management, user CRUD, password changes, status updates. |
+| `useCustomerService` | Customer Accounts | `/api/v1/customers/` | Paginated customer account list queries, customer type filtering (`WEBSITE`, `POS`, `FACEBOOK`), active status filtering (`is_active`), search queries, trailing slashes. |
 | `useRoleService` | Roles & Groups | `/api/v1/roles/` (Django Groups) | Role/Group listing, RBAC role CRUD, permission assignments. |
 | `usePermissionService` | Permissions Matrix | `/api/v1/permissions/` | Fetches available backend permissions and content types for RBAC role matrix pickers. |
 | `useRequestLogService` | Security Audit Logs | `/api/v1/request-logs/` | Security and request log entry filtering and listing for audit views. |
