@@ -428,7 +428,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
 });
 
 const filters = reactive({
-  brand: '',
+  brand: '' as string | number,
   minPrice: 0,
   maxPrice: 10000,
   sort: 'newest'
@@ -478,7 +478,7 @@ const fetchProducts = async () => {
       query: debouncedSearchQuery.value || undefined,
       minPrice: filters.minPrice > 0 ? filters.minPrice : undefined,
       maxPrice: filters.maxPrice < 10000 ? filters.maxPrice : undefined,
-      brand: filters.brand || undefined,
+      brands: filters.brand !== '' ? filters.brand : undefined,
       sort: filters.sort,
       page: currentPage.value,
       page_size: pageSize.value
@@ -493,7 +493,7 @@ const fetchProducts = async () => {
       query: debouncedSearchQuery.value,
       minPrice: filters.minPrice,
       maxPrice: filters.maxPrice,
-      brand: filters.brand,
+      brands: filters.brand !== '' ? filters.brand : undefined,
       sort: filters.sort
     });
     loadedProducts.value = fallbackProducts;
@@ -684,7 +684,7 @@ const resetFilters = () => {
                 <input 
                   type="radio" 
                   name="brand_filter" 
-                  :value="brand.slug || brand.name" 
+                  :value="brand.id" 
                   v-model="filters.brand"
                   class="w-4 h-4 rounded-full border-muted text-primary focus:ring-primary" 
                 />

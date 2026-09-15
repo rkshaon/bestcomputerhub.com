@@ -106,8 +106,8 @@ export interface ProductFilters {
   categories?: string | number | (string | number)[];
   query?: string;
   search?: string;
-  brand?: string;
-  brands?: string;
+  brand?: string | number;
+  brands?: string | number;
   minPrice?: number;
   maxPrice?: number;
   sort?: string;
