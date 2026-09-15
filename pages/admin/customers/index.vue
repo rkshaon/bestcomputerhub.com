@@ -29,6 +29,8 @@ const router = useRouter();
 const customerService = useCustomerService();
 const { canViewModule, hasPermission } = useAdminPermissions();
 
+const canViewCustomers = computed(() => hasPermission('customer_api.view_customerprofile') || canViewModule('/admin/customers'));
+
 // Page filter and pagination state initialized from URL query parameters
 const searchQuery = ref<string>(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
@@ -116,6 +118,7 @@ const getCustomerTypeBadgeClass = (type: CustomerType): string => {
 
 // Fetch customer accounts from API
 const fetchCustomers = async () => {
+  if (!canViewCustomers.value) return;
   isLoading.value = true;
   fetchError.value = null;
 

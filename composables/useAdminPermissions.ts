@@ -99,7 +99,7 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     route: '/admin/customers',
     name: 'Customers',
     iconKey: 'Users',
-    viewPermission: ['store.view_customer', 'view_customer', 'customers.view_customer', 'user_api.view_customer', 'customer_api.view_customer']
+    viewPermission: ['store.view_customer', 'view_customer', 'customers.view_customer', 'user_api.view_customer', 'customer_api.view_customerprofile']
   },
   users: {
     key: 'users',
