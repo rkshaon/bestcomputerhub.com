@@ -705,6 +705,7 @@ if (process.client) {
           <!-- Promotional Actions (Offers, New Arrivals, Flash Sale, Happy Hours) -->
           <div class="hidden lg:flex items-center gap-1.5 shrink-0">
             <!-- Offers -->
+            <!--
             <NuxtLink 
               to="/offers/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-destructive/40 hover:bg-destructive/10 text-muted-foreground hover:text-destructive text-xs font-semibold transition-all shrink-0 group"
@@ -714,8 +715,10 @@ if (process.client) {
               <Tag class="w-3.5 h-3.5 text-destructive shrink-0 transition-transform group-hover:rotate-12" />
               <span>Offers</span>
             </NuxtLink>
+            -->
 
             <!-- New Arrivals -->
+            <!--
             <NuxtLink 
               to="/new-arrivals/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-amber-500/40 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-500 text-xs font-semibold transition-all shrink-0"
@@ -725,8 +728,10 @@ if (process.client) {
               <Sparkles class="w-3.5 h-3.5 text-amber-500 shrink-0" />
               <span>New Arrivals</span>
             </NuxtLink>
+            -->
 
             <!-- Flash Sale -->
+            <!--
             <NuxtLink 
               to="/offers/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-primary/10 text-muted-foreground hover:text-primary text-xs font-semibold transition-all shrink-0"
@@ -736,8 +741,10 @@ if (process.client) {
               <Zap class="w-3.5 h-3.5 text-primary shrink-0" />
               <span>Flash Sale</span>
             </NuxtLink>
+            -->
 
             <!-- Happy Hours -->
+            <!--
             <NuxtLink 
               to="/offers/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-sky-500/40 hover:bg-sky-500/10 text-muted-foreground hover:text-sky-500 text-xs font-semibold transition-all shrink-0"
@@ -747,6 +754,7 @@ if (process.client) {
               <Clock class="w-3.5 h-3.5 text-sky-500 shrink-0" />
               <span>Happy Hours</span>
             </NuxtLink>
+            -->
           </div>
 
           <!-- PC Builder -->
