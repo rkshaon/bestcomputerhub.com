@@ -192,7 +192,8 @@ export const useAdminPermissions = () => {
   const isSuperadmin = computed(() => {
     const u = authStore.user;
     if (!u) return false;
-    return !!(u.is_superadmin || u.is_superuser);
+    const roleUpper = (u.role || '').toString().trim().toUpperCase();
+    return !!(u.is_superadmin || u.is_superuser || roleUpper === 'OWNER');
   });
 
   const userPermissionsSet = computed<Set<string>>(() => {

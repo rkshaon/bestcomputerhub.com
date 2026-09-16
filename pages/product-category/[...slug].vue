@@ -23,7 +23,7 @@ const productService = useProductService();
 const categoryService = useCategoryService();
 const brandService = useBrandService();
 const authStore = useAuthStore();
-const { hasPermission } = useAdminPermissions();
+const { hasPermission, canEditInModule } = useAdminPermissions();
 const { toastSuccess, handleApiError } = useToast();
 
 const isOwnerOrStaff = computed(() => {
@@ -35,17 +35,24 @@ const isOwnerOrStaff = computed(() => {
 });
 
 const canEditCategoryFromStorefront = computed(() => {
-  return isOwnerOrStaff.value && hasPermission('category_api.change_category');
+  if (!isOwnerOrStaff.value) return false;
+  return (
+    hasPermission(['store.change_category', 'change_category', 'categories.change_category', 'category_api.change_category']) ||
+    canEditInModule('categories') ||
+    canEditInModule('/admin/categories')
+  );
 });
 
 // Inline editing state
-const editingField = ref<'name' | 'description' | null>(null);
-const isFieldSaving = ref<'name' | 'description' | null>(null);
+const editingField = ref<'name' | 'short_description' | 'description' | null>(null);
+const isFieldSaving = ref<'name' | 'short_description' | 'description' | null>(null);
 
 const editNameValue = ref('');
+const editShortDescValue = ref('');
 const editDescValue = ref('');
 
 const nameInputRef = ref<HTMLInputElement | null>(null);
+const shortDescInputRef = ref<HTMLTextAreaElement | null>(null);
 
 const cleanHtmlForComparison = (html: string): string => {
   if (!html) return '';
@@ -73,7 +80,7 @@ const isHtmlEquivalent = (h1: string, h2: string): boolean => {
   return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
 };
 
-const startEditing = (field: 'name' | 'description') => {
+const startEditing = (field: 'name' | 'short_description' | 'description') => {
   if (!canEditCategoryFromStorefront.value) return;
   
   editingField.value = field;
@@ -82,6 +89,11 @@ const startEditing = (field: 'name' | 'description') => {
     editNameValue.value = activeCategory.value?.name || '';
     nextTick(() => {
       nameInputRef.value?.focus();
+    });
+  } else if (field === 'short_description') {
+    editShortDescValue.value = activeCategory.value?.short_description || '';
+    nextTick(() => {
+      shortDescInputRef.value?.focus();
     });
   } else if (field === 'description') {
     editDescValue.value = activeCategory.value?.description || '';
@@ -93,7 +105,7 @@ const cancelEditing = () => {
   isFieldSaving.value = null;
 };
 
-const saveField = async (field: 'name' | 'description') => {
+const saveField = async (field: 'name' | 'short_description' | 'description') => {
   if (isFieldSaving.value === field) return; // Prevent duplicate submissions
   
   const targetCategory = activeCategory.value;
@@ -110,6 +122,13 @@ const saveField = async (field: 'name' | 'description') => {
     const oldVal = (targetCategory.name || '').trim();
     if (newVal && newVal !== oldVal) {
       payload.name = newVal;
+      hasChanged = true;
+    }
+  } else if (field === 'short_description') {
+    const newVal = editShortDescValue.value.trim();
+    const oldVal = (targetCategory.short_description || '').trim();
+    if (newVal !== oldVal) {
+      payload.short_description = newVal;
       hasChanged = true;
     }
   } else if (field === 'description') {
@@ -135,6 +154,8 @@ const saveField = async (field: 'name' | 'description') => {
     if (activeCategory.value) {
       if (field === 'name') {
         activeCategory.value.name = updated.name;
+      } else if (field === 'short_description') {
+        activeCategory.value.short_description = updated.short_description;
       } else if (field === 'description') {
         activeCategory.value.description = updated.description;
       }
@@ -147,6 +168,8 @@ const saveField = async (field: 'name' | 'description') => {
       if (catToUpdate) {
         if (field === 'name') {
           catToUpdate.name = updated.name;
+        } else if (field === 'short_description') {
+          catToUpdate.short_description = updated.short_description;
         } else if (field === 'description') {
           catToUpdate.description = updated.description;
         }
@@ -174,7 +197,7 @@ const handleFocusOut = (event: FocusEvent, field: 'description') => {
 
 const canRemoveFromMenu = computed(() => {
   if (!isOwnerOrStaff.value) return false;
-  if (!hasPermission('category_api.remove_category_from_menu')) return false;
+  if (!hasPermission(['category_api.remove_category_from_menu', 'remove_category_from_menu', 'category_api.change_category', 'change_category'])) return false;
   const isCurrentlyMenu = activeCategory.value?.show_in_menu === true || activeCategory.value?.is_menu === true;
   return isCurrentlyMenu;
 });
@@ -679,12 +702,50 @@ const resetFilters = () => {
                 </h1>
               </template>
             </div>
-            <p 
-              v-if="category?.short_description?.trim()" 
-              class="text-muted-foreground text-sm md:text-base max-w-2xl leading-relaxed"
+            <!-- Short Description / Inline Editor -->
+            <div v-if="editingField === 'short_description'" class="max-w-2xl w-full">
+              <div class="flex items-center gap-2">
+                <textarea 
+                  v-model="editShortDescValue"
+                  ref="shortDescInputRef"
+                  rows="2"
+                  @blur="saveField('short_description')"
+                  @keydown.enter.exact.prevent="saveField('short_description')"
+                  @keydown.esc="cancelEditing"
+                  :disabled="isFieldSaving === 'short_description'"
+                  placeholder="Enter short description..."
+                  class="w-full text-sm md:text-base bg-background border border-input rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground leading-relaxed resize-none"
+                ></textarea>
+                <div v-if="isFieldSaving === 'short_description'" class="shrink-0">
+                  <Loader2 class="w-4 h-4 animate-spin text-primary" />
+                </div>
+              </div>
+            </div>
+            <div v-else-if="category?.short_description?.trim()" class="flex items-start gap-2 max-w-2xl">
+              <p class="text-muted-foreground text-sm md:text-base leading-relaxed">
+                {{ category.short_description }}
+              </p>
+              <button 
+                v-if="canEditCategoryFromStorefront" 
+                @click="startEditing('short_description')"
+                class="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer mt-0.5"
+                title="Edit Short Description"
+                aria-label="Edit Short Description"
+              >
+                <Edit2 class="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <button 
+              v-else-if="canEditCategoryFromStorefront"
+              type="button"
+              @click="startEditing('short_description')"
+              class="inline-flex items-center gap-2 text-sm text-muted-foreground/80 hover:text-foreground italic cursor-pointer transition-colors group/edit-empty text-left"
+              title="Edit Short Description"
+              aria-label="Edit the short description to display"
             >
-              {{ category.short_description }}
-            </p>
+              <Edit2 class="w-3.5 h-3.5 text-muted-foreground group-hover/edit-empty:text-foreground transition-colors shrink-0" />
+              <span>Edit the short description to display</span>
+            </button>
           </div>
 
           <!-- Remove from Menu Action for Authorized Owner/Staff -->
