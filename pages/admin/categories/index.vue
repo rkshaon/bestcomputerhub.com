@@ -243,6 +243,7 @@ watch(() => categoryModalState.activeEntity.value, (newEntity) => {
         id: newEntity.id,
         name: newEntity.name,
         slug: newEntity.slug,
+        short_description: newEntity.short_description || '',
         description: newEntity.description || '',
         parentCategoryId: newEntity.parentCategoryId || '',
         icon: newEntity.icon || '📁',
@@ -253,6 +254,7 @@ watch(() => categoryModalState.activeEntity.value, (newEntity) => {
       originalCategoryDetails.value = {
         name: newEntity.name || '',
         slug: newEntity.slug || '',
+        short_description: newEntity.short_description || '',
         description: newEntity.description || '',
         parentCategoryId: newEntity.parentCategoryId || '',
         icon: newEntity.icon || '📁',
@@ -512,6 +514,7 @@ const formPayload = ref({
   id: '',
   name: '',
   slug: '',
+  short_description: '',
   description: '',
   parentCategoryId: '',
   icon: '',
@@ -523,6 +526,7 @@ const formPayload = ref({
 const originalCategoryDetails = ref<{
   name: string;
   slug: string;
+  short_description: string;
   description: string;
   parentCategoryId: string;
   icon: string;
@@ -771,6 +775,7 @@ const triggerCreateModal = () => {
     id: '',
     name: '',
     slug: '',
+    short_description: '',
     description: '',
     parentCategoryId: '',
     icon: '📁',
@@ -792,6 +797,7 @@ const triggerEditModal = async (cat: Category) => {
     id: cat.id,
     name: cat.name,
     slug: cat.slug,
+    short_description: cat.short_description || '',
     description: cat.description || '',
     parentCategoryId: cat.parentCategoryId || '',
     icon: cat.icon || '📁',
@@ -802,6 +808,7 @@ const triggerEditModal = async (cat: Category) => {
   originalCategoryDetails.value = {
     name: cat.name || '',
     slug: cat.slug || '',
+    short_description: cat.short_description || '',
     description: cat.description || '',
     parentCategoryId: cat.parentCategoryId || '',
     icon: cat.icon || '📁',
@@ -837,8 +844,9 @@ const submitCreateCategory = async () => {
   isSubmitPending.value = true;
   try {
     await categoryService.createCategory({
-      name: formPayload.value.name,
-      slug: formPayload.value.slug,
+      name: formPayload.value.name.trim(),
+      slug: formPayload.value.slug.trim(),
+      short_description: formPayload.value.short_description?.trim() || '',
       description: formPayload.value.description,
       parentCategoryId: formPayload.value.parentCategoryId || undefined,
       icon: formPayload.value.icon || undefined,
@@ -888,6 +896,13 @@ const submitUpdateCategory = async () => {
       payload.slug = currentSlug;
     }
 
+    // short_description
+    const currentShortDesc = (formPayload.value.short_description || '').trim();
+    const origShortDesc = (orig.short_description || '').trim();
+    if (currentShortDesc !== origShortDesc) {
+      payload.short_description = currentShortDesc;
+    }
+
     // description
     const currentDesc = formPayload.value.description;
     if (currentDesc !== orig.description) {
@@ -930,8 +945,9 @@ const submitUpdateCategory = async () => {
     }
   } else {
     // Fallback if no reference state exists
-    payload.name = formPayload.value.name;
-    payload.slug = formPayload.value.slug;
+    payload.name = formPayload.value.name.trim();
+    payload.slug = formPayload.value.slug.trim();
+    payload.short_description = (formPayload.value.short_description || '').trim();
     payload.description = formPayload.value.description;
     payload.parentCategoryId = formPayload.value.parentCategoryId || undefined;
     payload.icon = formPayload.value.icon || undefined;
@@ -2099,6 +2115,18 @@ watch(viewMode, () => {
             </div>
 
             <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Short Description</label>
+              <textarea 
+                v-model="formPayload.short_description" 
+                rows="3"
+                placeholder="Brief introductory summary or excerpt for category listings and headers..."
+                class="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-medium text-slate-950 dark:text-slate-50 placeholder:text-slate-400 resize-y"
+                :disabled="isSubmitPending"
+              ></textarea>
+              <p class="text-[10px] text-slate-400 ml-1">Optional concise summary displayed on storefront header banners and category listings.</p>
+            </div>
+
+            <div class="space-y-2">
               <UiRichTextEditor
                 v-model="formPayload.description"
                 label="Operational Description / Memo"
@@ -2225,6 +2253,18 @@ watch(viewMode, () => {
             </div>
 
             <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Short Description</label>
+              <textarea 
+                v-model="formPayload.short_description" 
+                rows="3"
+                placeholder="Brief introductory summary or excerpt for category listings and headers..."
+                class="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-medium text-slate-950 dark:text-slate-50 placeholder:text-slate-400 resize-y"
+                :disabled="isSubmitPending"
+              ></textarea>
+              <p class="text-[10px] text-slate-400 ml-1">Optional concise summary displayed on storefront header banners and category listings.</p>
+            </div>
+
+            <div class="space-y-2">
               <UiRichTextEditor
                 v-model="formPayload.description"
                 label="Operational Description / Memo"
@@ -2294,12 +2334,22 @@ watch(viewMode, () => {
           </div>
 
           <div class="space-y-4">
-            <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Taxonomy Registry Overview</p>
-            <div 
-              class="prose prose-sm prose-slate dark:prose-invert max-w-none text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium bg-slate-50/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-900 overflow-x-auto"
-            >
-              <div v-if="selectedCategory.description" v-html="selectedCategory.description" class="space-y-2"></div>
-              <p v-else class="italic font-medium text-xs text-slate-400">"No database memo recorded for this hardware classification node."</p>
+            <div class="space-y-2">
+              <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Short Description</p>
+              <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-900 text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                <p v-if="selectedCategory.short_description" class="whitespace-pre-line">{{ selectedCategory.short_description }}</p>
+                <p v-else class="italic text-xs text-slate-400">No short description provided.</p>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Taxonomy Registry Overview (Full Description)</p>
+              <div 
+                class="prose prose-sm prose-slate dark:prose-invert max-w-none text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium bg-slate-50/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-900 overflow-x-auto"
+              >
+                <div v-if="selectedCategory.description" v-html="selectedCategory.description" class="space-y-2"></div>
+                <p v-else class="italic font-medium text-xs text-slate-400">"No database memo recorded for this hardware classification node."</p>
+              </div>
             </div>
 
             <div class="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-900">

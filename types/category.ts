@@ -7,6 +7,7 @@ export interface Category {
   slug: string;
   icon?: string;
   image?: string;
+  short_description?: string;
   description?: string;
   parentCategoryId?: string;
   subCategories?: string[];

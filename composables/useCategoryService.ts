@@ -37,6 +37,7 @@ export const useCategoryService = () => {
     const mapped: Category = {
       ...cat,
       id: String(cat.id),
+      short_description: cat.short_description !== undefined && cat.short_description !== null ? String(cat.short_description) : '',
       parentCategoryId: parentId,
       order: cat.display_order !== undefined ? Number(cat.display_order) : (cat.order !== undefined ? Number(cat.order) : 0),
       display_order: cat.display_order !== undefined ? Number(cat.display_order) : (cat.order !== undefined ? Number(cat.order) : 0),
@@ -343,7 +344,7 @@ export const useCategoryService = () => {
     }
   };
 
-  const createCategory = async (payload: { name: string; slug: string; description: string; parentCategoryId?: string; icon?: string; image?: string; order?: number }): Promise<Category> => {
+  const createCategory = async (payload: { name: string; slug: string; short_description?: string; description: string; parentCategoryId?: string; icon?: string; image?: string; order?: number }): Promise<Category> => {
     isLoading.value = true;
     errorMsg.value = null;
 
@@ -375,6 +376,7 @@ export const useCategoryService = () => {
         id: 'cat_' + Math.floor(Math.random() * 1000000),
         name: payload.name.trim(),
         slug: payload.slug.trim().toLowerCase(),
+        short_description: payload.short_description !== undefined ? payload.short_description.trim() : '',
         description: payload.description?.trim() || '',
         parentCategoryId: payload.parentCategoryId || undefined,
         icon: payload.icon || undefined,
@@ -398,9 +400,10 @@ export const useCategoryService = () => {
     }
 
     try {
-      const { parentCategoryId, ...rest } = payload;
+      const { parentCategoryId, short_description, ...rest } = payload;
       const apiPayload = {
         ...rest,
+        short_description: short_description !== undefined ? short_description.trim() : '',
         parent: parentCategoryId || null
       };
       const data = await apiClient.request<any>('/api/v1/categories/', {
@@ -421,6 +424,7 @@ export const useCategoryService = () => {
     payload: Partial<{
       name: string;
       slug: string;
+      short_description: string;
       description: string;
       parentCategoryId: string;
       icon: string;
@@ -472,6 +476,7 @@ export const useCategoryService = () => {
         ...existingCategory,
         ...(payload.name !== undefined ? { name: payload.name.trim() } : {}),
         ...(payload.slug !== undefined ? { slug: payload.slug.trim().toLowerCase() } : {}),
+        ...(payload.short_description !== undefined ? { short_description: payload.short_description.trim() } : {}),
         ...(payload.description !== undefined ? { description: payload.description.trim() } : {}),
         ...(payload.parentCategoryId !== undefined ? { parentCategoryId: payload.parentCategoryId || undefined } : {}),
         ...(payload.icon !== undefined ? { icon: payload.icon || undefined } : {}),
@@ -508,10 +513,13 @@ export const useCategoryService = () => {
     }
 
     try {
-      const { parentCategoryId, ...rest } = payload;
+      const { parentCategoryId, short_description, ...rest } = payload;
       const apiPayload: any = {
         ...rest
       };
+      if (short_description !== undefined) {
+        apiPayload.short_description = short_description.trim();
+      }
       if (parentCategoryId !== undefined) {
         apiPayload.parent = parentCategoryId || null;
       }
