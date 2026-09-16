@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { decodeHtmlEntities } from '@/utils';
 import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue';
-import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft, Menu, Loader2, Edit2, Save, Layers } from 'lucide-vue-next';
+import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft, Menu, Loader2, Edit2, Save } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
 import { refDebounced } from '@vueuse/core';
 import { useProductService } from '@/composables/useProductService';
@@ -717,17 +717,7 @@ const resetFilters = () => {
         </div>
 
         <!-- Immediate Subcategory Quick Filter Row -->
-        <div v-if="isSubcategoriesLoading || subcategories.length > 0" class="mt-8 pt-6 border-t border-border/40 space-y-3">
-          <div class="flex items-center justify-between gap-2">
-            <h3 class="text-xs font-extrabold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <Layers class="w-3.5 h-3.5 text-primary" />
-              <span>Subcategories</span>
-            </h3>
-            <span v-if="subcategories.length > 0" class="text-[11px] font-semibold text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full">
-              {{ subcategories.length }} {{ subcategories.length === 1 ? 'Category' : 'Categories' }}
-            </span>
-          </div>
-
+        <div v-if="isSubcategoriesLoading || subcategories.length > 0" class="mt-8 pt-6 border-t border-border/40">
           <!-- Horizontal Scrollable Subcategories Row -->
           <div class="flex items-center gap-2 overflow-x-auto custom-submenu-scrollbar py-1 -mx-1 px-1">
             <!-- Loading Skeletons -->
