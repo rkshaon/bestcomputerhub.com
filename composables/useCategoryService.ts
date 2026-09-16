@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
 import { extractErrorMessage } from './useToast';
-import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse, CategorySummaryResponse, BulkMenuUpdateResponse, CategoryPathItem, CategoryPathResponse } from '@/types';
+import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse, CategorySummaryResponse, BulkMenuUpdateResponse, CategoryPathItem, CategoryPathResponse, CategoryPriceRange } from '@/types';
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 
@@ -1359,6 +1359,64 @@ export const useCategoryService = () => {
     }
   };
 
+  const getCategoryPriceRange = async (idOrSlug: string | number): Promise<CategoryPriceRange | null> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      isLoading.value = false;
+      const catProducts = productService.getProducts({
+        category: String(idOrSlug)
+      });
+      if (catProducts && catProducts.length > 0) {
+        const prices = catProducts.map(p => p.price).filter(p => typeof p === 'number' && !isNaN(p));
+        if (prices.length > 0) {
+          return {
+            category_id: String(idOrSlug),
+            min_price: Math.min(...prices),
+            max_price: Math.max(...prices)
+          };
+        }
+      }
+      return {
+        category_id: String(idOrSlug),
+        min_price: null,
+        max_price: null
+      };
+    }
+
+    try {
+      const endpoint = `/api/v1/categories/${idOrSlug}/price-range/`;
+      const data = await apiClient.request<CategoryPriceRange>(endpoint, {
+        method: 'GET'
+      });
+      isLoading.value = false;
+      return data;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve category price range.');
+      isLoading.value = false;
+      const catProducts = productService.getProducts({
+        category: String(idOrSlug)
+      });
+      if (catProducts && catProducts.length > 0) {
+        const prices = catProducts.map(p => p.price).filter(p => typeof p === 'number' && !isNaN(p));
+        if (prices.length > 0) {
+          return {
+            category_id: String(idOrSlug),
+            min_price: Math.min(...prices),
+            max_price: Math.max(...prices)
+          };
+        }
+      }
+      return {
+        category_id: String(idOrSlug),
+        min_price: null,
+        max_price: null
+      };
+    }
+  };
+
   return {
     getCategoriesList,
     getCategorySummary,
@@ -1367,6 +1425,7 @@ export const useCategoryService = () => {
     refreshChildrenForParent,
     reorderCategory,
     getCategoryPath,
+    getCategoryPriceRange,
     getChildrenForParent,
     hasChildrenLoaded,
     isChildrenLoading,

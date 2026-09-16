@@ -434,6 +434,14 @@ const filters = reactive({
   sort: 'newest'
 });
 
+const minPriceLimit = ref(0);
+const maxPriceLimit = ref(10000);
+const isResolvingCategory = ref(false);
+
+const isPriceSliderDisabled = computed(() => {
+  return minPriceLimit.value >= maxPriceLimit.value || (minPriceLimit.value === 0 && maxPriceLimit.value === 0);
+});
+
 const searchQuery = ref('');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 
@@ -453,6 +461,37 @@ const fetchCategoryBrands = async () => {
     categoryBrands.value = [];
   } finally {
     isBrandsLoading.value = false;
+  }
+};
+
+const fetchCategoryPriceRange = async () => {
+  if (!category.value?.id) {
+    minPriceLimit.value = 0;
+    maxPriceLimit.value = 10000;
+    filters.minPrice = 0;
+    filters.maxPrice = 10000;
+    return;
+  }
+  try {
+    const range = await categoryService.getCategoryPriceRange(category.value.id || category.value.slug);
+    if (range && (range.min_price !== null || range.max_price !== null)) {
+      minPriceLimit.value = range.min_price !== null ? Math.floor(Number(range.min_price)) : 0;
+      maxPriceLimit.value = range.max_price !== null ? Math.ceil(Number(range.max_price)) : 0;
+      
+      filters.minPrice = minPriceLimit.value;
+      filters.maxPrice = maxPriceLimit.value;
+    } else {
+      minPriceLimit.value = 0;
+      maxPriceLimit.value = 0;
+      filters.minPrice = 0;
+      filters.maxPrice = 0;
+    }
+  } catch (e) {
+    console.error('Failed to load category price range:', e);
+    minPriceLimit.value = 0;
+    maxPriceLimit.value = 0;
+    filters.minPrice = 0;
+    filters.maxPrice = 0;
   }
 };
 
@@ -476,8 +515,8 @@ const fetchProducts = async () => {
     const res = await productService.getProductsList({
       categories: category.value.id,
       query: debouncedSearchQuery.value || undefined,
-      minPrice: filters.minPrice > 0 ? filters.minPrice : undefined,
-      maxPrice: filters.maxPrice < 10000 ? filters.maxPrice : undefined,
+      minPrice: (!isPriceSliderDisabled.value && filters.minPrice > minPriceLimit.value) ? filters.minPrice : undefined,
+      maxPrice: (!isPriceSliderDisabled.value && filters.maxPrice < maxPriceLimit.value) ? filters.maxPrice : undefined,
       brands: filters.brand !== '' ? filters.brand : undefined,
       sort: filters.sort,
       page: currentPage.value,
@@ -491,8 +530,8 @@ const fetchProducts = async () => {
     const fallbackProducts = productService.getProducts({
       category: category.value.id || category.value.slug,
       query: debouncedSearchQuery.value,
-      minPrice: filters.minPrice,
-      maxPrice: filters.maxPrice,
+      minPrice: (!isPriceSliderDisabled.value && filters.minPrice > minPriceLimit.value) ? filters.minPrice : undefined,
+      maxPrice: (!isPriceSliderDisabled.value && filters.maxPrice < maxPriceLimit.value) ? filters.maxPrice : undefined,
       brands: filters.brand !== '' ? filters.brand : undefined,
       sort: filters.sort
     });
@@ -504,12 +543,19 @@ const fetchProducts = async () => {
   }
 };
 
-watch(category, (newCat, oldCat) => {
+watch(category, async (newCat, oldCat) => {
   currentPage.value = 1;
-  // If category changed, reset brand filter unless it's the exact same category id
+  // If category changed, reset brand filter and price range
   if (!oldCat || !newCat || oldCat.id !== newCat.id) {
+    isResolvingCategory.value = true;
     filters.brand = '';
-    fetchCategoryBrands();
+    
+    await Promise.all([
+      fetchCategoryBrands(),
+      fetchCategoryPriceRange()
+    ]);
+    
+    isResolvingCategory.value = false;
   }
   fetchProducts();
 }, { deep: true, immediate: true });
@@ -517,6 +563,7 @@ watch(category, (newCat, oldCat) => {
 watch(
   [debouncedSearchQuery, () => filters.brand, () => filters.minPrice, () => filters.maxPrice, () => filters.sort],
   () => {
+    if (isResolvingCategory.value) return;
     currentPage.value = 1;
     fetchProducts();
   }
@@ -536,8 +583,8 @@ const products = computed(() => loadedProducts.value);
 // Reset filters helper
 const resetFilters = () => {
   filters.brand = '';
-  filters.minPrice = 0;
-  filters.maxPrice = 10000;
+  filters.minPrice = minPriceLimit.value;
+  filters.maxPrice = maxPriceLimit.value;
   filters.sort = 'newest';
   searchQuery.value = '';
 };
@@ -650,14 +697,16 @@ const resetFilters = () => {
               <input 
                 type="range" 
                 v-model="filters.maxPrice" 
-                min="0" 
-                max="10000" 
+                :min="minPriceLimit" 
+                :max="maxPriceLimit" 
+                :disabled="isPriceSliderDisabled"
                 step="100" 
-                class="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary" 
+                class="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary disabled:opacity-50 disabled:cursor-not-allowed" 
               />
               <div class="flex items-center justify-between text-xs font-bold">
-                <span class="bg-muted px-2.5 py-1 rounded-md">Tk 0</span>
-                <span class="text-primary bg-primary/10 px-3 py-1 rounded-md">Up to Tk {{ filters.maxPrice }}</span>
+                <span class="bg-muted px-2.5 py-1 rounded-md">Tk {{ minPriceLimit }}</span>
+                <span v-if="!isPriceSliderDisabled" class="text-primary bg-primary/10 px-3 py-1 rounded-md">Up to Tk {{ filters.maxPrice }}</span>
+                <span v-else class="text-muted-foreground bg-muted px-3 py-1 rounded-md">No priced items</span>
               </div>
             </div>
           </div>

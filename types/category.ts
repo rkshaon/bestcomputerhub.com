@@ -71,3 +71,9 @@ export interface CategoryPathItem {
 export interface CategoryPathResponse {
   path: CategoryPathItem[];
 }
+
+export interface CategoryPriceRange {
+  category_id: number | string;
+  min_price: number | null;
+  max_price: number | null;
+}
