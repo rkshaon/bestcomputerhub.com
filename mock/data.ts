@@ -6,6 +6,7 @@ export const categories: Category[] = [
     id: 'cat_gpu',
     name: 'Graphics Processors',
     slug: 'gpus',
+    short_description: 'High-performance graphic cards and enterprise accelerators for gaming, AI, and creative workloads.',
     description: 'High-performance graphic processing units for enterprise deep learning, AI modeling, and rendering tasks.',
     subCategories: ['nvidia-rtx', 'amd-radeon', 'datacenter-accelerators'],
     order: 10

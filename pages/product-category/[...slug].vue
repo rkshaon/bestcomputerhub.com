@@ -345,21 +345,6 @@ const resolveCategory = async () => {
 
 const category = computed(() => activeCategory.value);
 
-const cleanShortDescription = computed(() => {
-  const desc = category.value?.description || '';
-  if (!desc) {
-    return `Explore optimized enterprise-grade technology and premium ${category.value?.name || 'hardware'} options.`;
-  }
-  // Strip HTML tags for the short text introduction in header
-  const stripped = desc.replace(/<[^>]*>/g, ' ')
-                      .replace(/\s+/g, ' ')
-                      .trim();
-  if (stripped.length > 180) {
-    return stripped.substring(0, 180) + '...';
-  }
-  return stripped;
-});
-
 onMounted(() => {
   loadAllCategories();
 });
@@ -694,8 +679,11 @@ const resetFilters = () => {
                 </h1>
               </template>
             </div>
-            <p class="text-muted-foreground text-sm md:text-base max-w-2xl leading-relaxed">
-              {{ cleanShortDescription }}
+            <p 
+              v-if="category?.short_description?.trim()" 
+              class="text-muted-foreground text-sm md:text-base max-w-2xl leading-relaxed"
+            >
+              {{ category.short_description }}
             </p>
           </div>
 
