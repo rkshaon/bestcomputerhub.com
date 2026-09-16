@@ -718,11 +718,11 @@ const resetFilters = () => {
 
         <!-- Immediate Subcategory Quick Filter Row -->
         <div v-if="isSubcategoriesLoading || subcategories.length > 0" class="mt-8 pt-6 border-t border-border/40">
-          <!-- Horizontal Scrollable Subcategories Row -->
-          <div class="flex items-center gap-2 overflow-x-auto custom-submenu-scrollbar py-1 -mx-1 px-1">
+          <!-- Wrapping Subcategories Container -->
+          <div class="flex flex-wrap items-center gap-2">
             <!-- Loading Skeletons -->
             <template v-if="isSubcategoriesLoading">
-              <div v-for="i in 5" :key="i" class="h-9 w-24 bg-muted/60 rounded-full animate-pulse shrink-0"></div>
+              <div v-for="i in 5" :key="i" class="h-9 w-24 bg-muted/60 rounded-full animate-pulse"></div>
             </template>
 
             <!-- Dynamic Subcategory Chips -->
@@ -733,7 +733,7 @@ const resetFilters = () => {
                 :to="getSubcategoryUrl(subcat)"
                 @click="handleSubcategoryClick(subcat)"
                 :class="[
-                  'inline-flex items-center justify-center px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 shrink-0 cursor-pointer border select-none whitespace-nowrap',
+                  'inline-flex items-center justify-center px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer border select-none max-w-full text-center break-words',
                   isSubcategoryActive(subcat)
                     ? 'bg-primary text-primary-foreground border-primary shadow-xs scale-[1.02]'
                     : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-border/80 hover:border-border'
