@@ -664,6 +664,60 @@ const resetFilters = () => {
             </button>
           </div>
         </div>
+
+        <!-- Brand Quick Filter Row -->
+        <div v-if="isBrandsLoading || categoryBrands.length > 0" class="mt-8 pt-6 border-t border-border/40 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-xs font-extrabold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Tag class="w-3.5 h-3.5 text-primary" />
+              <span>Filter by Brand</span>
+            </h3>
+            <span v-if="filters.brand !== ''" class="text-[11px] font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+              Active Filter
+            </span>
+          </div>
+
+          <!-- Horizontal Scrollable Brands Row -->
+          <div class="flex items-center gap-2 overflow-x-auto custom-submenu-scrollbar py-1 -mx-1 px-1">
+            <!-- Loading Skeletons -->
+            <template v-if="isBrandsLoading">
+              <div v-for="i in 6" :key="i" class="h-9 w-24 bg-muted/60 rounded-full animate-pulse shrink-0"></div>
+            </template>
+
+            <!-- Dynamic Brand Chips -->
+            <template v-else>
+              <!-- All Brands Chip -->
+              <button
+                type="button"
+                @click="selectBrand('')"
+                :class="[
+                  'inline-flex items-center justify-center px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 shrink-0 cursor-pointer border select-none whitespace-nowrap',
+                  filters.brand === ''
+                    ? 'bg-primary text-primary-foreground border-primary shadow-xs scale-[1.02]'
+                    : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-border/80 hover:border-border'
+                ]"
+              >
+                All Brands
+              </button>
+
+              <!-- Brand Chips -->
+              <button
+                v-for="brand in categoryBrands"
+                :key="brand.id || brand.slug || brand.name"
+                type="button"
+                @click="selectBrand(brand.id)"
+                :class="[
+                  'inline-flex items-center justify-center px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 shrink-0 cursor-pointer border select-none whitespace-nowrap',
+                  String(filters.brand) === String(brand.id)
+                    ? 'bg-primary text-primary-foreground border-primary shadow-xs scale-[1.02]'
+                    : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-border/80 hover:border-border'
+                ]"
+              >
+                {{ brand.name }}
+              </button>
+            </template>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -773,60 +827,6 @@ const resetFilters = () => {
 
         <!-- Product Grid Area -->
         <div class="flex-1 min-w-0 w-full space-y-8">
-          <!-- Brand Quick Filter Row -->
-          <div v-if="isBrandsLoading || categoryBrands.length > 0" class="bg-card/60 border border-border/80 rounded-2xl p-4 sm:p-5 shadow-xs transition-all space-y-3">
-            <div class="flex items-center justify-between gap-2">
-              <h3 class="text-xs font-extrabold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <Tag class="w-3.5 h-3.5 text-primary" />
-                <span>Filter by Brand</span>
-              </h3>
-              <span v-if="filters.brand !== ''" class="text-[11px] font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
-                Active Filter
-              </span>
-            </div>
-
-            <!-- Horizontal Scrollable Brands Row -->
-            <div class="flex items-center gap-2 overflow-x-auto custom-submenu-scrollbar py-1 -mx-1 px-1">
-              <!-- Loading Skeletons -->
-              <template v-if="isBrandsLoading">
-                <div v-for="i in 6" :key="i" class="h-9 w-24 bg-muted/60 rounded-full animate-pulse shrink-0"></div>
-              </template>
-
-              <!-- Dynamic Brand Chips -->
-              <template v-else>
-                <!-- All Brands Chip -->
-                <button
-                  type="button"
-                  @click="selectBrand('')"
-                  :class="[
-                    'inline-flex items-center justify-center px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 shrink-0 cursor-pointer border select-none whitespace-nowrap',
-                    filters.brand === ''
-                      ? 'bg-primary text-primary-foreground border-primary shadow-xs scale-[1.02]'
-                      : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-border/80 hover:border-border'
-                  ]"
-                >
-                  All Brands
-                </button>
-
-                <!-- Brand Chips -->
-                <button
-                  v-for="brand in categoryBrands"
-                  :key="brand.id || brand.slug || brand.name"
-                  type="button"
-                  @click="selectBrand(brand.id)"
-                  :class="[
-                    'inline-flex items-center justify-center px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 shrink-0 cursor-pointer border select-none whitespace-nowrap',
-                    String(filters.brand) === String(brand.id)
-                      ? 'bg-primary text-primary-foreground border-primary shadow-xs scale-[1.02]'
-                      : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-border/80 hover:border-border'
-                  ]"
-                >
-                  {{ brand.name }}
-                </button>
-              </template>
-            </div>
-          </div>
-
           <!-- Toolbar -->
           <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b">
             <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
