@@ -44,14 +44,16 @@ const canEditCategoryFromStorefront = computed(() => {
 });
 
 // Inline editing state
-const editingField = ref<'name' | 'short_description' | 'description' | null>(null);
-const isFieldSaving = ref<'name' | 'short_description' | 'description' | null>(null);
+const editingField = ref<'name' | 'short_description_title' | 'short_description' | 'description' | null>(null);
+const isFieldSaving = ref<'name' | 'short_description_title' | 'short_description' | 'description' | null>(null);
 
 const editNameValue = ref('');
+const editShortDescTitleValue = ref('');
 const editShortDescValue = ref('');
 const editDescValue = ref('');
 
 const nameInputRef = ref<HTMLInputElement | null>(null);
+const shortDescTitleInputRef = ref<HTMLInputElement | null>(null);
 const shortDescInputRef = ref<HTMLTextAreaElement | null>(null);
 
 const cleanHtmlForComparison = (html: string): string => {
@@ -80,7 +82,7 @@ const isHtmlEquivalent = (h1: string, h2: string): boolean => {
   return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
 };
 
-const startEditing = (field: 'name' | 'short_description' | 'description') => {
+const startEditing = (field: 'name' | 'short_description_title' | 'short_description' | 'description') => {
   if (!canEditCategoryFromStorefront.value) return;
   
   editingField.value = field;
@@ -89,6 +91,11 @@ const startEditing = (field: 'name' | 'short_description' | 'description') => {
     editNameValue.value = activeCategory.value?.name || '';
     nextTick(() => {
       nameInputRef.value?.focus();
+    });
+  } else if (field === 'short_description_title') {
+    editShortDescTitleValue.value = activeCategory.value?.short_description_title || '';
+    nextTick(() => {
+      shortDescTitleInputRef.value?.focus();
     });
   } else if (field === 'short_description') {
     editShortDescValue.value = activeCategory.value?.short_description || '';
@@ -105,7 +112,7 @@ const cancelEditing = () => {
   isFieldSaving.value = null;
 };
 
-const saveField = async (field: 'name' | 'short_description' | 'description') => {
+const saveField = async (field: 'name' | 'short_description_title' | 'short_description' | 'description') => {
   if (isFieldSaving.value === field) return; // Prevent duplicate submissions
   
   const targetCategory = activeCategory.value;
@@ -122,6 +129,13 @@ const saveField = async (field: 'name' | 'short_description' | 'description') =>
     const oldVal = (targetCategory.name || '').trim();
     if (newVal && newVal !== oldVal) {
       payload.name = newVal;
+      hasChanged = true;
+    }
+  } else if (field === 'short_description_title') {
+    const newVal = editShortDescTitleValue.value.trim();
+    const oldVal = (targetCategory.short_description_title || '').trim();
+    if (newVal !== oldVal) {
+      payload.short_description_title = newVal;
       hasChanged = true;
     }
   } else if (field === 'short_description') {
@@ -154,6 +168,8 @@ const saveField = async (field: 'name' | 'short_description' | 'description') =>
     if (activeCategory.value) {
       if (field === 'name') {
         activeCategory.value.name = updated.name;
+      } else if (field === 'short_description_title') {
+        activeCategory.value.short_description_title = updated.short_description_title;
       } else if (field === 'short_description') {
         activeCategory.value.short_description = updated.short_description;
       } else if (field === 'description') {
@@ -168,6 +184,8 @@ const saveField = async (field: 'name' | 'short_description' | 'description') =>
       if (catToUpdate) {
         if (field === 'name') {
           catToUpdate.name = updated.name;
+        } else if (field === 'short_description_title') {
+          catToUpdate.short_description_title = updated.short_description_title;
         } else if (field === 'short_description') {
           catToUpdate.short_description = updated.short_description;
         } else if (field === 'description') {
@@ -669,33 +687,43 @@ const resetFilters = () => {
         <!-- Category Title & Info -->
         <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
           <div class="max-w-4xl space-y-4">
-            <!-- Category Name Heading / Editor -->
+            <!-- Category Short Description Title Heading / Editor -->
             <div class="relative group/edit">
-              <template v-if="editingField === 'name'">
+              <template v-if="editingField === 'short_description_title'">
                 <div class="flex items-center gap-2">
                   <input 
-                    v-model="editNameValue"
-                    ref="nameInputRef"
+                    v-model="editShortDescTitleValue"
+                    ref="shortDescTitleInputRef"
                     type="text"
-                    @blur="saveField('name')"
-                    @keydown.enter="saveField('name')"
+                    placeholder="Add a short description title"
+                    @blur="saveField('short_description_title')"
+                    @keydown.enter="saveField('short_description_title')"
                     @keydown.esc="cancelEditing"
-                    :disabled="isFieldSaving === 'name'"
-                    class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    :disabled="isFieldSaving === 'short_description_title'"
+                    class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none w-full max-w-2xl animate-none"
                   />
-                  <div v-if="isFieldSaving === 'name'" class="shrink-0">
+                  <div v-if="isFieldSaving === 'short_description_title'" class="shrink-0">
                     <Loader2 class="w-5 h-5 animate-spin text-primary" />
                   </div>
                 </div>
               </template>
               <template v-else>
                 <h1 class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all flex items-center gap-2.5">
-                  <span>{{ decodeHtmlEntities(category?.name) || 'Hardware Collection' }}</span>
+                  <span v-if="category?.short_description_title">{{ decodeHtmlEntities(category.short_description_title) }}</span>
+                  <span 
+                    v-else 
+                    :class="[
+                      'text-muted-foreground/60 italic font-medium text-3xl md:text-4xl select-none',
+                      canEditCategoryFromStorefront ? 'cursor-pointer hover:text-muted-foreground/80' : ''
+                    ]"
+                    @click="canEditCategoryFromStorefront && startEditing('short_description_title')"
+                  >Add a short description title</span>
                   <button 
                     v-if="canEditCategoryFromStorefront" 
-                    @click="startEditing('name')"
+                    @click="startEditing('short_description_title')"
                     class="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
-                    title="Edit Category Name"
+                    title="Edit Short Description Title"
+                    aria-label="Edit Short Description Title"
                   >
                     <Edit2 class="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
