@@ -243,6 +243,7 @@ watch(() => categoryModalState.activeEntity.value, (newEntity) => {
         id: newEntity.id,
         name: newEntity.name,
         slug: newEntity.slug,
+        short_description_title: newEntity.short_description_title || '',
         short_description: newEntity.short_description || '',
         description: newEntity.description || '',
         parentCategoryId: newEntity.parentCategoryId || '',
@@ -254,6 +255,7 @@ watch(() => categoryModalState.activeEntity.value, (newEntity) => {
       originalCategoryDetails.value = {
         name: newEntity.name || '',
         slug: newEntity.slug || '',
+        short_description_title: newEntity.short_description_title || '',
         short_description: newEntity.short_description || '',
         description: newEntity.description || '',
         parentCategoryId: newEntity.parentCategoryId || '',
@@ -514,6 +516,7 @@ const formPayload = ref({
   id: '',
   name: '',
   slug: '',
+  short_description_title: '',
   short_description: '',
   description: '',
   parentCategoryId: '',
@@ -526,6 +529,7 @@ const formPayload = ref({
 const originalCategoryDetails = ref<{
   name: string;
   slug: string;
+  short_description_title: string;
   short_description: string;
   description: string;
   parentCategoryId: string;
@@ -775,6 +779,7 @@ const triggerCreateModal = () => {
     id: '',
     name: '',
     slug: '',
+    short_description_title: '',
     short_description: '',
     description: '',
     parentCategoryId: '',
@@ -797,6 +802,7 @@ const triggerEditModal = async (cat: Category) => {
     id: cat.id,
     name: cat.name,
     slug: cat.slug,
+    short_description_title: cat.short_description_title || '',
     short_description: cat.short_description || '',
     description: cat.description || '',
     parentCategoryId: cat.parentCategoryId || '',
@@ -808,6 +814,7 @@ const triggerEditModal = async (cat: Category) => {
   originalCategoryDetails.value = {
     name: cat.name || '',
     slug: cat.slug || '',
+    short_description_title: cat.short_description_title || '',
     short_description: cat.short_description || '',
     description: cat.description || '',
     parentCategoryId: cat.parentCategoryId || '',
@@ -846,6 +853,7 @@ const submitCreateCategory = async () => {
     await categoryService.createCategory({
       name: formPayload.value.name.trim(),
       slug: formPayload.value.slug.trim(),
+      short_description_title: formPayload.value.short_description_title?.trim() || '',
       short_description: formPayload.value.short_description?.trim() || '',
       description: formPayload.value.description,
       parentCategoryId: formPayload.value.parentCategoryId || undefined,
@@ -894,6 +902,13 @@ const submitUpdateCategory = async () => {
     const currentSlug = formPayload.value.slug.trim().toLowerCase();
     if (currentSlug !== orig.slug.trim().toLowerCase()) {
       payload.slug = currentSlug;
+    }
+
+    // short_description_title
+    const currentShortDescTitle = (formPayload.value.short_description_title || '').trim();
+    const origShortDescTitle = (orig.short_description_title || '').trim();
+    if (currentShortDescTitle !== origShortDescTitle) {
+      payload.short_description_title = currentShortDescTitle;
     }
 
     // short_description
@@ -947,6 +962,7 @@ const submitUpdateCategory = async () => {
     // Fallback if no reference state exists
     payload.name = formPayload.value.name.trim();
     payload.slug = formPayload.value.slug.trim();
+    payload.short_description_title = (formPayload.value.short_description_title || '').trim();
     payload.short_description = (formPayload.value.short_description || '').trim();
     payload.description = formPayload.value.description;
     payload.parentCategoryId = formPayload.value.parentCategoryId || undefined;
@@ -2115,6 +2131,18 @@ watch(viewMode, () => {
             </div>
 
             <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Short Description Title</label>
+              <input 
+                v-model="formPayload.short_description_title" 
+                type="text" 
+                placeholder="e.g. Featured Nodes" 
+                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50 animate-none"
+                :disabled="isSubmitPending"
+              />
+              <p class="text-[10px] text-slate-400 ml-1">Optional title displayed above the short description on storefront listing banners.</p>
+            </div>
+
+            <div class="space-y-2">
               <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Short Description</label>
               <textarea 
                 v-model="formPayload.short_description" 
@@ -2253,6 +2281,18 @@ watch(viewMode, () => {
             </div>
 
             <div class="space-y-2">
+              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Short Description Title</label>
+              <input 
+                v-model="formPayload.short_description_title" 
+                type="text" 
+                placeholder="e.g. Featured Nodes" 
+                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50 animate-none"
+                :disabled="isSubmitPending"
+              />
+              <p class="text-[10px] text-slate-400 ml-1">Optional title displayed above the short description on storefront listing banners.</p>
+            </div>
+
+            <div class="space-y-2">
               <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Short Description</label>
               <textarea 
                 v-model="formPayload.short_description" 
@@ -2334,6 +2374,14 @@ watch(viewMode, () => {
           </div>
 
           <div class="space-y-4">
+            <div class="space-y-2">
+              <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Short Description Title</p>
+              <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-900 text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                <p v-if="selectedCategory.short_description_title" class="whitespace-pre-line">{{ selectedCategory.short_description_title }}</p>
+                <p v-else class="italic text-xs text-slate-400">No short description title provided.</p>
+              </div>
+            </div>
+
             <div class="space-y-2">
               <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Short Description</p>
               <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-900 text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">

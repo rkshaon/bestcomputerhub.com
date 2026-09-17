@@ -8,6 +8,7 @@ export interface Category {
   icon?: string;
   image?: string;
   short_description?: string;
+  short_description_title?: string | null;
   description?: string;
   parentCategoryId?: string;
   subCategories?: string[];
