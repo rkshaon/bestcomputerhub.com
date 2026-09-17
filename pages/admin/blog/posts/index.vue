@@ -447,6 +447,18 @@ const activeCategoriesButtonLabel = computed(() => {
   return `${selectedCategoryIds.value.length} Categories`;
 });
 
+const hasActiveFilters = computed(() => {
+  return Boolean(
+    (searchQuery.value && searchQuery.value.trim() !== '') ||
+    selectedCategoryIds.value.length > 0 ||
+    status.value !== undefined ||
+    publishedAfter.value !== undefined ||
+    publishedBefore.value !== undefined ||
+    authorId.value !== undefined ||
+    tagId.value !== undefined
+  );
+});
+
 const clearAllFilters = () => {
   searchQuery.value = '';
   selectedCategoryIds.value = [];
@@ -455,6 +467,9 @@ const clearAllFilters = () => {
   status.value = undefined;
   publishedAfter.value = undefined;
   publishedBefore.value = undefined;
+  categorySearchQuery.value = '';
+  currentPage.value = 1;
+  fetchPosts();
 };
 
 // Document click / keyboard listeners for category popover dismiss
@@ -487,10 +502,12 @@ const fetchPosts = async () => {
       ? selectedCategoryIds.value.join(',')
       : undefined;
 
+    const searchTerm = searchQuery.value.trim() || undefined;
+
     const data = await blogService.getBlogPosts({
       page: currentPage.value,
       page_size: itemsPerPage.value,
-      search: debouncedSearchQuery.value || undefined,
+      search: searchTerm,
       author: authorId.value,
       categories: categoriesParam,
       tag: tagId.value,
@@ -501,21 +518,20 @@ const fetchPosts = async () => {
     postsList.value = data.results;
     totalCount.value = data.count;
 
-    router.replace({
-      query: {
-        ...route.query,
-        page: currentPage.value !== 1 ? currentPage.value : undefined,
-        pageSize: itemsPerPage.value !== 10 ? itemsPerPage.value : undefined,
-        search: debouncedSearchQuery.value || undefined,
-        author: authorId.value || undefined,
-        categories: categoriesParam,
-        category: undefined,
-        tag: tagId.value || undefined,
-        status: status.value || undefined,
-        published_after: publishedAfter.value || undefined,
-        published_before: publishedBefore.value || undefined,
-      }
-    });
+    const nextQuery: Record<string, any> = {};
+    if (currentPage.value !== 1) nextQuery.page = currentPage.value;
+    if (itemsPerPage.value !== 10) nextQuery.pageSize = itemsPerPage.value;
+    if (searchTerm) nextQuery.search = searchTerm;
+    if (authorId.value) nextQuery.author = authorId.value;
+    if (categoriesParam) nextQuery.categories = categoriesParam;
+    if (tagId.value) nextQuery.tag = tagId.value;
+    if (status.value) nextQuery.status = status.value;
+    if (publishedAfter.value) nextQuery.published_after = publishedAfter.value;
+    if (publishedBefore.value) nextQuery.published_before = publishedBefore.value;
+    if (route.query.modal) nextQuery.modal = route.query.modal;
+    if (route.query.id) nextQuery.id = route.query.id;
+
+    router.replace({ query: nextQuery });
   } catch (err: any) {
     errorMsg.value = blogService.errorMsg.value || 'Failed to retrieve blog posts.';
   } finally {
@@ -734,144 +750,165 @@ const handlePublishPost = async (post: BlogPostItem) => {
     <div class="space-y-4">
 
       <!-- Filters -->
-      <UiCard class="p-3.5 flex flex-wrap gap-3 items-center">
-        <UiSearchInput v-model="searchQuery" placeholder="Search posts..." class="w-full sm:w-64" />
-        
-        <!-- Category Multi-Select Popover -->
-        <div ref="categoryDropdownRef" class="relative">
-          <button
-            type="button"
-            @click.stop="toggleCategoryDropdown"
-            class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs font-medium cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[170px]"
-            :class="selectedCategoryIds.length > 0 ? 'border-primary/50 text-foreground font-semibold' : 'text-muted-foreground'"
-          >
-            <div class="flex items-center gap-1.5 truncate">
-              <Filter class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <span class="truncate">{{ activeCategoriesButtonLabel }}</span>
-            </div>
-            <div class="flex items-center gap-1 shrink-0">
-              <span 
-                v-if="selectedCategoryIds.length > 0" 
-                class="px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full leading-none"
-              >
-                {{ selectedCategoryIds.length }}
-              </span>
-              <ChevronDown :class="['w-3.5 h-3.5 transition-transform duration-200', isCategoryDropdownOpen && 'rotate-180']" />
-            </div>
-          </button>
-
-          <!-- Category Options Popover Menu -->
-          <div 
-            v-if="isCategoryDropdownOpen"
-            @click.stop
-            class="absolute left-0 z-30 mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
-          >
-            <!-- Category Search Input inside Popover -->
-            <div class="relative mb-2">
-              <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                v-model="categorySearchQuery"
-                type="text"
-                placeholder="Search categories..."
-                class="w-full h-8 pl-8 pr-2.5 text-xs bg-muted/50 border border-input rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring/20"
-              />
-            </div>
-
-            <!-- Clear / Select All action -->
-            <div class="flex items-center justify-between px-1 py-1 mb-1 border-b border-border/60 text-[11px]">
-              <span class="text-muted-foreground font-semibold">Filter by Category</span>
-              <button
-                v-if="selectedCategoryIds.length > 0"
-                type="button"
-                @click="clearCategorySelection"
-                class="text-primary hover:underline font-bold cursor-pointer"
-              >
-                Clear all ({{ selectedCategoryIds.length }})
-              </button>
-            </div>
-
-            <!-- Categories Infinite List -->
-            <div class="max-h-60 overflow-y-auto space-y-0.5 p-0.5 scrollbar-thin">
-              <button
-                type="button"
-                @click="clearCategorySelection"
-                :class="[
-                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer',
-                  selectedCategoryIds.length === 0 ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
-                ]"
-              >
-                <span>All Categories</span>
-                <Check v-if="selectedCategoryIds.length === 0" class="w-3.5 h-3.5 text-primary" />
-              </button>
-
-              <button
-                v-for="cat in categoryPagination.items.value"
-                :key="cat.id"
-                type="button"
-                @click="toggleCategorySelection(cat.id)"
-                :class="[
-                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer',
-                  isCategorySelected(cat.id) ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
-                ]"
-              >
-                <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
-                <div 
-                  class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
-                  :class="isCategorySelected(cat.id) ? 'bg-primary border-primary text-primary-foreground' : 'border-input bg-background'"
+      <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
+        <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <UiSearchInput v-model="searchQuery" placeholder="Search posts..." class="w-full sm:w-64" />
+          
+          <!-- Category Multi-Select Popover -->
+          <div ref="categoryDropdownRef" class="relative">
+            <button
+              type="button"
+              @click.stop="toggleCategoryDropdown"
+              class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs font-medium cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[170px]"
+              :class="selectedCategoryIds.length > 0 ? 'border-primary/50 text-foreground font-semibold' : 'text-muted-foreground'"
+            >
+              <div class="flex items-center gap-1.5 truncate">
+                <Filter class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span class="truncate">{{ activeCategoriesButtonLabel }}</span>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <span 
+                  v-if="selectedCategoryIds.length > 0" 
+                  class="px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full leading-none"
                 >
-                  <Check v-if="isCategorySelected(cat.id)" class="w-3 h-3 stroke-[3]" />
-                </div>
-              </button>
+                  {{ selectedCategoryIds.length }}
+                </span>
+                <ChevronDown :class="['w-3.5 h-3.5 transition-transform duration-200', isCategoryDropdownOpen && 'rotate-180']" />
+              </div>
+            </button>
 
-              <!-- Loading spinner when initial loading -->
-              <div v-if="categoryPagination.isLoading.value && categoryPagination.items.value.length === 0" class="py-4 text-center text-muted-foreground flex items-center justify-center gap-2 text-xs">
-                <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
-                <span>Loading categories...</span>
+            <!-- Category Options Popover Menu -->
+            <div 
+              v-if="isCategoryDropdownOpen"
+              @click.stop
+              class="absolute left-0 z-30 mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+            >
+              <!-- Category Search Input inside Popover -->
+              <div class="relative mb-2">
+                <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  v-model="categorySearchQuery"
+                  type="text"
+                  placeholder="Search categories..."
+                  class="w-full h-8 pl-8 pr-2.5 text-xs bg-muted/50 border border-input rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring/20"
+                />
               </div>
 
-              <!-- Infinite Scroll Sentinel for Next Category Pages -->
-              <UiInfiniteScroll
-                :has-more="categoryPagination.hasMore.value"
-                :is-loading="categoryPagination.isFetchingNextPage.value"
-                :error="categoryPagination.error.value"
-                @load-more="categoryPagination.loadNextPage"
-                @retry="categoryPagination.loadNextPage"
-              />
+              <!-- Clear / Select All action -->
+              <div class="flex items-center justify-between px-1 py-1 mb-1 border-b border-border/60 text-[11px]">
+                <span class="text-muted-foreground font-semibold">Filter by Category</span>
+                <button
+                  v-if="selectedCategoryIds.length > 0"
+                  type="button"
+                  @click="clearCategorySelection"
+                  class="text-primary hover:underline font-bold cursor-pointer"
+                >
+                  Clear all ({{ selectedCategoryIds.length }})
+                </button>
+              </div>
+
+              <!-- Categories Infinite List -->
+              <div class="max-h-60 overflow-y-auto space-y-0.5 p-0.5 scrollbar-thin">
+                <button
+                  type="button"
+                  @click="clearCategorySelection"
+                  :class="[
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer',
+                    selectedCategoryIds.length === 0 ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
+                  ]"
+                >
+                  <span>All Categories</span>
+                  <Check v-if="selectedCategoryIds.length === 0" class="w-3.5 h-3.5 text-primary" />
+                </button>
+
+                <button
+                  v-for="cat in categoryPagination.items.value"
+                  :key="cat.id"
+                  type="button"
+                  @click="toggleCategorySelection(cat.id)"
+                  :class="[
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer',
+                    isCategorySelected(cat.id) ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
+                  ]"
+                >
+                  <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
+                  <div 
+                    class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
+                    :class="isCategorySelected(cat.id) ? 'bg-primary border-primary text-primary-foreground' : 'border-input bg-background'"
+                  >
+                    <Check v-if="isCategorySelected(cat.id)" class="w-3 h-3 stroke-[3]" />
+                  </div>
+                </button>
+
+                <!-- Loading spinner when initial loading -->
+                <div v-if="categoryPagination.isLoading.value && categoryPagination.items.value.length === 0" class="py-4 text-center text-muted-foreground flex items-center justify-center gap-2 text-xs">
+                  <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+                  <span>Loading categories...</span>
+                </div>
+
+                <!-- Infinite Scroll Sentinel for Next Category Pages -->
+                <UiInfiniteScroll
+                  :has-more="categoryPagination.hasMore.value"
+                  :is-loading="categoryPagination.isFetchingNextPage.value"
+                  :error="categoryPagination.error.value"
+                  @load-more="categoryPagination.loadNextPage"
+                  @retry="categoryPagination.loadNextPage"
+                />
+              </div>
             </div>
           </div>
+
+          <select v-model="status" class="h-9 px-3 text-xs font-semibold border border-input rounded-lg bg-background text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer">
+            <option :value="undefined">All Statuses</option>
+            <option value="DRAFT">Draft</option>
+            <option value="PUBLISHED">Published</option>
+          </select>
+
+          <div class="flex items-center gap-1.5">
+            <label class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">From:</label>
+            <input v-model="publishedAfter" type="datetime-local" class="h-9 px-2 text-xs border border-input rounded-lg bg-background text-foreground outline-none focus:ring-2 focus:ring-ring/20" />
+          </div>
+          
+          <div class="flex items-center gap-1.5">
+            <label class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">To:</label>
+            <input v-model="publishedBefore" type="datetime-local" class="h-9 px-2 text-xs border border-input rounded-lg bg-background text-foreground outline-none focus:ring-2 focus:ring-ring/20" />
+          </div>
+
+          <input v-model.number="authorId" type="number" placeholder="Author ID" class="h-9 px-2.5 text-xs border border-input rounded-lg w-24 bg-background text-foreground outline-none focus:ring-2 focus:ring-ring/20" />
+          <input v-model.number="tagId" type="number" placeholder="Tag ID" class="h-9 px-2.5 text-xs border border-input rounded-lg w-20 bg-background text-foreground outline-none focus:ring-2 focus:ring-ring/20" />
         </div>
 
-        <select v-model="status" class="h-9 px-3 text-sm border rounded-lg bg-background">
-          <option :value="undefined">All Statuses</option>
-          <option value="DRAFT">Draft</option>
-          <option value="PUBLISHED">Published</option>
-        </select>
+        <div class="flex items-center gap-2 self-end lg:self-center shrink-0">
+          <!-- Reset / Clear Filters button -->
+          <button
+            v-if="hasActiveFilters"
+            type="button"
+            @click="clearAllFilters"
+            class="h-9 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer border border-transparent hover:border-border"
+            title="Clear all filters"
+            aria-label="Clear all filters"
+          >
+            <X class="w-3.5 h-3.5" />
+            <span>Clear Filters</span>
+          </button>
 
-        <div class="flex items-center gap-2">
-          <label class="text-xs font-semibold text-muted-foreground">From:</label>
-          <input v-model="publishedAfter" type="datetime-local" class="h-9 px-3 text-sm border rounded-lg bg-background" />
+          <!-- Items per page selector -->
+          <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+            <select 
+              v-model="itemsPerPage"
+              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option :value="5">5 / page</option>
+              <option :value="10">10 / page</option>
+              <option :value="25">25 / page</option>
+              <option :value="50">50 / page</option>
+              <option :value="100">100 / page</option>
+              <option :value="1000">1000 / page</option>
+            </select>
+          </div>
         </div>
-        
-        <div class="flex items-center gap-2">
-          <label class="text-xs font-semibold text-muted-foreground">To:</label>
-          <input v-model="publishedBefore" type="datetime-local" class="h-9 px-3 text-sm border rounded-lg bg-background" />
-        </div>
-
-        <input v-model.number="authorId" type="number" placeholder="Author ID" class="h-9 px-3 text-sm border rounded-lg w-24 bg-background" />
-        <input v-model.number="tagId" type="number" placeholder="Tag ID" class="h-9 px-3 text-sm border rounded-lg w-20 bg-background" />
-
-        <!-- Clear all filters button -->
-        <button
-          v-if="searchQuery || selectedCategoryIds.length > 0 || authorId || tagId || status || publishedAfter || publishedBefore"
-          type="button"
-          @click="clearAllFilters"
-          class="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-          title="Clear all filters"
-        >
-          <X class="w-3.5 h-3.5" />
-          <span>Clear</span>
-        </button>
-      </UiCard>
+      </div>
 
       <UiCard class="p-0">
         <UiTable :columns="tableColumns" :data="postsList" :loading="isLoading">
@@ -983,13 +1020,14 @@ const handlePublishPost = async (post: BlogPostItem) => {
             <div class="text-center py-8 text-muted-foreground space-y-3">
               <p>No blog posts found.</p>
               <UiButton
-                v-if="searchQuery || selectedCategoryIds.length > 0 || authorId || tagId || status || publishedAfter || publishedBefore"
+                v-if="hasActiveFilters"
                 variant="outline"
                 size="sm"
                 @click="clearAllFilters"
-                class="text-xs cursor-pointer"
+                class="text-xs cursor-pointer gap-1.5"
               >
-                Clear all filters
+                <X class="w-3.5 h-3.5" />
+                <span>Clear Filters</span>
               </UiButton>
             </div>
           </template>
