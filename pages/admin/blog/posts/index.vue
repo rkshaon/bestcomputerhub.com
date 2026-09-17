@@ -133,6 +133,28 @@ const toggleCategory = (catId: string | number) => {
   }
 };
 
+const mappedCategories = computed(() => {
+  if (!formSelectedCategories.value || formSelectedCategories.value.length === 0) {
+    return [];
+  }
+  return formSelectedCategories.value.map(catId => {
+    const numId = Number(catId);
+    const fromEntity = modalState.activeEntity.value?.categories?.find((c: any) => Number(c.id) === numId);
+    if (fromEntity && fromEntity.name) {
+      return { id: numId, name: fromEntity.name };
+    }
+    const fromList = categoriesList.value.find((c: any) => Number(c.id) === numId);
+    if (fromList && fromList.name) {
+      return { id: numId, name: fromList.name };
+    }
+    const fromPagination = categoryPagination.items.value.find((c: any) => Number(c.id) === numId);
+    if (fromPagination && fromPagination.name) {
+      return { id: numId, name: fromPagination.name };
+    }
+    return { id: numId, name: `Category #${numId}` };
+  });
+});
+
 const toggleTag = (tagId: string | number) => {
   const numericId = Number(tagId);
   const index = formSelectedTags.value.indexOf(numericId);
@@ -935,6 +957,22 @@ const handlePublishPost = async (post: BlogPostItem) => {
                     class="w-full h-12 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-sm"
                     required
                   />
+
+                  <!-- Mapped Categories Chips (Immediately after Post Title) -->
+                  <div 
+                    v-if="mappedCategories.length > 0" 
+                    class="flex flex-wrap items-center gap-1.5 pt-1"
+                  >
+                    <span
+                      v-for="cat in mappedCategories"
+                      :key="cat.id"
+                      class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20 max-w-[240px] truncate"
+                      :title="decodeHtmlEntities(cat.name)"
+                    >
+                      <Layers class="w-3 h-3 shrink-0 text-primary/70" />
+                      <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
+                    </span>
+                  </div>
                 </div>
 
                 <div class="space-y-2">
