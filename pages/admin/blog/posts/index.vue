@@ -32,6 +32,7 @@ import { useUserService } from '@/composables/useUserService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
+import { useAuthStore } from '@/stores/auth';
 import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
 import { cn, decodeHtmlEntities } from '@/utils';
 import type { BlogPostItem, Category, BlogTag, UserItem } from '@/types';
@@ -51,6 +52,7 @@ definePageMeta({
 const blogService = useBlogService();
 const categoryService = useCategoryService();
 const userService = useUserService();
+const authStore = useAuthStore();
 const { hasPermission } = useAdminPermissions();
 const route = useRoute();
 const router = useRouter();
@@ -141,6 +143,21 @@ const categoriesList = ref<Category[]>([]);
 const tagsList = ref<BlogTag[]>([]);
 const usersList = ref<UserItem[]>([]);
 const areOptionsLoaded = ref(false);
+const isOptionsLoading = ref(false);
+const isAuthorManuallyModified = ref(false);
+
+const resolveDefaultAuthorId = (): number | null => {
+  const currentUserId = authStore.user?.id;
+  if (currentUserId === undefined || currentUserId === null || currentUserId === '') {
+    return null;
+  }
+  const matchedUser = usersList.value.find(u => String(u.id) === String(currentUserId));
+  if (matchedUser) {
+    return Number(matchedUser.id);
+  }
+  const numId = Number(currentUserId);
+  return isNaN(numId) ? null : numId;
+};
 
 // File upload state variables
 const featuredImageFile = ref<File | null>(null);
@@ -270,6 +287,7 @@ const toggleTag = (tagId: string | number) => {
 
 const loadOptions = async () => {
   if (areOptionsLoaded.value) return;
+  isOptionsLoading.value = true;
   try {
     const [catsRes, tagsRes, usersRes] = await Promise.all([
       categoryService.getCategoriesList({ page_size: 100 }),
@@ -280,15 +298,26 @@ const loadOptions = async () => {
     tagsList.value = tagsRes.results;
     usersList.value = usersRes.results;
     areOptionsLoaded.value = true;
+
+    // In Create mode, if the author has not been manually changed by the user, ensure the default author is set and matches options
+    if (modalState.isCreate.value && !isAuthorManuallyModified.value) {
+      const defaultAuthor = resolveDefaultAuthorId();
+      if (defaultAuthor !== null) {
+        formAuthorId.value = defaultAuthor;
+      }
+    }
   } catch (err) {
     console.error('Failed to load form options:', err);
+  } finally {
+    isOptionsLoading.value = false;
   }
 };
 
 const resetForm = () => {
   formTitle.value = '';
   formContent.value = '';
-  formAuthorId.value = null;
+  isAuthorManuallyModified.value = false;
+  formAuthorId.value = resolveDefaultAuthorId();
   formFeaturedImage.value = '';
   originalFeaturedImage.value = '';
   formFeaturedImageAltText.value = '';
@@ -331,10 +360,19 @@ watch(
 
     if (isCreate) {
       resetForm();
+      // If user profile is not yet loaded in authStore, fetch it to resolve author
+      if (!authStore.user && authStore.isLoggedIn) {
+        authStore.fetchUserProfile().then(() => {
+          if (modalState.isCreate.value && !isAuthorManuallyModified.value) {
+            formAuthorId.value = resolveDefaultAuthorId();
+          }
+        }).catch(() => {});
+      }
     } else if (isEdit && post) {
+      isAuthorManuallyModified.value = false;
       formTitle.value = post.title || '';
       formContent.value = post.content || '';
-      formAuthorId.value = post.author?.id || null;
+      formAuthorId.value = post.author?.id ? Number(post.author.id) : null;
       formFeaturedImage.value = post.featured_image || '';
       originalFeaturedImage.value = post.featured_image || '';
       formFeaturedImageAltText.value = post.featured_image_alt_text || '';
@@ -1313,10 +1351,17 @@ const handlePublishPost = async (post: BlogPostItem) => {
                   <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Author Identity <span class="text-destructive">*</span></label>
                   <select 
                     v-model="formAuthorId" 
+                    @change="isAuthorManuallyModified = true"
                     class="w-full h-10 px-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-semibold text-xs cursor-pointer"
                     required
                   >
-                    <option :value="null" disabled>Select author...</option>
+                    <option :value="null" disabled>{{ isOptionsLoading ? 'Loading authors...' : 'Select author...' }}</option>
+                    <option 
+                      v-if="formAuthorId && !usersList.some(u => Number(u.id) === Number(formAuthorId)) && authStore.user && String(authStore.user.id) === String(formAuthorId)"
+                      :value="formAuthorId"
+                    >
+                      {{ authStore.user.name || authStore.user.email }} (Current User)
+                    </option>
                     <option v-for="user in usersList" :key="user.id" :value="user.id">
                       {{ user.full_name || user.username }}
                     </option>
