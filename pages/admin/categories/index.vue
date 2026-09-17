@@ -36,6 +36,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import { cn, decodeHtmlEntities } from '@/utils';
 import { refDebounced } from '@vueuse/core';
 import type { Category, CategorySummaryResponse, CategoryFilters } from '@/types';
@@ -227,6 +228,24 @@ watch(() => categoryModalState.isView.value, (isOpen) => {
 
 watch(() => categoryModalState.isEdit.value, (isOpen) => {
   isEditModalOpen.value = isOpen;
+}, { immediate: true });
+
+const isDeleting = ref(false);
+
+const categoryToDelete = computed<Category | null>(() => {
+  return categoryModalState.activeEntity.value || selectedCategory.value || null;
+});
+
+watch(() => categoryModalState.isDelete.value, (isOpen) => {
+  if (isOpen && !canDeleteCategory.value) {
+    toastError('You do not have permission to delete categories.');
+    categoryModalState.closeModal({ replace: true });
+  }
+  if (!isOpen) {
+    if (!categoryModalState.isView.value && !categoryModalState.isEdit.value) {
+      selectedCategory.value = null;
+    }
+  }
 }, { immediate: true });
 
 watch(() => categoryModalState.activeEntity.value, (newEntity) => {
@@ -1002,18 +1021,38 @@ const deleteCategoryNode = async (cat: Category) => {
     toastError('You do not have permission to delete categories.');
     return;
   }
-  const confirmMsg = `Verify Decommissoning: Are you sure you want to delete Category [${cat.name}]? Unlinking from nested classes might occur automatically.`;
-  if (confirm(confirmMsg)) {
-    try {
-      await categoryService.deleteCategory(cat.id);
-      toastInfo(`Category [${cat.name}] deleted successfully.`);
-      await fetchAllCategoriesRawList();
-      if (currentPage.value > totalPages.value) {
-        currentPage.value = Math.max(1, totalPages.value);
-      }
-    } catch (err: any) {
-      handleApiError(err, 'Deregister action aborted.');
+  selectedCategory.value = cat;
+  await categoryModalState.openDelete(cat.id);
+};
+
+const executeDeleteCategory = async () => {
+  const target = categoryToDelete.value;
+  if (!target || !target.id) return;
+
+  if (!canDeleteCategory.value) {
+    toastError('You do not have permission to delete categories.');
+    return;
+  }
+
+  if (isDeleting.value) return;
+  isDeleting.value = true;
+
+  try {
+    await categoryService.deleteCategory(target.id);
+    toastInfo(`Category [${target.name}] deleted successfully.`);
+    await categoryModalState.closeModal();
+    selectedCategory.value = null;
+    await fetchAllCategoriesRawList();
+    if (treeRef.value?.refreshRoots) {
+      await treeRef.value.refreshRoots();
     }
+    if (currentPage.value > totalPages.value) {
+      currentPage.value = Math.max(1, totalPages.value);
+    }
+  } catch (err: any) {
+    handleApiError(err, 'Deregister action aborted.');
+  } finally {
+    isDeleting.value = false;
   }
 };
 
@@ -2572,6 +2611,52 @@ watch(viewMode, () => {
         </form>
       </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <UiAdminModal 
+      :is-open="categoryModalState.isDelete.value && (!!categoryToDelete || categoryModalState.isResolving.value)"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="categoryModalState.closeModal()"
+    >
+      <div class="p-6 space-y-6">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold text-foreground">Confirm Category Deletion</h3>
+          <p v-if="categoryModalState.isResolving.value && !categoryToDelete" class="text-xs text-muted-foreground mt-1.5 flex items-center gap-2">
+            <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+            <span>Resolving category details...</span>
+          </p>
+          <p v-else class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            Are you sure you want to delete Category <span class="font-bold text-foreground">"{{ categoryToDelete?.name }}"</span>? Unlinking from nested classes might occur automatically.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <UiButton 
+            variant="outline" 
+            class="rounded-xl h-10 px-5 text-xs font-bold cursor-pointer"
+            @click="categoryModalState.closeModal()"
+            :disabled="isDeleting || (categoryModalState.isResolving.value && !categoryToDelete)"
+          >
+            Cancel
+          </UiButton>
+
+          <UiButton 
+            class="rounded-xl h-10 px-5 text-xs font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2 cursor-pointer"
+            @click="executeDeleteCategory"
+            :disabled="isDeleting || (categoryModalState.isResolving.value && !categoryToDelete) || !categoryToDelete"
+          >
+            <Loader2 v-if="isDeleting" class="w-4 h-4 animate-spin" />
+            <Trash2 v-else class="w-3.5 h-3.5" />
+            <span>Delete Category</span>
+          </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
 
     </div>
   </NuxtLayout>
