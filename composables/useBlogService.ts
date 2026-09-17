@@ -22,7 +22,14 @@ export const useBlogService = () => {
       const queryObj: Record<string, any> = {};
       if (params) {
         if (params.author) queryObj.author = params.author;
-        if (params.category) queryObj.category = params.category;
+        if (params.categories !== undefined && params.categories !== null && String(params.categories).trim() !== '') {
+          const catsVal = Array.isArray(params.categories)
+            ? params.categories.filter(Boolean).join(',')
+            : String(params.categories).trim();
+          if (catsVal) queryObj.categories = catsVal;
+        } else if (params.category !== undefined && params.category !== null && String(params.category).trim() !== '') {
+          queryObj.category = params.category;
+        }
         if (params.page !== undefined && params.page !== null) queryObj.page = params.page;
         if (params.page_size !== undefined && params.page_size !== null) queryObj.page_size = params.page_size;
         if (params.published_after) queryObj.published_after = params.published_after;

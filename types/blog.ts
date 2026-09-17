@@ -55,7 +55,8 @@ export interface BlogPostItem {
 
 export interface BlogPostQueryParams {
   author?: number;
-  category?: number;
+  category?: number | string;
+  categories?: string | number | (string | number)[];
   page?: number;
   page_size?: number;
   published_after?: string;
