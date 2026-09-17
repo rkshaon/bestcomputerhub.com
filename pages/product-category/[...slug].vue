@@ -688,7 +688,7 @@ const resetFilters = () => {
         <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
           <div class="max-w-4xl space-y-4">
             <!-- Category Short Description Title Heading / Editor -->
-            <div class="relative group/edit">
+            <div v-if="category?.short_description_title || canEditCategoryFromStorefront" class="relative group/edit">
               <template v-if="editingField === 'short_description_title'">
                 <div class="flex items-center gap-2">
                   <input 
