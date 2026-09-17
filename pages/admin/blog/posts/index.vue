@@ -180,6 +180,36 @@ const removeSelectedFile = () => {
   }
 };
 
+// Modal Category Selector State
+const isModalCategoryDropdownOpen = ref(false);
+const modalCategoryDropdownRef = ref<HTMLElement | null>(null);
+const modalCategorySearchQuery = ref('');
+
+const modalCategoryPagination = useInfinitePagination<Category>({
+  fetcher: async (params) => {
+    return await categoryService.getCategoriesList({
+      page: params.page,
+      page_size: 10,
+      search: params.search
+    });
+  },
+  search: modalCategorySearchQuery,
+  pageSize: 10,
+  dedupeKey: (c) => String(c.id),
+  autoFetch: false
+});
+
+const toggleModalCategoryDropdown = () => {
+  isModalCategoryDropdownOpen.value = !isModalCategoryDropdownOpen.value;
+  if (isModalCategoryDropdownOpen.value && modalCategoryPagination.items.value.length === 0) {
+    modalCategoryPagination.refresh();
+  }
+};
+
+const closeModalCategoryDropdown = () => {
+  isModalCategoryDropdownOpen.value = false;
+};
+
 const toggleCategory = (catId: string | number) => {
   const numericId = Number(catId);
   const index = formSelectedCategories.value.indexOf(numericId);
@@ -190,25 +220,41 @@ const toggleCategory = (catId: string | number) => {
   }
 };
 
+const removeModalCategorySelection = (categoryId: number) => {
+  const index = formSelectedCategories.value.indexOf(categoryId);
+  if (index > -1) {
+    formSelectedCategories.value.splice(index, 1);
+  }
+};
+
+const clearModalCategorySelection = () => {
+  formSelectedCategories.value = [];
+};
+
+const getModalCategoryNameById = (id: number): string => {
+  const fromEntity = modalState.activeEntity.value?.categories?.find((c: any) => Number(c.id) === id);
+  if (fromEntity && fromEntity.name) return decodeHtmlEntities(fromEntity.name);
+  const fromList = categoriesList.value.find((c: any) => Number(c.id) === id);
+  if (fromList && fromList.name) return decodeHtmlEntities(fromList.name);
+  const fromModalPagination = modalCategoryPagination.items.value.find((c: any) => Number(c.id) === id);
+  if (fromModalPagination && fromModalPagination.name) return decodeHtmlEntities(fromModalPagination.name);
+  const fromFilterPagination = categoryPagination.items.value.find((c: any) => Number(c.id) === id);
+  if (fromFilterPagination && fromFilterPagination.name) return decodeHtmlEntities(fromFilterPagination.name);
+  return `Category #${id}`;
+};
+
+const getCategoryNameById = getModalCategoryNameById;
+
 const mappedCategories = computed(() => {
   if (!formSelectedCategories.value || formSelectedCategories.value.length === 0) {
     return [];
   }
   return formSelectedCategories.value.map(catId => {
     const numId = Number(catId);
-    const fromEntity = modalState.activeEntity.value?.categories?.find((c: any) => Number(c.id) === numId);
-    if (fromEntity && fromEntity.name) {
-      return { id: numId, name: fromEntity.name };
-    }
-    const fromList = categoriesList.value.find((c: any) => Number(c.id) === numId);
-    if (fromList && fromList.name) {
-      return { id: numId, name: fromList.name };
-    }
-    const fromPagination = categoryPagination.items.value.find((c: any) => Number(c.id) === numId);
-    if (fromPagination && fromPagination.name) {
-      return { id: numId, name: fromPagination.name };
-    }
-    return { id: numId, name: `Category #${numId}` };
+    return {
+      id: numId,
+      name: getModalCategoryNameById(numId)
+    };
   });
 });
 
@@ -255,6 +301,8 @@ const resetForm = () => {
   formSeoNofollow.value = false;
   formError.value = null;
   featuredImageFile.value = null;
+  isModalCategoryDropdownOpen.value = false;
+  modalCategorySearchQuery.value = '';
   if (previewObjectUrl.value) {
     URL.revokeObjectURL(previewObjectUrl.value);
     previewObjectUrl.value = null;
@@ -276,6 +324,9 @@ watch(
     // Lazy workflow option loading for create and edit
     if (isCreate || isEdit) {
       loadOptions();
+      if (modalCategoryPagination.items.value.length === 0) {
+        modalCategoryPagination.refresh();
+      }
     }
 
     if (isCreate) {
@@ -296,6 +347,8 @@ watch(
       formSeoNofollow.value = !!post.seo_nofollow;
       featuredImageFile.value = null;
       formError.value = null;
+      isModalCategoryDropdownOpen.value = false;
+      modalCategorySearchQuery.value = '';
       if (previewObjectUrl.value) {
         URL.revokeObjectURL(previewObjectUrl.value);
         previewObjectUrl.value = null;
@@ -339,11 +392,57 @@ const handleSavePost = async () => {
     };
 
     if (modalState.isCreate.value) {
-      await blogService.createBlogPost(payload);
+      const createdPost = await blogService.createBlogPost(payload);
+      // Synchronize category assignment on newly created post if categories were selected
+      if (createdPost?.id && formSelectedCategories.value.length > 0) {
+        try {
+          const catRes = await blogService.assignBlogPostCategories(createdPost.id, formSelectedCategories.value);
+          if (catRes && Array.isArray(catRes.categories)) {
+            createdPost.categories = catRes.categories;
+          }
+        } catch (catErr) {
+          console.warn('Post created, but category assignment sync failed:', catErr);
+        }
+      }
       toastSuccess('Blog post created successfully.');
     } else {
-      await blogService.updateBlogPost(String(modalState.activeId.value), payload);
-      toastSuccess('Blog post updated successfully.');
+      const postId = String(modalState.activeId.value);
+      // 1. Keep the existing blog post update flow unchanged
+      const updatedPost = await blogService.updateBlogPost(postId, payload);
+
+      // 2. On save, call the category endpoint with the selected category IDs
+      const catRes = await blogService.assignBlogPostCategories(postId, formSelectedCategories.value);
+
+      // 3. After a successful request, update the local blog post state with the returned `categories` data
+      let updatedCategories: any[] = [];
+      if (catRes && Array.isArray(catRes.categories)) {
+        updatedCategories = catRes.categories;
+      } else if (catRes && Array.isArray(catRes)) {
+        updatedCategories = catRes;
+      } else if (updatedPost && Array.isArray(updatedPost.categories)) {
+        updatedCategories = updatedPost.categories;
+      }
+
+      if (modalState.activeEntity.value) {
+        modalState.activeEntity.value = {
+          ...modalState.activeEntity.value,
+          ...updatedPost,
+          categories: updatedCategories.length > 0 ? updatedCategories : modalState.activeEntity.value.categories
+        };
+      }
+
+      // Update the local posts list array immediately
+      const postIndex = postsList.value.findIndex(p => String(p.id) === String(postId));
+      const existingPost = postIndex !== -1 ? postsList.value[postIndex] : undefined;
+      if (postIndex !== -1 && existingPost) {
+        postsList.value[postIndex] = {
+          ...existingPost,
+          ...updatedPost,
+          categories: updatedCategories.length > 0 ? updatedCategories : existingPost.categories
+        };
+      }
+
+      toastSuccess('Blog post and categories updated successfully.');
     }
     await modalState.closeModal();
     await fetchPosts();
@@ -478,12 +577,18 @@ const onDocumentClick = (e: MouseEvent) => {
   if (isCategoryDropdownOpen.value && categoryDropdownRef.value && !categoryDropdownRef.value.contains(target)) {
     closeCategoryDropdown();
   }
+  if (isModalCategoryDropdownOpen.value && modalCategoryDropdownRef.value && !modalCategoryDropdownRef.value.contains(target)) {
+    closeModalCategoryDropdown();
+  }
 };
 
 const onDocumentKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
     if (isCategoryDropdownOpen.value) {
       closeCategoryDropdown();
+    }
+    if (isModalCategoryDropdownOpen.value) {
+      closeModalCategoryDropdown();
     }
   }
 };
@@ -1291,25 +1396,135 @@ const handlePublishPost = async (post: BlogPostItem) => {
                   <Layers class="w-4 h-4 text-primary" /> Categorization Domains
                 </h4>
 
-                <!-- Categories Checklist -->
+                <!-- Assigned Categories Multi-Selector -->
                 <div class="space-y-2">
-                  <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1 block">Categories</label>
-                  <div class="max-h-40 overflow-y-auto pr-1 space-y-1 border border-slate-100 dark:border-slate-900 p-3 rounded-xl bg-slate-50/50 dark:bg-slate-900/30">
-                    <label 
-                      v-for="cat in categoriesList" 
-                      :key="cat.id" 
-                      class="flex items-center gap-2.5 cursor-pointer p-1 hover:bg-slate-100 dark:hover:bg-slate-900 rounded transition-colors"
+                  <div class="flex items-center justify-between">
+                    <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Categories</label>
+                    <button 
+                      v-if="formSelectedCategories.length > 0"
+                      type="button"
+                      @click="clearModalCategorySelection"
+                      class="text-[10px] text-muted-foreground hover:text-destructive transition-colors font-semibold cursor-pointer"
                     >
-                      <input 
-                        type="checkbox" 
-                        :checked="formSelectedCategories.includes(Number(cat.id))"
-                        @change="toggleCategory(cat.id)"
-                        class="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary"
-                      />
-                      <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 select-none">{{ cat.name }}</span>
-                    </label>
-                    <div v-if="categoriesList.length === 0" class="text-[10px] uppercase font-bold tracking-widest text-slate-400 text-center py-2">
-                      No Categories
+                      Clear all ({{ formSelectedCategories.length }})
+                    </button>
+                  </div>
+
+                  <!-- Selected Category Chips -->
+                  <div v-if="formSelectedCategories.length > 0" class="flex flex-wrap gap-1.5 mb-1">
+                    <span 
+                      v-for="catId in formSelectedCategories" 
+                      :key="catId"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-medium max-w-full"
+                    >
+                      <Layers class="w-3 h-3 shrink-0" />
+                      <span class="truncate">{{ getModalCategoryNameById(catId) }}</span>
+                      <button
+                        type="button"
+                        @click="removeModalCategorySelection(catId)"
+                        class="text-primary/70 hover:text-primary hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer shrink-0"
+                        title="Remove category"
+                        :aria-label="`Remove ${getModalCategoryNameById(catId)}`"
+                        :disabled="isSaving"
+                      >
+                        <X class="w-3 h-3" />
+                      </button>
+                    </span>
+                  </div>
+
+                  <!-- Category Dropdown Picker Trigger -->
+                  <div ref="modalCategoryDropdownRef" class="relative">
+                    <button
+                      type="button"
+                      @click.stop="toggleModalCategoryDropdown"
+                      :class="cn(
+                        'w-full h-10 px-3 bg-background border border-input rounded-xl text-left text-xs font-medium transition-all flex items-center justify-between gap-2 cursor-pointer focus:ring-2 focus:ring-primary/20',
+                        formSelectedCategories.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                      )"
+                      :disabled="isSaving"
+                    >
+                      <div class="flex items-center gap-2 truncate">
+                        <Layers class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span class="truncate">
+                          {{ formSelectedCategories.length === 0 ? 'Select categories...' : 'Add more categories...' }}
+                        </span>
+                      </div>
+                      <ChevronDown :class="cn('w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0', isModalCategoryDropdownOpen && 'rotate-180')" />
+                    </button>
+
+                    <!-- Category Dropdown Popover with Search & Infinite Scroll -->
+                    <div 
+                      v-if="isModalCategoryDropdownOpen"
+                      @click.stop
+                      class="absolute left-0 top-full z-50 mt-1.5 w-full bg-card border border-border rounded-xl shadow-xl p-2.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+                    >
+                      <!-- Category Search Input -->
+                      <div class="relative mb-2">
+                        <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                          v-model="modalCategorySearchQuery"
+                          type="text"
+                          placeholder="Search categories..."
+                          class="w-full h-8 pl-8 pr-3 bg-muted/40 border border-border rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary font-medium"
+                        />
+                      </div>
+
+                      <!-- Scrollable Category List with Checkbox & Infinite Scroll -->
+                      <div class="max-h-48 overflow-y-auto space-y-1 pr-1">
+                        <div 
+                          v-for="cat in modalCategoryPagination.items.value"
+                          :key="cat.id"
+                          @click="toggleCategory(cat.id)"
+                          :class="cn(
+                            'flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors',
+                            formSelectedCategories.includes(Number(cat.id))
+                              ? 'bg-primary/10 text-primary font-bold'
+                              : 'hover:bg-muted text-foreground'
+                          )"
+                        >
+                          <div class="flex items-center gap-2 truncate">
+                            <div :class="cn(
+                              'w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors',
+                              formSelectedCategories.includes(Number(cat.id))
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-muted-foreground/40 bg-background'
+                            )">
+                              <Check v-if="formSelectedCategories.includes(Number(cat.id))" class="w-3 h-3 stroke-[3]" />
+                            </div>
+                            <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
+                          </div>
+                          <span v-if="cat.slug" class="text-[10px] text-muted-foreground font-mono shrink-0 ml-1">
+                            /{{ cat.slug }}
+                          </span>
+                        </div>
+
+                        <!-- Empty Search / List State -->
+                        <div 
+                          v-if="modalCategoryPagination.items.value.length === 0 && !modalCategoryPagination.isLoading.value" 
+                          class="py-3 text-center text-muted-foreground text-xs"
+                        >
+                          No categories found.
+                        </div>
+
+                        <!-- Loading State -->
+                        <div 
+                          v-if="modalCategoryPagination.isLoading.value && modalCategoryPagination.items.value.length === 0" 
+                          class="py-3 text-center text-muted-foreground flex items-center justify-center gap-2 text-xs"
+                        >
+                          <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+                          <span>Loading categories...</span>
+                        </div>
+
+                        <!-- Infinite Scroll Trigger Sentinel -->
+                        <UiInfiniteScroll
+                          v-if="modalCategoryPagination.items.value.length > 0"
+                          :has-more="modalCategoryPagination.hasMore.value"
+                          :is-loading="modalCategoryPagination.isFetchingNextPage.value"
+                          :error="modalCategoryPagination.error.value"
+                          @load-more="modalCategoryPagination.loadNextPage"
+                          @retry="modalCategoryPagination.loadNextPage"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

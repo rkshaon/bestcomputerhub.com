@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { blogPosts } from '@/mock/data';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { BlogPost, BlogPostItem, BlogTag, BlogTagQueryParams, CreateBlogTagPayload, UpdateBlogTagPayload, PaginatedBlogTags, BlogPostQueryParams, PaginatedBlogPosts } from '@/types';
+import type { BlogPost, BlogPostItem, BlogCategory, BlogTag, BlogTagQueryParams, CreateBlogTagPayload, UpdateBlogTagPayload, PaginatedBlogTags, BlogPostQueryParams, PaginatedBlogPosts } from '@/types';
 
 const isLoading = ref(false);
 const errorMsg = ref<string | null>(null);
@@ -124,6 +124,36 @@ export const useBlogService = () => {
     }
 
     return formData;
+  };
+
+  /**
+   * Assign categories to an existing blog post (POST /api/v1/blog/posts/{id}/categories/)
+   */
+  const assignBlogPostCategories = async (
+    id: number | string,
+    categoryIds: number[]
+  ): Promise<{ message?: string; categories: BlogCategory[]; [key: string]: any }> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<{ message?: string; categories: BlogCategory[]; [key: string]: any }>(
+        `/api/v1/blog/posts/${id}/categories/`,
+        {
+          method: 'POST',
+          body: {
+            category_ids: categoryIds.map(Number)
+          }
+        }
+      );
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, `Failed to assign categories to blog post #${id}.`);
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
   };
 
   /**
@@ -393,6 +423,8 @@ export const useBlogService = () => {
     getBlogPosts,
     getBlogPost,
     updateBlogPost,
+    assignBlogPostCategories,
+    assignBlogCategories: assignBlogPostCategories,
     createBlogPost,
     deleteBlogPost,
     unpublishBlogPost,
