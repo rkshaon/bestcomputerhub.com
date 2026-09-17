@@ -157,6 +157,33 @@ export const useBlogService = () => {
   };
 
   /**
+   * Remove a single category from a blog post (DELETE /api/v1/blog/posts/{blogPostId}/categories/{categoryId}/)
+   */
+  const removeBlogPostCategory = async (
+    blogPostId: number | string,
+    categoryId: number | string
+  ): Promise<{ message?: string; categories: BlogCategory[]; [key: string]: any }> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<{ message?: string; categories: BlogCategory[]; [key: string]: any }>(
+        `/api/v1/blog/posts/${blogPostId}/categories/${categoryId}/`,
+        {
+          method: 'DELETE'
+        }
+      );
+      return data;
+    } catch (err: any) {
+      const msg = extractErrorMessage(err, `Failed to remove category #${categoryId} from blog post #${blogPostId}.`);
+      errorMsg.value = msg;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
    * Update an existing blog post (PATCH /api/v1/blog/posts/{id}/)
    */
   const updateBlogPost = async (id: number | string, payload: any): Promise<BlogPostItem> => {
@@ -425,6 +452,8 @@ export const useBlogService = () => {
     updateBlogPost,
     assignBlogPostCategories,
     assignBlogCategories: assignBlogPostCategories,
+    removeBlogPostCategory,
+    removeBlogCategory: removeBlogPostCategory,
     createBlogPost,
     deleteBlogPost,
     unpublishBlogPost,

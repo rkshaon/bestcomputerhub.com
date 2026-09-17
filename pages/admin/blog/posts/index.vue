@@ -237,10 +237,71 @@ const toggleCategory = (catId: string | number) => {
   }
 };
 
+const isRemovingCategoryId = ref<number | null>(null);
+
 const removeModalCategorySelection = (categoryId: number) => {
   const index = formSelectedCategories.value.indexOf(categoryId);
   if (index > -1) {
     formSelectedCategories.value.splice(index, 1);
+  }
+};
+
+const handleRemoveCategory = async (catId: number | string) => {
+  const numericId = Number(catId);
+  if (isRemovingCategoryId.value !== null) return;
+
+  // In Create mode, simply remove from local form state
+  if (modalState.isCreate.value) {
+    removeModalCategorySelection(numericId);
+    return;
+  }
+
+  // In Edit mode, execute the DELETE request against the API
+  if (modalState.isEdit.value && modalState.activeId.value) {
+    if (!hasPermission('blog_api.change_blogpost')) {
+      toastError('Permission denied. You do not have permission to modify this blog post.');
+      return;
+    }
+
+    isRemovingCategoryId.value = numericId;
+    try {
+      const postId = String(modalState.activeId.value);
+      const res = await blogService.removeBlogPostCategory(postId, numericId);
+
+      // Remove from active form selection
+      removeModalCategorySelection(numericId);
+
+      // Resolve updated categories list from response if provided, otherwise filter locally
+      let updatedCategories: any[] = [];
+      if (res && Array.isArray(res.categories)) {
+        updatedCategories = res.categories;
+      } else {
+        const currentCategories = modalState.activeEntity.value?.categories || [];
+        updatedCategories = currentCategories.filter((c: any) => Number(c.id) !== numericId);
+      }
+
+      if (modalState.activeEntity.value) {
+        modalState.activeEntity.value = {
+          ...modalState.activeEntity.value,
+          categories: updatedCategories
+        };
+      }
+
+      // Update post in table list if present
+      const postIndex = postsList.value.findIndex(p => String(p.id) === postId);
+      if (postIndex !== -1 && postsList.value[postIndex]) {
+        postsList.value[postIndex] = {
+          ...postsList.value[postIndex],
+          categories: updatedCategories
+        };
+      }
+
+      toastSuccess('Category removed from blog post.');
+    } catch (err: any) {
+      handleApiError(err, 'Failed to remove category from blog post.');
+    } finally {
+      isRemovingCategoryId.value = null;
+    }
   }
 };
 
@@ -1241,11 +1302,22 @@ const handlePublishPost = async (post: BlogPostItem) => {
                     <span
                       v-for="cat in mappedCategories"
                       :key="cat.id"
-                      class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20 max-w-[240px] truncate"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20 max-w-[240px]"
                       :title="decodeHtmlEntities(cat.name)"
                     >
                       <Layers class="w-3 h-3 shrink-0 text-primary/70" />
                       <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
+                      <button
+                        type="button"
+                        @click="handleRemoveCategory(cat.id)"
+                        class="text-primary/70 hover:text-destructive hover:bg-destructive/10 rounded p-0.5 transition-colors cursor-pointer shrink-0 ml-0.5"
+                        :title="`Remove ${decodeHtmlEntities(cat.name)}`"
+                        :aria-label="`Remove ${decodeHtmlEntities(cat.name)}`"
+                        :disabled="isRemovingCategoryId === Number(cat.id) || isSaving"
+                      >
+                        <Loader2 v-if="isRemovingCategoryId === Number(cat.id)" class="w-3 h-3 animate-spin text-destructive" />
+                        <X v-else class="w-3 h-3" />
+                      </button>
                     </span>
                   </div>
                 </div>
@@ -1466,13 +1538,14 @@ const handlePublishPost = async (post: BlogPostItem) => {
                       <span class="truncate">{{ getModalCategoryNameById(catId) }}</span>
                       <button
                         type="button"
-                        @click="removeModalCategorySelection(catId)"
-                        class="text-primary/70 hover:text-primary hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer shrink-0"
-                        title="Remove category"
+                        @click="handleRemoveCategory(catId)"
+                        class="text-primary/70 hover:text-destructive hover:bg-destructive/10 rounded p-0.5 transition-colors cursor-pointer shrink-0 ml-0.5"
+                        :title="`Remove ${getModalCategoryNameById(catId)}`"
                         :aria-label="`Remove ${getModalCategoryNameById(catId)}`"
-                        :disabled="isSaving"
+                        :disabled="isRemovingCategoryId === Number(catId) || isSaving"
                       >
-                        <X class="w-3 h-3" />
+                        <Loader2 v-if="isRemovingCategoryId === Number(catId)" class="w-3 h-3 animate-spin text-destructive" />
+                        <X v-else class="w-3 h-3" />
                       </button>
                     </span>
                   </div>
