@@ -79,6 +79,26 @@ const canDeletePost = computed(() => hasPermission('blog_api.delete_blogpost'));
 // Selected post for view modal
 const selectedPost = computed<BlogPostItem | null>(() => modalState.activeEntity.value);
 
+// Delete modal state
+const selectedPostForDelete = ref<BlogPostItem | null>(null);
+const isDeleting = ref(false);
+
+const postToDelete = computed<BlogPostItem | null>(() => {
+  return modalState.activeEntity.value || selectedPostForDelete.value || null;
+});
+
+watch(() => modalState.isDelete.value, (isOpen) => {
+  if (isOpen && !canDeletePost.value) {
+    toastError('You do not have permission to delete blog posts.');
+    modalState.closeModal({ replace: true });
+  }
+  if (!isOpen) {
+    if (!modalState.isView.value && !modalState.isEdit.value) {
+      selectedPostForDelete.value = null;
+    }
+  }
+}, { immediate: true });
+
 // View Modal mapped categories
 const viewMappedCategories = computed(() => {
   if (!selectedPost.value) return [];
@@ -812,23 +832,32 @@ const formatDate = (dateString: string | null) => {
   }
 };
 
-const isDeleting = ref<number | null>(null);
+const triggerDeleteModal = async (post: BlogPostItem) => {
+  if (!canDeletePost.value) {
+    toastError('You do not have permission to delete blog posts.');
+    return;
+  }
+  selectedPostForDelete.value = post;
+  await modalState.openDelete(post.id);
+};
 
-const handleDeletePost = async (post: BlogPostItem) => {
-  if (!hasPermission('blog_api.delete_blogpost')) {
+const executeDeletePost = async () => {
+  const target = postToDelete.value;
+  if (!target || !target.id) return;
+
+  if (!canDeletePost.value) {
     toastError('You do not have permission to delete blog posts.');
     return;
   }
 
-  const confirmMsg = `Verify Decommissioning: Are you sure you want to delete the blog post "${post.title}"? This action is permanent and cannot be undone.`;
-  if (!confirm(confirmMsg)) {
-    return;
-  }
+  if (isDeleting.value) return;
+  isDeleting.value = true;
 
-  isDeleting.value = post.id;
   try {
-    await blogService.deleteBlogPost(post.id);
-    toastSuccess(`Blog post "${post.title}" deleted successfully.`);
+    await blogService.deleteBlogPost(target.id);
+    toastSuccess(`Blog post "${decodeHtmlEntities(target.title)}" deleted successfully.`);
+    await modalState.closeModal();
+    selectedPostForDelete.value = null;
     
     // Adjust page if we deleted the last item on current page
     if (postsList.value.length === 1 && currentPage.value > 1) {
@@ -838,7 +867,7 @@ const handleDeletePost = async (post: BlogPostItem) => {
   } catch (err: any) {
     handleApiError(err, 'Failed to delete blog post.');
   } finally {
-    isDeleting.value = null;
+    isDeleting.value = false;
   }
 };
 
@@ -1211,10 +1240,8 @@ const handlePublishPost = async (post: BlogPostItem) => {
                 class="h-8 w-8 p-0 cursor-pointer text-muted-foreground hover:text-rose-500 hover:bg-muted rounded-lg transition-colors inline-flex items-center justify-center"
                 title="Delete Blog Post"
                 aria-label="Delete blog post"
-                :disabled="isDeleting === post.id"
-                @click="handleDeletePost(post)"
+                @click="triggerDeleteModal(post)"
               >
-                <span v-if="isDeleting === post.id" class="animate-spin border-2 border-rose-500/30 border-t-rose-500 rounded-full w-4 h-4"></span>
                 <Trash2 class="w-4 h-4 text-rose-500" />
                 <span class="sr-only">Delete</span>
               </UiButton>
@@ -2007,6 +2034,52 @@ const handlePublishPost = async (post: BlogPostItem) => {
               Close
             </button>
           </div>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- Delete Confirmation Modal -->
+    <UiAdminModal 
+      :is-open="modalState.isDelete.value && (!!postToDelete || modalState.isResolving.value)"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="modalState.closeModal()"
+    >
+      <div class="p-6 space-y-6">
+        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+          <Trash2 class="w-6 h-6" />
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold text-foreground">Confirm Blog Post Deletion</h3>
+          <p v-if="modalState.isResolving.value && !postToDelete" class="text-xs text-muted-foreground mt-1.5 flex items-center gap-2">
+            <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+            <span>Resolving blog post details...</span>
+          </p>
+          <p v-else class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            Are you sure you want to delete the blog post <span class="font-bold text-foreground">"{{ decodeHtmlEntities(postToDelete?.title || '') }}"</span>? This action is permanent and cannot be undone.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <UiButton 
+            variant="outline" 
+            class="rounded-xl h-10 px-5 text-xs font-bold cursor-pointer"
+            @click="modalState.closeModal()"
+            :disabled="isDeleting || (modalState.isResolving.value && !postToDelete)"
+          >
+            Cancel
+          </UiButton>
+
+          <UiButton 
+            class="rounded-xl h-10 px-5 text-xs font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2 cursor-pointer"
+            @click="executeDeletePost"
+            :disabled="isDeleting || (modalState.isResolving.value && !postToDelete) || !postToDelete"
+          >
+            <Loader2 v-if="isDeleting" class="w-4 h-4 animate-spin" />
+            <Trash2 v-else class="w-3.5 h-3.5" />
+            <span>Delete Post</span>
+          </UiButton>
         </div>
       </div>
     </UiAdminModal>
