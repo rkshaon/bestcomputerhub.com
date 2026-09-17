@@ -45,6 +45,8 @@ export interface BlogPostItem {
   categories: BlogCategory[];
   tags: BlogTag[];
   created_at: string;
+  updated_at?: string;
+  excerpt?: string;
   content?: string;
   seo_title?: string;
   seo_description?: string;

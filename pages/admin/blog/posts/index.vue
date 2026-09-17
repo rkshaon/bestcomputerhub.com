@@ -21,7 +21,10 @@ import {
   Save,
   Filter,
   ChevronDown,
-  Check
+  Check,
+  ExternalLink,
+  Calendar,
+  Clock
 } from 'lucide-vue-next';
 import { useBlogService } from '@/composables/useBlogService';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -48,6 +51,7 @@ definePageMeta({
 const blogService = useBlogService();
 const categoryService = useCategoryService();
 const userService = useUserService();
+const { hasPermission } = useAdminPermissions();
 const route = useRoute();
 const router = useRouter();
 
@@ -55,11 +59,64 @@ const router = useRouter();
 const postsList = ref<BlogPostItem[]>([]);
 
 // Modal setup
-const modalState = useAdminModalState<any>({
+const modalState = useAdminModalState<BlogPostItem>({
   getItems: async (id) => {
     return await blogService.getBlogPost(Number(id));
+  },
+  onResolveError: (id) => {
+    toastError(`Blog post #${id} could not be resolved.`);
+    modalState.closeModal({ replace: true });
   }
 });
+
+// Permissions
+const canViewPost = computed(() => hasPermission('blog_api.view_blogpost'));
+const canEditPost = computed(() => hasPermission('blog_api.change_blogpost'));
+const canDeletePost = computed(() => hasPermission('blog_api.delete_blogpost'));
+
+// Selected post for view modal
+const selectedPost = computed<BlogPostItem | null>(() => modalState.activeEntity.value);
+
+// View Modal mapped categories
+const viewMappedCategories = computed(() => {
+  if (!selectedPost.value) return [];
+  if (Array.isArray(selectedPost.value.categories) && selectedPost.value.categories.length > 0) {
+    return selectedPost.value.categories.map((c: any) => {
+      if (typeof c === 'object' && c !== null && c.name) {
+        return { id: c.id, name: c.name, slug: c.slug };
+      }
+      const numId = Number(c);
+      const fromList = categoriesList.value.find((cat: any) => Number(cat.id) === numId);
+      if (fromList) return { id: numId, name: fromList.name, slug: fromList.slug };
+      const fromPagination = categoryPagination.items.value.find((cat: any) => Number(cat.id) === numId);
+      if (fromPagination) return { id: numId, name: fromPagination.name, slug: fromPagination.slug };
+      return { id: numId, name: `Category #${numId}`, slug: '' };
+    });
+  }
+  return [];
+});
+
+// View Modal mapped tags
+const viewMappedTags = computed(() => {
+  if (!selectedPost.value) return [];
+  if (Array.isArray(selectedPost.value.tags) && selectedPost.value.tags.length > 0) {
+    return selectedPost.value.tags.map((t: any) => {
+      if (typeof t === 'object' && t !== null && t.name) {
+        return { id: t.id, name: t.name, slug: t.slug };
+      }
+      const numId = Number(t);
+      const fromList = tagsList.value.find((tag: any) => Number(tag.id) === numId);
+      if (fromList) return { id: numId, name: fromList.name, slug: fromList.slug };
+      return { id: numId, name: `Tag #${numId}`, slug: '' };
+    });
+  }
+  return [];
+});
+
+const getStorefrontBlogUrl = (post?: BlogPostItem | null) => {
+  if (!post || !post.slug) return '/blog/';
+  return `/blog/${post.slug}/`;
+};
 
 // Form state variables
 const formTitle = ref('');
@@ -209,19 +266,21 @@ const resetForm = () => {
 
 // Watch modal state to populate/reset fields lazily
 watch(
-  [modalState.activeEntity, modalState.isCreate, modalState.isOpen],
-  ([post, isCreate, isOpen]) => {
+  [modalState.activeEntity, modalState.isCreate, modalState.isEdit, modalState.isOpen],
+  ([post, isCreate, isEdit, isOpen]) => {
     if (!isOpen) {
       resetForm();
       return;
     }
     
-    // Lazy workflow option loading
-    loadOptions();
+    // Lazy workflow option loading for create and edit
+    if (isCreate || isEdit) {
+      loadOptions();
+    }
 
     if (isCreate) {
       resetForm();
-    } else if (post) {
+    } else if (isEdit && post) {
       formTitle.value = post.title || '';
       formContent.value = post.content || '';
       formAuthorId.value = post.author?.id || null;
@@ -413,8 +472,6 @@ const onDocumentKeydown = (e: KeyboardEvent) => {
     }
   }
 };
-
-const { hasPermission } = useAdminPermissions();
 
 const fetchPosts = async () => {
   if (!hasPermission('blog_api.view_blogpost')) {
@@ -832,24 +889,55 @@ const handlePublishPost = async (post: BlogPostItem) => {
             {{ formatDate(post.created_at) }}
           </template>
           <template #cell-actions="{ item: post }">
-            <div class="flex items-center justify-end gap-2">
+            <div class="flex items-center justify-end gap-1">
+              <!-- View on Storefront -->
+              <NuxtLink
+                :to="getStorefrontBlogUrl(post)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
+                title="View on Storefront"
+                aria-label="View on Storefront"
+              >
+                <ExternalLink class="w-4 h-4" />
+              </NuxtLink>
+
+              <!-- View Blog Post Details -->
               <UiButton
-                v-if="hasPermission('blog_api.change_blogpost')"
+                v-if="canViewPost"
+                @click="modalState.openView(post.id)"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0 cursor-pointer text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors inline-flex items-center justify-center"
+                title="View Blog Post"
+                aria-label="View blog post"
+              >
+                <Eye class="w-4 h-4" />
+                <span class="sr-only">View</span>
+              </UiButton>
+
+              <!-- Edit Blog Post -->
+              <UiButton
+                v-if="canEditPost"
                 @click="modalState.openEdit(post.id)"
                 variant="ghost"
                 size="sm"
-                class="h-8 w-8 p-0 cursor-pointer"
+                class="h-8 w-8 p-0 cursor-pointer text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors inline-flex items-center justify-center"
                 title="Edit Blog Post"
+                aria-label="Edit blog post"
               >
                 <Pencil class="w-4 h-4 text-primary" />
                 <span class="sr-only">Edit</span>
               </UiButton>
+
+              <!-- Unpublish Blog Post -->
               <UiButton
                 v-if="post.status === 'PUBLISHED' && hasPermission('blog_api.unpublish_blog_post')"
                 variant="ghost"
                 size="sm"
-                class="h-8 w-8 p-0"
+                class="h-8 w-8 p-0 cursor-pointer text-muted-foreground hover:text-amber-500 hover:bg-muted rounded-lg transition-colors inline-flex items-center justify-center"
                 title="Unpublish Blog Post"
+                aria-label="Unpublish blog post"
                 :disabled="isUnpublishing === post.id"
                 @click="handleUnpublishPost(post)"
               >
@@ -857,12 +945,15 @@ const handlePublishPost = async (post: BlogPostItem) => {
                 <EyeOff v-else class="w-4 h-4 text-amber-500" />
                 <span class="sr-only">Unpublish</span>
               </UiButton>
+
+              <!-- Publish Blog Post -->
               <UiButton
                 v-if="post.status !== 'PUBLISHED' && hasPermission('blog_api.publish_blog_post')"
                 variant="ghost"
                 size="sm"
-                class="h-8 w-8 p-0"
+                class="h-8 w-8 p-0 cursor-pointer text-muted-foreground hover:text-emerald-500 hover:bg-muted rounded-lg transition-colors inline-flex items-center justify-center"
                 title="Publish Blog Post"
+                aria-label="Publish blog post"
                 :disabled="isPublishing === post.id"
                 @click="handlePublishPost(post)"
               >
@@ -870,12 +961,15 @@ const handlePublishPost = async (post: BlogPostItem) => {
                 <Eye class="w-4 h-4 text-emerald-500" />
                 <span class="sr-only">Publish</span>
               </UiButton>
+
+              <!-- Delete Blog Post -->
               <UiButton
-                v-if="hasPermission('blog_api.delete_blogpost')"
+                v-if="canDeletePost"
                 variant="ghost"
                 size="sm"
-                class="h-8 w-8 p-0"
+                class="h-8 w-8 p-0 cursor-pointer text-muted-foreground hover:text-rose-500 hover:bg-muted rounded-lg transition-colors inline-flex items-center justify-center"
                 title="Delete Blog Post"
+                aria-label="Delete blog post"
                 :disabled="isDeleting === post.id"
                 @click="handleDeletePost(post)"
               >
@@ -1232,6 +1326,318 @@ const handlePublishPost = async (post: BlogPostItem) => {
           </UiButton>
         </div>
       </form>
+    </UiAdminModal>
+
+    <!-- View Blog Post Modal (Read-Only) -->
+    <UiAdminModal 
+      :is-open="modalState.isView.value" 
+      max-width="max-w-3xl" 
+      :show-close-button="false" 
+      @close="modalState.closeModal()"
+    >
+      <div class="w-full relative overflow-hidden flex flex-col cursor-default">
+        <!-- Header Banner -->
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
+          <div>
+            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">Blog Post Details</span>
+            <h3 class="text-xl font-display font-extrabold tracking-tight text-foreground mt-0.5">
+              {{ modalState.isResolving.value ? 'Loading Blog Post...' : (decodeHtmlEntities(selectedPost?.title) || 'Blog Post Details') }}
+            </h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <NuxtLink 
+              v-if="!modalState.isResolving.value && selectedPost"
+              :to="getStorefrontBlogUrl(selectedPost)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="h-9 px-3.5 border border-input bg-background hover:bg-muted text-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="View on Storefront"
+            >
+              <ExternalLink class="w-3.5 h-3.5" />
+              <span>Storefront</span>
+            </NuxtLink>
+            <button 
+              v-if="!modalState.isResolving.value && selectedPost && canEditPost"
+              type="button"
+              @click="modalState.openEdit(selectedPost.id)"
+              class="h-9 px-3.5 border border-input bg-background hover:bg-muted text-foreground rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Edit Blog Post"
+            >
+              <Pencil class="w-3.5 h-3.5" />
+              <span>Edit</span>
+            </button>
+            <button 
+              type="button"
+              @click="modalState.closeModal()" 
+              aria-label="Close dialog"
+              class="w-9 h-9 border border-input rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            >
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Resolving / Loading State -->
+        <div v-if="modalState.isResolving.value" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+          <Loader2 class="w-8 h-8 animate-spin text-primary" />
+          <p class="text-xs font-semibold text-muted-foreground">Retrieving blog post details & metadata...</p>
+        </div>
+
+        <!-- Error / Not Found State -->
+        <div v-else-if="!selectedPost" class="p-12 flex flex-col items-center justify-center gap-3 text-center">
+          <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
+            <AlertCircle class="w-6 h-6" />
+          </div>
+          <p class="text-sm font-bold text-foreground">Blog Post Details Not Available</p>
+          <p class="text-xs text-muted-foreground">Could not load the requested blog post from the server.</p>
+          <button 
+            type="button"
+            @click="modalState.closeModal()"
+            class="mt-2 h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+
+        <!-- Read-Only Content Container -->
+        <div v-else class="flex flex-col overflow-hidden">
+          <!-- Scrollable Modal Body -->
+          <div class="p-6 sm:p-8 space-y-6 overflow-y-auto max-h-[70vh]">
+            <!-- Hero Card (Image, Title, Mapped Categories Chips immediately after title, Slug, Status) -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-5 bg-muted/40 rounded-2xl border border-border">
+              <div class="w-24 h-24 sm:w-28 sm:h-28 bg-background border border-border rounded-xl flex items-center justify-center p-1.5 shadow-xs overflow-hidden shrink-0 relative">
+                <img 
+                  v-if="selectedPost.featured_image"
+                  :src="selectedPost.featured_image" 
+                  :alt="selectedPost.featured_image_alt_text || selectedPost.title" 
+                  class="w-full h-full object-cover rounded-lg"
+                  @error="($event.target as HTMLImageElement).src = 'https://placehold.co/600x400/f8fafc/64748b?text=No+Image'"
+                />
+                <div v-else class="flex flex-col items-center justify-center text-muted-foreground gap-1">
+                  <FileText class="w-8 h-8 text-muted-foreground/50" />
+                  <span class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70">No Image</span>
+                </div>
+              </div>
+
+              <div class="flex-1 min-w-0 space-y-2 w-full">
+                <!-- Post Title -->
+                <h4 class="text-lg sm:text-xl font-bold font-display tracking-tight text-foreground leading-snug">
+                  {{ decodeHtmlEntities(selectedPost.title) }}
+                </h4>
+
+                <!-- Mapped Categories Chips (Immediately after Post Title) -->
+                <div 
+                  v-if="viewMappedCategories.length > 0" 
+                  class="flex flex-wrap items-center gap-1.5 pt-0.5"
+                >
+                  <span
+                    v-for="cat in viewMappedCategories"
+                    :key="cat.id"
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20 max-w-[240px] truncate"
+                    :title="decodeHtmlEntities(cat.name)"
+                  >
+                    <Layers class="w-3 h-3 shrink-0 text-primary/70" />
+                    <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
+                  </span>
+                </div>
+
+                <!-- Slug and Status Context -->
+                <div class="flex items-center gap-2 flex-wrap text-xs pt-1">
+                  <span class="font-mono text-primary font-bold bg-primary/10 px-2 py-0.5 rounded text-[11px]">
+                    /{{ selectedPost.slug }}
+                  </span>
+                  <div class="flex items-center gap-1.5 ml-auto">
+                    <span :class="cn(
+                      'w-2 h-2 rounded-full',
+                      selectedPost.status === 'PUBLISHED' ? 'bg-emerald-500' : 'bg-amber-500'
+                    )"></span>
+                    <span :class="cn(
+                      'text-[10px] font-bold uppercase tracking-wider',
+                      selectedPost.status === 'PUBLISHED' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                    )">
+                      {{ selectedPost.status || 'DRAFT' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Core Metadata Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Post ID</span>
+                <p class="text-base font-bold text-foreground font-mono">
+                  #{{ selectedPost.id }}
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Author</span>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <UserIcon class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <p class="text-xs font-bold text-foreground truncate" :title="selectedPost.author?.full_name || selectedPost.author?.username || 'Unassigned'">
+                    {{ selectedPost.author?.full_name || selectedPost.author?.username || 'Unassigned' }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Published Date</span>
+                <p class="text-xs font-bold text-foreground font-mono">
+                  {{ formatDate(selectedPost.published_at) }}
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-muted/20 border border-border rounded-xl space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Created Date</span>
+                <p class="text-xs font-bold text-foreground font-mono">
+                  {{ formatDate(selectedPost.created_at) }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Categorization & Tags Taxonomy Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Assigned Categories -->
+              <div class="p-4 bg-muted/20 border border-border rounded-xl space-y-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Assigned Categories</span>
+                <div v-if="viewMappedCategories.length > 0" class="flex flex-wrap gap-1.5 mt-1">
+                  <span 
+                    v-for="cat in viewMappedCategories" 
+                    :key="cat.id"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-medium"
+                  >
+                    <Layers class="w-3 h-3" />
+                    <span>{{ decodeHtmlEntities(cat.name) }}</span>
+                    <span v-if="cat.slug" class="text-[10px] font-mono text-primary/70">/{{ cat.slug }}</span>
+                  </span>
+                </div>
+                <p v-else class="text-xs text-muted-foreground italic mt-1">No categories assigned.</p>
+              </div>
+
+              <!-- Assigned Tags -->
+              <div class="p-4 bg-muted/20 border border-border rounded-xl space-y-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Assigned Tags</span>
+                <div v-if="viewMappedTags.length > 0" class="flex flex-wrap gap-1.5 mt-1">
+                  <span 
+                    v-for="tag in viewMappedTags" 
+                    :key="tag.id"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-muted text-muted-foreground border border-border rounded-lg text-xs font-medium"
+                  >
+                    <Tag class="w-3 h-3 text-muted-foreground/70" />
+                    <span>{{ decodeHtmlEntities(tag.name) }}</span>
+                  </span>
+                </div>
+                <p v-else class="text-xs text-muted-foreground italic mt-1">No tags assigned.</p>
+              </div>
+            </div>
+
+            <!-- Excerpt / Summary (if available) -->
+            <div v-if="selectedPost.excerpt" class="space-y-1.5 pt-2 border-t border-border/60">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Summary Excerpt</span>
+              <div class="p-3.5 rounded-xl bg-muted/30 border border-border text-xs text-foreground font-medium leading-relaxed italic">
+                {{ selectedPost.excerpt }}
+              </div>
+            </div>
+
+            <!-- Post Body Content (Read-Only Rich Text) -->
+            <div class="space-y-1.5 pt-4 border-t border-border/60">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Formatted Post Body</span>
+              <div class="prose prose-sm prose-slate dark:prose-invert max-w-none text-xs text-foreground bg-muted/20 p-4 rounded-xl border border-border font-normal leading-relaxed max-h-72 overflow-y-auto">
+                <div v-if="selectedPost.content" v-html="selectedPost.content"></div>
+                <p v-else class="text-xs text-muted-foreground italic m-0">No post body content provided.</p>
+              </div>
+            </div>
+
+            <!-- SEO Metadata Section -->
+            <div class="space-y-3 pt-4 border-t border-border/60">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Globe class="w-3.5 h-3.5 text-primary" />
+                <span>Search Engine Optimization (SEO)</span>
+              </span>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="p-3 bg-muted/20 border border-border rounded-xl space-y-1">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">SEO Title</span>
+                  <p class="text-xs font-semibold text-foreground">
+                    {{ selectedPost.seo_title || decodeHtmlEntities(selectedPost.title) || '—' }}
+                  </p>
+                </div>
+
+                <div class="p-3 bg-muted/20 border border-border rounded-xl space-y-1">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Focus Keyword</span>
+                  <p class="text-xs font-semibold text-foreground">
+                    {{ selectedPost.seo_focus_keyword || '—' }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="p-3 bg-muted/20 border border-border rounded-xl space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Meta Description</span>
+                <p class="text-xs font-normal text-foreground leading-relaxed">
+                  {{ selectedPost.seo_description || '—' }}
+                </p>
+              </div>
+
+              <!-- Indexing Directives -->
+              <div class="flex items-center gap-3 pt-1">
+                <span :class="cn(
+                  'px-2.5 py-1 rounded-md text-[11px] font-bold border',
+                  selectedPost.seo_noindex 
+                    ? 'bg-destructive/10 text-destructive border-destructive/20' 
+                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                )">
+                  {{ selectedPost.seo_noindex ? 'Noindex (Excluded)' : 'Indexable' }}
+                </span>
+                <span :class="cn(
+                  'px-2.5 py-1 rounded-md text-[11px] font-bold border',
+                  selectedPost.seo_nofollow 
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' 
+                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                )">
+                  {{ selectedPost.seo_nofollow ? 'Nofollow (Links Suppressed)' : 'Follow Links' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Audit & Governance -->
+            <div class="pt-4 border-t border-border space-y-2.5 text-xs">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audit & Governance</span>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="space-y-0.5">
+                  <span class="text-[10px] text-muted-foreground font-semibold">Created At</span>
+                  <p class="font-mono text-[11px] text-foreground">{{ formatDate(selectedPost.created_at) }}</p>
+                </div>
+                <div class="space-y-0.5">
+                  <span class="text-[10px] text-muted-foreground font-semibold">Published At</span>
+                  <p class="font-mono text-[11px] text-foreground">{{ formatDate(selectedPost.published_at) }}</p>
+                </div>
+                <div class="space-y-0.5">
+                  <span class="text-[10px] text-muted-foreground font-semibold">Author</span>
+                  <p class="font-mono text-[11px] text-foreground">{{ selectedPost.author?.username || '—' }}</p>
+                </div>
+                <div class="space-y-0.5">
+                  <span class="text-[10px] text-muted-foreground font-semibold">Alt Text</span>
+                  <p class="font-mono text-[11px] text-foreground truncate" :title="selectedPost.featured_image_alt_text || 'None'">
+                    {{ selectedPost.featured_image_alt_text || 'None' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Control -->
+          <div class="px-6 py-4 border-t border-border flex items-center justify-end gap-3 bg-muted/20">
+            <button 
+              type="button"
+              @click="modalState.closeModal()" 
+              class="h-9 px-5 bg-foreground text-background hover:bg-foreground/90 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
     </UiAdminModal>
   </NuxtLayout>
 </template>
