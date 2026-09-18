@@ -1529,6 +1529,16 @@ watch(viewMode, () => {
 
     <template #header-actions>
       <div class="flex flex-wrap items-center gap-2">
+        <NuxtLink to="/admin/categories/featured/">
+          <UiButton 
+            variant="outline" 
+            class="rounded-xl h-9 px-3.5 gap-1.5 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-bold text-xs"
+          >
+            <Sparkles class="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+            <span>Featured Categories</span>
+          </UiButton>
+        </NuxtLink>
+
         <UiButton 
           variant="outline" 
           class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
