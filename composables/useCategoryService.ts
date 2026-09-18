@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useProductService } from './useProductService';
 import { extractErrorMessage } from './useToast';
-import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse, CategorySummaryResponse, BulkMenuUpdateResponse, CategoryPathItem, CategoryPathResponse, CategoryPriceRange } from '@/types';
+import type { Category, PaginatedResponse, CategoryFilters, PaginatedCategoriesResponse, CategoryImportResponse, CategorySummaryResponse, BulkMenuUpdateResponse, CategoryPathItem, CategoryPathResponse, CategoryPriceRange, FeaturedCategory, FeaturedCategoriesReorderRequest, FeaturedCategoriesReorderResponse } from '@/types';
 
 const CATEGORIES_STORAGE_KEY = 'techcore_mock_categories_registry';
 
@@ -44,6 +44,9 @@ export const useCategoryService = () => {
       display_order: cat.display_order !== undefined ? Number(cat.display_order) : (cat.order !== undefined ? Number(cat.order) : 0),
       show_in_menu: cat.show_in_menu !== undefined ? Boolean(cat.show_in_menu) : (cat.is_menu !== undefined ? Boolean(cat.is_menu) : true),
       is_menu: cat.is_menu !== undefined ? Boolean(cat.is_menu) : (cat.show_in_menu !== undefined ? Boolean(cat.show_in_menu) : true),
+      is_featured: cat.is_featured !== undefined ? Boolean(cat.is_featured) : false,
+      featured_display_order: cat.featured_display_order !== undefined ? Number(cat.featured_display_order) : undefined,
+      featured_icon: cat.featured_icon !== undefined ? (cat.featured_icon || null) : null,
       has_children: typeof cat.has_children === 'boolean'
         ? cat.has_children
         : Boolean(cat.children?.length || cat.subCategories?.length)
@@ -55,6 +58,23 @@ export const useCategoryService = () => {
       mapped.children = cat.children.map(mapCategoryResponse);
     }
     return mapped;
+  };
+
+  const mapFeaturedCategoryResponse = (cat: any): FeaturedCategory => {
+    if (!cat) return cat;
+    return {
+      id: typeof cat.id === 'number' ? cat.id : String(cat.id),
+      name: cat.name || '',
+      slug: cat.slug || '',
+      featured_icon: cat.featured_icon !== undefined ? (cat.featured_icon || null) : (cat.icon || null),
+      icon: cat.icon,
+      image: cat.image,
+      is_featured: cat.is_featured !== undefined ? Boolean(cat.is_featured) : true,
+      featured_display_order: cat.featured_display_order !== undefined ? Number(cat.featured_display_order) : (cat.display_order !== undefined ? Number(cat.display_order) : undefined),
+      description: cat.description,
+      short_description: cat.short_description,
+      short_description_title: cat.short_description_title
+    };
   };
 
   // Initialize mock state
@@ -1433,6 +1453,206 @@ export const useCategoryService = () => {
     }
   };
 
+  const getFeaturedCategories = async (): Promise<FeaturedCategory[]> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      isLoading.value = false;
+      const categoriesList = getMockCategories();
+      const featured = categoriesList
+        .filter(c => c.is_featured === true)
+        .sort((a, b) => (a.featured_display_order ?? a.order ?? 0) - (b.featured_display_order ?? b.order ?? 0))
+        .map(mapFeaturedCategoryResponse);
+      return featured;
+    }
+
+    try {
+      const data = await apiClient.request<any>('/api/v1/categories/featured/', {
+        method: 'GET'
+      });
+      isLoading.value = false;
+      const results = Array.isArray(data) ? data : (data?.results || []);
+      return results.map(mapFeaturedCategoryResponse);
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to fetch featured categories.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  const uploadFeaturedCategoryIcon = async (
+    id: string | number,
+    iconFile: File
+  ): Promise<Category> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+      const categoriesList = getMockCategories();
+      const cat = categoriesList.find(c => String(c.id) === String(id) || c.slug === String(id));
+      if (cat) {
+        cat.featured_icon = URL.createObjectURL(iconFile);
+        saveMockCategories(categoriesList);
+        return mapCategoryResponse(cat);
+      }
+      throw new Error(`Category ${id} not found.`);
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('featured_icon', iconFile);
+
+      const data = await apiClient.request<any>(`/api/v1/categories/${id}/featured-icon/`, {
+        method: 'POST',
+        body: formData
+      });
+      isLoading.value = false;
+      return mapCategoryResponse(data);
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to upload featured category icon.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  const featureCategory = async (id: string | number): Promise<Category> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+      const categoriesList = getMockCategories();
+      const cat = categoriesList.find(c => String(c.id) === String(id) || c.slug === String(id));
+      if (cat) {
+        cat.is_featured = true;
+        saveMockCategories(categoriesList);
+        return mapCategoryResponse(cat);
+      }
+      throw new Error(`Category ${id} not found.`);
+    }
+
+    try {
+      const data = await apiClient.request<any>(`/api/v1/categories/${id}/feature/`, {
+        method: 'POST'
+      });
+      isLoading.value = false;
+      return mapCategoryResponse(data);
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to mark category as featured.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  const unfeatureCategory = async (id: string | number): Promise<Category> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+      const categoriesList = getMockCategories();
+      const cat = categoriesList.find(c => String(c.id) === String(id) || c.slug === String(id));
+      if (cat) {
+        cat.is_featured = false;
+        saveMockCategories(categoriesList);
+        return mapCategoryResponse(cat);
+      }
+      throw new Error(`Category ${id} not found.`);
+    }
+
+    try {
+      const data = await apiClient.request<any>(`/api/v1/categories/${id}/unfeature/`, {
+        method: 'POST'
+      });
+      isLoading.value = false;
+      return mapCategoryResponse(data);
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to unfeature category.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  const deleteFeaturedCategoryIcon = async (id: string | number): Promise<Category | boolean> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+      const categoriesList = getMockCategories();
+      const cat = categoriesList.find(c => String(c.id) === String(id) || c.slug === String(id));
+      if (cat) {
+        cat.featured_icon = null;
+        saveMockCategories(categoriesList);
+        return mapCategoryResponse(cat);
+      }
+      return true;
+    }
+
+    try {
+      const data = await apiClient.request<any>(`/api/v1/categories/${id}/featured-icon/`, {
+        method: 'DELETE'
+      });
+      isLoading.value = false;
+      return data ? mapCategoryResponse(data) : true;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to delete featured category icon.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  const reorderFeaturedCategories = async (
+    categoryIds: (number | string)[]
+  ): Promise<FeaturedCategoriesReorderResponse | FeaturedCategory[]> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    const parsedIds = categoryIds.map(id => {
+      const num = Number(id);
+      return !isNaN(num) && String(num) === String(id).trim() ? num : id;
+    });
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      isLoading.value = false;
+      const categoriesList = getMockCategories();
+      parsedIds.forEach((id, idx) => {
+        const cat = categoriesList.find(c => String(c.id) === String(id) || c.slug === String(id));
+        if (cat) {
+          cat.featured_display_order = idx + 1;
+        }
+      });
+      saveMockCategories(categoriesList);
+      return { success: true, category_ids: parsedIds };
+    }
+
+    try {
+      const data = await apiClient.request<any>('/api/v1/categories/featured/reorder/', {
+        method: 'PATCH',
+        body: {
+          category_ids: parsedIds
+        }
+      });
+      isLoading.value = false;
+      if (Array.isArray(data)) {
+        return data.map(mapFeaturedCategoryResponse);
+      }
+      return data;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to reorder featured categories.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   return {
     getCategoriesList,
     getCategorySummary,
@@ -1466,6 +1686,16 @@ export const useCategoryService = () => {
     importCategoriesFromCSV,
     importCategoriesFromJSON,
     importCategoriesFromXLSX,
+    getFeaturedCategories,
+    uploadFeaturedCategoryIcon,
+    setFeaturedCategoryIcon: uploadFeaturedCategoryIcon,
+    featureCategory,
+    markCategoryAsFeatured: featureCategory,
+    unfeatureCategory,
+    removeCategoryFromFeatured: unfeatureCategory,
+    deleteFeaturedCategoryIcon,
+    removeFeaturedCategoryIcon: deleteFeaturedCategoryIcon,
+    reorderFeaturedCategories,
     isLoading,
     errorMsg
   };

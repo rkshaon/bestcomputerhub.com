@@ -18,6 +18,9 @@ export interface Category {
   has_children?: boolean;
   show_in_menu?: boolean;
   is_menu?: boolean;
+  is_featured?: boolean;
+  featured_display_order?: number;
+  featured_icon?: string | null;
 }
 
 export interface RootCategory {
@@ -78,4 +81,31 @@ export interface CategoryPriceRange {
   category_id: number | string;
   min_price: number | null;
   max_price: number | null;
+}
+
+export interface FeaturedCategory {
+  id: number | string;
+  name: string;
+  slug: string;
+  featured_icon?: string | null;
+  icon?: string;
+  image?: string;
+  route?: string;
+  description?: string;
+  short_description?: string;
+  short_description_title?: string | null;
+  is_featured?: boolean;
+  featured_display_order?: number;
+  display_order?: number;
+  itemCount?: number;
+}
+
+export interface FeaturedCategoriesReorderRequest {
+  category_ids: (number | string)[];
+}
+
+export interface FeaturedCategoriesReorderResponse {
+  success?: boolean;
+  message?: string;
+  category_ids?: (number | string)[];
 }
