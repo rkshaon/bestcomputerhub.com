@@ -33,6 +33,7 @@ const emit = defineEmits<{
   (e: 'view', cat: Category): void;
   (e: 'edit', cat: Category): void;
   (e: 'delete', cat: Category): void;
+  (e: 'featured-icon', cat: Category): void;
 }>();
 
 const { toastSuccess, toastError } = useToast();
@@ -314,6 +315,7 @@ const displayRoots = computed(() => {
         @view="$emit('view', $event)"
         @edit="$emit('edit', $event)"
         @delete="$emit('delete', $event)"
+        @featured-icon="$emit('featured-icon', $event)"
         @reorder="handleTreeReorder"
       />
     </div>

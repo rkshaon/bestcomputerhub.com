@@ -9,7 +9,8 @@ import {
   Trash2, 
   Loader2,
   GripVertical,
-  ExternalLink
+  ExternalLink,
+  Image as ImageIcon
 } from 'lucide-vue-next';
 import type { Category } from '@/types';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -37,6 +38,7 @@ const emit = defineEmits<{
   (e: 'view', cat: Category): void;
   (e: 'edit', cat: Category): void;
   (e: 'delete', cat: Category): void;
+  (e: 'featured-icon', cat: Category): void;
   (e: 'reorder', payload: { source: Category; target: Category }): void;
 }>();
 
@@ -301,6 +303,19 @@ const onNodeDrop = (e: DragEvent) => {
           <Info class="w-3.5 h-3.5" />
         </button>
 
+        <!-- Manage Featured Icon Button -->
+        <button
+          v-if="canEditCategory"
+          type="button"
+          @click.stop="$emit('featured-icon', node)"
+          class="p-1.5 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all cursor-pointer relative"
+          title="Manage Featured Icon"
+          aria-label="Manage featured icon"
+        >
+          <ImageIcon class="w-3.5 h-3.5" />
+          <span v-if="node.featured_icon" class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background"></span>
+        </button>
+
         <!-- Edit Button -->
         <button
           v-if="canEditCategory"
@@ -343,6 +358,7 @@ const onNodeDrop = (e: DragEvent) => {
         @view="$emit('view', $event)"
         @edit="$emit('edit', $event)"
         @delete="$emit('delete', $event)"
+        @featured-icon="$emit('featured-icon', $event)"
         @reorder="$emit('reorder', $event)"
       />
     </div>

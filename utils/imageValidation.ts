@@ -51,3 +51,98 @@ export function isExceedingResolution(
   }
   return width > maxDimension || height > maxDimension;
 }
+
+export interface IconValidationResult {
+  valid: boolean;
+  error?: string;
+  width?: number;
+  height?: number;
+}
+
+/**
+ * Validates a category featured icon file against requirements:
+ * - Allowed formats: PNG, WebP, SVG
+ * - Max file size: 100KB
+ * - Dimensions: PNG and WebP must be square and exactly 64x64 pixels.
+ *
+ * @param file - File object to validate
+ * @returns Promise resolving to IconValidationResult
+ */
+export async function validateFeaturedCategoryIcon(file: File): Promise<IconValidationResult> {
+  if (!file) {
+    return { valid: false, error: 'No file provided.' };
+  }
+
+  const fileName = file.name.toLowerCase();
+  const fileType = file.type.toLowerCase();
+
+  const isPng = fileType === 'image/png' || fileName.endsWith('.png');
+  const isWebp = fileType === 'image/webp' || fileName.endsWith('.webp');
+  const isSvg = fileType === 'image/svg+xml' || fileName.endsWith('.svg');
+
+  if (!isPng && !isWebp && !isSvg) {
+    return {
+      valid: false,
+      error: 'Invalid file format. Only PNG, WebP, and SVG files are allowed.'
+    };
+  }
+
+  // Max size: 100KB (102,400 bytes)
+  const MAX_SIZE_BYTES = 100 * 1024;
+  if (file.size > MAX_SIZE_BYTES) {
+    const actualKb = (file.size / 1024).toFixed(1);
+    return {
+      valid: false,
+      error: `File size exceeds the 100KB limit (current size: ${actualKb}KB).`
+    };
+  }
+
+  // For vector SVG, size check is sufficient
+  if (isSvg) {
+    return { valid: true };
+  }
+
+  // For PNG and WebP, check dimensions (must be 64x64 and square)
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      const width = img.naturalWidth || img.width;
+      const height = img.naturalHeight || img.height;
+      URL.revokeObjectURL(objectUrl);
+
+      if (width !== height) {
+        resolve({
+          valid: false,
+          error: `Featured icon must be square (current dimensions: ${width}x${height}px).`,
+          width,
+          height
+        });
+        return;
+      }
+
+      if (width !== 64 || height !== 64) {
+        resolve({
+          valid: false,
+          error: `PNG and WebP icons must be exactly 64x64 pixels (current dimensions: ${width}x${height}px).`,
+          width,
+          height
+        });
+        return;
+      }
+
+      resolve({ valid: true, width, height });
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve({
+        valid: false,
+        error: 'Failed to inspect image dimensions. The file may be corrupt or unreadable.'
+      });
+    };
+
+    img.src = objectUrl;
+  });
+}

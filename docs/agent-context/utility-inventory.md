@@ -175,6 +175,33 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `validateFeaturedCategoryIcon`
+- **File Location**: `/utils/imageValidation.ts`
+- **Category**: Validator / Image utility
+- **Scope**: Category management (Admin Categories, Featured Icon upload & replacement)
+- **Purpose**: Validates category featured icon files against technical specifications (allowed formats: PNG, WebP, SVG; max file size: 100KB; dimensions for PNG/WebP: square and exactly 64×64 pixels).
+- **Parameters & Return Value**:
+  - `file: File` — Input image file to validate.
+  - Returns `Promise<IconValidationResult>` — Resolves to `{ valid: boolean; error?: string; width?: number; height?: number }`.
+- **Example Usage**:
+  ```ts
+  import { validateFeaturedCategoryIcon } from '@/utils/imageValidation';
+
+  const result = await validateFeaturedCategoryIcon(selectedFile);
+  if (!result.valid) {
+    showError(result.error);
+  }
+  ```
+- **Files or Features Currently Using It**: `/pages/admin/categories/index.vue`, category featured icon upload modal.
+- **Side Effects**: Reads file dimensions via temporary `HTMLImageElement` and revokes object URL cleanly.
+- **Accesses Browser State**: Yes (`URL.createObjectURL`, `URL.revokeObjectURL`, `Image`).
+- **Performs Network Work**: No.
+- **Related Utilities**: `isNonSquareAspect`, `isExceedingResolution`.
+- **What It Explicitly Does Not Do**: Does not upload files to server or make network calls.
+- **Reusability Level**: High.
+
+---
+
 ## 2. Central HTTP Transport & Network Helpers
 
 ### `useApiClient`
