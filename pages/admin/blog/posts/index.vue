@@ -166,6 +166,29 @@ const areOptionsLoaded = ref(false);
 const isOptionsLoading = ref(false);
 const isAuthorManuallyModified = ref(false);
 
+const postHasAuthor = (post: BlogPostItem | null | undefined): boolean => {
+  if (!post || !post.author) return false;
+  if (typeof post.author === 'object') {
+    const aId = (post.author as any).id;
+    if (aId !== undefined && aId !== null && aId !== '' && aId !== 0) {
+      return true;
+    }
+    const username = (post.author as any).username;
+    const email = (post.author as any).email;
+    const fullName = (post.author as any).full_name;
+    return Boolean((username && String(username).trim()) || (email && String(email).trim()) || (fullName && String(fullName).trim()));
+  }
+  return Boolean(post.author);
+};
+
+const isAuthorFieldVisible = computed(() => {
+  if (modalState.isCreate.value) return true;
+  if (modalState.isEdit.value) {
+    return postHasAuthor(modalState.activeEntity.value);
+  }
+  return false;
+});
+
 const resolveDefaultAuthorId = (): number | null => {
   const currentUserId = authStore.user?.id;
   if (currentUserId === undefined || currentUserId === null || currentUserId === '') {
@@ -468,7 +491,17 @@ watch(
       isAuthorManuallyModified.value = false;
       formTitle.value = post.title || '';
       formContent.value = post.content || '';
-      formAuthorId.value = post.author?.id ? Number(post.author.id) : null;
+      if (postHasAuthor(post)) {
+        if (typeof post.author === 'object' && post.author !== null) {
+          formAuthorId.value = post.author.id ? Number(post.author.id) : null;
+        } else if (typeof post.author === 'number' || typeof post.author === 'string') {
+          formAuthorId.value = Number(post.author) || null;
+        } else {
+          formAuthorId.value = null;
+        }
+      } else {
+        formAuthorId.value = null;
+      }
       formFeaturedImage.value = post.featured_image || '';
       originalFeaturedImage.value = post.featured_image || '';
       formFeaturedImageAltText.value = post.featured_image_alt_text || '';
@@ -501,7 +534,7 @@ const handleSavePost = async () => {
     toastError('Title is a required field.');
     return;
   }
-  if (!formAuthorId.value) {
+  if (isAuthorFieldVisible.value && !formAuthorId.value) {
     formError.value = 'Please select an Author.';
     toastError('Please select an Author.');
     return;
@@ -510,10 +543,9 @@ const handleSavePost = async () => {
   isSaving.value = true;
   formError.value = null;
   try {
-    const payload = {
+    const payload: Record<string, any> = {
       title: formTitle.value,
       content: formContent.value,
-      author: formAuthorId.value,
       featured_image: featuredImageFile.value,
       featured_image_alt_text: formFeaturedImageAltText.value,
       categories: formSelectedCategories.value,
@@ -524,6 +556,11 @@ const handleSavePost = async () => {
       seo_noindex: formSeoNoindex.value,
       seo_nofollow: formSeoNofollow.value
     };
+
+    // Include author only if creating, or if the post has an author and the field is visible
+    if (modalState.isCreate.value || (modalState.isEdit.value && isAuthorFieldVisible.value && formAuthorId.value !== null)) {
+      payload.author = formAuthorId.value;
+    }
 
     if (modalState.isCreate.value) {
       const createdPost = await blogService.createBlogPost(payload);
@@ -1496,7 +1533,7 @@ const handlePublishPost = async (post: BlogPostItem) => {
             <!-- Sidebar Column (Author, Asset, Taxonomy) -->
             <div class="space-y-6">
               <!-- Author Card -->
-              <div class="space-y-4 border border-border p-5 rounded-2xl bg-card">
+              <div v-if="isAuthorFieldVisible" class="space-y-4 border border-border p-5 rounded-2xl bg-card">
                 <h4 class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
                   <UserIcon class="w-4 h-4 text-primary" /> Authority Designation
                 </h4>
@@ -1507,7 +1544,7 @@ const handlePublishPost = async (post: BlogPostItem) => {
                     v-model="formAuthorId" 
                     @change="isAuthorManuallyModified = true"
                     class="w-full h-10 px-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-semibold text-xs cursor-pointer"
-                    required
+                    :required="isAuthorFieldVisible"
                   >
                     <option :value="null" disabled>{{ isOptionsLoading ? 'Loading authors...' : 'Select author...' }}</option>
                     <option 
