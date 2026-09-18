@@ -220,6 +220,8 @@ const removeSelectedFile = () => {
 // Modal Category Selector State
 const isModalCategoryDropdownOpen = ref(false);
 const modalCategoryDropdownRef = ref<HTMLElement | null>(null);
+const modalCategoryDropdownTriggerRef = ref<HTMLButtonElement | null>(null);
+const modalCategorySearchInputRef = ref<HTMLInputElement | null>(null);
 const modalCategorySearchQuery = ref('');
 
 const modalCategoryPagination = useInfinitePagination<Category>({
@@ -236,15 +238,28 @@ const modalCategoryPagination = useInfinitePagination<Category>({
   autoFetch: false
 });
 
-const toggleModalCategoryDropdown = () => {
+const toggleModalCategoryDropdown = async () => {
   isModalCategoryDropdownOpen.value = !isModalCategoryDropdownOpen.value;
-  if (isModalCategoryDropdownOpen.value && modalCategoryPagination.items.value.length === 0) {
-    modalCategoryPagination.refresh();
+  if (isModalCategoryDropdownOpen.value) {
+    if (modalCategoryPagination.items.value.length === 0) {
+      modalCategoryPagination.refresh();
+    }
+    await nextTick();
+    modalCategorySearchInputRef.value?.focus();
+  } else {
+    modalCategoryDropdownTriggerRef.value?.focus();
   }
 };
 
-const closeModalCategoryDropdown = () => {
-  isModalCategoryDropdownOpen.value = false;
+const closeModalCategoryDropdown = (restoreFocus = false) => {
+  if (isModalCategoryDropdownOpen.value) {
+    isModalCategoryDropdownOpen.value = false;
+    if (restoreFocus) {
+      nextTick(() => {
+        modalCategoryDropdownTriggerRef.value?.focus();
+      });
+    }
+  }
 };
 
 const toggleCategory = (catId: string | number) => {
@@ -608,6 +623,8 @@ const publishedBefore = ref(route.query.published_before ? String(route.query.pu
 const categorySearchQuery = ref('');
 const isCategoryDropdownOpen = ref(false);
 const categoryDropdownRef = ref<HTMLElement | null>(null);
+const categoryDropdownTriggerRef = ref<HTMLButtonElement | null>(null);
+const categorySearchInputRef = ref<HTMLInputElement | null>(null);
 
 const categoryPagination = useInfinitePagination<Category>({
   fetcher: async (params) => {
@@ -623,15 +640,28 @@ const categoryPagination = useInfinitePagination<Category>({
   autoFetch: false
 });
 
-const toggleCategoryDropdown = () => {
+const toggleCategoryDropdown = async () => {
   isCategoryDropdownOpen.value = !isCategoryDropdownOpen.value;
-  if (isCategoryDropdownOpen.value && categoryPagination.items.value.length === 0) {
-    categoryPagination.refresh();
+  if (isCategoryDropdownOpen.value) {
+    if (categoryPagination.items.value.length === 0) {
+      categoryPagination.refresh();
+    }
+    await nextTick();
+    categorySearchInputRef.value?.focus();
+  } else {
+    categoryDropdownTriggerRef.value?.focus();
   }
 };
 
-const closeCategoryDropdown = () => {
-  isCategoryDropdownOpen.value = false;
+const closeCategoryDropdown = (restoreFocus = false) => {
+  if (isCategoryDropdownOpen.value) {
+    isCategoryDropdownOpen.value = false;
+    if (restoreFocus) {
+      nextTick(() => {
+        categoryDropdownTriggerRef.value?.focus();
+      });
+    }
+  }
 };
 
 const toggleCategorySelection = (categoryId: string | number) => {
@@ -703,11 +733,12 @@ const onDocumentClick = (e: MouseEvent) => {
 
 const onDocumentKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
-    if (isCategoryDropdownOpen.value) {
-      closeCategoryDropdown();
-    }
     if (isModalCategoryDropdownOpen.value) {
-      closeModalCategoryDropdown();
+      closeModalCategoryDropdown(true);
+      e.stopPropagation();
+    } else if (isCategoryDropdownOpen.value) {
+      closeCategoryDropdown(true);
+      e.stopPropagation();
     }
   }
 };
@@ -990,8 +1021,10 @@ const handlePublishPost = async (post: BlogPostItem) => {
           <!-- Category Multi-Select Popover -->
           <div ref="categoryDropdownRef" class="relative">
             <button
+              ref="categoryDropdownTriggerRef"
               type="button"
               @click.stop="toggleCategoryDropdown"
+              :aria-expanded="isCategoryDropdownOpen"
               class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs font-medium cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[170px]"
               :class="selectedCategoryIds.length > 0 ? 'border-primary/50 text-foreground font-semibold' : 'text-muted-foreground'"
             >
@@ -1014,12 +1047,14 @@ const handlePublishPost = async (post: BlogPostItem) => {
             <div 
               v-if="isCategoryDropdownOpen"
               @click.stop
+              @keydown.esc.stop="closeCategoryDropdown(true)"
               class="absolute left-0 z-30 mt-1.5 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
             >
               <!-- Category Search Input inside Popover -->
               <div class="relative mb-2">
                 <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  ref="categorySearchInputRef"
                   v-model="categorySearchQuery"
                   type="text"
                   placeholder="Search categories..."
@@ -1600,8 +1635,10 @@ const handlePublishPost = async (post: BlogPostItem) => {
                   <!-- Category Dropdown Picker Trigger -->
                   <div ref="modalCategoryDropdownRef" class="relative">
                     <button
+                      ref="modalCategoryDropdownTriggerRef"
                       type="button"
                       @click.stop="toggleModalCategoryDropdown"
+                      :aria-expanded="isModalCategoryDropdownOpen"
                       :class="cn(
                         'w-full h-10 px-3 bg-background border border-input rounded-xl text-left text-xs font-medium transition-all flex items-center justify-between gap-2 cursor-pointer focus:ring-2 focus:ring-primary/20',
                         formSelectedCategories.length === 0 ? 'text-muted-foreground' : 'text-foreground'
@@ -1621,12 +1658,14 @@ const handlePublishPost = async (post: BlogPostItem) => {
                     <div 
                       v-if="isModalCategoryDropdownOpen"
                       @click.stop
+                      @keydown.esc.stop="closeModalCategoryDropdown(true)"
                       class="absolute left-0 top-full z-50 mt-1.5 w-full bg-card border border-border rounded-xl shadow-xl p-2.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
                     >
                       <!-- Category Search Input -->
                       <div class="relative mb-2">
                         <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
+                          ref="modalCategorySearchInputRef"
                           v-model="modalCategorySearchQuery"
                           type="text"
                           placeholder="Search categories..."

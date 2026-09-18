@@ -113,6 +113,8 @@ const productsParam = computed(() => {
 const productSearchQuery = ref('');
 const isProductDropdownOpen = ref(false);
 const productDropdownRef = ref<HTMLElement | null>(null);
+const productDropdownTriggerRef = ref<HTMLButtonElement | null>(null);
+const productSearchInputRef = ref<HTMLInputElement | null>(null);
 
 const productPagination = useInfinitePagination<Product>({
   fetcher: async (params) => {
@@ -165,15 +167,28 @@ watch(
   { immediate: true, deep: true }
 );
 
-const toggleProductDropdown = () => {
+const toggleProductDropdown = async () => {
   isProductDropdownOpen.value = !isProductDropdownOpen.value;
-  if (isProductDropdownOpen.value && productPagination.items.value.length === 0) {
-    productPagination.refresh();
+  if (isProductDropdownOpen.value) {
+    if (productPagination.items.value.length === 0) {
+      productPagination.refresh();
+    }
+    await nextTick();
+    productSearchInputRef.value?.focus();
+  } else {
+    productDropdownTriggerRef.value?.focus();
   }
 };
 
-const closeProductDropdown = () => {
-  isProductDropdownOpen.value = false;
+const closeProductDropdown = (restoreFocus = false) => {
+  if (isProductDropdownOpen.value) {
+    isProductDropdownOpen.value = false;
+    if (restoreFocus) {
+      nextTick(() => {
+        productDropdownTriggerRef.value?.focus();
+      });
+    }
+  }
 };
 
 const toggleProductSelection = (product: Product) => {
@@ -234,7 +249,10 @@ const onDocumentClick = (e: MouseEvent) => {
 
 const onDocumentKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
-    closeProductDropdown();
+    if (isProductDropdownOpen.value) {
+      closeProductDropdown(true);
+      e.stopPropagation();
+    }
   }
 };
 
@@ -701,8 +719,10 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
             <!-- Product Multi-Select Filter Popover -->
             <div ref="productDropdownRef" class="relative">
               <button
+                ref="productDropdownTriggerRef"
                 type="button"
                 @click.stop="toggleProductDropdown"
+                :aria-expanded="isProductDropdownOpen"
                 class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-xs font-medium cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-2 min-w-[180px]"
                 :class="selectedProductIds.length > 0 ? 'border-primary/50 text-foreground font-semibold' : 'text-muted-foreground'"
               >
@@ -725,11 +745,13 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
               <div 
                 v-if="isProductDropdownOpen"
                 @click.stop
+                @keydown.esc.stop="closeProductDropdown(true)"
                 class="absolute left-0 z-30 mt-1.5 w-80 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
               >
                 <div class="relative mb-2">
                   <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input
+                    ref="productSearchInputRef"
                     v-model="productSearchQuery"
                     type="text"
                     placeholder="Search products by name, SKU..."

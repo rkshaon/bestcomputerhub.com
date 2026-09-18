@@ -120,25 +120,57 @@ const isParentDropdownOpen = ref(false);
 const isMenuDropdownOpen = ref(false);
 const parentDropdownRef = ref<HTMLElement | null>(null);
 const menuDropdownRef = ref<HTMLElement | null>(null);
+const parentDropdownTriggerRef = ref<HTMLButtonElement | null>(null);
+const menuDropdownTriggerRef = ref<HTMLButtonElement | null>(null);
 
 const toggleParentDropdown = () => {
   isParentDropdownOpen.value = !isParentDropdownOpen.value;
-  if (isParentDropdownOpen.value) isMenuDropdownOpen.value = false;
+  if (isParentDropdownOpen.value) {
+    isMenuDropdownOpen.value = false;
+  } else {
+    parentDropdownTriggerRef.value?.focus();
+  }
+};
+
+const closeParentDropdown = (restoreFocus = false) => {
+  if (isParentDropdownOpen.value) {
+    isParentDropdownOpen.value = false;
+    if (restoreFocus) {
+      nextTick(() => {
+        parentDropdownTriggerRef.value?.focus();
+      });
+    }
+  }
 };
 
 const toggleMenuDropdown = () => {
   isMenuDropdownOpen.value = !isMenuDropdownOpen.value;
-  if (isMenuDropdownOpen.value) isParentDropdownOpen.value = false;
+  if (isMenuDropdownOpen.value) {
+    isParentDropdownOpen.value = false;
+  } else {
+    menuDropdownTriggerRef.value?.focus();
+  }
+};
+
+const closeMenuDropdown = (restoreFocus = false) => {
+  if (isMenuDropdownOpen.value) {
+    isMenuDropdownOpen.value = false;
+    if (restoreFocus) {
+      nextTick(() => {
+        menuDropdownTriggerRef.value?.focus();
+      });
+    }
+  }
 };
 
 const selectParent = (val: string) => {
   parentFilter.value = val;
-  isParentDropdownOpen.value = false;
+  closeParentDropdown(true);
 };
 
 const selectMenu = (val: string) => {
   menuFilter.value = val;
-  isMenuDropdownOpen.value = false;
+  closeMenuDropdown(true);
 };
 
 const activeParentLabel = computed(() => {
@@ -159,10 +191,22 @@ const activeMenuLabel = computed(() => {
 const handleGlobalClick = (e: MouseEvent) => {
   const target = e.target as Node;
   if (parentDropdownRef.value && !parentDropdownRef.value.contains(target)) {
-    isParentDropdownOpen.value = false;
+    closeParentDropdown();
   }
   if (menuDropdownRef.value && !menuDropdownRef.value.contains(target)) {
-    isMenuDropdownOpen.value = false;
+    closeMenuDropdown();
+  }
+};
+
+const handleGlobalKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    if (isParentDropdownOpen.value) {
+      closeParentDropdown(true);
+      e.stopPropagation();
+    } else if (isMenuDropdownOpen.value) {
+      closeMenuDropdown(true);
+      e.stopPropagation();
+    }
   }
 };
 
@@ -654,6 +698,7 @@ const loadCategoriesGrid = async () => {
 onMounted(async () => {
   if (typeof window !== 'undefined') {
     window.addEventListener('click', handleGlobalClick);
+    window.addEventListener('keydown', handleGlobalKeydown);
   }
   await fetchAllCategoriesRawList();
 });
@@ -661,6 +706,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('click', handleGlobalClick);
+    window.removeEventListener('keydown', handleGlobalKeydown);
   }
 });
 
@@ -1422,8 +1468,10 @@ watch(viewMode, () => {
           <div class="flex items-center gap-2 border-l border-border pl-3">
             <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">Level:</span>
             <button 
+              ref="parentDropdownTriggerRef"
               type="button"
               @click.stop="toggleParentDropdown"
+              :aria-expanded="isParentDropdownOpen"
               class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[135px]"
             >
               <span class="truncate">{{ activeParentLabel }}</span>
@@ -1435,6 +1483,7 @@ watch(viewMode, () => {
           <div 
             v-if="isParentDropdownOpen"
             @click.stop
+            @keydown.esc.stop="closeParentDropdown(true)"
             class="absolute right-0 sm:left-4 z-30 mt-2 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
           >
             <div class="max-h-52 overflow-y-auto space-y-1 p-0.5 scrollbar-thin">
@@ -1496,8 +1545,10 @@ watch(viewMode, () => {
           <div class="flex items-center gap-2 border-l border-border pl-3">
             <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">Menu:</span>
             <button 
+              ref="menuDropdownTriggerRef"
               type="button"
               @click.stop="toggleMenuDropdown"
+              :aria-expanded="isMenuDropdownOpen"
               class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[135px]"
             >
               <span class="truncate">{{ activeMenuLabel }}</span>
@@ -1509,6 +1560,7 @@ watch(viewMode, () => {
           <div 
             v-if="isMenuDropdownOpen"
             @click.stop
+            @keydown.esc.stop="closeMenuDropdown(true)"
             class="absolute right-0 sm:left-4 z-30 mt-2 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
           >
             <div class="max-h-52 overflow-y-auto space-y-1 p-0.5 scrollbar-thin">
