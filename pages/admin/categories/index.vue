@@ -314,7 +314,7 @@ const onIconDrop = (e: DragEvent) => {
   e.preventDefault();
   isIconDragActive.value = false;
   if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-    handleIconFileChange(e.dataTransfer.files[0]);
+    handleIconFileChange(e.dataTransfer.files[0] ?? null);
   }
 };
 
@@ -338,7 +338,7 @@ const handleUploadFeaturedIcon = async () => {
     }
 
     // Refresh categories data
-    await fetchCategories();
+    await fetchCategoriesPage();
     if (viewMode.value === 'tree' && treeRef.value) {
       await treeRef.value.fetchRoots();
     }
@@ -376,7 +376,7 @@ const handleDeleteFeaturedIcon = async () => {
       inList.featured_icon = null;
     }
 
-    await fetchCategories();
+    await fetchCategoriesPage();
     if (viewMode.value === 'tree' && treeRef.value) {
       await treeRef.value.fetchRoots();
     }
@@ -431,7 +431,7 @@ const executeFeatureCategory = async (cat: Category) => {
       inList.featured_display_order = updatedCategory.featured_display_order;
     }
 
-    await fetchCategories();
+    await fetchCategoriesPage();
     if (viewMode.value === 'tree' && treeRef.value) {
       await treeRef.value.fetchRoots();
     }
@@ -462,7 +462,7 @@ const executeUnfeatureCategory = async () => {
       inList.featured_display_order = updatedCategory.featured_display_order;
     }
 
-    await fetchCategories();
+    await fetchCategoriesPage();
     if (viewMode.value === 'tree' && treeRef.value) {
       await treeRef.value.fetchRoots();
     }
@@ -3145,7 +3145,7 @@ watch(viewMode, () => {
               type="file"
               class="hidden"
               accept="image/png,image/webp,image/svg+xml,.png,.webp,.svg"
-              @change="(e) => { const files = (e.target as HTMLInputElement).files; if (files && files.length) handleIconFileChange(files[0]); }"
+              @change="(e) => { const files = (e.target as HTMLInputElement).files; if (files && files.length) handleIconFileChange(files[0] ?? null); }"
             />
             <div class="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-muted-foreground shadow-2xs">
               <Upload class="w-5 h-5" />

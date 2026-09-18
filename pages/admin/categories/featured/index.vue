@@ -22,7 +22,12 @@ import {
   Image as ImageIcon, 
   ChevronRight, 
   Plus,
-  Info
+  Info,
+  GripVertical,
+  Save,
+  ArrowUp,
+  ArrowDown,
+  RotateCcw
 } from 'lucide-vue-next';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
@@ -50,12 +55,18 @@ const router = useRouter();
 
 // State vectors
 const featuredCategories = ref<FeaturedCategory[]>([]);
+const initialCategoryIds = ref<Array<string | number>>([]);
 const isLoading = ref(false);
+const isSavingOrder = ref(false);
 const errorMsg = ref<string | null>(null);
 const searchQuery = ref('');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const viewMode = ref<'list' | 'grid'>('list');
 const processingUnfeatureId = ref<string | number | null>(null);
+
+// Drag & drop state
+const draggedCategoryId = ref<string | number | null>(null);
+const dragOverCategoryId = ref<string | number | null>(null);
 
 // Permissions
 const canUnfeature = computed(() => {
@@ -66,12 +77,23 @@ const canEditCategory = computed(() => {
   return canEditInModule('/admin/categories');
 });
 
+// Evaluate if local order differs from initial saved backend order
+const currentCategoryIds = computed(() => featuredCategories.value.map(c => c.id));
+
+const hasUnsavedOrderChanges = computed(() => {
+  if (initialCategoryIds.value.length === 0 || currentCategoryIds.value.length !== initialCategoryIds.value.length) {
+    return false;
+  }
+  return currentCategoryIds.value.some((id, index) => String(id) !== String(initialCategoryIds.value[index]));
+});
+
 // Table columns definition
 const columns: UiTableColumn<FeaturedCategory>[] = [
-  { key: 'featured_icon', label: 'Icon', width: '90px', align: 'center' },
+  { key: 'reorder', label: 'Order', width: '100px', align: 'center' },
+  { key: 'featured_icon', label: 'Icon', width: '80px', align: 'center' },
   { key: 'name', label: 'Category Name & Slug', sortable: true },
-  { key: 'featured_display_order', label: 'Featured Order', width: '130px', align: 'center', sortable: true },
-  { key: 'status', label: 'Status', width: '130px', align: 'center' },
+  { key: 'featured_display_order', label: 'Position', width: '100px', align: 'center' },
+  { key: 'status', label: 'Status', width: '120px', align: 'center' },
   { key: 'actions', label: 'Actions', width: '140px', align: 'right' }
 ];
 
@@ -81,7 +103,9 @@ const fetchFeaturedCategories = async () => {
   errorMsg.value = null;
   try {
     const list = await categoryService.getFeaturedCategories();
-    featuredCategories.value = Array.isArray(list) ? list : [];
+    const categoriesList = Array.isArray(list) ? list : [];
+    featuredCategories.value = categoriesList;
+    initialCategoryIds.value = categoriesList.map(c => c.id);
   } catch (err: any) {
     errorMsg.value = extractErrorMessage(err, 'Failed to retrieve featured categories.');
     toastError(errorMsg.value);
@@ -108,6 +132,173 @@ const filteredFeaturedCategories = computed(() => {
     );
   });
 });
+
+// HTML5 Drag and Drop Event Handlers
+const handleDragStart = (event: DragEvent, cat: FeaturedCategory) => {
+  draggedCategoryId.value = cat.id;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(cat.id));
+  }
+};
+
+const handleDragOver = (event: DragEvent, targetCat: FeaturedCategory) => {
+  event.preventDefault();
+  if (draggedCategoryId.value !== null && String(draggedCategoryId.value) !== String(targetCat.id)) {
+    dragOverCategoryId.value = targetCat.id;
+  }
+};
+
+const handleDragLeave = (event: DragEvent, targetCat: FeaturedCategory) => {
+  if (String(dragOverCategoryId.value) === String(targetCat.id)) {
+    dragOverCategoryId.value = null;
+  }
+};
+
+const handleDrop = (event: DragEvent, targetCat: FeaturedCategory) => {
+  event.preventDefault();
+  if (draggedCategoryId.value === null || String(draggedCategoryId.value) === String(targetCat.id)) {
+    draggedCategoryId.value = null;
+    dragOverCategoryId.value = null;
+    return;
+  }
+
+  const srcIndex = featuredCategories.value.findIndex(c => String(c.id) === String(draggedCategoryId.value));
+  const tgtIndex = featuredCategories.value.findIndex(c => String(c.id) === String(targetCat.id));
+
+  if (srcIndex !== -1 && tgtIndex !== -1) {
+    const list = [...featuredCategories.value];
+    const [moved] = list.splice(srcIndex, 1);
+    if (moved) {
+      list.splice(tgtIndex, 0, moved);
+
+      // Update local featured_display_order numbers sequentially
+      list.forEach((item, index) => {
+        item.featured_display_order = index + 1;
+      });
+
+      featuredCategories.value = list;
+    }
+  }
+
+  draggedCategoryId.value = null;
+  dragOverCategoryId.value = null;
+};
+
+const handleDragEnd = () => {
+  draggedCategoryId.value = null;
+  dragOverCategoryId.value = null;
+};
+
+// Keyboard & Button-based Reordering
+const moveCategoryUp = (index: number) => {
+  if (index <= 0 || index >= featuredCategories.value.length) return;
+  const list = [...featuredCategories.value];
+  const [moved] = list.splice(index, 1);
+  if (moved) {
+    list.splice(index - 1, 0, moved);
+    list.forEach((item, idx) => {
+      item.featured_display_order = idx + 1;
+    });
+    featuredCategories.value = list;
+  }
+};
+
+const moveCategoryDown = (index: number) => {
+  if (index < 0 || index >= featuredCategories.value.length - 1) return;
+  const list = [...featuredCategories.value];
+  const [moved] = list.splice(index, 1);
+  if (moved) {
+    list.splice(index + 1, 0, moved);
+    list.forEach((item, idx) => {
+      item.featured_display_order = idx + 1;
+    });
+    featuredCategories.value = list;
+  }
+};
+
+// Reset local order to initial
+const handleResetOrder = () => {
+  if (!initialCategoryIds.value.length) return;
+  const map = new Map(featuredCategories.value.map(c => [String(c.id), c]));
+  const restored: FeaturedCategory[] = [];
+  
+  initialCategoryIds.value.forEach((id, idx) => {
+    const cat = map.get(String(id));
+    if (cat) {
+      cat.featured_display_order = idx + 1;
+      restored.push(cat);
+    }
+  });
+
+  featuredCategories.value.forEach(cat => {
+    if (!initialCategoryIds.value.map(String).includes(String(cat.id))) {
+      restored.push(cat);
+    }
+  });
+
+  featuredCategories.value = restored;
+  toastInfo('Featured category order reset to initial state.');
+};
+
+// Save Order API call
+const handleSaveOrder = async () => {
+  if (!hasUnsavedOrderChanges.value || isSavingOrder.value) return;
+
+  isSavingOrder.value = true;
+  const payloadIds = featuredCategories.value.map(c => c.id);
+
+  try {
+    const response = await categoryService.reorderFeaturedCategories(payloadIds);
+    toastSuccess('Featured category order saved successfully.');
+
+    initialCategoryIds.value = [...payloadIds];
+
+    if (Array.isArray(response) && response.length > 0) {
+      featuredCategories.value = response;
+    } else {
+      await fetchFeaturedCategories();
+    }
+  } catch (err: any) {
+    toastError(extractErrorMessage(err, 'Failed to save featured category order.'));
+  } finally {
+    isSavingOrder.value = false;
+  }
+};
+
+// Unsaved changes navigation guard
+onBeforeRouteLeave((to, from, next) => {
+  if (hasUnsavedOrderChanges.value) {
+    const confirmLeave = window.confirm('You have unsaved featured category order changes. Are you sure you want to leave without saving?');
+    if (!confirmLeave) {
+      next(false);
+      return;
+    }
+  }
+  next();
+});
+
+// Row attrs & class for UiTable
+const getRowAttrs = (item: FeaturedCategory) => {
+  return {
+    draggable: true,
+    onDragstart: (e: DragEvent) => handleDragStart(e, item),
+    onDragover: (e: DragEvent) => handleDragOver(e, item),
+    onDragleave: (e: DragEvent) => handleDragLeave(e, item),
+    onDrop: (e: DragEvent) => handleDrop(e, item),
+    onDragend: handleDragEnd
+  };
+};
+
+const getRowClass = (item: FeaturedCategory) => {
+  const isDragged = String(draggedCategoryId.value) === String(item.id);
+  const isDragOver = String(dragOverCategoryId.value) === String(item.id);
+  return cn(
+    'transition-all duration-150',
+    isDragged && 'opacity-40 bg-amber-500/10 border-2 border-dashed border-amber-500 ring-2 ring-amber-500/20',
+    isDragOver && 'border-t-2 border-t-amber-500 bg-amber-500/15 ring-2 ring-amber-500/30'
+  );
+};
 
 // Modals State
 const isViewModalOpen = ref(false);
@@ -148,11 +339,11 @@ const triggerEditModal = (cat: FeaturedCategory) => {
   isEditModalOpen.value = true;
 };
 
-const handleIconFileSelect = (event: Event) => {
+const handleIconFileSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (!target.files || !target.files[0]) return;
   const file = target.files[0];
-  const validation = validateFeaturedCategoryIcon(file);
+  const validation = await validateFeaturedCategoryIcon(file);
   if (!validation.valid) {
     editFormError.value = validation.error || 'Invalid icon file.';
     return;
@@ -250,6 +441,27 @@ const executeUnfeatureCategory = async () => {
 
     <template #header-actions>
       <div class="flex flex-wrap items-center gap-2">
+        <UiButton
+          v-if="hasUnsavedOrderChanges"
+          variant="outline"
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold text-xs cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/30"
+          @click="handleResetOrder"
+          :disabled="isSavingOrder"
+        >
+          <RotateCcw class="w-3.5 h-3.5" />
+          <span>Discard</span>
+        </UiButton>
+
+        <UiButton
+          class="rounded-xl h-9 px-4 gap-1.5 font-bold text-xs cursor-pointer bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600 shadow-xs"
+          @click="handleSaveOrder"
+          :disabled="!hasUnsavedOrderChanges || isSavingOrder"
+        >
+          <Loader2 v-if="isSavingOrder" class="w-3.5 h-3.5 animate-spin" />
+          <Save v-else class="w-3.5 h-3.5" />
+          <span>Save Order</span>
+        </UiButton>
+
         <NuxtLink to="/admin/categories/">
           <UiButton 
             variant="outline" 
@@ -264,7 +476,7 @@ const executeUnfeatureCategory = async () => {
           variant="outline" 
           class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs cursor-pointer"
           @click="fetchFeaturedCategories"
-          :disabled="isLoading"
+          :disabled="isLoading || isSavingOrder"
         >
           <RefreshCw :class="['w-3.5 h-3.5', isLoading && 'animate-spin']" />
           <span>Refresh</span>
@@ -274,6 +486,44 @@ const executeUnfeatureCategory = async () => {
 
     <div class="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
       
+      <!-- Unsaved Order Changes Alert Banner -->
+      <div 
+        v-if="hasUnsavedOrderChanges" 
+        class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs animate-in fade-in slide-in-from-top-2 duration-300"
+      >
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
+            <Sparkles class="w-4 h-4 text-amber-600 dark:text-amber-400 fill-amber-500" />
+          </div>
+          <div>
+            <p class="text-xs font-bold">Unsaved Category Order</p>
+            <p class="text-[11px] opacity-80">You have rearranged featured categories. Save your changes to apply the new order to the storefront.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+          <UiButton 
+            variant="outline" 
+            size="sm"
+            class="rounded-xl h-8 px-3 text-xs font-bold border-amber-500/30 hover:bg-amber-500/20 cursor-pointer"
+            @click="handleResetOrder"
+            :disabled="isSavingOrder"
+          >
+            <RotateCcw class="w-3.5 h-3.5 mr-1" />
+            <span>Discard</span>
+          </UiButton>
+          <UiButton 
+            size="sm"
+            class="rounded-xl h-8 px-4 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600 gap-1.5 cursor-pointer shadow-xs"
+            @click="handleSaveOrder"
+            :disabled="isSavingOrder"
+          >
+            <Loader2 v-if="isSavingOrder" class="w-3.5 h-3.5 animate-spin" />
+            <Save v-else class="w-3.5 h-3.5" />
+            <span>Save Order</span>
+          </UiButton>
+        </div>
+      </div>
+
       <!-- Stats / Information Banner -->
       <UiCard class="p-4 border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-amber-500/10 to-transparent">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -284,7 +534,7 @@ const executeUnfeatureCategory = async () => {
             <div>
               <h2 class="text-sm font-bold text-foreground">Featured Storefront Categories</h2>
               <p class="text-xs text-muted-foreground mt-0.5 max-w-2xl leading-relaxed">
-                Featured categories are highlighted on homepage banners and storefront navigation sections. Each featured category requires an uploaded featured icon asset.
+                Featured categories are highlighted on homepage banners and storefront navigation sections. Drag items using the handle or use the arrow controls to reorder.
               </p>
             </div>
           </div>
@@ -363,10 +613,47 @@ const executeUnfeatureCategory = async () => {
           :columns="columns"
           :data="filteredFeaturedCategories"
           :loading="isLoading"
+          :row-attrs="getRowAttrs"
+          :row-class="getRowClass"
           key-field="id"
           empty-text="No Featured Categories Found"
           empty-description="There are currently no featured categories. You can feature categories from the main Categories list."
         >
+          <!-- Drag & Keyboard Reorder Cell -->
+          <template #cell-reorder="{ item, index }">
+            <div class="flex items-center justify-center gap-1.5" @click.stop>
+              <div 
+                class="p-1 text-muted-foreground/60 hover:text-amber-500 cursor-grab active:cursor-grabbing rounded transition-colors"
+                title="Drag row to reorder"
+                aria-label="Drag row to reorder"
+              >
+                <GripVertical class="w-4 h-4" />
+              </div>
+              <div class="flex flex-col gap-0.5">
+                <button 
+                  type="button"
+                  @click.stop="moveCategoryUp(index)"
+                  :disabled="index === 0"
+                  class="p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                  title="Move Up"
+                  aria-label="Move Up"
+                >
+                  <ArrowUp class="w-3 h-3" />
+                </button>
+                <button 
+                  type="button"
+                  @click.stop="moveCategoryDown(index)"
+                  :disabled="index === filteredFeaturedCategories.length - 1"
+                  class="p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                  title="Move Down"
+                  aria-label="Move Down"
+                >
+                  <ArrowDown class="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </template>
+
           <!-- Featured Icon Cell -->
           <template #cell-featured_icon="{ item }">
             <div class="flex items-center justify-center">
@@ -399,8 +686,8 @@ const executeUnfeatureCategory = async () => {
 
           <!-- Featured Order Cell -->
           <template #cell-featured_display_order="{ item }">
-            <div class="text-center font-mono font-bold text-xs text-foreground">
-              {{ item.featured_display_order ?? item.display_order ?? '—' }}
+            <div class="text-center font-mono font-bold text-xs text-foreground bg-muted/40 py-1 px-2.5 rounded-lg border border-border/50 inline-block">
+              #{{ item.featured_display_order ?? item.display_order ?? '—' }}
             </div>
           </template>
 
@@ -510,14 +797,27 @@ const executeUnfeatureCategory = async () => {
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div 
-            v-for="cat in filteredFeaturedCategories" 
+            v-for="(cat, index) in filteredFeaturedCategories" 
             :key="cat.id"
-            class="bg-card text-card-foreground border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 relative group flex flex-col justify-between"
+            draggable="true"
+            @dragstart="handleDragStart($event, cat)"
+            @dragover="handleDragOver($event, cat)"
+            @dragleave="handleDragLeave($event, cat)"
+            @drop="handleDrop($event, cat)"
+            @dragend="handleDragEnd"
+            :class="[
+              'bg-card text-card-foreground border border-border rounded-2xl p-5 shadow-xs hover:shadow-md transition-all duration-200 relative group flex flex-col justify-between cursor-grab active:cursor-grabbing',
+              String(draggedCategoryId) === String(cat.id) && 'opacity-40 bg-amber-500/10 border-2 border-dashed border-amber-500 ring-2 ring-amber-500/20',
+              String(dragOverCategoryId) === String(cat.id) && 'border-2 border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/30'
+            ]"
           >
             <div>
               <div class="flex items-start justify-between gap-3 mb-4">
                 <div class="flex items-center gap-3">
-                  <div class="w-12 h-12 rounded-2xl bg-muted/60 border border-border flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                  <div class="p-1 text-muted-foreground/50 group-hover:text-amber-500 transition-colors">
+                    <GripVertical class="w-4 h-4" />
+                  </div>
+                  <div class="w-12 h-12 rounded-2xl bg-muted/60 border border-border flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
                     <img v-if="cat.featured_icon" :src="cat.featured_icon" :alt="cat.name" class="w-full h-full object-cover" />
                     <span v-else-if="cat.icon" class="text-lg">{{ cat.icon }}</span>
                     <Sparkles v-else class="w-5 h-5 text-amber-500/60" />
@@ -532,16 +832,18 @@ const executeUnfeatureCategory = async () => {
                   </div>
                 </div>
 
-                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
-                  <Sparkles class="w-3 h-3 fill-amber-500 text-amber-500" />
-                  <span>Featured</span>
-                </span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    <Sparkles class="w-3 h-3 fill-amber-500 text-amber-500" />
+                    <span>#{{ cat.featured_display_order ?? cat.display_order ?? index + 1 }}</span>
+                  </span>
+                </div>
               </div>
 
               <div class="bg-muted/30 border border-border/50 rounded-xl p-3 text-xs space-y-1.5 mb-4">
                 <div class="flex justify-between items-center text-[11px]">
-                  <span class="text-muted-foreground">Featured Order:</span>
-                  <span class="font-mono font-bold text-foreground">{{ cat.featured_display_order ?? cat.display_order ?? '—' }}</span>
+                  <span class="text-muted-foreground">Position:</span>
+                  <span class="font-mono font-bold text-foreground">#{{ cat.featured_display_order ?? cat.display_order ?? index + 1 }}</span>
                 </div>
                 <div v-if="cat.short_description" class="text-[11px] text-muted-foreground line-clamp-2 mt-1">
                   {{ cat.short_description }}
@@ -550,7 +852,28 @@ const executeUnfeatureCategory = async () => {
             </div>
 
             <div class="flex items-center justify-between border-t border-border pt-3 mt-2">
-              <span class="text-[10px] text-muted-foreground font-mono">ID: {{ cat.id }}</span>
+              <div class="flex items-center gap-1">
+                <button 
+                  type="button"
+                  @click.stop="moveCategoryUp(index)"
+                  :disabled="index === 0"
+                  class="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                  title="Move Up"
+                  aria-label="Move Up"
+                >
+                  <ArrowUp class="w-3.5 h-3.5" />
+                </button>
+                <button 
+                  type="button"
+                  @click.stop="moveCategoryDown(index)"
+                  :disabled="index === filteredFeaturedCategories.length - 1"
+                  class="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                  title="Move Down"
+                  aria-label="Move Down"
+                >
+                  <ArrowDown class="w-3.5 h-3.5" />
+                </button>
+              </div>
 
               <div class="flex items-center gap-1">
                 <button 
