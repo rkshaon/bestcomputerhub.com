@@ -15,11 +15,13 @@ import CategoryTreeNode from './CategoryTreeNode.vue';
 
 const props = withDefaults(defineProps<{
   togglingMenuSlug?: string | null;
+  processingFeaturedCategoryId?: string | number | null;
   searchQuery?: string;
   selectedCategoryIds?: string[];
   isBulkUpdatingMenu?: boolean;
 }>(), {
   togglingMenuSlug: null,
+  processingFeaturedCategoryId: null,
   searchQuery: '',
   selectedCategoryIds: () => [],
   isBulkUpdatingMenu: false
@@ -30,6 +32,7 @@ const emit = defineEmits<{
   (e: 'bulk-menu-update', showInMenu: boolean): void;
   (e: 'clear-selection'): void;
   (e: 'toggle-menu', cat: Category): void;
+  (e: 'toggle-featured', cat: Category): void;
   (e: 'view', cat: Category): void;
   (e: 'edit', cat: Category): void;
   (e: 'delete', cat: Category): void;
@@ -308,10 +311,12 @@ const displayRoots = computed(() => {
         :depth="0"
         :tree-mode="treeMode"
         :toggling-menu-slug="togglingMenuSlug"
+        :processing-featured-category-id="processingFeaturedCategoryId"
         :search-query="searchQuery"
         :selected-category-ids="selectedCategoryIds"
         @toggle-select="$emit('toggle-select', $event)"
         @toggle-menu="$emit('toggle-menu', $event)"
+        @toggle-featured="$emit('toggle-featured', $event)"
         @view="$emit('view', $event)"
         @edit="$emit('edit', $event)"
         @delete="$emit('delete', $event)"

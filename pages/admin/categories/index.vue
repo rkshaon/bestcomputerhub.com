@@ -27,7 +27,8 @@ import {
   LayoutGrid,
   List,
   FolderTree,
-  GripVertical
+  GripVertical,
+  Sparkles
 } from 'lucide-vue-next';
 import CategoryTreeAdmin from '@/components/admin/CategoryTreeAdmin.vue';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -67,6 +68,14 @@ const canRemoveCategoryFromMenu = computed(() => hasPermission('category_api.rem
 const canToggleCategoryMenu = (cat: Category): boolean => {
   const isCurrentlyMenu = cat.show_in_menu === true || cat.is_menu === true;
   return isCurrentlyMenu ? canRemoveCategoryFromMenu.value : canMarkCategoryAsMenu.value;
+};
+
+const canMarkCategoryAsFeatured = computed(() => hasPermission(['category_api.mark_category_as_featured', 'mark_category_as_featured', 'store.change_category', 'change_category', 'category_api.change_category']));
+const canRemoveCategoryFromFeatured = computed(() => hasPermission(['category_api.remove_category_from_featured', 'remove_category_from_featured', 'store.change_category', 'change_category', 'category_api.change_category']));
+
+const canToggleCategoryFeatured = (cat: Category): boolean => {
+  const isFeatured = cat.is_featured === true;
+  return isFeatured ? canRemoveCategoryFromFeatured.value : canMarkCategoryAsFeatured.value;
 };
 
 const canViewCategory = computed(() => hasPermission(['store.view_category', 'view_category', 'categories.view_category', 'category_api.view_category']));
@@ -384,6 +393,88 @@ const handleDeleteFeaturedIcon = async () => {
 onBeforeUnmount(() => {
   clearIconPreview();
 });
+
+// Feature & Unfeature Category state & handlers
+const processingFeaturedCategoryId = ref<string | number | null>(null);
+const isUnfeatureConfirmOpen = ref(false);
+const categoryToUnfeature = ref<Category | null>(null);
+
+const handleToggleFeatured = async (cat: Category) => {
+  if (processingFeaturedCategoryId.value) return;
+
+  if (cat.is_featured === true) {
+    categoryToUnfeature.value = cat;
+    isUnfeatureConfirmOpen.value = true;
+  } else {
+    if (!cat.featured_icon) {
+      toastError('A custom featured icon is required before a category can be featured.');
+      return;
+    }
+    await executeFeatureCategory(cat);
+  }
+};
+
+const executeFeatureCategory = async (cat: Category) => {
+  try {
+    processingFeaturedCategoryId.value = cat.id;
+    const updatedCategory = await categoryService.featureCategory(cat.id);
+
+    toastSuccess(`Category "${decodeHtmlEntities(cat.name)}" marked as featured.`);
+
+    // Update local state references
+    cat.is_featured = updatedCategory.is_featured ?? true;
+    cat.featured_display_order = updatedCategory.featured_display_order;
+
+    const inList = categoriesList.value.find(c => String(c.id) === String(cat.id));
+    if (inList) {
+      inList.is_featured = updatedCategory.is_featured ?? true;
+      inList.featured_display_order = updatedCategory.featured_display_order;
+    }
+
+    await fetchCategories();
+    if (viewMode.value === 'tree' && treeRef.value) {
+      await treeRef.value.fetchRoots();
+    }
+  } catch (err: any) {
+    handleApiError(err, 'Failed to feature category.');
+  } finally {
+    processingFeaturedCategoryId.value = null;
+  }
+};
+
+const executeUnfeatureCategory = async () => {
+  if (!categoryToUnfeature.value) return;
+
+  const cat = categoryToUnfeature.value;
+  try {
+    processingFeaturedCategoryId.value = cat.id;
+    const updatedCategory = await categoryService.unfeatureCategory(cat.id);
+
+    toastSuccess(`Category "${decodeHtmlEntities(cat.name)}" removed from featured.`);
+
+    // Update local state references
+    cat.is_featured = updatedCategory.is_featured ?? false;
+    cat.featured_display_order = updatedCategory.featured_display_order;
+
+    const inList = categoriesList.value.find(c => String(c.id) === String(cat.id));
+    if (inList) {
+      inList.is_featured = updatedCategory.is_featured ?? false;
+      inList.featured_display_order = updatedCategory.featured_display_order;
+    }
+
+    await fetchCategories();
+    if (viewMode.value === 'tree' && treeRef.value) {
+      await treeRef.value.fetchRoots();
+    }
+
+    isUnfeatureConfirmOpen.value = false;
+    categoryToUnfeature.value = null;
+  } catch (err: any) {
+    handleApiError(err, 'Failed to unfeature category.');
+  } finally {
+    processingFeaturedCategoryId.value = null;
+  }
+};
 
 // URL-driven modal state infrastructure for Category View and Edit
 const categoryModalState = useAdminModalState<Category>({
@@ -1912,6 +2003,13 @@ watch(viewMode, () => {
                 </div>
               </div>
 
+              <div v-if="cat.is_featured === true" class="flex items-center gap-1.5 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20 text-amber-600 dark:text-amber-400">
+                <Sparkles class="w-3 h-3 fill-amber-500 text-amber-500" />
+                <span class="text-[10px] uppercase font-bold tracking-widest">
+                  Featured
+                </span>
+              </div>
+
               <div class="flex items-center gap-2 bg-muted/50 px-3 py-1 rounded-full border border-border/60">
                 <span :class="cn(
                   'w-2 h-2 rounded-full ring-4',
@@ -1999,6 +2097,25 @@ watch(viewMode, () => {
                 <Menu v-else class="w-4 h-4" />
               </button>
               <button 
+                v-if="canToggleCategoryFeatured(cat)"
+                type="button"
+                @click="handleToggleFeatured(cat)" 
+                :disabled="processingFeaturedCategoryId === cat.id || (!cat.is_featured && !cat.featured_icon)"
+                :class="[
+                  'p-2 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
+                  cat.is_featured === true
+                    ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                    : cat.featured_icon
+                      ? 'text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                      : 'text-muted-foreground/40'
+                ]"
+                :title="cat.is_featured ? 'Remove from Featured Categories' : (cat.featured_icon ? 'Mark as Featured Category' : 'Featured icon required before category can be featured')"
+                :aria-label="cat.is_featured ? 'Remove from Featured' : 'Mark as Featured'"
+              >
+                <Loader2 v-if="processingFeaturedCategoryId === cat.id" class="w-4 h-4 animate-spin text-primary" />
+                <Sparkles v-else class="w-4 h-4" :class="{ 'fill-amber-500 text-amber-500': cat.is_featured }" />
+              </button>
+              <button 
                 v-if="canViewCategory"
                 @click="triggerViewModal(cat)" 
                 class="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all cursor-pointer"
@@ -2071,6 +2188,7 @@ watch(viewMode, () => {
       v-else-if="viewMode === 'tree'"
       ref="treeRef"
       :toggling-menu-slug="togglingMenuSlug"
+      :processing-featured-category-id="processingFeaturedCategoryId"
       :search-query="searchQuery"
       :selected-category-ids="selectedCategoryIds"
       :is-bulk-updating-menu="isBulkUpdatingMenu"
@@ -2078,6 +2196,7 @@ watch(viewMode, () => {
       @bulk-menu-update="handleBulkMenuUpdate"
       @clear-selection="clearSelection"
       @toggle-menu="toggleCategoryMenu"
+      @toggle-featured="handleToggleFeatured"
       @view="triggerViewModal"
       @edit="triggerEditModal"
       @delete="deleteCategoryNode"
@@ -2182,7 +2301,10 @@ watch(viewMode, () => {
             <span>{{ cat.icon || '📁' }}</span>
           </div>
           <div class="min-w-0">
-            <h4 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors leading-tight truncate">{{ decodeHtmlEntities(cat.name) }}</h4>
+            <div class="flex items-center gap-1.5">
+              <h4 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors leading-tight truncate">{{ decodeHtmlEntities(cat.name) }}</h4>
+              <span v-if="cat.is_featured" class="px-1.5 py-0.2 text-[9px] font-bold rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">Featured</span>
+            </div>
             <p class="text-[10px] text-muted-foreground font-mono tracking-wider mt-0.5 truncate">{{ cat.id }}</p>
           </div>
         </div>
@@ -2234,6 +2356,25 @@ watch(viewMode, () => {
           >
             <Loader2 v-if="togglingMenuSlug === cat.slug" class="w-3.5 h-3.5 animate-spin text-primary" />
             <Menu v-else class="w-3.5 h-3.5" />
+          </button>
+          <button 
+            v-if="canToggleCategoryFeatured(cat)"
+            type="button"
+            @click="handleToggleFeatured(cat)" 
+            :disabled="processingFeaturedCategoryId === cat.id || (!cat.is_featured && !cat.featured_icon)"
+            :class="[
+              'p-1.5 rounded-md transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
+              cat.is_featured === true
+                ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                : cat.featured_icon
+                  ? 'text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                  : 'text-muted-foreground/40'
+            ]"
+            :title="cat.is_featured ? 'Remove from Featured Categories' : (cat.featured_icon ? 'Mark as Featured Category' : 'Featured icon required before category can be featured')"
+            :aria-label="cat.is_featured ? 'Remove from Featured' : 'Mark as Featured'"
+          >
+            <Loader2 v-if="processingFeaturedCategoryId === cat.id" class="w-3.5 h-3.5 animate-spin text-primary" />
+            <Sparkles v-else class="w-3.5 h-3.5" :class="{ 'fill-amber-500 text-amber-500': cat.is_featured }" />
           </button>
           <button 
             v-if="canViewCategory"
@@ -3081,6 +3222,51 @@ watch(viewMode, () => {
             <Loader2 v-if="isIconDeleting" class="w-4 h-4 animate-spin" />
             <Trash2 v-else class="w-3.5 h-3.5" />
             <span>Delete Icon</span>
+          </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- Unfeature Category Confirmation Modal -->
+    <UiAdminModal
+      :is-open="isUnfeatureConfirmOpen && !!categoryToUnfeature"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="isUnfeatureConfirmOpen = false; categoryToUnfeature = null;"
+    >
+      <div class="p-6 space-y-6">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <Sparkles class="w-6 h-6" />
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold text-foreground">Remove Category from Featured</h3>
+          <p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            Are you sure you want to unfeature Category <span class="font-bold text-foreground">"{{ decodeHtmlEntities(categoryToUnfeature?.name || '') }}"</span>? It will no longer appear in featured category sections on the storefront.
+          </p>
+          <p class="text-[11px] text-muted-foreground/80 mt-2 italic">
+            Note: The category's featured icon asset will be retained and not deleted.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <UiButton
+            variant="outline"
+            class="rounded-xl h-10 px-5 text-xs font-bold cursor-pointer"
+            @click="isUnfeatureConfirmOpen = false; categoryToUnfeature = null;"
+            :disabled="processingFeaturedCategoryId === categoryToUnfeature?.id"
+          >
+            Cancel
+          </UiButton>
+
+          <UiButton
+            class="rounded-xl h-10 px-5 text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 gap-2 cursor-pointer"
+            @click="executeUnfeatureCategory"
+            :disabled="processingFeaturedCategoryId === categoryToUnfeature?.id"
+          >
+            <Loader2 v-if="processingFeaturedCategoryId === categoryToUnfeature?.id" class="w-4 h-4 animate-spin" />
+            <Sparkles v-else class="w-3.5 h-3.5" />
+            <span>Unfeature Category</span>
           </UiButton>
         </div>
       </div>

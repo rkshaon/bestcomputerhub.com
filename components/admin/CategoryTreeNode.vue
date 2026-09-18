@@ -10,7 +10,8 @@ import {
   Loader2,
   GripVertical,
   ExternalLink,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Sparkles
 } from 'lucide-vue-next';
 import type { Category } from '@/types';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -22,12 +23,14 @@ const props = withDefaults(defineProps<{
   depth?: number;
   treeMode?: 'category' | 'menu';
   togglingMenuSlug?: string | null;
+  processingFeaturedCategoryId?: string | number | null;
   searchQuery?: string;
   selectedCategoryIds?: string[];
 }>(), {
   depth: 0,
   treeMode: 'category',
   togglingMenuSlug: null,
+  processingFeaturedCategoryId: null,
   searchQuery: '',
   selectedCategoryIds: () => []
 });
@@ -35,6 +38,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (e: 'toggle-select', id: string | number): void;
   (e: 'toggle-menu', cat: Category): void;
+  (e: 'toggle-featured', cat: Category): void;
   (e: 'view', cat: Category): void;
   (e: 'edit', cat: Category): void;
   (e: 'delete', cat: Category): void;
@@ -125,6 +129,13 @@ const { hasPermission } = useAdminPermissions();
 const canMarkCategoryAsMenu = computed(() => hasPermission('category_api.mark_category_as_menu'));
 const canRemoveCategoryFromMenu = computed(() => hasPermission('category_api.remove_category_from_menu'));
 const canToggleMenu = computed(() => isCurrentlyMenu.value ? canRemoveCategoryFromMenu.value : canMarkCategoryAsMenu.value);
+
+const canMarkCategoryAsFeatured = computed(() => hasPermission(['category_api.mark_category_as_featured', 'mark_category_as_featured', 'store.change_category', 'change_category', 'category_api.change_category']));
+const canRemoveCategoryFromFeatured = computed(() => hasPermission(['category_api.remove_category_from_featured', 'remove_category_from_featured', 'store.change_category', 'change_category', 'category_api.change_category']));
+const canToggleCategoryFeatured = (cat: Category): boolean => {
+  const isFeatured = cat.is_featured === true;
+  return isFeatured ? canRemoveCategoryFromFeatured.value : canMarkCategoryAsFeatured.value;
+};
 
 const canViewCategory = computed(() => hasPermission(['store.view_category', 'view_category', 'categories.view_category', 'category_api.view_category']));
 const canEditCategory = computed(() => hasPermission(['store.change_category', 'change_category', 'categories.change_category', 'category_api.change_category']));
@@ -291,6 +302,27 @@ const onNodeDrop = (e: DragEvent) => {
           <Menu v-else class="w-3.5 h-3.5" />
         </button>
 
+        <!-- Feature / Unfeature Button -->
+        <button
+          v-if="canToggleCategoryFeatured(node)"
+          type="button"
+          @click.stop="$emit('toggle-featured', node)"
+          :disabled="processingFeaturedCategoryId === node.id || (!node.is_featured && !node.featured_icon)"
+          :class="[
+            'p-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
+            node.is_featured === true
+              ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+              : node.featured_icon
+                ? 'text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                : 'text-muted-foreground/40'
+          ]"
+          :title="node.is_featured ? 'Remove from Featured Categories' : (node.featured_icon ? 'Mark as Featured Category' : 'Featured icon required before category can be featured')"
+          :aria-label="node.is_featured ? 'Remove from Featured' : 'Mark as Featured'"
+        >
+          <Loader2 v-if="processingFeaturedCategoryId === node.id" class="w-3.5 h-3.5 animate-spin text-primary" />
+          <Sparkles v-else class="w-3.5 h-3.5" :class="{ 'fill-amber-500 text-amber-500': node.is_featured }" />
+        </button>
+
         <!-- View / Inspect Button -->
         <button
           v-if="canViewCategory"
@@ -351,10 +383,12 @@ const onNodeDrop = (e: DragEvent) => {
         :depth="depth + 1"
         :tree-mode="treeMode"
         :toggling-menu-slug="togglingMenuSlug"
+        :processing-featured-category-id="processingFeaturedCategoryId"
         :search-query="searchQuery"
         :selected-category-ids="selectedCategoryIds"
         @toggle-select="$emit('toggle-select', $event)"
         @toggle-menu="$emit('toggle-menu', $event)"
+        @toggle-featured="$emit('toggle-featured', $event)"
         @view="$emit('view', $event)"
         @edit="$emit('edit', $event)"
         @delete="$emit('delete', $event)"
