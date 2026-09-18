@@ -1,5 +1,4 @@
 <!-- File: /README.md -->
-
 # Best Computer Hub — Frontend
 
 Frontend application for **Best Computer Hub**, an e-commerce platform focused on computers, components, accessories, networking equipment, and related technology products.
