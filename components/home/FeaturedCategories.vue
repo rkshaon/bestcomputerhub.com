@@ -1,6 +1,9 @@
 <!-- File: /components/home/FeaturedCategories.vue -->
 <script setup lang="ts">
+import { ref } from 'vue';
 import { decodeHtmlEntities } from '@/utils';
+import { useCategoryService } from '@/composables/useCategoryService';
+import type { FeaturedCategory } from '@/types';
 import { 
   ChevronRight, 
   Cpu, 
@@ -13,104 +16,36 @@ import {
   ShieldCheck, 
   Zap,
   Box,
-  Terminal
+  Terminal,
+  AlertCircle,
+  RefreshCw,
+  FolderTree
 } from 'lucide-vue-next';
 import type { Component } from 'vue';
 
-export interface FeaturedCategory {
-  id: string;
-  name: string;
-  slug: string;
-  route: string;
-  description?: string;
-  image?: string;
-  itemCount?: number;
-}
+const categoryService = useCategoryService();
 
-// ============================================================================
-// MOCK DATA - TEMPORARY DEVELOPMENT DATA
-// Note: This mock data is intentionally used for initial component rendering
-// before real backend/DRF category API integration is added in a future task.
-// ============================================================================
-const MOCK_FEATURED_CATEGORIES: FeaturedCategory[] = [
+// Fetch featured categories with SSR support to avoid duplicate requests during hydration
+const { data: featuredCategories, status, error, refresh } = await useAsyncData<FeaturedCategory[]>(
+  'storefront-featured-categories',
+  () => categoryService.getFeaturedCategories(),
   {
-    id: 'cat_gpu',
-    name: 'Graphics Processors',
-    slug: 'gpus',
-    route: '/product-category/gpus/',
-  },
-  {
-    id: 'cat_cpu',
-    name: 'Processors & CPUs',
-    slug: 'processors',
-    route: '/product-category/processors/',
-  },
-  {
-    id: 'cat_server',
-    name: 'Enterprise Servers',
-    slug: 'servers',
-    route: '/product-category/servers/',
-  },
-  {
-    id: 'cat_nvidia',
-    name: 'NVIDIA RTX Workstations',
-    slug: 'nvidia-rtx',
-    route: '/product-category/nvidia-rtx/',
-  },
-  {
-    id: 'cat_amd',
-    name: 'Radeon Accelerators',
-    slug: 'amd-radeon',
-    route: '/product-category/amd-radeon/',
-  },
-  {
-    id: 'cat_datacenter',
-    name: 'Data Center Compute',
-    slug: 'datacenter-accelerators',
-    route: '/product-category/datacenter-accelerators/',
-  },
-  {
-    id: 'cat_memory',
-    name: 'Memory & RAM',
-    slug: 'memory',
-    route: '/product-category/memory/',
-  },
-  {
-    id: 'cat_storage',
-    name: 'Enterprise Storage & SSDs',
-    slug: 'storage',
-    route: '/product-category/storage/',
-  },
-  {
-    id: 'cat_motherboard',
-    name: 'Motherboards & Chassis',
-    slug: 'motherboards',
-    route: '/product-category/motherboards/',
-  },
-  {
-    id: 'cat_cooling',
-    name: 'Liquid Cooling & Fans',
-    slug: 'cooling',
-    route: '/product-category/cooling/',
-  },
-  {
-    id: 'cat_power',
-    name: 'Power Supply Units (PSU)',
-    slug: 'power-supplies',
-    route: '/product-category/power-supplies/',
-  },
-  {
-    id: 'cat_networking',
-    name: 'Networking & Switches',
-    slug: 'networking',
-    route: '/product-category/networking/',
-  },
-];
+    lazy: false,
+    default: () => []
+  }
+);
 
-// Centralized icon mapping resolver based on category slug or name
+// Map of failed icon URLs to fall back gracefully to default category icons
+const imageErrors = ref<Record<string | number, boolean>>({});
+
+const handleImageError = (id: string | number) => {
+  imageErrors.value[id] = true;
+};
+
+// Centralized icon mapping resolver based on category slug or name (used as fallback)
 const getCategoryIcon = (slug: string, name: string): Component => {
-  const s = slug.toLowerCase();
-  const n = name.toLowerCase();
+  const s = (slug || '').toLowerCase();
+  const n = (name || '').toLowerCase();
 
   if (s.includes('gpu') || n.includes('graphic')) return Monitor;
   if (s.includes('processor') || s.includes('cpu') || n.includes('processor')) return Cpu;
@@ -149,17 +84,74 @@ const getCategoryIcon = (slug: string, name: string): Component => {
       </NuxtLink>
     </div>
 
-    <!-- Category Grid - Compact Icon Tiles -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+    <!-- Loading Skeleton State -->
+    <div v-if="status === 'pending'" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div
+        v-for="i in 12"
+        :key="'cat-skeleton-' + i"
+        class="flex flex-col items-center justify-center p-4 rounded-xl bg-card border border-border/40 h-32 sm:h-36 animate-pulse"
+      >
+        <div class="w-12 h-12 rounded-xl bg-muted/60 mb-3"></div>
+        <div class="w-20 h-3.5 bg-muted/60 rounded-sm"></div>
+      </div>
+    </div>
+
+    <!-- Error Fallback State -->
+    <div v-else-if="error" class="flex flex-col items-center justify-center py-10 px-4 rounded-xl bg-muted/20 border border-border/60 text-center">
+      <div class="w-10 h-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-3">
+        <AlertCircle class="w-5 h-5" />
+      </div>
+      <p class="text-sm font-semibold text-foreground mb-1">Failed to load featured categories</p>
+      <p class="text-xs text-muted-foreground mb-4 max-w-md">An error occurred while connecting to the categories service.</p>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs"
+        @click="refresh()"
+      >
+        <RefreshCw class="w-3.5 h-3.5" />
+        <span>Try Again</span>
+      </button>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else-if="!featuredCategories || featuredCategories.length === 0" class="flex flex-col items-center justify-center py-10 px-4 rounded-xl bg-muted/20 border border-border/60 text-center">
+      <div class="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center mb-3">
+        <FolderTree class="w-5 h-5" />
+      </div>
+      <p class="text-sm font-semibold text-foreground mb-1">No featured categories available</p>
+      <p class="text-xs text-muted-foreground mb-4">Check back soon for featured hardware & infrastructure components.</p>
       <NuxtLink
-        v-for="cat in MOCK_FEATURED_CATEGORIES"
+        to="/products/"
+        class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+      >
+        <span>Browse all categories</span>
+        <ChevronRight class="w-3.5 h-3.5" />
+      </NuxtLink>
+    </div>
+
+    <!-- Category Grid - Real Featured Categories -->
+    <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+      <NuxtLink
+        v-for="cat in featuredCategories"
         :key="cat.id"
-        :to="cat.route"
+        :to="'/product-category/' + cat.slug + '/'"
         class="group relative flex flex-col items-center justify-center text-center p-4 rounded-xl bg-card border border-border/60 hover:border-primary/60 hover:bg-muted/30 shadow-xs hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary h-32 sm:h-36"
       >
         <!-- Icon Container -->
-        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200 shadow-xs">
-          <component :is="getCategoryIcon(cat.slug, cat.name)" class="w-6 h-6" aria-hidden="true" />
+        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200 shadow-xs overflow-hidden p-1.5">
+          <img
+            v-if="cat.featured_icon && !imageErrors[cat.id]"
+            :src="cat.featured_icon"
+            :alt="decodeHtmlEntities(cat.name)"
+            class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+            @error="handleImageError(cat.id)"
+          />
+          <component
+            v-else
+            :is="getCategoryIcon(cat.slug, cat.name)"
+            class="w-6 h-6"
+            aria-hidden="true"
+          />
         </div>
 
         <!-- Category Name -->
@@ -170,4 +162,5 @@ const getCategoryIcon = (slug: string, name: string): Component => {
     </div>
   </section>
 </template>
+
 
