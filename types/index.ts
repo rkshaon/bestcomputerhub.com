@@ -10,7 +10,6 @@ export * from './order';
 export * from './admin';
 export * from './role';
 export * from './blog';
-export * from './hero';
 export * from './user';
 export * from './content-security';
 export * from './request-log';
