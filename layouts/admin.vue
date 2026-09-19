@@ -31,6 +31,7 @@ import {
   Globe,
   Terminal,
   Image as ImageIcon,
+  ImagePlus,
   FileText
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
@@ -76,6 +77,7 @@ const navigation = [
   { name: 'Product Images', iconKey: 'ImageIcon', href: '/admin/product-images' },
   { name: 'Categories', iconKey: 'Layers', href: '/admin/categories' },
   { name: 'Brands', iconKey: 'Tag', href: '/admin/brands' },
+  { name: 'Banners', iconKey: 'ImagePlus', href: '/admin/banners' },
   { name: 'Blog Tags', iconKey: 'Tag', href: '/admin/blog/tags' },
   { name: 'Blog Posts', iconKey: 'FileText', href: '/admin/blog/posts' },
   { name: 'Inventory', iconKey: 'Boxes', href: '/admin/inventory' },
@@ -108,6 +110,7 @@ const iconMap = {
   LayoutDashboard,
   Package,
   ImageIcon,
+  ImagePlus,
   Layers,
   Tag,
   Boxes,

@@ -58,6 +58,16 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     editPermission: ['store.change_brand', 'change_brand', 'brands.change_brand'],
     deletePermission: ['store.delete_brand', 'delete_brand', 'brands.delete_brand']
   },
+  banners: {
+    key: 'banners',
+    route: '/admin/banners',
+    name: 'Banners',
+    iconKey: 'ImagePlus',
+    viewPermission: ['banner_api.view_banner', 'view_banner', 'banners.view_banner', 'banner.view_banner'],
+    createPermission: ['banner_api.add_banner', 'add_banner', 'banners.add_banner', 'banner.add_banner'],
+    editPermission: ['banner_api.change_banner', 'change_banner', 'banners.change_banner', 'banner.change_banner'],
+    deletePermission: ['banner_api.delete_banner', 'delete_banner', 'banners.delete_banner', 'banner.delete_banner']
+  },
   blogTags: {
     key: 'blogTags',
     route: '/admin/blog/tags',
