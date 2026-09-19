@@ -1,9 +1,9 @@
 <!-- File: /pages/index.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useProductService } from '@/composables/useProductService';
 import { useBrandService } from '@/composables/useBrandService';
-import type { Brand } from '@/types';
+import type { Brand, Product } from '@/types';
 
 useSeoMeta({
   title: 'Best Computer Hub | Gaming PC, Laptop & Computer Accessories in Bangladesh',
@@ -14,8 +14,21 @@ useSeoMeta({
 const productService = useProductService();
 const brandService = useBrandService();
 
-const flashSaleProducts = productService.getOnSaleProducts();
-const bestSellerProducts = productService.getBestSellers();
+// Fetch Best Sellers via SSR-safe useAsyncData from real product API
+const { 
+  data: bestSellersResponse, 
+  status: bestSellersStatus, 
+  error: bestSellersError, 
+  refresh: refreshBestSellers 
+} = await useAsyncData(
+  'storefront-best-sellers',
+  () => productService.getProductsList({ page_size: 8 }),
+  {
+    lazy: false
+  }
+);
+
+const bestSellerProducts = computed<Product[]>(() => bestSellersResponse.value?.results || []);
 
 // Initialize brands with standard defaults from product service mapping for high SSR alignment and zero layout pop
 const brandsList = ref<Brand[]>(
@@ -49,16 +62,6 @@ onMounted(async () => {
     <!-- Featured Categories -->
     <HomeFeaturedCategories />
 
-    <!-- Flash Sale -->
-    <HomeProductSection
-      title="Flash Sale"
-      title-highlight="Sale"
-      subtitle="Limited time enterprise hardware deals & promotional prices."
-      view-all-route="/offers/"
-      view-all-text="View All Deals"
-      :products="flashSaleProducts"
-    />
-
     <!-- Best Sellers -->
     <HomeProductSection
       title="Best Sellers"
@@ -67,6 +70,11 @@ onMounted(async () => {
       view-all-route="/products/"
       view-all-text="Explore All Products"
       :products="bestSellerProducts"
+      :is-loading="bestSellersStatus === 'pending'"
+      :error="bestSellersError"
+      :error-message="bestSellersError?.message || 'Unable to retrieve catalog products.'"
+      :on-retry="() => refreshBestSellers()"
+      @retry="() => refreshBestSellers()"
     />
 
     <!-- Brand Marquee -->
