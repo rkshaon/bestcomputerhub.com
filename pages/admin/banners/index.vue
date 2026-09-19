@@ -1,6 +1,6 @@
 <!-- File: /pages/admin/banners/index.vue -->
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { 
   Plus, 
   Search, 
@@ -20,7 +20,10 @@ import {
   XCircle,
   Clock,
   ArrowUpDown,
-  Tag
+  Upload,
+  UploadCloud,
+  FileText,
+  Link
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useBannerService } from '@/composables/useBannerService';
@@ -82,13 +85,166 @@ const modalState = useAdminModalState<Banner>({
 
 const selectedBanner = computed(() => modalState.activeEntity.value);
 
-// Image preview error map
+// Form & Image State
+const isSubmitting = ref(false);
+const formError = ref<string | null>(null);
+const fieldErrors = ref<Record<string, string>>({});
+
+const formPayload = ref({
+  placement: '',
+  title: '',
+  subtitle: '',
+  cta_text: '',
+  cta_url: '',
+  display_order: 0,
+  is_active: true,
+  start_at: '',
+  end_at: ''
+});
+
+// Desktop Main Image
+const selectedDesktopFile = ref<File | null>(null);
+const desktopPreviewUrl = ref<string | null>(null);
+const isDesktopDragOver = ref(false);
+const desktopFileInputRef = ref<HTMLInputElement | null>(null);
+
+// Mobile Optional Image
+const selectedMobileFile = ref<File | null>(null);
+const mobilePreviewUrl = ref<string | null>(null);
+const isMobileDragOver = ref(false);
+const mobileFileInputRef = ref<HTMLInputElement | null>(null);
+
+// Cleanup Object URLs to prevent memory leaks
+const cleanupObjectUrls = () => {
+  if (desktopPreviewUrl.value && desktopPreviewUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(desktopPreviewUrl.value);
+  }
+  if (mobilePreviewUrl.value && mobilePreviewUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(mobilePreviewUrl.value);
+  }
+};
+
+onBeforeUnmount(() => {
+  cleanupObjectUrls();
+});
+
+// Convert ISO strings to datetime-local string format
+const toDatetimeLocalValue = (isoStr: string | null | undefined): string => {
+  if (!isoStr) return '';
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  } catch {
+    return '';
+  }
+};
+
+// Convert datetime-local string value to ISO String or null
+const toIsoStringOrNull = (datetimeLocalStr: string): string | null => {
+  if (!datetimeLocalStr || !datetimeLocalStr.trim()) return null;
+  try {
+    const d = new Date(datetimeLocalStr);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  } catch {
+    return null;
+  }
+};
+
+// File Selectors & Drag-and-Drop
+const setDesktopFile = (file: File) => {
+  if (!file.type.startsWith('image/')) {
+    fieldErrors.value.image = 'Selected file must be an image (PNG, JPG, WebP, SVG).';
+    return;
+  }
+  if (desktopPreviewUrl.value && desktopPreviewUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(desktopPreviewUrl.value);
+  }
+  selectedDesktopFile.value = file;
+  desktopPreviewUrl.value = URL.createObjectURL(file);
+  if (fieldErrors.value.image) {
+    delete fieldErrors.value.image;
+  }
+};
+
+const handleDesktopFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  if (target.files && target.files[0]) {
+    setDesktopFile(target.files[0]);
+  }
+};
+
+const handleDesktopDrop = (e: DragEvent) => {
+  isDesktopDragOver.value = false;
+  if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
+    setDesktopFile(e.dataTransfer.files[0]);
+  }
+};
+
+const removeDesktopImage = () => {
+  if (desktopPreviewUrl.value && desktopPreviewUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(desktopPreviewUrl.value);
+  }
+  selectedDesktopFile.value = null;
+  desktopPreviewUrl.value = null;
+  if (desktopFileInputRef.value) {
+    desktopFileInputRef.value.value = '';
+  }
+};
+
+const setMobileFile = (file: File) => {
+  if (!file.type.startsWith('image/')) {
+    fieldErrors.value.mobile_image = 'Selected file must be an image (PNG, JPG, WebP, SVG).';
+    return;
+  }
+  if (mobilePreviewUrl.value && mobilePreviewUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(mobilePreviewUrl.value);
+  }
+  selectedMobileFile.value = file;
+  mobilePreviewUrl.value = URL.createObjectURL(file);
+  if (fieldErrors.value.mobile_image) {
+    delete fieldErrors.value.mobile_image;
+  }
+};
+
+const handleMobileFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  if (target.files && target.files[0]) {
+    setMobileFile(target.files[0]);
+  }
+};
+
+const handleMobileDrop = (e: DragEvent) => {
+  isMobileDragOver.value = false;
+  if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
+    setMobileFile(e.dataTransfer.files[0]);
+  }
+};
+
+const removeMobileImage = () => {
+  if (mobilePreviewUrl.value && mobilePreviewUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(mobilePreviewUrl.value);
+  }
+  selectedMobileFile.value = null;
+  mobilePreviewUrl.value = null;
+  if (mobileFileInputRef.value) {
+    mobileFileInputRef.value.value = '';
+  }
+};
+
+// Image preview error map for table
 const imageErrorMap = ref<Record<string | number, boolean>>({});
 const handleImageError = (id: string | number) => {
   imageErrorMap.value[id] = true;
 };
 
-// Map placement IDs to Placement entities for fast lookup
+// Map placement IDs to Placement entities
 const placementsMap = computed<Record<number, BannerPlacement>>(() => {
   const map: Record<number, BannerPlacement> = {};
   for (const p of placementsList.value) {
@@ -97,7 +253,6 @@ const placementsMap = computed<Record<number, BannerPlacement>>(() => {
   return map;
 });
 
-// Helper: resolve placement display name
 const getPlacementDisplayName = (banner: Banner): string => {
   if (banner.placement_name) return banner.placement_name;
   if (banner.placement && placementsMap.value[banner.placement]) {
@@ -106,7 +261,6 @@ const getPlacementDisplayName = (banner: Banner): string => {
   return `Placement #${banner.placement}`;
 };
 
-// Helper: resolve placement code
 const getPlacementCode = (banner: Banner): string => {
   if (banner.placement_code) return banner.placement_code;
   if (banner.placement && placementsMap.value[banner.placement]) {
@@ -115,7 +269,6 @@ const getPlacementCode = (banner: Banner): string => {
   return '';
 };
 
-// Helper: check if banner schedule is currently active
 const isCurrentlyScheduled = (banner: Banner): { active: boolean; statusText: string } => {
   if (!banner.is_active) {
     return { active: false, statusText: 'Disabled' };
@@ -130,7 +283,6 @@ const isCurrentlyScheduled = (banner: Banner): { active: boolean; statusText: st
   return { active: true, statusText: 'Active' };
 };
 
-// Helper: format date strings cleanly
 const formatDate = (dateStr: string | null): string => {
   if (!dateStr) return '—';
   try {
@@ -147,12 +299,213 @@ const formatDate = (dateStr: string | null): string => {
   }
 };
 
-// Fetch placements options for the dropdown filter
+// Sync form state when modal mode or active banner changes
+watch(
+  [() => modalState.isCreate.value, () => modalState.isEdit.value, selectedBanner],
+  ([isCreate, isEdit, banner]) => {
+    formError.value = null;
+    fieldErrors.value = {};
+
+    if (isCreate) {
+      cleanupObjectUrls();
+      selectedDesktopFile.value = null;
+      desktopPreviewUrl.value = null;
+      selectedMobileFile.value = null;
+      mobilePreviewUrl.value = null;
+
+      formPayload.value = {
+        placement: placementsList.value[0]?.id ? String(placementsList.value[0].id) : '',
+        title: '',
+        subtitle: '',
+        cta_text: '',
+        cta_url: '',
+        display_order: 0,
+        is_active: true,
+        start_at: '',
+        end_at: ''
+      };
+    } else if (isEdit && banner) {
+      cleanupObjectUrls();
+      selectedDesktopFile.value = null;
+      desktopPreviewUrl.value = null;
+      selectedMobileFile.value = null;
+      mobilePreviewUrl.value = null;
+
+      formPayload.value = {
+        placement: String(banner.placement),
+        title: banner.title || '',
+        subtitle: banner.subtitle || '',
+        cta_text: banner.cta_text || '',
+        cta_url: banner.cta_url || '',
+        display_order: banner.display_order ?? 0,
+        is_active: banner.is_active ?? true,
+        start_at: toDatetimeLocalValue(banner.start_at),
+        end_at: toDatetimeLocalValue(banner.end_at)
+      };
+
+      if (banner.image) {
+        desktopPreviewUrl.value = banner.image;
+      }
+      if (banner.mobile_image) {
+        mobilePreviewUrl.value = banner.mobile_image;
+      }
+    }
+  },
+  { immediate: true }
+);
+
+// Form Validation Logic
+const validateForm = (): boolean => {
+  fieldErrors.value = {};
+  formError.value = null;
+  let isValid = true;
+
+  if (!formPayload.value.placement) {
+    fieldErrors.value.placement = 'Placement selection is required.';
+    isValid = false;
+  }
+
+  if (modalState.isCreate.value && !selectedDesktopFile.value) {
+    fieldErrors.value.image = 'Desktop main image is required for new banners.';
+    isValid = false;
+  }
+
+  const parsedOrder = Number(formPayload.value.display_order);
+  if (isNaN(parsedOrder) || parsedOrder < 0 || !Number.isInteger(parsedOrder)) {
+    fieldErrors.value.display_order = 'Display order must be a non-negative integer.';
+    isValid = false;
+  }
+
+  if (formPayload.value.start_at && formPayload.value.end_at) {
+    const startDate = new Date(formPayload.value.start_at);
+    const endDate = new Date(formPayload.value.end_at);
+    if (endDate <= startDate) {
+      fieldErrors.value.end_at = 'Schedule End date/time must be later than Start date/time.';
+      isValid = false;
+    }
+  }
+
+  return isValid;
+};
+
+// Form Submission Handler (Create & Edit)
+const handleFormSubmit = async () => {
+  if (!validateForm()) {
+    formError.value = 'Please fix the highlighted errors before submitting.';
+    return;
+  }
+
+  isSubmitting.value = true;
+  formError.value = null;
+
+  try {
+    if (modalState.isCreate.value) {
+      if (!canCreate.value) {
+        formError.value = 'You do not have permission to create banners.';
+        isSubmitting.value = false;
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('placement', String(formPayload.value.placement));
+      formData.append('title', formPayload.value.title.trim());
+      formData.append('subtitle', formPayload.value.subtitle.trim());
+      formData.append('cta_text', formPayload.value.cta_text.trim());
+      formData.append('cta_url', formPayload.value.cta_url.trim());
+      formData.append('display_order', String(formPayload.value.display_order));
+      formData.append('is_active', formPayload.value.is_active ? 'true' : 'false');
+
+      const startIso = toIsoStringOrNull(formPayload.value.start_at);
+      if (startIso) formData.append('start_at', startIso);
+
+      const endIso = toIsoStringOrNull(formPayload.value.end_at);
+      if (endIso) formData.append('end_at', endIso);
+
+      if (selectedDesktopFile.value) {
+        formData.append('image', selectedDesktopFile.value);
+      }
+      if (selectedMobileFile.value) {
+        formData.append('mobile_image', selectedMobileFile.value);
+      }
+
+      await bannerService.createBanner(formData);
+      toastSuccess('New banner successfully created.');
+      cleanupObjectUrls();
+      await modalState.closeModal();
+      await fetchBanners();
+    } else if (modalState.isEdit.value && selectedBanner.value) {
+      if (!canEdit.value) {
+        formError.value = 'You do not have permission to edit banners.';
+        isSubmitting.value = false;
+        return;
+      }
+
+      const targetId = selectedBanner.value.id;
+      const startIso = toIsoStringOrNull(formPayload.value.start_at);
+      const endIso = toIsoStringOrNull(formPayload.value.end_at);
+
+      if (selectedDesktopFile.value || selectedMobileFile.value) {
+        // Multipart payload if files were replaced
+        const formData = new FormData();
+        formData.append('placement', String(formPayload.value.placement));
+        formData.append('title', formPayload.value.title.trim());
+        formData.append('subtitle', formPayload.value.subtitle.trim());
+        formData.append('cta_text', formPayload.value.cta_text.trim());
+        formData.append('cta_url', formPayload.value.cta_url.trim());
+        formData.append('display_order', String(formPayload.value.display_order));
+        formData.append('is_active', formPayload.value.is_active ? 'true' : 'false');
+
+        if (startIso !== null) formData.append('start_at', startIso);
+        else formData.append('start_at', '');
+
+        if (endIso !== null) formData.append('end_at', endIso);
+        else formData.append('end_at', '');
+
+        if (selectedDesktopFile.value) {
+          formData.append('image', selectedDesktopFile.value);
+        }
+        if (selectedMobileFile.value) {
+          formData.append('mobile_image', selectedMobileFile.value);
+        }
+
+        await bannerService.updateBanner(targetId, formData);
+      } else {
+        // JSON payload if images were preserved
+        const payload = {
+          placement: Number(formPayload.value.placement),
+          title: formPayload.value.title.trim(),
+          subtitle: formPayload.value.subtitle.trim(),
+          cta_text: formPayload.value.cta_text.trim(),
+          cta_url: formPayload.value.cta_url.trim(),
+          display_order: Number(formPayload.value.display_order),
+          is_active: formPayload.value.is_active,
+          start_at: startIso,
+          end_at: endIso
+        };
+        await bannerService.updateBanner(targetId, payload);
+      }
+
+      toastSuccess(`Banner #${targetId} updated successfully.`);
+      cleanupObjectUrls();
+      await modalState.closeModal();
+      await fetchBanners();
+    }
+  } catch (err: any) {
+    formError.value = extractErrorMessage(err, 'Failed to save banner.');
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+// Fetch placements options
 const fetchPlacements = async () => {
   isPlacementsLoading.value = true;
   try {
     const res = await bannerService.getPlacementsList({ page_size: 100 });
     placementsList.value = res.results || [];
+    if (!formPayload.value.placement && placementsList.value.length > 0 && placementsList.value[0]) {
+      formPayload.value.placement = String(placementsList.value[0].id);
+    }
   } catch (err: any) {
     console.error('Failed to load placements list:', err);
   } finally {
@@ -160,7 +513,7 @@ const fetchPlacements = async () => {
   }
 };
 
-// Main Data Fetcher
+// Fetch Banners List
 const fetchBanners = async () => {
   isLoading.value = true;
   fetchError.value = null;
@@ -198,7 +551,6 @@ const updateRouteAndFetch = () => {
     status: statusFilter.value !== 'all' ? statusFilter.value : undefined
   };
 
-  // Remove undefined parameters
   Object.keys(query).forEach((key) => {
     if (query[key] === undefined) {
       delete query[key];
@@ -209,7 +561,6 @@ const updateRouteAndFetch = () => {
   fetchBanners();
 };
 
-// Watchers for filters and pagination
 watch(debouncedSearchQuery, () => {
   currentPage.value = 1;
   updateRouteAndFetch();
@@ -251,7 +602,6 @@ const handleDeleteBanner = async () => {
   }
 };
 
-// Computed statistics for top cards
 const activeBannersCount = computed(() => {
   return bannersList.value.filter(b => b.is_active).length;
 });
@@ -260,7 +610,6 @@ const placementsCount = computed(() => {
   return placementsList.value.length;
 });
 
-// Table Column Definitions for UiTable
 const tableColumns: UiTableColumn<Banner>[] = [
   { key: 'preview', label: 'Preview', width: '100px', align: 'center' },
   { key: 'details', label: 'Banner Details', width: '280px' },
@@ -271,7 +620,6 @@ const tableColumns: UiTableColumn<Banner>[] = [
   { key: 'actions', label: 'Actions', width: '110px', align: 'right' }
 ];
 
-// Initial mount lifecycle
 onMounted(async () => {
   if (canView.value) {
     await fetchPlacements();
@@ -546,6 +894,315 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <!-- Create & Edit Banner Modal -->
+    <UiAdminModal
+      :is-open="modalState.isCreate.value || modalState.isEdit.value"
+      :title="modalState.isCreate.value ? 'Add New Banner' : 'Edit Banner'"
+      :subtitle="modalState.isCreate.value ? 'Configure placement, layout, creative assets, and scheduling.' : 'Update banner details, imagery, schedule, or status.'"
+      max-width="max-w-3xl"
+      @close="modalState.closeModal()"
+    >
+      <form @submit.prevent="handleFormSubmit" class="space-y-5 py-1">
+        <!-- Error Banner -->
+        <div v-if="formError" class="p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3 text-destructive text-xs font-medium">
+          <AlertCircle class="w-4 h-4 shrink-0" />
+          <span>{{ formError }}</span>
+        </div>
+
+        <!-- Section 1: Placement, Order & Status -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 bg-muted/30 p-3.5 rounded-xl border border-border">
+          <!-- Placement Selection -->
+          <div class="sm:col-span-2 space-y-1.5">
+            <label class="text-xs font-bold text-foreground flex items-center justify-between">
+              <span>Placement Zone <span class="text-destructive">*</span></span>
+            </label>
+            <select
+              v-model="formPayload.placement"
+              class="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+            >
+              <option value="" disabled>Select Placement</option>
+              <option v-for="p in placementsList" :key="p.id" :value="String(p.id)">
+                {{ p.name }} ({{ p.code }})
+              </option>
+            </select>
+            <p v-if="fieldErrors.placement" class="text-[11px] text-destructive font-medium">{{ fieldErrors.placement }}</p>
+          </div>
+
+          <!-- Display Order -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">
+              Display Order
+            </label>
+            <input
+              type="number"
+              v-model.number="formPayload.display_order"
+              min="0"
+              class="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
+            <p v-if="fieldErrors.display_order" class="text-[11px] text-destructive font-medium">{{ fieldErrors.display_order }}</p>
+          </div>
+
+          <!-- Active Status Toggle -->
+          <div class="sm:col-span-3 pt-1 flex items-center justify-between bg-card p-2.5 rounded-lg border border-border">
+            <div class="space-y-0.5">
+              <span class="text-xs font-bold text-foreground">Is Active</span>
+              <p class="text-[11px] text-muted-foreground">Unchecking hides this banner from the storefront when available.</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" v-model="formPayload.is_active" class="sr-only peer" />
+              <div class="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Section 2: Banner Text & Call to Action -->
+        <div class="space-y-3.5">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <FileText class="w-3.5 h-3.5" />
+            <span>Copywriting & Action Link</span>
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <!-- Title -->
+            <div class="space-y-1.5 sm:col-span-2">
+              <label class="text-xs font-bold text-foreground">Main Title / Headline</label>
+              <input
+                type="text"
+                v-model="formPayload.title"
+                placeholder="e.g., Summer Gaming Sale 2026"
+                class="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
+
+            <!-- Subtitle -->
+            <div class="space-y-1.5 sm:col-span-2">
+              <label class="text-xs font-bold text-foreground">Subtitle / Promotional Description</label>
+              <textarea
+                v-model="formPayload.subtitle"
+                rows="2"
+                placeholder="e.g., Get up to 40% off top gaming laptops & high-performance components."
+                class="w-full p-2.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+              ></textarea>
+            </div>
+
+            <!-- CTA Text -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">CTA Button Label</label>
+              <input
+                type="text"
+                v-model="formPayload.cta_text"
+                placeholder="e.g., Shop Now"
+                class="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
+
+            <!-- CTA URL -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Target Action URL</label>
+              <input
+                type="text"
+                v-model="formPayload.cta_url"
+                placeholder="e.g., /product-category/gaming-component/laptop/"
+                class="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Creative Imagery (Desktop & Mobile Upload) -->
+        <div class="space-y-3.5">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <ImageIcon class="w-3.5 h-3.5" />
+            <span>Banner Imagery</span>
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Desktop / Main Image Upload Zone -->
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-foreground flex items-center justify-between">
+                <span>Desktop Image <span class="text-destructive" v-if="modalState.isCreate.value">*</span></span>
+                <span class="text-[10px] text-muted-foreground font-normal">High-res landscape</span>
+              </label>
+
+              <div
+                @dragover.prevent="isDesktopDragOver = true"
+                @dragleave.prevent="isDesktopDragOver = false"
+                @drop.prevent="handleDesktopDrop"
+                :class="[
+                  'relative min-h-[140px] rounded-xl border-2 border-dashed p-3 transition-all flex flex-col items-center justify-center text-center',
+                  isDesktopDragOver ? 'border-primary bg-primary/5' : 'border-border bg-muted/20 hover:bg-muted/40',
+                  fieldErrors.image ? 'border-destructive' : ''
+                ]"
+              >
+                <input
+                  ref="desktopFileInputRef"
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                  class="sr-only"
+                  @change="handleDesktopFileChange"
+                />
+
+                <!-- Image Preview State -->
+                <div v-if="desktopPreviewUrl" class="w-full space-y-2">
+                  <div class="relative w-full h-24 rounded-lg bg-black/5 overflow-hidden border border-border group">
+                    <img :src="desktopPreviewUrl" alt="Desktop Preview" class="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      class="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background text-foreground shadow-xs transition-all"
+                      title="Remove Image"
+                      @click="removeDesktopImage"
+                    >
+                      <X class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                    <span class="truncate max-w-[180px] font-mono">{{ selectedDesktopFile?.name || 'Existing Image' }}</span>
+                    <button
+                      type="button"
+                      class="text-primary font-bold hover:underline"
+                      @click="desktopFileInputRef?.click()"
+                    >
+                      Replace
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Empty Upload Prompt -->
+                <div v-else class="space-y-2 py-2 cursor-pointer" @click="desktopFileInputRef?.click()">
+                  <div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                    <UploadCloud class="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-foreground">Click or drag image here</p>
+                    <p class="text-[10px] text-muted-foreground">PNG, JPG, WebP, SVG up to 10MB</p>
+                  </div>
+                </div>
+              </div>
+              <p v-if="fieldErrors.image" class="text-[11px] text-destructive font-medium">{{ fieldErrors.image }}</p>
+            </div>
+
+            <!-- Mobile Optional Image Upload Zone -->
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-foreground flex items-center justify-between">
+                <span>Mobile Image</span>
+                <span class="text-[10px] text-muted-foreground font-normal">Optional aspect portrait</span>
+              </label>
+
+              <div
+                @dragover.prevent="isMobileDragOver = true"
+                @dragleave.prevent="isMobileDragOver = false"
+                @drop.prevent="handleMobileDrop"
+                :class="[
+                  'relative min-h-[140px] rounded-xl border-2 border-dashed p-3 transition-all flex flex-col items-center justify-center text-center',
+                  isMobileDragOver ? 'border-primary bg-primary/5' : 'border-border bg-muted/20 hover:bg-muted/40',
+                  fieldErrors.mobile_image ? 'border-destructive' : ''
+                ]"
+              >
+                <input
+                  ref="mobileFileInputRef"
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                  class="sr-only"
+                  @change="handleMobileFileChange"
+                />
+
+                <!-- Image Preview State -->
+                <div v-if="mobilePreviewUrl" class="w-full space-y-2">
+                  <div class="relative w-full h-24 rounded-lg bg-black/5 overflow-hidden border border-border group">
+                    <img :src="mobilePreviewUrl" alt="Mobile Preview" class="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      class="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background text-foreground shadow-xs transition-all"
+                      title="Remove Mobile Image"
+                      @click="removeMobileImage"
+                    >
+                      <X class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                    <span class="truncate max-w-[180px] font-mono">{{ selectedMobileFile?.name || 'Existing Mobile Image' }}</span>
+                    <button
+                      type="button"
+                      class="text-primary font-bold hover:underline"
+                      @click="mobileFileInputRef?.click()"
+                    >
+                      Replace
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Empty Upload Prompt -->
+                <div v-else class="space-y-2 py-2 cursor-pointer" @click="mobileFileInputRef?.click()">
+                  <div class="w-9 h-9 rounded-full bg-muted text-muted-foreground flex items-center justify-center mx-auto">
+                    <UploadCloud class="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-foreground">Click or drag mobile image</p>
+                    <p class="text-[10px] text-muted-foreground">Falls back to desktop image if omitted</p>
+                  </div>
+                </div>
+              </div>
+              <p v-if="fieldErrors.mobile_image" class="text-[11px] text-destructive font-medium">{{ fieldErrors.mobile_image }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Schedule Display Window -->
+        <div class="space-y-3.5 pt-1">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Clock class="w-3.5 h-3.5" />
+            <span>Schedule Window (Optional)</span>
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-muted/20 p-3.5 rounded-xl border border-border">
+            <!-- Start At -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Publish Start Date & Time</label>
+              <input
+                type="datetime-local"
+                v-model="formPayload.start_at"
+                class="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+              <p class="text-[10px] text-muted-foreground">Leave empty to activate immediately.</p>
+            </div>
+
+            <!-- End At -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Expiration End Date & Time</label>
+              <input
+                type="datetime-local"
+                v-model="formPayload.end_at"
+                class="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+              <p v-if="fieldErrors.end_at" class="text-[11px] text-destructive font-medium">{{ fieldErrors.end_at }}</p>
+              <p v-else class="text-[10px] text-muted-foreground">Leave empty to keep published indefinitely.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Footer Actions -->
+        <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-border">
+          <UiButton 
+            type="button" 
+            variant="outline" 
+            class="h-9 px-4 text-xs font-semibold rounded-xl"
+            @click="modalState.closeModal()"
+            :disabled="isSubmitting"
+          >
+            Cancel
+          </UiButton>
+          <UiButton 
+            type="submit" 
+            class="h-9 px-4 text-xs font-bold rounded-xl shadow-md bg-primary text-primary-foreground gap-1.5"
+            :disabled="isSubmitting"
+          >
+            <RefreshCw v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ modalState.isCreate.value ? 'Create Banner' : 'Save Changes' }}</span>
+          </UiButton>
+        </div>
+      </form>
+    </UiAdminModal>
 
     <!-- Delete Confirmation Modal -->
     <UiAdminModal
