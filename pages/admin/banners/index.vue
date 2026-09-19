@@ -23,7 +23,13 @@ import {
   Upload,
   UploadCloud,
   FileText,
-  Link
+  Link,
+  GripVertical,
+  Save,
+  RotateCcw,
+  ArrowUp,
+  ArrowDown,
+  Loader2
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useBannerService } from '@/composables/useBannerService';
@@ -513,6 +519,183 @@ const fetchPlacements = async () => {
   }
 };
 
+// Drag & drop / Reordering state
+const draggedBannerId = ref<number | string | null>(null);
+const dragOverBannerId = ref<number | string | null>(null);
+const initialBannerIds = ref<Array<number | string>>([]);
+const isSavingOrder = ref(false);
+
+const currentBannerIds = computed(() => bannersList.value.map(b => b.id));
+
+const hasUnsavedOrderChanges = computed(() => {
+  if (!selectedPlacement.value) return false;
+  if (initialBannerIds.value.length === 0 || currentBannerIds.value.length !== initialBannerIds.value.length) {
+    return false;
+  }
+  return currentBannerIds.value.some((id, index) => String(id) !== String(initialBannerIds.value[index]));
+});
+
+// HTML5 Drag and Drop Event Handlers
+const handleDragStart = (event: DragEvent, banner: Banner) => {
+  if (!selectedPlacement.value || !canEdit.value) return;
+  draggedBannerId.value = banner.id;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(banner.id));
+  }
+};
+
+const handleDragOver = (event: DragEvent, targetBanner: Banner) => {
+  event.preventDefault();
+  if (!selectedPlacement.value || !canEdit.value) return;
+  if (draggedBannerId.value !== null && String(draggedBannerId.value) !== String(targetBanner.id)) {
+    dragOverBannerId.value = targetBanner.id;
+  }
+};
+
+const handleDragLeave = (event: DragEvent, targetBanner: Banner) => {
+  if (String(dragOverBannerId.value) === String(targetBanner.id)) {
+    dragOverBannerId.value = null;
+  }
+};
+
+const handleDrop = (event: DragEvent, targetBanner: Banner) => {
+  event.preventDefault();
+  if (!selectedPlacement.value || !canEdit.value) return;
+  if (draggedBannerId.value === null || String(draggedBannerId.value) === String(targetBanner.id)) {
+    draggedBannerId.value = null;
+    dragOverBannerId.value = null;
+    return;
+  }
+
+  const srcIndex = bannersList.value.findIndex(b => String(b.id) === String(draggedBannerId.value));
+  const tgtIndex = bannersList.value.findIndex(b => String(b.id) === String(targetBanner.id));
+
+  if (srcIndex !== -1 && tgtIndex !== -1) {
+    const list = [...bannersList.value];
+    const [moved] = list.splice(srcIndex, 1);
+    if (moved) {
+      list.splice(tgtIndex, 0, moved);
+      list.forEach((item, index) => {
+        item.display_order = index;
+      });
+      bannersList.value = list;
+    }
+  }
+
+  draggedBannerId.value = null;
+  dragOverBannerId.value = null;
+};
+
+const handleDragEnd = () => {
+  draggedBannerId.value = null;
+  dragOverBannerId.value = null;
+};
+
+// Keyboard & Button-based Reordering
+const moveBannerUp = (index: number) => {
+  if (index <= 0 || index >= bannersList.value.length || !selectedPlacement.value) return;
+  const list = [...bannersList.value];
+  const [moved] = list.splice(index, 1);
+  if (moved) {
+    list.splice(index - 1, 0, moved);
+    list.forEach((item, idx) => {
+      item.display_order = idx;
+    });
+    bannersList.value = list;
+  }
+};
+
+const moveBannerDown = (index: number) => {
+  if (index < 0 || index >= bannersList.value.length - 1 || !selectedPlacement.value) return;
+  const list = [...bannersList.value];
+  const [moved] = list.splice(index, 1);
+  if (moved) {
+    list.splice(index + 1, 0, moved);
+    list.forEach((item, idx) => {
+      item.display_order = idx;
+    });
+    bannersList.value = list;
+  }
+};
+
+// Discard local order changes
+const handleDiscardOrder = () => {
+  if (!initialBannerIds.value.length) return;
+  const map = new Map(bannersList.value.map(b => [String(b.id), b]));
+  const restored: Banner[] = [];
+  initialBannerIds.value.forEach((id, idx) => {
+    const b = map.get(String(id));
+    if (b) {
+      b.display_order = idx;
+      restored.push(b);
+    }
+  });
+  bannersList.value.forEach(b => {
+    if (!initialBannerIds.value.map(String).includes(String(b.id))) {
+      restored.push(b);
+    }
+  });
+  bannersList.value = restored;
+  toastSuccess('Banner display order changes discarded.');
+};
+
+// Save Order API call
+const handleSaveOrder = async () => {
+  if (!hasUnsavedOrderChanges.value || isSavingOrder.value || !selectedPlacement.value) return;
+
+  if (!canEdit.value) {
+    toastError('You do not have permission to reorder banners.');
+    return;
+  }
+
+  isSavingOrder.value = true;
+  try {
+    const placementId = Number(selectedPlacement.value);
+    const payload = {
+      placement: placementId,
+      banners: bannersList.value.map((b, idx) => ({
+        id: Number(b.id),
+        display_order: idx
+      }))
+    };
+
+    await bannerService.reorderBanners(payload);
+    toastSuccess('Banner display order saved successfully.');
+    initialBannerIds.value = bannersList.value.map(b => b.id);
+    await fetchBanners();
+  } catch (err: any) {
+    const msg = extractErrorMessage(err, 'Failed to save banner display order.');
+    toastError(msg);
+  } finally {
+    isSavingOrder.value = false;
+  }
+};
+
+const getRowAttrs = (item: Banner) => {
+  if (!selectedPlacement.value || !canEdit.value) {
+    return {};
+  }
+  return {
+    draggable: true,
+    onDragstart: (e: DragEvent) => handleDragStart(e, item),
+    onDragover: (e: DragEvent) => handleDragOver(e, item),
+    onDragleave: (e: DragEvent) => handleDragLeave(e, item),
+    onDrop: (e: DragEvent) => handleDrop(e, item),
+    onDragend: handleDragEnd
+  };
+};
+
+const getRowClass = (item: Banner) => {
+  if (draggedBannerId.value !== null && String(draggedBannerId.value) === String(item.id)) {
+    return 'opacity-40 bg-muted/60 dark:bg-muted/40';
+  }
+  if (dragOverBannerId.value !== null && String(dragOverBannerId.value) === String(item.id)) {
+    return 'border-t-2 border-primary bg-primary/5 dark:bg-primary/10';
+  }
+  return '';
+};
+
 // Fetch Banners List
 const fetchBanners = async () => {
   isLoading.value = true;
@@ -531,6 +714,7 @@ const fetchBanners = async () => {
     });
 
     bannersList.value = res.results || [];
+    initialBannerIds.value = bannersList.value.map(b => b.id);
     totalCount.value = res.count || 0;
     totalPages.value = res.pages || Math.ceil(totalCount.value / itemsPerPage.value) || 1;
   } catch (err: any) {
@@ -566,7 +750,21 @@ watch(debouncedSearchQuery, () => {
   updateRouteAndFetch();
 });
 
-watch([selectedPlacement, statusFilter], () => {
+watch(selectedPlacement, (newVal, oldVal) => {
+  if (oldVal !== undefined && oldVal !== newVal && hasUnsavedOrderChanges.value) {
+    const confirmDiscard = window.confirm(
+      'You have unsaved banner display order changes. Switching placement will discard these changes. Do you want to proceed?'
+    );
+    if (!confirmDiscard) {
+      selectedPlacement.value = oldVal;
+      return;
+    }
+  }
+  currentPage.value = 1;
+  updateRouteAndFetch();
+});
+
+watch(statusFilter, () => {
   currentPage.value = 1;
   updateRouteAndFetch();
 });
@@ -610,15 +808,22 @@ const placementsCount = computed(() => {
   return placementsList.value.length;
 });
 
-const tableColumns: UiTableColumn<Banner>[] = [
-  { key: 'preview', label: 'Preview', width: '100px', align: 'center' },
-  { key: 'details', label: 'Banner Details', width: '280px' },
-  { key: 'placement', label: 'Placement', width: '160px' },
-  { key: 'display_order', label: 'Order', width: '90px', align: 'center' },
-  { key: 'schedule', label: 'Schedule', width: '170px' },
-  { key: 'status', label: 'Status', width: '110px', align: 'center' },
-  { key: 'actions', label: 'Actions', width: '110px', align: 'right' }
-];
+const tableColumns = computed<UiTableColumn<Banner>[]>(() => {
+  const cols: UiTableColumn<Banner>[] = [];
+  if (selectedPlacement.value && canEdit.value) {
+    cols.push({ key: 'reorder', label: 'Order', width: '90px', align: 'center' });
+  }
+  cols.push(
+    { key: 'preview', label: 'Preview', width: '100px', align: 'center' },
+    { key: 'details', label: 'Banner Details', width: '280px' },
+    { key: 'placement', label: 'Placement', width: '160px' },
+    { key: 'display_order', label: 'Position', width: '90px', align: 'center' },
+    { key: 'schedule', label: 'Schedule', width: '170px' },
+    { key: 'status', label: 'Status', width: '110px', align: 'center' },
+    { key: 'actions', label: 'Actions', width: '110px', align: 'right' }
+  );
+  return cols;
+});
 
 onMounted(async () => {
   if (canView.value) {
@@ -754,6 +959,38 @@ onMounted(async () => {
         </UiButton>
       </div>
 
+      <!-- Unsaved Reorder Changes Banner -->
+      <div v-if="hasUnsavedOrderChanges" class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex flex-wrap items-center justify-between gap-3 text-amber-800 dark:text-amber-300 shadow-xs">
+        <div class="flex items-center gap-2.5">
+          <AlertCircle class="w-4.5 h-4.5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span class="text-xs font-bold">
+            You have unsaved display order changes for this placement zone.
+          </span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <UiButton 
+            variant="outline" 
+            size="sm" 
+            class="h-8 px-3 text-xs border-amber-500/30 hover:bg-amber-500/10 text-amber-800 dark:text-amber-200 font-bold" 
+            @click="handleDiscardOrder"
+            :disabled="isSavingOrder"
+          >
+            <RotateCcw class="w-3.5 h-3.5 mr-1" />
+            <span>Discard</span>
+          </UiButton>
+          <UiButton 
+            size="sm" 
+            class="h-8 px-3 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-xs" 
+            @click="handleSaveOrder"
+            :disabled="isSavingOrder"
+          >
+            <Loader2 v-if="isSavingOrder" class="w-3.5 h-3.5 mr-1 animate-spin" />
+            <Save v-else class="w-3.5 h-3.5 mr-1" />
+            <span>Save Order</span>
+          </UiButton>
+        </div>
+      </div>
+
       <!-- Main Data Table -->
       <div class="bg-card border border-border rounded-xl shadow-xs overflow-hidden">
         <UiTable
@@ -761,9 +998,44 @@ onMounted(async () => {
           :data="bannersList"
           :loading="isLoading"
           key-field="id"
+          :row-attrs="getRowAttrs"
+          :row-class="getRowClass"
           empty-text="No banners found"
           empty-description="Adjust your search criteria or create a new banner to populate this placement."
         >
+          <!-- Custom Column: Reorder Drag Handle & Controls -->
+          <template #cell-reorder="{ item, index }">
+            <div class="flex items-center justify-center gap-1">
+              <button
+                type="button"
+                class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted cursor-grab active:cursor-grabbing transition-colors"
+                title="Drag to reorder banner"
+                :disabled="!selectedPlacement || !canEdit"
+              >
+                <GripVertical class="w-4 h-4" />
+              </button>
+              <div class="flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  class="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                  :disabled="index === 0 || !canEdit"
+                  title="Move up"
+                  @click.stop="moveBannerUp(index)"
+                >
+                  <ArrowUp class="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  class="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                  :disabled="index === bannersList.length - 1 || !canEdit"
+                  title="Move down"
+                  @click.stop="moveBannerDown(index)"
+                >
+                  <ArrowDown class="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </template>
           <!-- Custom Column: Image Preview -->
           <template #cell-preview="{ item }">
             <div class="w-16 h-10 rounded-lg bg-muted border border-border/80 overflow-hidden shrink-0 flex items-center justify-center relative group">
