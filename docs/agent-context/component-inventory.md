@@ -845,6 +845,27 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<CategoryViewModal>`
+- **Exact File Location**: `/features/admin/categories/components/CategoryViewModal.vue`
+- **Component Type**: Presentation component / Admin Modal
+- **Scope**: Admin
+- **Purpose**: Read-only modal dialog for inspecting taxonomy category node properties, metadata, and relationships.
+- **Routes/Pages Used**: Admin Categories Page (`/admin/categories/`).
+- **Main Responsibilities**:
+  - Render read-only category taxonomy properties: name, slug, icon/image, parent category resolution, short description title, short description, HTML full description, UUID identifier, display order priority, sub-category count, and nested identifiers.
+  - Render internal modal loading/resolving overlay indicator when category details are resolving (`isResolving`).
+  - Handle backdrop click, close button click, and "Acknowledge & Close" action button click emitting `@close`.
+- **What It Explicitly Does Not Own**: Category details API fetching, state resolution, route modal sync, or category dataset management.
+- **State Owned**: Presentation-only state (parent category name lookup from passed category list).
+- **Calls API**: No.
+- **Related Composables/Services**: None (pure presentation modal component).
+- **Responsive Responsibility**: Max-width desktop modal sizing (`max-w-lg`), scrollable body (`max-h-[60vh]`).
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Strict read-only presentation, html description rendering (`v-html`), line-break pre-wrap styling, parent category lookup resolution, and resolving overlay presentation.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<UserFormModal>`
 - **Exact File Location**: `/components/admin/UserFormModal.vue`
 - **Component Type**: Form component / Admin Modal
