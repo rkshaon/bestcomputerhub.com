@@ -945,6 +945,35 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### Content Security Rule Management Components
+- **Exact File Locations**: 
+  - `/features/admin/content-security/components/DetectionRuleCreateModal.vue`
+  - `/features/admin/content-security/components/KeywordRulesTab.vue`
+  - `/features/admin/content-security/components/DomainRulesTab.vue`
+  - `/features/admin/content-security/components/HiddenContentRulesTab.vue`
+  - `/features/admin/content-security/components/ObfuscationRulesTab.vue`
+  - `/features/admin/content-security/components/RedirectRulesTab.vue`
+  - `/features/admin/content-security/components/HtmlAttributeRulesTab.vue`
+  - `/features/admin/content-security/components/HtmlTagRulesTab.vue`
+- **Component Type**: Feature component / Data-display / Form component
+- **Scope**: Admin
+- **Purpose**: Decomposed, modular detection-rule management sections extracted from `/pages/admin/content-security/index.vue` to handle security inspection criteria (Keywords, Domains, Hidden Content, Obfuscation, Redirects, HTML Attributes, HTML Tags).
+- **Routes/Pages Used**: Content Security Rule Admin (`/admin/content-security/`).
+- **Main Responsibilities**:
+  - Independent rule search, filtering, and numbered pagination.
+  - Creation and editing of security rules via customized modals with full permission enforcement.
+  - Interactive rule activation toggles and risk score visual indicators.
+- **What They Explicitly Do Not Own**: Content Scanning execution or findings listing (managed by the core `/pages/admin/content-security/index.vue` page).
+- **State Owned**: Local query states (search, categories, severities, page, page size, list arrays).
+- **Calls API**: Yes, via `useContentSecurityService`.
+- **Related Composables/Services**: `useContentSecurityService`, `useAdminPermissions`, `useAdminModalState`.
+- **Responsive Responsibility**: Clean tabular scaling, overflow-x-auto containers, unified responsive dialog actions.
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: Real backend REST communications, Trailing slashes in navigation, Permission-gated administrative CRUD actions.
+- **Known Architectural Risks**: None.
+
+---
+
 ## 5. Architectural Inferences & Source Code Authority
 
 1. **Inferred Classifications**: All components documented above have been verified directly against source code files in `/components/`, `/layouts/`, and `/features/`. No speculative or unverified components are included.

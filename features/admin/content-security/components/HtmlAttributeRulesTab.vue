@@ -66,8 +66,8 @@ const htmlAttributeRulesCount = ref(0)
 const htmlAttributeRulesPages = ref(1)
 
 const htmlAttributeRuleColumns: UiTableColumn<HtmlAttributeRule>[] = [
-  { key: 'attribute_name', label: 'Attribute Name', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-sm font-bold text-foreground' },
-  { key: 'attribute_value', label: 'Attribute Value', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-xs text-muted-foreground' },
+  { key: 'attribute', label: 'Attribute Name', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-sm font-bold text-foreground' },
+  { key: 'pattern', label: 'Attribute Value / Pattern', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-xs text-muted-foreground' },
   { key: 'category', label: 'Category', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'severity', label: 'Severity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'is_enabled', label: 'Enabled', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
@@ -260,16 +260,16 @@ watch(() => htmlAttributeModalState.activeEntity.value, (newEntity) => {
       }
       editingHtmlAttributeRuleId.value = newEntity.id
       htmlAttributeEditForm.value = {
-        attribute_name: newEntity.attribute_name || '',
-        attribute_value: newEntity.attribute_value || '',
+        attribute_name: newEntity.attribute || '',
+        attribute_value: newEntity.pattern || '',
         category: newEntity.category || 'INJECTION',
         severity: newEntity.severity || 'HIGH',
         is_enabled: newEntity.is_enabled ?? true,
         description: newEntity.description || ''
       }
       originalHtmlAttributeRuleData.value = {
-        attribute_name: newEntity.attribute_name || '',
-        attribute_value: newEntity.attribute_value || '',
+        attribute_name: newEntity.attribute || '',
+        attribute_value: newEntity.pattern || '',
         category: newEntity.category || 'INJECTION',
         severity: newEntity.severity || 'HIGH',
         is_enabled: newEntity.is_enabled ?? true,
@@ -286,7 +286,7 @@ watch(() => htmlAttributeModalState.activeEntity.value, (newEntity) => {
       if (!deletingHtmlAttributeRule.value) {
         deletingHtmlAttributeRule.value = {
           id: newEntity.id,
-          name: newEntity.attribute_name || `Rule #${newEntity.id}`
+          name: newEntity.attribute || `Rule #${newEntity.id}`
         }
       }
     }
@@ -412,12 +412,7 @@ const submitUpdateHtmlAttributeRule = async () => {
 
   if (orig) {
     if (trimmedName !== orig.attribute_name.trim()) {
-      payload.attribute_name = trimmedName
-    }
-    const currentVal = current.attribute_value.trim()
-    const origVal = (orig.attribute_value || '').trim()
-    if (currentVal !== origVal) {
-      payload.attribute_value = currentVal
+      payload.attribute = trimmedName
     }
     if (current.category !== orig.category) {
       payload.category = current.category
@@ -434,8 +429,7 @@ const submitUpdateHtmlAttributeRule = async () => {
       payload.description = currentDesc
     }
   } else {
-    payload.attribute_name = trimmedName
-    payload.attribute_value = current.attribute_value.trim()
+    payload.attribute = trimmedName
     payload.category = current.category
     payload.severity = current.severity
     payload.is_enabled = current.is_enabled
@@ -569,17 +563,17 @@ const submitUpdateHtmlAttributeRule = async () => {
         :data="htmlAttributeRulesData" 
         :loading="isHtmlAttributeLoading"
       >
-        <template #cell(attribute_name)="{ item }">
+        <template #cell(attribute)="{ item }">
           <div class="flex items-center gap-2">
             <span class="font-mono text-xs font-bold text-foreground bg-muted px-2 py-0.5 rounded border border-border">
-              {{ item.attribute_name }}
+              {{ item.attribute }}
             </span>
           </div>
         </template>
 
-        <template #cell(attribute_value)="{ item }">
+        <template #cell(pattern)="{ item }">
           <span class="font-mono text-xs text-muted-foreground truncate max-w-[200px] block">
-            {{ item.attribute_value || '(any value)' }}
+            {{ item.pattern || '(any value)' }}
           </span>
         </template>
 
@@ -699,7 +693,7 @@ const submitUpdateHtmlAttributeRule = async () => {
               <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Attribute Name & Value</span>
             </div>
             <div class="font-mono text-base sm:text-lg font-bold text-foreground bg-background px-3 py-1.5 rounded-xl border border-border shadow-2xs inline-block break-all">
-              {{ selectedHtmlAttributeRule.attribute_name }}<span v-if="selectedHtmlAttributeRule.attribute_value"> = "{{ selectedHtmlAttributeRule.attribute_value }}"</span>
+              {{ selectedHtmlAttributeRule.attribute }}<span v-if="selectedHtmlAttributeRule.pattern && selectedHtmlAttributeRule.pattern !== selectedHtmlAttributeRule.attribute"> (Pattern: "{{ selectedHtmlAttributeRule.pattern }}")</span>
             </div>
           </div>
 

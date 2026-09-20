@@ -66,7 +66,7 @@ const htmlTagRulesCount = ref(0)
 const htmlTagRulesPages = ref(1)
 
 const htmlTagRuleColumns: UiTableColumn<HtmlTagRule>[] = [
-  { key: 'tag_name', label: 'Tag Name', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-sm font-bold text-foreground' },
+  { key: 'tag', label: 'Tag Name', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-sm font-bold text-foreground' },
   { key: 'category', label: 'Category', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'severity', label: 'Severity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
   { key: 'is_enabled', label: 'Enabled', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
@@ -256,14 +256,14 @@ watch(() => htmlTagModalState.activeEntity.value, (newEntity) => {
       }
       editingHtmlTagRuleId.value = newEntity.id
       htmlTagEditForm.value = {
-        tag_name: newEntity.tag_name || '',
+        tag_name: newEntity.tag || '',
         category: newEntity.category || 'INJECTION',
         severity: newEntity.severity || 'HIGH',
         is_enabled: newEntity.is_enabled ?? true,
         description: newEntity.description || ''
       }
       originalHtmlTagRuleData.value = {
-        tag_name: newEntity.tag_name || '',
+        tag_name: newEntity.tag || '',
         category: newEntity.category || 'INJECTION',
         severity: newEntity.severity || 'HIGH',
         is_enabled: newEntity.is_enabled ?? true,
@@ -280,7 +280,7 @@ watch(() => htmlTagModalState.activeEntity.value, (newEntity) => {
       if (!deletingHtmlTagRule.value) {
         deletingHtmlTagRule.value = {
           id: newEntity.id,
-          name: newEntity.tag_name || `Rule #${newEntity.id}`
+          name: newEntity.tag || `Rule #${newEntity.id}`
         }
       }
     }
@@ -406,7 +406,7 @@ const submitUpdateHtmlTagRule = async () => {
 
   if (orig) {
     if (trimmedName !== orig.tag_name.trim()) {
-      payload.tag_name = trimmedName
+      payload.tag = trimmedName
     }
     if (current.category !== orig.category) {
       payload.category = current.category
@@ -423,7 +423,7 @@ const submitUpdateHtmlTagRule = async () => {
       payload.description = currentDesc
     }
   } else {
-    payload.tag_name = trimmedName
+    payload.tag = trimmedName
     payload.category = current.category
     payload.severity = current.severity
     payload.is_enabled = current.is_enabled
@@ -530,8 +530,8 @@ const submitUpdateHtmlTagRule = async () => {
         >
           <option value="-created_at">Newest First</option>
           <option value="created_at">Oldest First</option>
-          <option value="tag_name">Tag Name (A-Z)</option>
-          <option value="-tag_name">Tag Name (Z-A)</option>
+          <option value="tag">Tag Name (A-Z)</option>
+          <option value="-tag">Tag Name (Z-A)</option>
         </select>
 
         <button 
@@ -557,10 +557,10 @@ const submitUpdateHtmlTagRule = async () => {
         :data="htmlTagRulesData" 
         :loading="isHtmlTagLoading"
       >
-        <template #cell(tag_name)="{ item }">
+        <template #cell(tag)="{ item }">
           <div class="flex items-center gap-2">
             <span class="font-mono text-xs font-bold text-foreground bg-muted px-2 py-0.5 rounded border border-border">
-              &lt;{{ item.tag_name }}&gt;
+              &lt;{{ item.tag || item.pattern }}&gt;
             </span>
           </div>
         </template>
@@ -681,7 +681,7 @@ const submitUpdateHtmlTagRule = async () => {
               <span class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">HTML Tag Name</span>
             </div>
             <div class="font-mono text-base sm:text-lg font-bold text-foreground bg-background px-3 py-1.5 rounded-xl border border-border shadow-2xs inline-block break-all">
-              &lt;{{ selectedHtmlTagRule.tag_name }}&gt;
+              &lt;{{ selectedHtmlTagRule.tag || selectedHtmlTagRule.pattern }}&gt;
             </div>
           </div>
 
