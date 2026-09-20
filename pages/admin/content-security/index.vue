@@ -62,7 +62,7 @@ import { useAdminModalState } from '@/composables/useAdminModalState';
 // Extracted Detection Rules Components
 import DetectionRuleCreateModal from '@/features/admin/content-security/components/DetectionRuleCreateModal.vue';
 import KeywordRulesTab from '@/features/admin/content-security/components/KeywordRulesTab.vue';
-import ScanRunModal from './components/ScanRunModal.vue';
+import ScanRunModal from '@/features/admin/content-security/components/ScanRunModal.vue';
 import DomainRulesTab from '@/features/admin/content-security/components/DomainRulesTab.vue';
 import HiddenContentRulesTab from '@/features/admin/content-security/components/HiddenContentRulesTab.vue';
 import ObfuscationRulesTab from '@/features/admin/content-security/components/ObfuscationRulesTab.vue';
@@ -495,33 +495,10 @@ const updateRouteQuery = () => {
 };
 
 // Initial Sync
-[diff_block_start]
-@@ -456,12 +456,6 @@
- onMounted(() => {
-   syncFromRoute();
-   fetchDetectionRulesSummary();
--  if (canViewContentScans.value && mainTab.value === 'results') {
--    fetchContentScans();
--  }
--  if (canViewFindings.value && mainTab.value === 'findings') {
--    fetchFindings();
--  }
- });
- 
- // Reactively watch finding filters & trigger fetch
-@@ -482,7 +476,6 @@
-   updateRouteQuery();
-   if (mainTab.value === 'findings') {
--    fetchFindings();
-   }
- });
- 
-@@ -501,7 +494,6 @@
-     fetchContentScans();
-   } else if (mainTab.value === 'findings') {
--    fetchFindings();
-   }
- });
+onMounted(() => {
+  syncFromRoute();
+  fetchDetectionRulesSummary();
+});
 
 
 // Formatting helpers
@@ -1374,7 +1351,8 @@ watch([debouncedScanObjectQuery, scanMode], ([newQuery, newMode]) => {
   }
 });
 
-const isRunScanModalOpen = ref(false);
+const findingsTab = ref<InstanceType<typeof FindingsTab> | null>(null);
+
 const runFullScan = () => {
   isRunScanModalOpen.value = true;
 };

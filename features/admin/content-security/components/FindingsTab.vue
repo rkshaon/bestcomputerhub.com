@@ -444,16 +444,16 @@ const syncFromRoute = () => {
 };
 
 const updateRouteQuery = () => {
-  const query = { ...route.query };
-  query.search = findingSearchQuery.value || undefined;
-  query.content_type = findingContentType.value !== 'all' ? findingContentType.value : undefined;
-  query.severity = findingSeverity.value !== 'all' ? findingSeverity.value : undefined;
-  query.detector = findingDetector.value !== 'all' ? findingDetector.value : undefined;
-  query.category = findingCategory.value !== 'all' ? findingCategory.value : undefined;
-  query.review_status = findingReviewStatus.value !== 'all' ? findingReviewStatus.value : undefined;
-  query.ordering = findingOrdering.value !== '-created_at' ? findingOrdering.value : undefined;
-  query.page = findingPage.value !== 1 ? String(findingPage.value) : undefined;
-  query.page_size = findingPageSize.value !== 10 ? String(findingPageSize.value) : undefined;
+  const query: Record<string, any> = { ...route.query };
+  if (findingSearchQuery.value) query.search = findingSearchQuery.value; else delete query.search;
+  if (findingContentType.value !== 'all') query.content_type = findingContentType.value; else delete query.content_type;
+  if (findingSeverity.value !== 'all') query.severity = findingSeverity.value; else delete query.severity;
+  if (findingDetector.value !== 'all') query.detector = findingDetector.value; else delete query.detector;
+  if (findingCategory.value !== 'all') query.category = findingCategory.value; else delete query.category;
+  if (findingReviewStatus.value !== 'all') query.review_status = findingReviewStatus.value; else delete query.review_status;
+  if (findingOrdering.value !== '-created_at') query.ordering = findingOrdering.value; else delete query.ordering;
+  if (findingPage.value !== 1) query.page = String(findingPage.value); else delete query.page;
+  if (findingPageSize.value !== 10) query.page_size = String(findingPageSize.value); else delete query.page_size;
   router.replace({ query });
 };
 
