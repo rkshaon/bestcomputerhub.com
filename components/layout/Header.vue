@@ -740,17 +740,6 @@ if (process.client) {
           </a>
           -->
 
-          <!-- Relocated Login / Account Action -->
-          <NuxtLink 
-            :to="authStore.isLoggedIn ? '/account/' : '/login/'" 
-            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
-            :title="authStore.isLoggedIn ? 'Account Dashboard' : 'Login or Sign Up'"
-            :aria-label="authStore.isLoggedIn ? 'Account Dashboard' : 'Login'"
-          >
-            <User class="w-4 h-4 text-primary shrink-0" />
-            <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
-          </NuxtLink>
-
           <!-- Bag (Cart) -->
           <button 
             @click="uiStore.toggleCart()" 
@@ -766,6 +755,17 @@ if (process.client) {
               {{ cartStore.totalItems }}
             </span>
           </button>
+
+          <!-- Relocated Login / Account Action -->
+          <NuxtLink 
+            :to="authStore.isLoggedIn ? '/account/' : '/login/'" 
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            :title="authStore.isLoggedIn ? 'Account Dashboard' : 'Login or Sign Up'"
+            :aria-label="authStore.isLoggedIn ? 'Account Dashboard' : 'Login'"
+          >
+            <User class="w-4 h-4 text-primary shrink-0" />
+            <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
+          </NuxtLink>
 
           <button @click="uiStore.toggleMobileMenu()" class="md:hidden p-2 hover:bg-accent rounded-full transition-colors" title="Toggle navigation menu" aria-label="Toggle navigation menu">
             <Menu v-if="!uiStore.isMobileMenuOpen" class="w-6 h-6" />
