@@ -795,7 +795,7 @@ const resetFilters = () => {
         </div>
 
         <!-- Immediate Subcategory Quick Filter Row -->
-        <div v-if="isSubcategoriesLoading || subcategories.length > 0" class="mt-8 pt-6 border-t border-border/40">
+        <div v-if="isSubcategoriesLoading || subcategories.length > 0" class="mt-4 pt-3 border-t border-border/40">
           <!-- Wrapping Subcategories Container -->
           <div class="flex flex-wrap items-center gap-2">
             <!-- Loading Skeletons -->
