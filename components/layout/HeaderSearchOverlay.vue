@@ -188,79 +188,88 @@ defineExpose({
     </div>
 
     <!-- Search Results Dropdown Panel -->
-    <div 
-      v-if="isOpen && searchQueryModel.trim().length >= 1" 
-      class="absolute top-full left-0 right-0 z-50 mt-1.5 bg-background border border-border rounded-2xl p-4 sm:p-5 overflow-hidden space-y-3 max-h-[75vh] overflow-y-auto"
+    <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-2 scale-[0.99]"
+      enter-to-class="opacity-100 translate-y-0 scale-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0 scale-100"
+      leave-to-class="opacity-0 -translate-y-2 scale-[0.99]"
     >
-      <!-- Header with matching count label and View all results button -->
-      <div class="flex items-center justify-between border-b border-border pb-2.5">
-        <p class="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
-          Matching Catalog Products
-        </p>
-        <button
-          type="button"
-          @click="handleSearchSubmit"
-          class="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-        >
-          <span>View all results</span>
-          <ArrowRight class="w-3.5 h-3.5" />
-        </button>
-      </div>
+      <div 
+        v-if="isOpen && searchQueryModel.trim().length >= 1" 
+        class="absolute top-full left-0 right-0 z-50 mt-1.5 bg-background/98 backdrop-blur-xl border border-border/80 rounded-2xl shadow-2xl p-4 sm:p-5 overflow-hidden space-y-3 max-h-[75vh] overflow-y-auto"
+      >
+        <!-- Header with matching count label and View all results button -->
+        <div class="flex items-center justify-between border-b border-border/40 pb-2.5">
+          <p class="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
+            Matching Catalog Products
+          </p>
+          <button
+            type="button"
+            @click="handleSearchSubmit"
+            class="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <span>View all results</span>
+            <ArrowRight class="w-3.5 h-3.5" />
+          </button>
+        </div>
 
-      <!-- Loading State -->
-      <div v-if="isSearching" class="py-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <Loader2 class="w-4 h-4 text-primary animate-spin" />
-        <span>Searching catalog database...</span>
-      </div>
+        <!-- Loading State -->
+        <div v-if="isSearching" class="py-8 flex items-center justify-center gap-2 text-xs text-muted-foreground animate-pulse">
+          <Loader2 class="w-4 h-4 text-primary animate-spin" />
+          <span>Searching catalog database...</span>
+        </div>
 
-      <!-- Error State -->
-      <div v-else-if="searchError" class="py-6 px-4 text-center space-y-1.5 text-muted-foreground">
-        <AlertCircle class="w-5 h-5 text-destructive mx-auto" />
-        <p class="text-xs font-medium text-destructive">{{ searchError }}</p>
-        <p class="text-[11px] text-muted-foreground">Please try again or press Enter to view all results.</p>
-      </div>
+        <!-- Error State -->
+        <div v-else-if="searchError" class="py-6 px-4 text-center space-y-1.5 text-muted-foreground">
+          <AlertCircle class="w-5 h-5 text-destructive mx-auto" />
+          <p class="text-xs font-medium text-destructive">{{ searchError }}</p>
+          <p class="text-[11px] text-muted-foreground">Please try again or press Enter to view all results.</p>
+        </div>
 
-      <!-- Populated Results Grid -->
-      <div v-else-if="searchResults.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-        <NuxtLink
-          v-for="product in searchResults"
-          :key="product.id"
-          :to="`/product/${product.slug}/`"
-          @click="closeDropdown"
-          class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-accent border border-transparent hover:border-border group"
-        >
-          <div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border">
-            <img 
-              v-if="product.images && product.images.length > 0" 
-              :src="product.images[0]" 
-              :alt="decodeHtmlEntities(product.name)" 
-              class="w-full h-full object-contain p-1" 
-            />
-            <Package v-else class="w-6 h-6 text-muted-foreground" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
-              {{ decodeHtmlEntities(product.name) }}
-            </p>
-            <div class="flex items-center gap-2 mt-0.5">
-              <span class="text-xs font-extrabold text-primary">{{ formatCurrency(product.price) }}</span>
-              <span v-if="product.brand" class="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
-                {{ decodeHtmlEntities(typeof product.brand === 'object' && product.brand !== null ? (product.brand.name || '') : String(product.brand || '')) }}
-              </span>
+        <!-- Populated Results Grid -->
+        <div v-else-if="searchResults.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <NuxtLink
+            v-for="product in searchResults"
+            :key="product.id"
+            :to="`/product/${product.slug}/`"
+            @click="closeDropdown"
+            class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-accent border border-transparent hover:border-border/60 transition-all group"
+          >
+            <div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border/50">
+              <img 
+                v-if="product.images && product.images.length > 0" 
+                :src="product.images[0]" 
+                :alt="decodeHtmlEntities(product.name)" 
+                class="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform" 
+              />
+              <Package v-else class="w-6 h-6 text-muted-foreground/50" />
             </div>
-          </div>
-        </NuxtLink>
-      </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                {{ decodeHtmlEntities(product.name) }}
+              </p>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-xs font-extrabold text-primary">{{ formatCurrency(product.price) }}</span>
+                <span v-if="product.brand" class="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
+                  {{ decodeHtmlEntities(typeof product.brand === 'object' && product.brand !== null ? (product.brand.name || '') : String(product.brand || '')) }}
+                </span>
+              </div>
+            </div>
+          </NuxtLink>
+        </div>
 
-      <!-- Empty Results State -->
-      <div v-else class="py-8 text-center space-y-1">
-        <p class="text-xs font-medium text-muted-foreground">
-          No matching products found for "<span class="font-bold text-foreground">{{ searchQueryModel }}</span>"
-        </p>
-        <p class="text-[11px] text-muted-foreground">
-          Try searching for GPU models, processors, RAM modules, or brand names.
-        </p>
+        <!-- Empty Results State -->
+        <div v-else class="py-8 text-center space-y-1">
+          <p class="text-xs font-medium text-muted-foreground">
+            No matching products found for "<span class="font-bold text-foreground">{{ searchQueryModel }}</span>"
+          </p>
+          <p class="text-[11px] text-muted-foreground/80">
+            Try searching for GPU models, processors, RAM modules, or brand names.
+          </p>
+        </div>
       </div>
-    </div>
+    </transition>
   </div>
 </template>
