@@ -227,7 +227,7 @@ const isExternalUrl = (url?: string) => {
         <div
           v-if="hasHeroBanners && currentHeroBanner"
           :class="[
-            'relative rounded-3xl overflow-hidden bg-black text-white flex items-center p-8 md:p-12 shadow-xl group/primary min-h-[360px] lg:min-h-[540px]',
+            'relative rounded-3xl overflow-hidden bg-muted flex items-center p-8 md:p-12 shadow-xl group/primary min-h-[360px] lg:min-h-[540px]',
             hasRightBanners ? 'lg:col-span-8' : 'lg:col-span-12'
           ]"
         >
@@ -241,15 +241,14 @@ const isExternalUrl = (url?: string) => {
                   :alt="currentHeroBanner.title || 'Promotional Banner'"
                   :loading="heroCurrentIndex === 0 ? 'eager' : 'lazy'"
                   :fetchpriority="heroCurrentIndex === 0 ? 'high' : 'auto'"
-                  class="w-full h-full object-cover opacity-45 mix-blend-overlay group-hover/primary:scale-105 transition-transform duration-700"
+                  class="w-full h-full object-cover group-hover/primary:scale-105 transition-transform duration-700"
                 />
               </picture>
-              <div class="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent"></div>
             </div>
           </Transition>
 
           <!-- Banner Copy and CTA -->
-          <div class="relative z-10 max-w-xl space-y-6">
+          <div v-if="currentHeroBanner.title || currentHeroBanner.subtitle || currentHeroBanner.cta_text || currentHeroBanner.cta_url" class="relative z-10 max-w-xl space-y-6">
             <h1 v-if="currentHeroBanner.title" class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.05] text-white">
               {{ currentHeroBanner.title }}
             </h1>
@@ -351,10 +350,9 @@ const isExternalUrl = (url?: string) => {
                 :src="currentRightTopBanner.image"
                 :alt="currentRightTopBanner.title || 'Promotional Banner'"
                 loading="lazy"
-                class="w-full h-full object-cover opacity-25 group-hover:scale-105 transition-transform duration-500"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </picture>
-            <div class="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
 
             <div class="relative z-10 flex items-start justify-between">
               <div class="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors ml-auto">
@@ -362,7 +360,7 @@ const isExternalUrl = (url?: string) => {
               </div>
             </div>
 
-            <div class="relative z-10 space-y-1.5 pt-4">
+            <div v-if="currentRightTopBanner.title || currentRightTopBanner.subtitle || currentRightTopBanner.cta_text" class="relative z-10 space-y-1.5 pt-4">
               <h3 v-if="currentRightTopBanner.title" class="text-xl font-display font-bold text-foreground group-hover:text-primary transition-colors">
                 {{ currentRightTopBanner.title }}
               </h3>
@@ -391,10 +389,9 @@ const isExternalUrl = (url?: string) => {
                 :src="currentRightBottomBanner.image"
                 :alt="currentRightBottomBanner.title || 'Promotional Banner'"
                 loading="lazy"
-                class="w-full h-full object-cover opacity-25 group-hover:scale-105 transition-transform duration-500"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </picture>
-            <div class="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
 
             <div class="relative z-10 flex items-start justify-between">
               <div class="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors ml-auto">
@@ -402,7 +399,7 @@ const isExternalUrl = (url?: string) => {
               </div>
             </div>
 
-            <div class="relative z-10 space-y-1.5 pt-4">
+            <div v-if="currentRightBottomBanner.title || currentRightBottomBanner.subtitle || currentRightBottomBanner.cta_text" class="relative z-10 space-y-1.5 pt-4">
               <h3 v-if="currentRightBottomBanner.title" class="text-xl font-display font-bold text-foreground group-hover:text-primary transition-colors">
                 {{ currentRightBottomBanner.title }}
               </h3>
