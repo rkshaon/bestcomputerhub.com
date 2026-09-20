@@ -2,9 +2,8 @@
 <script setup lang="ts">
 import { navigateTo } from '#app';
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
-import { refDebounced } from '@vueuse/core';
 // TEMPORARILY DISABLED: Storefront Theme Mode Icons (Sun, Moon, Monitor)
-import { Handbag, Search, User, Menu, X, /* Sun, Moon, Monitor, */ PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, ArrowRight, Tag, Sparkles, Zap, Clock, MapPin, BookOpen } from 'lucide-vue-next';
+import { Handbag, Search, User, Menu, X, /* Sun, Moon, Monitor, */ PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, Tag, Sparkles, Zap, Clock, MapPin, BookOpen } from 'lucide-vue-next';
 import { cn, decodeHtmlEntities } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -14,6 +13,8 @@ import { useCategoryService } from '@/composables/useCategoryService';
 import { useToast } from '@/composables/useToast';
 import type { Category, Product } from '@/types';
 import HeaderMegaMenu from '@/components/layout/HeaderMegaMenu.vue';
+import HeaderSearchOverlay from '@/components/layout/HeaderSearchOverlay.vue';
+import HeaderMobileDrawer from '@/components/layout/HeaderMobileDrawer.vue';
 // TEMPORARILY DISABLED: Storefront Top Utility Bar Import
 // Restore when the utility bar is required again.
 // import HeaderUtilityBar from '@/components/layout/HeaderUtilityBar.vue';
@@ -26,47 +27,21 @@ const categoryService = useCategoryService();
 const { toastInfo } = useToast();
 const route = useRoute();
 
-// Mobile Category Drawer Accordion State
-const openMobileCategoryIds = ref<string[]>([]);
-const toggleMobileCategory = async (catId: string) => {
-  if (openMobileCategoryIds.value.includes(catId)) {
-    openMobileCategoryIds.value = openMobileCategoryIds.value.filter(id => id !== catId);
-  } else {
-    openMobileCategoryIds.value.push(catId);
-    const cat = categories.value.find(c => String(c.id) === String(catId)) || allCategories.value.find(c => String(c.id) === String(catId));
-    if (cat && cat.has_children !== false && !categoryService.hasChildrenLoaded(catId)) {
-      await categoryService.getCategoryChildrenBatch([catId], { is_menu: true });
-    }
-  }
-};
-
 // Expanded Search State
 const isSearchExpanded = ref(false);
 const searchQuery = ref('');
-const searchResults = ref<Product[]>([]);
-const isSearching = ref(false);
 const searchContainerRef = ref<HTMLElement | null>(null);
-const searchInputRef = ref<HTMLInputElement | null>(null);
-
-const popularSearches = [
-  'RTX 4090',
-  'DDR5 RAM',
-  'Intel Core i9',
-  'Gaming Laptops',
-  'NVMe SSD',
-  'Monitors'
-];
+const searchOverlayRef = ref<InstanceType<typeof HeaderSearchOverlay> | null>(null);
 
 const openSearch = () => {
   isSearchExpanded.value = true;
   nextTick(() => {
-    searchInputRef.value?.focus();
+    searchOverlayRef.value?.focus();
   });
 };
 
 const closeSearch = () => {
   isSearchExpanded.value = false;
-  searchInputRef.value?.blur();
 };
 
 const handleSearchSubmit = () => {
@@ -75,39 +50,6 @@ const handleSearchSubmit = () => {
     closeSearch();
   }
 };
-
-const debouncedSearchQuery = refDebounced(searchQuery, 300);
-
-watch(searchQuery, (newQuery) => {
-  if (!newQuery.trim()) {
-    searchResults.value = [];
-    isSearching.value = false;
-  } else {
-    isSearching.value = true;
-  }
-});
-
-watch(debouncedSearchQuery, async (newQuery) => {
-  if (!newQuery.trim()) {
-    searchResults.value = [];
-    isSearching.value = false;
-    return;
-  }
-
-  isSearching.value = true;
-  try {
-    const res = await productService.getProductsList({
-      search: newQuery.trim(),
-      page_size: 6
-    });
-    searchResults.value = res.results || [];
-  } catch (err) {
-    console.error('Header search error:', err);
-    searchResults.value = [];
-  } finally {
-    isSearching.value = false;
-  }
-});
 
 const handleCompareClick = () => {
   toastInfo('Product comparison coming soon!', {
@@ -593,42 +535,16 @@ if (process.client) {
           !isSearchExpanded && 'md:col-start-2 md:row-start-1'
         )"
       >
-        <!-- Search Bar -->
-        <div 
-          :class="cn(
-            'hidden md:flex relative group flex-1 min-w-0 transition-all duration-300 ease-in-out',
-            isSearchExpanded ? 'z-50' : ''
-          )"
-        >
-          <input 
-            ref="searchInputRef"
-            v-model="searchQuery"
-            type="text" 
-            :placeholder="isSearchExpanded ? 'Search products, brands or models...' : 'Search items...'" 
-            role="combobox"
-            :aria-expanded="isSearchExpanded"
-            aria-autocomplete="list"
-            aria-label="Search items"
-            :class="cn(
-              'w-full bg-muted/50 border rounded-full outline-none h-11 text-sm px-12 transition-all duration-200',
-              isSearchExpanded 
-                ? 'bg-background border-primary/50 shadow-md ring-2 ring-primary/20' 
-                : 'border-input focus:bg-background focus:ring-2 focus:ring-primary/20'
-            )"
-            @focus="openSearch"
-            @keyup.enter="handleSearchSubmit"
-          />
-          <Search class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary w-5 h-5 transition-colors" />
-          <button 
-            v-if="searchQuery && isSearchExpanded" 
-            type="button" 
-            @click="searchQuery = ''; searchInputRef?.focus()"
-            class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 rounded-full hover:bg-muted"
-            aria-label="Clear search text"
-          >
-            <X class="w-4 h-4" />
-          </button>
-        </div>
+        <!-- Live Desktop Search Overlay -->
+        <HeaderSearchOverlay
+          ref="searchOverlayRef"
+          v-model:is-expanded="isSearchExpanded"
+          v-model:search-query="searchQuery"
+          :categories="categories"
+          :all-categories="allCategories"
+          @close="closeSearch"
+          @submit="handleSearchSubmit"
+        />
 
         <!-- Normal Header Actions (Hidden when Search is Expanded) -->
         <div v-if="!isSearchExpanded" class="flex items-center gap-1 sm:gap-2 shrink-0 transition-opacity duration-200">
@@ -849,126 +765,7 @@ if (process.client) {
           </button>
         </div>
 
-        <!-- Cancel Action (Shown when Search is Expanded) -->
-        <div v-else class="hidden md:flex items-center shrink-0 z-50">
-          <button 
-            type="button" 
-            @click="closeSearch"
-            class="px-4 py-2 text-xs font-bold text-muted-foreground hover:text-foreground rounded-full hover:bg-accent border border-border/50 transition-all cursor-pointer"
-          >
-            Cancel
-          </button>
-        </div>
       </div>
-
-      <!-- Expanded Search Results / Suggestions Panel -->
-      <transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 -translate-y-2 scale-[0.99]"
-        enter-to-class="opacity-100 translate-y-0 scale-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100 translate-y-0 scale-100"
-        leave-to-class="opacity-0 -translate-y-2 scale-[0.99]"
-      >
-        <div 
-          v-if="isSearchExpanded" 
-          class="absolute top-full left-2 right-2 md:left-4 md:right-4 z-50 mt-1 sm:mt-2 bg-background/98 backdrop-blur-xl border border-border/80 rounded-2xl shadow-2xl p-4 sm:p-6 overflow-hidden space-y-4 max-h-[75vh] overflow-y-auto"
-        >
-          <!-- Popular Searches when query is empty -->
-          <div v-if="!searchQuery.trim()" class="space-y-4">
-            <div class="space-y-2">
-              <p class="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                Popular Searches
-              </p>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="tag in popularSearches"
-                  :key="tag"
-                  type="button"
-                  @click="searchQuery = tag; searchInputRef?.focus()"
-                  class="px-3.5 py-1.5 rounded-full bg-muted/60 hover:bg-primary/10 hover:text-primary border border-border/40 text-xs font-semibold transition-all cursor-pointer"
-                >
-                  {{ tag }}
-                </button>
-              </div>
-            </div>
-
-            <div class="border-t border-border/50 pt-3 space-y-2">
-              <p class="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                Explore Top Categories
-              </p>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <NuxtLink
-                  v-for="cat in categories.slice(0, 4)"
-                  :key="cat.id"
-                  :to="categoryService.getCategoryUrl(cat, allCategories)"
-                  @click="closeSearch"
-                  class="p-2.5 rounded-xl bg-muted/40 hover:bg-accent border border-border/30 hover:border-primary/30 transition-all text-xs font-bold text-foreground hover:text-primary flex items-center justify-between group"
-                >
-                  <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
-                  <ChevronRight class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary shrink-0 transition-transform group-hover:translate-x-0.5" />
-                </NuxtLink>
-              </div>
-            </div>
-          </div>
-
-          <!-- Live Search Results when query typed -->
-          <div v-else class="space-y-3">
-            <div class="flex items-center justify-between border-b border-border/40 pb-2.5">
-              <p class="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                Matching Catalog Products
-              </p>
-              <button
-                type="button"
-                @click="handleSearchSubmit"
-                class="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <span>View all results</span>
-                <ArrowRight class="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div v-if="isSearching" class="py-8 flex items-center justify-center gap-2 text-xs text-muted-foreground animate-pulse">
-              <span class="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></span>
-              <span>Searching catalog database...</span>
-            </div>
-
-            <div v-else-if="searchResults.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <NuxtLink
-                v-for="product in searchResults"
-                :key="product.id"
-                :to="`/product/${product.slug}/`"
-                @click="closeSearch"
-                class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-accent border border-transparent hover:border-border/60 transition-all group"
-              >
-                <div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border/50">
-                  <img :src="product.images[0]" :alt="decodeHtmlEntities(product.name)" class="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform" />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                    {{ decodeHtmlEntities(product.name) }}
-                  </p>
-                  <div class="flex items-center gap-2 mt-0.5">
-                    <span class="text-xs font-extrabold text-primary">${{ product.price }}</span>
-                    <span v-if="product.brand" class="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                      {{ decodeHtmlEntities(product.brand) }}
-                    </span>
-                  </div>
-                </div>
-              </NuxtLink>
-            </div>
-
-            <div v-else class="py-8 text-center space-y-1">
-              <p class="text-xs font-medium text-muted-foreground">
-                No matching products found for "<span class="font-bold text-foreground">{{ searchQuery }}</span>"
-              </p>
-              <p class="text-[11px] text-muted-foreground/80">
-                Try searching for GPU models, processors, RAM modules, or brand names.
-              </p>
-            </div>
-          </div>
-        </div>
-      </transition>
 
       <!-- Category Navigation Row (Hidden when Search is Expanded) -->
       <nav 
@@ -1127,214 +924,14 @@ if (process.client) {
       </div>
     </div>
 
-    <!-- Backdrop Overlay for Expanded Search -->
-    <transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div 
-        v-if="isSearchExpanded" 
-        class="fixed inset-0 bg-background/60 backdrop-blur-xs z-40 top-[56px] sm:top-[64px]"
-        @click="closeSearch"
-      />
-    </transition>
 
-    <!-- Mobile Navigation Drawer representing the full Taxonomy hierarchy dynamically fetched -->
-    <transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="opacity-0 -translate-y-4"
-      enter-to-class="opacity-100 translate-y-0"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="opacity-100 translate-y-0"
-      leave-to-class="opacity-0 -translate-y-4"
-    >
-      <div 
-        v-if="uiStore.isMobileMenuOpen" 
-        class="md:hidden absolute top-full left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border flex flex-col p-6 space-y-6 max-h-[80vh] overflow-y-auto shadow-2xl"
-      >
-        <!-- Mobile Search -->
-        <div class="relative group">
-          <input 
-            type="text" 
-            placeholder="Search items..." 
-            class="w-full bg-muted/50 border border-input rounded-full h-10 text-xs px-10 outline-none focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all duration-300"
-            @keyup.enter="navigateTo(`/products?q=${($event.target as HTMLInputElement).value}`); uiStore.closeMobileMenu()"
-          />
-          <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        </div>
 
-        <!-- Navigation Menu Hierarchy -->
-        <div class="flex flex-col space-y-4">
-          <div class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/50 pb-2">
-            Technical Categories
-          </div>
-          
-          <NuxtLink 
-            to="/products/" 
-            class="font-bold text-xs uppercase tracking-widest text-primary flex items-center gap-2"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <Grid2X2 class="w-4 h-4 text-primary" />
-            Full Catalog
-          </NuxtLink>
-
-          <!-- Dynamic Loader -->
-          <div v-if="isMenuLoading" class="py-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <span class="animate-spin border-2 border-primary/30 border-t-primary rounded-full w-4 h-4"></span>
-            Synchronizing Nodes...
-          </div>
-          
-          <div v-else class="space-y-3">
-            <div v-for="cat in categories" :key="cat.id" class="border-b border-border/40 pb-2">
-              <div class="flex items-center justify-between">
-                <NuxtLink 
-                  :to="categoryService.getCategoryUrl(cat, allCategories)" 
-                  class="font-bold text-xs uppercase tracking-wider block hover:text-primary transition-colors py-1"
-                  @click="uiStore.closeMobileMenu()"
-                >
-                  {{ decodeHtmlEntities(cat.name) }}
-                </NuxtLink>
-
-                <button 
-                  v-if="hasChildren(cat)"
-                  type="button"
-                  @click="toggleMobileCategory(cat.id)"
-                  class="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                  :aria-label="`Toggle subcategories for ${cat.name}`"
-                >
-                  <ChevronRight 
-                    :class="cn('w-4 h-4 transition-transform duration-200', categoryService.isChildrenLoading(cat.id) ? 'animate-spin text-primary' : (openMobileCategoryIds.includes(cat.id) ? 'rotate-90 text-primary' : ''))" 
-                  />
-                </button>
-              </div>
-              
-              <!-- Subcategories expandable via tap -->
-              <transition
-                enter-active-class="transition-all duration-200 ease-out"
-                enter-from-class="max-h-0 opacity-0 overflow-hidden"
-                enter-to-class="max-h-96 opacity-100 overflow-hidden"
-                leave-active-class="transition-all duration-150 ease-in"
-                leave-from-class="max-h-96 opacity-100 overflow-hidden"
-                leave-to-class="max-h-0 opacity-0 overflow-hidden"
-              >
-                <ul 
-                  v-if="getSubCategories(cat).length && openMobileCategoryIds.includes(cat.id)" 
-                  class="pl-3 mt-1.5 border-l-2 border-primary/40 space-y-2 py-1.5 bg-muted/20 rounded-r-lg"
-                >
-                  <li v-for="subCat in getSubCategories(cat)" :key="subCat.id">
-                    <NuxtLink 
-                      :to="categoryService.getCategoryUrl(subCat, allCategories)" 
-                      class="text-[11px] font-semibold tracking-wide text-muted-foreground hover:text-primary block py-1 px-1.5 rounded hover:bg-muted/50 transition-colors"
-                      @click="uiStore.closeMobileMenu()"
-                    >
-                      {{ decodeHtmlEntities(subCat.name) }}
-                    </NuxtLink>
-                  </li>
-                </ul>
-              </transition>
-            </div>
-          </div>
-        </div>
-
-        <!-- Secondary Support / Corporate Links -->
-        <div class="space-y-3 pt-4 border-t border-border/50">
-          <NuxtLink 
-            v-if="isSuperAdmin"
-            to="/admin" 
-            class="font-bold text-xs uppercase tracking-widest text-primary flex items-center gap-2 hover:underline transition-colors"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <ShieldCheck class="w-4 h-4 text-primary" />
-            <span>Admin Panel</span>
-          </NuxtLink>
-          <NuxtLink 
-            :to="authStore.isLoggedIn ? '/account/' : '/login/'" 
-            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <User class="w-4 h-4 text-primary" />
-            <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
-          </NuxtLink>
-          <NuxtLink 
-            to="/account/" 
-            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <PackageSearch class="w-4 h-4 text-primary" />
-            <span>Track Your Order</span>
-          </NuxtLink>
-          <a 
-            href="https://www.google.com/maps/place/G.M+Plaza/@23.7388697,90.386565,17z/data=!3m1!5s0x3755b8c81091d773:0x601a730b2bf4e399!4m16!1m9!3m8!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!2sG.M+Plaza!8m2!3d23.7388697!4d90.386565!9m1!1b1!16s%2Fg%2F11c2p4g0df!3m5!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!8m2!3d23.7388697!4d90.386565!16s%2Fg%2F11c2p4g0df?hl=en-US&entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D" 
-            target="_blank"
-            rel="noopener noreferrer"
-            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <MapPin class="w-4 h-4 text-primary" />
-            <span>Store Location</span>
-          </a>
-          <NuxtLink 
-            to="/products/" 
-            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <Cpu class="w-4 h-4 text-primary" />
-            <span>PC Builder</span>
-          </NuxtLink>
-          <button 
-            @click="handleCompareClick(); uiStore.closeMobileMenu()" 
-            type="button"
-            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors w-full text-left cursor-pointer"
-          >
-            <ArrowLeftRight class="w-4 h-4 text-primary" />
-            <span>Compare</span>
-          </button>
-          <NuxtLink 
-            to="/offers/" 
-            class="font-bold text-xs uppercase tracking-widest text-destructive flex items-center gap-2 hover:translate-x-1 transition-transform"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <Tag class="w-4 h-4 text-destructive" />
-            <span>Offers</span>
-          </NuxtLink>
-          <NuxtLink 
-            to="/new-arrivals/" 
-            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-amber-500 transition-colors"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <Sparkles class="w-4 h-4 text-amber-500" />
-            <span>New Arrivals</span>
-          </NuxtLink>
-          <NuxtLink 
-            to="/offers/" 
-            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <Zap class="w-4 h-4 text-primary" />
-            <span>Flash Sale</span>
-          </NuxtLink>
-          <NuxtLink 
-            to="/offers/" 
-            class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-sky-500 transition-colors"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <Clock class="w-4 h-4 text-sky-500" />
-            <span>Happy Hours</span>
-          </NuxtLink>
-          <NuxtLink 
-            to="/blog/" 
-            class="font-bold text-xs uppercase tracking-widest block hover:text-primary hover:translate-x-1 transition-all duration-300"
-            @click="uiStore.closeMobileMenu()"
-          >
-            Tech Insights
-          </NuxtLink>
-        </div>
-      </div>
-    </transition>
+    <!-- Mobile Navigation Drawer -->
+    <HeaderMobileDrawer 
+      :categories="categories"
+      :all-categories="allCategories"
+      :is-menu-loading="isMenuLoading"
+    />
   </header>
 </template>
 

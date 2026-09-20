@@ -260,21 +260,66 @@ Components are classified using four standard metadata properties:
 - **Exact File Location**: `/components/layout/Header.vue`
 - **Component Type**: Layout / Navigation
 - **Scope**: Storefront
-- **Purpose**: Master Storefront header containing utility bar, branding, main navigation, live product search modal, account menu, cart badge trigger, and mobile drawer menu.
+- **Purpose**: Master Storefront header containing utility bar, branding, main navigation row, account menu, cart badge trigger, composing `<HeaderSearchOverlay>` and `<HeaderMobileDrawer>`.
 - **Routes/Pages Used**: Rendered on all Storefront routes via `/layouts/default.vue`.
 - **Main Responsibilities**:
   - Render desktop navigation bar and top categories.
-  - Provide search bar with debounced live product search (`refDebounced` 300ms) and autocomplete results dropdown.
+  - Compose desktop live search via `<HeaderSearchOverlay>`.
+  - Compose mobile slide-out navigation drawer via `<HeaderMobileDrawer>`.
   - Render user account menu and active cart item counter.
-  - Provide full mobile overlay navigation drawer with accordion category expansion.
-- **What It Explicitly Does Not Own**: Checkout processing or cart state persistence.
-- **State Owned**: `isSearchExpanded`, search query string, search results array, mobile menu open state (`isMobileMenuOpen`), open mobile category accordion IDs (`openMobileCategoryIds`).
-- **Calls API**: Yes (`productService.getProductsList`, `categoryService.getCategoryChildrenBatch`).
-- **Related Composables/Services**: `useUIStore`, `useCartStore`, `useAuthStore`, `useProductService`, `useCategoryService`, `useToast`, `refDebounced`.
-- **Responsive Responsibility**: Replaces desktop navigation bar with a mobile slide-out drawer on viewports `< 1024px`; handles mobile category accordion expansion.
+- **What It Explicitly Does Not Own**: Live search overlay (delegates to `<HeaderSearchOverlay>`), mobile navigation drawer presentation/accordion state (delegates to `<HeaderMobileDrawer>`), checkout processing, or cart state persistence.
+- **State Owned**: `isSearchExpanded`, search query string, desktop adaptive navigation layout width refs.
+- **Calls API**: Yes (`categoryService.getCategoryChildrenBatch`).
+- **Related Composables/Services**: `useUIStore`, `useCartStore`, `useAuthStore`, `useProductService`, `useCategoryService`, `useToast`.
+- **Responsive Responsibility**: Replaces desktop navigation bar with a mobile slide-out drawer on viewports `< 1024px` by triggering `uiStore.toggleMobileMenu()`.
 - **Reusability Level**: High (Singleton layout component)
-- **Important Behavior to Preserve**: Live debounced search execution, category child lazy loading on mobile accordion open.
-- **Known Architectural Risks**: Header file is large (~1,250 lines) due to composing search overlay, mobile drawer, and desktop navigation in one file.
+- **Important Behavior to Preserve**: Search overlay and mobile drawer composition, adaptive desktop category item measurement.
+- **Known Architectural Risks**: None.
+
+---
+
+### `<HeaderSearchOverlay>`
+- **Exact File Location**: `/components/layout/HeaderSearchOverlay.vue`
+- **Component Type**: Layout / Navigation / Search overlay
+- **Scope**: Storefront
+- **Purpose**: Live product search overlay component providing desktop search input, popular searches, category quick links, debounced live catalog search results, and backdrop overlay.
+- **Routes/Pages Used**: Used inside `<Header>` (`/components/layout/Header.vue`).
+- **Main Responsibilities**:
+  - Render desktop search input bar with combobox accessibility attributes (`role="combobox"`, `aria-expanded`).
+  - Execute debounced live catalog product searches (`refDebounced` 300ms) via `productService.getProductsList`.
+  - Display search suggestions panel with popular tags, top categories, live matching catalog products, loading indicator, and empty state.
+  - Provide cancel button and backdrop overlay with click-outside and Escape key dismissal handling.
+- **What It Explicitly Does Not Own**: Header-level layout grid or mobile drawer menu.
+- **State Owned**: `searchResults`, `isSearching`, `searchInputRef`, `overlayContainerRef`, popular search tags. Two-way bounds `isExpanded` and `searchQuery` with parent.
+- **Calls API**: Yes (`productService.getProductsList`).
+- **Related Composables/Services**: `useProductService`, `useCategoryService`, `@vueuse/core` (`refDebounced`), `cn`, `decodeHtmlEntities`.
+- **Responsive Responsibility**: Desktop search bar (`hidden md:flex`), full-width results dropdown overlay on desktop viewports.
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Debounced 300ms search execution, HTML entity decoding in product/category names, keyboard Escape dismissal, focus management on open.
+- **Known Architectural Risks**: None.
+
+---
+
+### `<HeaderMobileDrawer>`
+- **Exact File Location**: `/components/layout/HeaderMobileDrawer.vue`
+- **Component Type**: Layout / Navigation / Mobile drawer
+- **Scope**: Storefront
+- **Purpose**: Slide-out mobile navigation drawer rendering dynamic taxonomy hierarchy with expandable category accordions, search input, and secondary account/corporate support links.
+- **Routes/Pages Used**: Used inside `<Header>` (`/components/layout/Header.vue`).
+- **Main Responsibilities**:
+  - Render mobile search bar triggering search navigation to `/products?q=...`.
+  - Render dynamic category hierarchy list with interactive tap-to-expand subcategory accordions.
+  - Handle demand-driven child category lazy loading (`categoryService.getCategoryChildrenBatch`).
+  - Render secondary support and account links (Admin Panel, Account, Track Order, Store Location, PC Builder, Compare, Offers, New Arrivals, Flash Sale, Happy Hours, Tech Insights).
+  - Automatically dismiss mobile drawer upon link click (`uiStore.closeMobileMenu()`).
+- **What It Explicitly Does Not Own**: Header top bar toggle button or desktop navigation bar.
+- **State Owned**: `openMobileCategoryIds`, local compare toast handler. Reads `uiStore.isMobileMenuOpen` for drawer visibility.
+- **Calls API**: Yes (`categoryService.getCategoryChildrenBatch`).
+- **Related Composables/Services**: `useUIStore`, `useAuthStore`, `useCategoryService`, `useToast`, `cn`, `decodeHtmlEntities`.
+- **Responsive Responsibility**: Slide-out overlay drawer visible on viewports `< 768px` (`md:hidden`), scrollable content container (`max-h-[80vh] overflow-y-auto`).
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Lazy category child loading on accordion tap, drawer dismissal on link selection, HTML entity decoding in category titles.
+- **Known Architectural Risks**: None.
 
 ---
 
