@@ -756,6 +756,28 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<ProductFormModal>`
+- **Exact File Location**: `/features/admin/products/components/ProductFormModal.vue`
+- **Component Type**: Form component / Admin Modal
+- **Scope**: Admin
+- **Purpose**: Modal dialog form for creating and editing catalog product records.
+- **Routes/Pages Used**: Admin Products Page (`/admin/products/`).
+- **Main Responsibilities**:
+  - Encapsulate Product Create and Edit form UI, inputs, categories picker, and RichText editors (Short Description, Full Description, Specifications).
+  - Manage form state initialization, pre-population, and field validation.
+  - Formulate minimal PATCH update payloads by comparing modified fields against original values (`isHtmlEquivalent`).
+  - Dispatch create (`productService.createProduct`) and update (`productService.updateProduct`) API mutations.
+- **What It Explicitly Does Not Own**: URL query parameter resolution or active product resolution (handled by parent page's `useAdminModalState`).
+- **State Owned**: Form field refs, field validation errors, original form values baseline, category dropdown pagination state, submission loading state.
+- **Calls API**: Yes (`productService.createProduct`, `productService.updateProduct`, `categoryService.getCategoriesList`).
+- **Related Composables/Services**: `useProductService`, `useCategoryService`, `useAdminPermissions`, `useInfinitePagination`, `useToast`.
+- **Responsive Responsibility**: Max-width desktop sizing (`max-w-xl` or `max-w-3xl`), scrollable modal body (`max-h-[70vh]`), responsive grid controls.
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Strict PATCH delta submission logic and HTML entity / empty paragraph cleaning.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<UserFormModal>`
 - **Exact File Location**: `/components/admin/UserFormModal.vue`
 - **Component Type**: Form component / Admin Modal
