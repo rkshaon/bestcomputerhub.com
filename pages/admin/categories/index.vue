@@ -31,6 +31,8 @@ import {
   Sparkles
 } from 'lucide-vue-next';
 import CategoryTreeAdmin from '@/components/admin/CategoryTreeAdmin.vue';
+import CategoryFormModal from '@/features/admin/categories/components/CategoryFormModal.vue';
+import CategoryFeaturedIconModal from '@/features/admin/categories/components/CategoryFeaturedIconModal.vue';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useProductService } from '@/composables/useProductService';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
@@ -40,7 +42,6 @@ import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import { cn, decodeHtmlEntities } from '@/utils';
-import { validateFeaturedCategoryIcon } from '@/utils/imageValidation';
 import { refDebounced } from '@vueuse/core';
 import type { Category, CategorySummaryResponse, CategoryFilters } from '@/types';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
@@ -248,151 +249,32 @@ const isSubmitPending = ref(false);
 const isDetailsLoading = ref(false);
 const selectedCategory = ref<Category | null>(null);
 
-// Featured Icon Modal state infrastructure
+// Featured Icon Modal state & triggers
 const isFeaturedIconModalOpen = ref(false);
 const featuredIconCategory = ref<Category | null>(null);
-const selectedIconFile = ref<File | null>(null);
-const selectedIconPreviewUrl = ref<string | null>(null);
-const iconValidationError = ref<string | null>(null);
-const isIconUploading = ref(false);
-const isIconDeleting = ref(false);
-const isDeleteIconConfirmOpen = ref(false);
-const isIconDragActive = ref(false);
-const iconFileInput = ref<HTMLInputElement | null>(null);
-
-const clearIconPreview = () => {
-  if (selectedIconPreviewUrl.value) {
-    URL.revokeObjectURL(selectedIconPreviewUrl.value);
-    selectedIconPreviewUrl.value = null;
-  }
-};
 
 const openFeaturedIconModal = (cat: Category) => {
   featuredIconCategory.value = cat;
-  selectedIconFile.value = null;
-  clearIconPreview();
-  iconValidationError.value = null;
   isFeaturedIconModalOpen.value = true;
 };
 
 const closeFeaturedIconModal = () => {
   isFeaturedIconModalOpen.value = false;
   featuredIconCategory.value = null;
-  selectedIconFile.value = null;
-  clearIconPreview();
-  iconValidationError.value = null;
 };
 
-const handleIconFileChange = async (file: File | null) => {
-  clearIconPreview();
-  iconValidationError.value = null;
-  selectedIconFile.value = null;
-
-  if (!file) return;
-
-  const valResult = await validateFeaturedCategoryIcon(file);
-  if (!valResult.valid) {
-    iconValidationError.value = valResult.error || 'Invalid icon file.';
-    return;
-  }
-
-  selectedIconFile.value = file;
-  selectedIconPreviewUrl.value = URL.createObjectURL(file);
-};
-
-const onIconDragOver = (e: DragEvent) => {
-  e.preventDefault();
-  isIconDragActive.value = true;
-};
-
-const onIconDragLeave = (e: DragEvent) => {
-  e.preventDefault();
-  isIconDragActive.value = false;
-};
-
-const onIconDrop = (e: DragEvent) => {
-  e.preventDefault();
-  isIconDragActive.value = false;
-  if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-    handleIconFileChange(e.dataTransfer.files[0] ?? null);
-  }
-};
-
-const handleUploadFeaturedIcon = async () => {
-  if (!featuredIconCategory.value || !selectedIconFile.value || iconValidationError.value) return;
-
-  const categoryId = featuredIconCategory.value.id;
-  try {
-    isIconUploading.value = true;
-    const updatedCategory = await categoryService.uploadFeaturedCategoryIcon(categoryId, selectedIconFile.value);
-
-    toastSuccess('Featured icon updated successfully.');
-
-    // Update local state references
-    if (featuredIconCategory.value) {
-      featuredIconCategory.value.featured_icon = updatedCategory.featured_icon;
-    }
-    const inList = categoriesList.value.find(c => String(c.id) === String(categoryId));
+const handleFeaturedIconUpdated = async (updatedCat?: Category) => {
+  if (updatedCat) {
+    const inList = categoriesList.value.find(c => String(c.id) === String(updatedCat.id));
     if (inList) {
-      inList.featured_icon = updatedCategory.featured_icon;
+      inList.featured_icon = updatedCat.featured_icon;
     }
-
-    // Refresh categories data
-    await fetchCategoriesPage();
-    if (viewMode.value === 'tree' && treeRef.value) {
-      await treeRef.value.fetchRoots();
-    }
-
-    closeFeaturedIconModal();
-  } catch (err: any) {
-    const msg = extractErrorMessage(err, 'Failed to upload featured icon.');
-    toastError(msg);
-    iconValidationError.value = msg;
-  } finally {
-    isIconUploading.value = false;
+  }
+  await fetchCategoriesPage();
+  if (viewMode.value === 'tree' && treeRef.value) {
+    await treeRef.value.fetchRoots();
   }
 };
-
-const handleDeleteFeaturedIcon = async () => {
-  if (!featuredIconCategory.value) return;
-
-  if (featuredIconCategory.value.is_featured === true) {
-    toastError('Cannot delete icon while category is featured. Unfeature the category first.');
-    return;
-  }
-
-  const categoryId = featuredIconCategory.value.id;
-  try {
-    isIconDeleting.value = true;
-    await categoryService.deleteFeaturedCategoryIcon(categoryId);
-
-    toastSuccess('Featured icon deleted successfully.');
-
-    if (featuredIconCategory.value) {
-      featuredIconCategory.value.featured_icon = null;
-    }
-    const inList = categoriesList.value.find(c => String(c.id) === String(categoryId));
-    if (inList) {
-      inList.featured_icon = null;
-    }
-
-    await fetchCategoriesPage();
-    if (viewMode.value === 'tree' && treeRef.value) {
-      await treeRef.value.fetchRoots();
-    }
-
-    isDeleteIconConfirmOpen.value = false;
-    closeFeaturedIconModal();
-  } catch (err: any) {
-    handleApiError(err, 'Failed to delete featured icon.');
-  } finally {
-    isIconDeleting.value = false;
-  }
-};
-
-onBeforeUnmount(() => {
-  clearIconPreview();
-});
 
 // Feature & Unfeature Category state & handlers
 const processingFeaturedCategoryId = ref<string | number | null>(null);
@@ -535,38 +417,9 @@ watch(() => categoryModalState.activeEntity.value, (newEntity) => {
   if (newEntity) {
     selectedCategory.value = newEntity;
 
-    if (categoryModalState.isEdit.value) {
-      if (!canEditCategory.value) {
-        toastError('You do not have permission to edit categories.');
-        categoryModalState.closeModal({ replace: true });
-        return;
-      }
-      formPayload.value = {
-        id: newEntity.id,
-        name: newEntity.name,
-        slug: newEntity.slug,
-        short_description_title: newEntity.short_description_title || '',
-        short_description: newEntity.short_description || '',
-        description: newEntity.description || '',
-        parentCategoryId: newEntity.parentCategoryId || '',
-        icon: newEntity.icon || '📁',
-        image: newEntity.image || '',
-        order: newEntity.order ?? 0,
-        show_in_menu: newEntity.show_in_menu ?? true
-      };
-      originalCategoryDetails.value = {
-        name: newEntity.name || '',
-        slug: newEntity.slug || '',
-        short_description_title: newEntity.short_description_title || '',
-        short_description: newEntity.short_description || '',
-        description: newEntity.description || '',
-        parentCategoryId: newEntity.parentCategoryId || '',
-        icon: newEntity.icon || '📁',
-        image: newEntity.image || '',
-        order: newEntity.order ?? 0,
-        show_in_menu: newEntity.show_in_menu ?? true
-      };
-      formError.value = null;
+    if (categoryModalState.isEdit.value && !canEditCategory.value) {
+      toastError('You do not have permission to edit categories.');
+      categoryModalState.closeModal({ replace: true });
     }
   }
 }, { immediate: true });
@@ -579,26 +432,24 @@ const closeEditModal = async () => {
   await categoryModalState.closeModal();
 };
 
+const handleCloseFormModal = async () => {
+  if (isCreateModalOpen.value) {
+    isCreateModalOpen.value = false;
+  }
+  if (categoryModalState.isEdit.value) {
+    await categoryModalState.closeModal();
+  }
+};
+
+const handleCategorySaved = async () => {
+  await fetchAllCategoriesRawList();
+  if (treeRef.value?.refreshRoots) {
+    await treeRef.value.refreshRoots();
+  }
+};
+
 // Form element focus refs for keyboard accessibility
-const categoryNameInput = ref<HTMLInputElement | null>(null);
-const editCategoryNameInput = ref<HTMLInputElement | null>(null);
 const formatSelectElement = ref<HTMLSelectElement | null>(null);
-
-watch(isCreateModalOpen, (newValue) => {
-  if (newValue) {
-    nextTick(() => {
-      categoryNameInput.value?.focus();
-    });
-  }
-});
-
-watch(isEditModalOpen, (newValue) => {
-  if (newValue) {
-    nextTick(() => {
-      editCategoryNameInput.value?.focus();
-    });
-  }
-});
 
 watch(isImportModalOpen, (newValue) => {
   if (newValue) {
@@ -811,35 +662,6 @@ const submitImport = async () => {
     importIsLoading.value = false;
   }
 };
-
-// Form state payloads
-const formError = ref<string | null>(null);
-const formPayload = ref({
-  id: '',
-  name: '',
-  slug: '',
-  short_description_title: '',
-  short_description: '',
-  description: '',
-  parentCategoryId: '',
-  icon: '',
-  image: '',
-  order: 0,
-  show_in_menu: true
-});
-
-const originalCategoryDetails = ref<{
-  name: string;
-  slug: string;
-  short_description_title: string;
-  short_description: string;
-  description: string;
-  parentCategoryId: string;
-  icon: string;
-  image: string;
-  order: number;
-  show_in_menu: boolean;
-} | null>(null);
 
 // Retrieve parent category name by ID (Local state resolution)
 const getParentName = (parentId?: string): string => {
@@ -1061,38 +883,12 @@ watch(() => route.query, async (newQuery) => {
   }
 });
 
-// Slug generator
-const generateCustomSlug = () => {
-  if (isCreateModalOpen.value) {
-    formPayload.value.slug = formPayload.value.name
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-};
-
 // Modal toggles
 const triggerCreateModal = () => {
   if (!canCreateCategory.value) {
     toastError('You do not have permission to create categories.');
     return;
   }
-  formPayload.value = {
-    id: '',
-    name: '',
-    slug: '',
-    short_description_title: '',
-    short_description: '',
-    description: '',
-    parentCategoryId: '',
-    icon: '📁',
-    image: '',
-    order: 0,
-    show_in_menu: true
-  };
-  formError.value = null;
   isCreateModalOpen.value = true;
 };
 
@@ -1101,33 +897,7 @@ const triggerEditModal = async (cat: Category) => {
     toastError('You do not have permission to edit categories.');
     return;
   }
-  // Populate existing list-row fallback in case API loading fails or takes time
-  formPayload.value = {
-    id: cat.id,
-    name: cat.name,
-    slug: cat.slug,
-    short_description_title: cat.short_description_title || '',
-    short_description: cat.short_description || '',
-    description: cat.description || '',
-    parentCategoryId: cat.parentCategoryId || '',
-    icon: cat.icon || '📁',
-    image: cat.image || '',
-    order: cat.order ?? 0,
-    show_in_menu: cat.show_in_menu ?? true
-  };
-  originalCategoryDetails.value = {
-    name: cat.name || '',
-    slug: cat.slug || '',
-    short_description_title: cat.short_description_title || '',
-    short_description: cat.short_description || '',
-    description: cat.description || '',
-    parentCategoryId: cat.parentCategoryId || '',
-    icon: cat.icon || '📁',
-    image: cat.image || '',
-    order: cat.order ?? 0,
-    show_in_menu: cat.show_in_menu ?? true
-  };
-  formError.value = null;
+  selectedCategory.value = cat;
   await categoryModalState.openEdit(cat.id);
 };
 
@@ -1138,166 +908,6 @@ const triggerViewModal = async (cat: Category) => {
   }
   selectedCategory.value = cat; // Populate fallback
   await categoryModalState.openView(cat.id);
-};
-
-// CREATE CATEGORY
-const submitCreateCategory = async () => {
-  formError.value = null;
-  if (!formPayload.value.name.trim()) {
-    formError.value = 'Category Name is a required designation.';
-    return;
-  }
-  if (!formPayload.value.slug.trim()) {
-    formError.value = 'Category Identifier Code (Slug) is required.';
-    return;
-  }
-
-  isSubmitPending.value = true;
-  try {
-    await categoryService.createCategory({
-      name: formPayload.value.name.trim(),
-      slug: formPayload.value.slug.trim(),
-      short_description_title: formPayload.value.short_description_title?.trim() || '',
-      short_description: formPayload.value.short_description?.trim() || '',
-      description: formPayload.value.description,
-      parentCategoryId: formPayload.value.parentCategoryId || undefined,
-      icon: formPayload.value.icon || undefined,
-      image: formPayload.value.image || undefined,
-      order: Number(formPayload.value.order) || 0
-    });
-
-    isCreateModalOpen.value = false;
-    toastSuccess(`Category [${formPayload.value.name}] generated successfully.`);
-    await fetchAllCategoriesRawList();
-  } catch (err: any) {
-    const msg = extractErrorMessage(err, 'Operation failed on category create.');
-    formError.value = msg;
-    toastError(msg);
-  } finally {
-    isSubmitPending.value = false;
-  }
-};
-
-// UPDATE CATEGORY
-const submitUpdateCategory = async () => {
-  formError.value = null;
-  if (!formPayload.value.name.trim()) {
-    formError.value = 'Category Name is a required designation.';
-    return;
-  }
-  if (!formPayload.value.slug.trim()) {
-    formError.value = 'Category Identifier Code (Slug) is required.';
-    return;
-  }
-
-  isSubmitPending.value = true;
-
-  const payload: any = {};
-  if (originalCategoryDetails.value) {
-    const orig = originalCategoryDetails.value;
-
-    // name
-    const currentName = formPayload.value.name.trim();
-    if (currentName !== orig.name.trim()) {
-      payload.name = currentName;
-    }
-
-    // slug
-    const currentSlug = formPayload.value.slug.trim().toLowerCase();
-    if (currentSlug !== orig.slug.trim().toLowerCase()) {
-      payload.slug = currentSlug;
-    }
-
-    // short_description_title
-    const currentShortDescTitle = (formPayload.value.short_description_title || '').trim();
-    const origShortDescTitle = (orig.short_description_title || '').trim();
-    if (currentShortDescTitle !== origShortDescTitle) {
-      payload.short_description_title = currentShortDescTitle;
-    }
-
-    // short_description
-    const currentShortDesc = (formPayload.value.short_description || '').trim();
-    const origShortDesc = (orig.short_description || '').trim();
-    if (currentShortDesc !== origShortDesc) {
-      payload.short_description = currentShortDesc;
-    }
-
-    // description
-    const currentDesc = formPayload.value.description;
-    if (currentDesc !== orig.description) {
-      payload.description = currentDesc;
-    }
-
-    // parentCategoryId
-    const currentParent = formPayload.value.parentCategoryId || '';
-    const origParent = orig.parentCategoryId || '';
-    if (currentParent !== origParent) {
-      payload.parentCategoryId = currentParent || '';
-    }
-
-    // icon
-    const currentIcon = formPayload.value.icon || '';
-    const origIcon = orig.icon || '';
-    if (currentIcon !== origIcon) {
-      payload.icon = currentIcon || '';
-    }
-
-    // image
-    const currentImage = formPayload.value.image || '';
-    const origImage = orig.image || '';
-    if (currentImage !== origImage) {
-      payload.image = currentImage || '';
-    }
-
-    // order
-    const currentOrder = Number(formPayload.value.order) || 0;
-    const origOrder = Number(orig.order) || 0;
-    if (currentOrder !== origOrder) {
-      payload.order = currentOrder;
-    }
-
-    // show_in_menu
-    const currentShow = formPayload.value.show_in_menu !== undefined ? Boolean(formPayload.value.show_in_menu) : true;
-    const origShow = orig.show_in_menu !== undefined ? Boolean(orig.show_in_menu) : true;
-    if (currentShow !== origShow) {
-      payload.show_in_menu = currentShow;
-    }
-  } else {
-    // Fallback if no reference state exists
-    payload.name = formPayload.value.name.trim();
-    payload.slug = formPayload.value.slug.trim();
-    payload.short_description_title = (formPayload.value.short_description_title || '').trim();
-    payload.short_description = (formPayload.value.short_description || '').trim();
-    payload.description = formPayload.value.description;
-    payload.parentCategoryId = formPayload.value.parentCategoryId || undefined;
-    payload.icon = formPayload.value.icon || undefined;
-    payload.image = formPayload.value.image || undefined;
-    payload.order = Number(formPayload.value.order) || 0;
-    payload.show_in_menu = formPayload.value.show_in_menu;
-  }
-
-  if (Object.keys(payload).length === 0) {
-    // If nothing changed, do not send an unnecessary PATCH request; follow the existing form behavior for an unchanged submission.
-    await closeEditModal();
-    toastSuccess(`Category [${formPayload.value.name}] updated successfully.`);
-    await fetchAllCategoriesRawList();
-    isSubmitPending.value = false;
-    return;
-  }
-
-  try {
-    await categoryService.updateCategory(formPayload.value.id, payload);
-
-    await closeEditModal();
-    toastSuccess(`Category [${formPayload.value.name}] updated successfully.`);
-    await fetchAllCategoriesRawList();
-  } catch (err: any) {
-    const msg = extractErrorMessage(err, 'Operation failed on category edit.');
-    formError.value = msg;
-    toastError(msg);
-  } finally {
-    isSubmitPending.value = false;
-  }
 };
 
 // DELETE CATEGORY
@@ -2452,301 +2062,16 @@ watch(viewMode, () => {
       </template>
     </UiTable>
 
-    <!-- MODAL 1: Create New Category Class -->
-    <div v-if="isCreateModalOpen" @click.self="isCreateModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
-      <form @submit.prevent="submitCreateCategory" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
-        
-        <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
-          <div>
-            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-primary">Administration Node Generator</span>
-            <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Define New Category</h3>
-          </div>
-          <button type="button" @click="isCreateModalOpen = false" aria-label="Close modal" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
-            <X class="w-5 h-5" />
-          </button>
-        </div>
-
-        <div class="p-8 space-y-6 overflow-y-auto max-h-[60vh]">
-          <div v-if="formError" class="p-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900 flex items-start gap-3 rounded-2xl text-rose-600 dark:text-rose-400">
-            <AlertCircle class="w-5 h-5 shrink-0 mt-0.5" />
-            <p class="text-xs font-semibold leading-relaxed">{{ formError }}</p>
-          </div>
-
-          <div class="space-y-4">
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Classification Name</label>
-              <input 
-                ref="categoryNameInput"
-                v-model="formPayload.name" 
-                @input="generateCustomSlug"
-                type="text" 
-                placeholder="e.g. Deep Learning Nodes" 
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
-              />
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Identity Code label (Slug)</label>
-              <input 
-                v-model="formPayload.slug" 
-                type="text" 
-                placeholder="e.g. deep-learning-nodes" 
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-semibold text-slate-950 dark:text-slate-50 font-mono"
-              />
-              <p class="text-[10px] text-slate-400 ml-1">Unique alphanumeric label for router paths.</p>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Parent Category</label>
-              <select 
-                v-model="formPayload.parentCategoryId"
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-semibold text-slate-950 dark:text-slate-50 cursor-pointer"
-              >
-                <option value="">None (Top-Level Category Grouping)</option>
-                <option v-for="catOption in allCategoriesList.filter(c => !c.parentCategoryId)" :key="catOption.id" :value="catOption.id">
-                  Nested under: {{ catOption.name }}
-                </option>
-              </select>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Display Order Priority (Order)</label>
-              <input 
-                v-model="formPayload.order" 
-                type="number" 
-                placeholder="e.g. 10" 
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
-              />
-              <p class="text-[10px] text-slate-400 ml-1">Sort order priority index (lower values sort higher/first).</p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Visual Symbol (Icon Emoji)</label>
-                <input 
-                  v-model="formPayload.icon" 
-                  type="text" 
-                  placeholder="e.g. 📁, 💻, 🧠" 
-                  class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50 text-center"
-                />
-              </div>
-              <div class="space-y-2">
-                <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1 font-sans">Image representation URL</label>
-                <input 
-                  v-model="formPayload.image" 
-                  type="text" 
-                  placeholder="https://images.unsplash.com/..." 
-                  class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-medium"
-                />
-              </div>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Short Description Title</label>
-              <input 
-                v-model="formPayload.short_description_title" 
-                type="text" 
-                placeholder="e.g. Featured Nodes" 
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50 animate-none"
-                :disabled="isSubmitPending"
-              />
-              <p class="text-[10px] text-slate-400 ml-1">Optional title displayed above the short description on storefront listing banners.</p>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Short Description</label>
-              <textarea 
-                v-model="formPayload.short_description" 
-                rows="3"
-                placeholder="Brief introductory summary or excerpt for category listings and headers..."
-                class="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-medium text-slate-950 dark:text-slate-50 placeholder:text-slate-400 resize-y"
-                :disabled="isSubmitPending"
-              ></textarea>
-              <p class="text-[10px] text-slate-400 ml-1">Optional concise summary displayed on storefront header banners and category listings.</p>
-            </div>
-
-            <div class="space-y-2">
-              <UiRichTextEditor
-                v-model="formPayload.description"
-                label="Operational Description / Memo"
-                placeholder="Enterprise utility scope and catalog organization guidelines..."
-                min-height="min-h-[140px]"
-                :disabled="isSubmitPending"
-                helper-text="Full category details with headings, bullet points, formatting, and paragraphs."
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="p-8 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50">
-          <button 
-            type="button"
-            @click="isCreateModalOpen = false" 
-            class="px-5 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button 
-            type="submit" 
-            :disabled="isSubmitPending"
-            class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
-          >
-            <span v-if="isSubmitPending" class="animate-spin border-2 border-white/35 border-t-white rounded-full w-4 h-4 mr-1"></span>
-            {{ isSubmitPending ? 'Compiling Record...' : 'Publish Taxonomy Node' }}
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- MODAL 2: Edit Custom Category Details -->
-    <div v-if="isEditModalOpen" @click.self="closeEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
-      <form @submit.prevent="submitUpdateCategory" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative overflow-hidden flex flex-col animate-in scale-in duration-300 cursor-default">
-        
-        <!-- Loading overlay inside modal -->
-        <div v-if="isDetailsLoading" class="absolute inset-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm z-40 flex items-center justify-center">
-          <div class="flex flex-col items-center justify-center gap-3">
-            <Loader2 class="w-8 h-8 animate-spin text-primary" />
-            <p class="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Loading classification specs...</p>
-          </div>
-        </div>
-
-        <div class="p-8 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
-          <div>
-            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-amber-500">Authorized Admin Override</span>
-            <h3 class="text-2xl font-display font-black tracking-tight mt-0.5">Modify Class Properties</h3>
-          </div>
-          <button type="button" @click="closeEditModal" aria-label="Close modal" class="w-10 h-10 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-950 dark:hover:text-slate-100 transition-colors">
-            <X class="w-5 h-5" />
-          </button>
-        </div>
-
-        <div class="p-8 space-y-6 overflow-y-auto max-h-[60vh]">
-          <div v-if="formError" class="p-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900 flex items-start gap-3 rounded-2xl text-rose-600 dark:text-rose-400">
-            <AlertCircle class="w-5 h-5 shrink-0 mt-0.5" />
-            <p class="text-xs font-semibold leading-relaxed">{{ formError }}</p>
-          </div>
-
-          <div class="space-y-4">
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Classification Name</label>
-              <input 
-                ref="editCategoryNameInput"
-                v-model="formPayload.name" 
-                type="text" 
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
-              />
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Identity Code label (Slug)</label>
-              <input 
-                v-model="formPayload.slug" 
-                type="text" 
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-semibold text-slate-950 dark:text-slate-50 font-mono"
-              />
-              <p class="text-[10px] text-slate-400 ml-1 font-medium">Caution: Modifying identity paths can override mapped products categorization.</p>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Parent Category Mapping</label>
-              <select 
-                v-model="formPayload.parentCategoryId"
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-semibold text-slate-950 dark:text-slate-50 cursor-pointer"
-              >
-                <option value="">None (Top-Level Category Grouping)</option>
-                <!-- Filter categories that are top level themselves, and prevent selecting self as parent -->
-                <option v-for="catOption in allCategoriesList.filter(c => !c.parentCategoryId && c.id !== formPayload.id)" :key="catOption.id" :value="catOption.id">
-                  Nested under: {{ catOption.name }}
-                </option>
-              </select>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Display Order Priority (Order)</label>
-              <input 
-                v-model="formPayload.order" 
-                type="number" 
-                placeholder="e.g. 10" 
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50"
-              />
-              <p class="text-[10px] text-slate-400 ml-1">Sort order priority index (lower values sort higher/first).</p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Visual Symbol (Icon Emoji)</label>
-                <input 
-                  v-model="formPayload.icon" 
-                  type="text" 
-                  class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50 text-center"
-                />
-              </div>
-              <div class="space-y-2">
-                <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Image Representation URL</label>
-                <input 
-                  v-model="formPayload.image" 
-                  type="text" 
-                  class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-medium"
-                />
-              </div>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Short Description Title</label>
-              <input 
-                v-model="formPayload.short_description_title" 
-                type="text" 
-                placeholder="e.g. Featured Nodes" 
-                class="w-full h-14 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-bold text-slate-950 dark:text-slate-50 animate-none"
-                :disabled="isSubmitPending"
-              />
-              <p class="text-[10px] text-slate-400 ml-1">Optional title displayed above the short description on storefront listing banners.</p>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-1">Short Description</label>
-              <textarea 
-                v-model="formPayload.short_description" 
-                rows="3"
-                placeholder="Brief introductory summary or excerpt for category listings and headers..."
-                class="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/25 transition-all text-sm font-medium text-slate-950 dark:text-slate-50 placeholder:text-slate-400 resize-y"
-                :disabled="isSubmitPending"
-              ></textarea>
-              <p class="text-[10px] text-slate-400 ml-1">Optional concise summary displayed on storefront header banners and category listings.</p>
-            </div>
-
-            <div class="space-y-2">
-              <UiRichTextEditor
-                v-model="formPayload.description"
-                label="Operational Description / Memo"
-                placeholder="Enterprise utility scope and catalog organization guidelines..."
-                min-height="min-h-[140px]"
-                :disabled="isSubmitPending"
-                helper-text="Full category details with headings, bullet points, formatting, and paragraphs."
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="p-8 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50">
-          <button 
-            type="button"
-            @click="closeEditModal" 
-            class="px-5 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button 
-            type="submit" 
-            :disabled="isSubmitPending"
-            class="bg-primary text-primary-foreground hover:bg-primary/95 px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
-          >
-            <span v-if="isSubmitPending" class="animate-spin border-2 border-white/35 border-t-white rounded-full w-4 h-4 mr-1"></span>
-            {{ isSubmitPending ? 'Applying Overrides...' : 'Apply Taxonomy Correction' }}
-          </button>
-        </div>
-      </form>
-    </div>
+    <!-- Create & Edit Category Modal -->
+    <CategoryFormModal
+      :is-open="isCreateModalOpen || categoryModalState.isEdit.value"
+      :mode="isCreateModalOpen ? 'create' : 'edit'"
+      :category="categoryModalState.activeEntity.value || selectedCategory"
+      :categories="allCategoriesList"
+      :is-resolving="categoryModalState.isResolving.value"
+      @close="handleCloseFormModal"
+      @saved="handleCategorySaved"
+    />
 
     <!-- MODAL 3: Detailed Category Properties Read-Only View -->
     <div v-if="isViewModalOpen && selectedCategory" @click.self="closeViewModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
@@ -3031,211 +2356,12 @@ watch(viewMode, () => {
     </UiAdminModal>
 
     <!-- Featured Icon Management Modal -->
-    <UiAdminModal
+    <CategoryFeaturedIconModal
       :is-open="isFeaturedIconModalOpen && !!featuredIconCategory"
-      max-width="max-w-lg"
-      title="Manage Featured Icon"
+      :category="featuredIconCategory"
       @close="closeFeaturedIconModal"
-    >
-      <div class="p-6 space-y-6">
-        <!-- Category Summary Header -->
-        <div class="flex items-center gap-4 p-4 bg-muted/40 rounded-2xl border border-border">
-          <div class="w-12 h-12 rounded-xl bg-background border border-border flex items-center justify-center text-xl shrink-0 overflow-hidden p-1">
-            <img v-if="featuredIconCategory?.featured_icon" :src="featuredIconCategory.featured_icon" alt="Featured Icon" class="w-full h-full object-contain" />
-            <span v-else>{{ featuredIconCategory?.icon || '📁' }}</span>
-          </div>
-          <div class="min-w-0 flex-1">
-            <h4 class="text-sm font-bold text-foreground truncate">{{ decodeHtmlEntities(featuredIconCategory?.name || '') }}</h4>
-            <div class="flex items-center gap-2 mt-1 flex-wrap">
-              <span class="text-[10px] font-mono text-muted-foreground uppercase font-semibold">/{{ featuredIconCategory?.slug }}</span>
-              <span v-if="featuredIconCategory?.is_featured" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                Featured Category
-              </span>
-              <span v-else class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-muted text-muted-foreground border border-border">
-                Not Featured
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Current Icon Status & Delete Action -->
-        <div class="space-y-2">
-          <label class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground ml-0.5">Current Featured Icon</label>
-          <div v-if="featuredIconCategory?.featured_icon" class="p-4 bg-background border border-border rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-12 h-12 rounded-xl border border-border bg-muted/30 p-1 flex items-center justify-center overflow-hidden shrink-0">
-                <img :src="featuredIconCategory.featured_icon" alt="Current Featured Icon" class="w-full h-full object-contain" />
-              </div>
-              <div class="min-w-0">
-                <p class="text-xs font-bold text-foreground">Custom Featured Icon Active</p>
-                <p class="text-[10px] text-muted-foreground font-mono truncate max-w-[200px]">{{ featuredIconCategory.featured_icon }}</p>
-              </div>
-            </div>
-
-            <!-- Delete Icon Action -->
-            <div class="flex flex-col items-end gap-1 shrink-0">
-              <UiButton
-                type="button"
-                size="sm"
-                variant="outline"
-                class="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 h-8 px-3 text-xs font-bold gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="featuredIconCategory?.is_featured === true || isIconDeleting"
-                @click="isDeleteIconConfirmOpen = true"
-                title="Delete featured icon"
-              >
-                <Trash2 class="w-3.5 h-3.5" />
-                <span>Delete Icon</span>
-              </UiButton>
-              <span v-if="featuredIconCategory?.is_featured === true" class="text-[9px] text-amber-600 dark:text-amber-400 font-semibold max-w-[160px] text-right leading-tight">
-                Cannot delete icon while category is featured. Unfeature first.
-              </span>
-            </div>
-          </div>
-          <div v-else class="p-4 bg-muted/20 border border-dashed border-border rounded-2xl flex items-center gap-3 text-xs text-muted-foreground">
-            <div class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-              <ImageIcon class="w-4 h-4 text-muted-foreground" />
-            </div>
-            <span>No custom featured icon uploaded yet for this category.</span>
-          </div>
-        </div>
-
-        <!-- Selected New File Preview -->
-        <div v-if="selectedIconFile && selectedIconPreviewUrl" class="space-y-2 animate-in fade-in duration-200">
-          <label class="text-[10px] uppercase font-bold tracking-widest text-primary font-bold ml-0.5">New Icon Selected for Upload</label>
-          <div class="p-4 bg-primary/5 border border-primary/30 rounded-2xl flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-12 h-12 rounded-xl border border-primary/30 bg-background p-1 flex items-center justify-center overflow-hidden shrink-0">
-                <img :src="selectedIconPreviewUrl" alt="Selected Icon Preview" class="w-full h-full object-contain" />
-              </div>
-              <div class="min-w-0">
-                <p class="text-xs font-bold text-foreground truncate">{{ selectedIconFile.name }}</p>
-                <p class="text-[10px] text-muted-foreground font-mono">
-                  Size: {{ (selectedIconFile.size / 1024).toFixed(1) }} KB
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              @click="selectedIconFile = null; clearIconPreview(); iconValidationError = null;"
-              class="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors cursor-pointer"
-              title="Remove selected file"
-            >
-              <X class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        <!-- File Upload Dropzone -->
-        <div class="space-y-2">
-          <label class="text-[10px] uppercase font-bold tracking-widest text-muted-foreground ml-0.5">
-            {{ featuredIconCategory?.featured_icon ? 'Replace Icon File' : 'Upload Icon File' }}
-          </label>
-          <div
-            @dragover="onIconDragOver"
-            @dragleave="onIconDragLeave"
-            @drop="onIconDrop"
-            @click="iconFileInput?.click()"
-            :class="cn(
-              'border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all space-y-2 min-h-[140px]',
-              isIconDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50 bg-muted/20'
-            )"
-          >
-            <input
-              ref="iconFileInput"
-              type="file"
-              class="hidden"
-              accept="image/png,image/webp,image/svg+xml,.png,.webp,.svg"
-              @change="(e) => { const files = (e.target as HTMLInputElement).files; if (files && files.length) handleIconFileChange(files[0] ?? null); }"
-            />
-            <div class="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-muted-foreground shadow-2xs">
-              <Upload class="w-5 h-5" />
-            </div>
-            <div class="space-y-0.5">
-              <p class="text-xs font-bold text-foreground">
-                Drag & drop icon file here, or <span class="text-primary hover:underline">browse</span>
-              </p>
-              <p class="text-[10px] text-muted-foreground">
-                Supported: <span class="font-bold uppercase text-foreground">PNG, WebP, SVG</span> (Max: 100KB)
-              </p>
-              <p class="text-[10px] text-muted-foreground font-medium">
-                PNG/WebP required dimensions: <span class="font-bold text-foreground">64×64 px (Square)</span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Validation Error Banner -->
-        <div v-if="iconValidationError" class="p-3 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-2.5 text-xs text-destructive font-medium animate-in fade-in duration-200">
-          <AlertCircle class="w-4 h-4 shrink-0" />
-          <span>{{ iconValidationError }}</span>
-        </div>
-
-        <!-- Footer Actions -->
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
-          <UiButton
-            type="button"
-            variant="outline"
-            class="rounded-xl h-10 px-5 text-xs font-bold cursor-pointer"
-            @click="closeFeaturedIconModal"
-            :disabled="isIconUploading"
-          >
-            Cancel
-          </UiButton>
-          <UiButton
-            type="button"
-            class="rounded-xl h-10 px-5 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/95 gap-2 cursor-pointer disabled:opacity-50"
-            :disabled="!selectedIconFile || !!iconValidationError || isIconUploading"
-            @click="handleUploadFeaturedIcon"
-          >
-            <Loader2 v-if="isIconUploading" class="w-4 h-4 animate-spin" />
-            <Upload v-else class="w-3.5 h-3.5" />
-            <span>{{ featuredIconCategory?.featured_icon ? 'Replace Featured Icon' : 'Upload Featured Icon' }}</span>
-          </UiButton>
-        </div>
-      </div>
-    </UiAdminModal>
-
-    <!-- Delete Featured Icon Confirmation Modal -->
-    <UiAdminModal
-      :is-open="isDeleteIconConfirmOpen && !!featuredIconCategory"
-      max-width="max-w-md"
-      :show-close-button="false"
-      @close="isDeleteIconConfirmOpen = false"
-    >
-      <div class="p-6 space-y-6">
-        <div class="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center">
-          <Trash2 class="w-6 h-6" />
-        </div>
-
-        <div>
-          <h3 class="text-lg font-bold text-foreground">Delete Featured Icon</h3>
-          <p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-            Are you sure you want to delete the featured icon for Category <span class="font-bold text-foreground">"{{ decodeHtmlEntities(featuredIconCategory?.name || '') }}"</span>? This will remove the icon asset from the category.
-          </p>
-        </div>
-
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <UiButton
-            variant="outline"
-            class="rounded-xl h-10 px-5 text-xs font-bold cursor-pointer"
-            @click="isDeleteIconConfirmOpen = false"
-            :disabled="isIconDeleting"
-          >
-            Cancel
-          </UiButton>
-
-          <UiButton
-            class="rounded-xl h-10 px-5 text-xs font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2 cursor-pointer"
-            @click="handleDeleteFeaturedIcon"
-            :disabled="isIconDeleting"
-          >
-            <Loader2 v-if="isIconDeleting" class="w-4 h-4 animate-spin" />
-            <Trash2 v-else class="w-3.5 h-3.5" />
-            <span>Delete Icon</span>
-          </UiButton>
-        </div>
-      </div>
-    </UiAdminModal>
+      @updated="handleFeaturedIconUpdated"
+    />
 
     <!-- Unfeature Category Confirmation Modal -->
     <UiAdminModal

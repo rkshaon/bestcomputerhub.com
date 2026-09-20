@@ -800,6 +800,51 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<CategoryFormModal>`
+- **Exact File Location**: `/features/admin/categories/components/CategoryFormModal.vue`
+- **Component Type**: Form component / Admin Modal
+- **Scope**: Admin
+- **Purpose**: Modal dialog form for creating and editing catalog category records.
+- **Routes/Pages Used**: Admin Categories Page (`/admin/categories/`).
+- **Main Responsibilities**:
+  - Render form fields for classification name, slug code, parent category dropdown, order priority index, visual symbol icon emoji, image URL, short description title, short description text, and operational memo rich text editor.
+  - Handle auto-slug generation in create mode and validation for required category name and slug.
+  - Formulate minimal PATCH update payloads by comparing modified fields against original baseline values.
+  - Dispatch create (`categoryService.createCategory`) and update (`categoryService.updateCategory`) API mutations.
+- **What It Explicitly Does Not Own**: Category list table, category tree hierarchy view, bulk CSV import modal, featured categories icon manager, or URL modal query parameter resolution (managed by parent page's `useAdminModalState`).
+- **State Owned**: Form payload ref, original details baseline ref, validation error state, submit pending loading state.
+- **Calls API**: Yes (`categoryService.createCategory`, `categoryService.updateCategory`).
+- **Related Composables/Services**: `useCategoryService`, `useToast`, `UiRichTextEditor`.
+- **Responsive Responsibility**: Max-width desktop modal sizing (`max-w-xl`), scrollable form body (`max-h-[60vh]`), responsive grid inputs.
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Minimal PATCH delta submission for edit updates and automatic slug generation in create mode.
+- **Known Architectural Risks**: None.
+
+---
+
+### `<CategoryFeaturedIconModal>`
+- **Exact File Location**: `/features/admin/categories/components/CategoryFeaturedIconModal.vue`
+- **Component Type**: Form component / Admin Modal
+- **Scope**: Admin
+- **Purpose**: Modal dialog form for uploading, replacing, validating, and deleting category featured icon assets.
+- **Routes/Pages Used**: Admin Categories Page (`/admin/categories/`).
+- **Main Responsibilities**:
+  - Render category summary header, current custom featured icon status card with deletion action, new icon file preview card, drag-and-drop file upload dropzone, and validation error banner.
+  - Handle client-side file validation (PNG, WebP, SVG format validation, max 100KB file size limit, required 64x64px square dimensions for PNG/WebP via `validateFeaturedCategoryIcon`).
+  - Manage image object URL lifecycle cleanup (`URL.revokeObjectURL`) on unmount or file selection changes.
+  - Handle icon upload mutation (`categoryService.uploadFeaturedCategoryIcon`) and icon deletion mutation (`categoryService.deleteFeaturedCategoryIcon`) with deletion confirmation dialog (`isDeleteIconConfirmOpen`).
+  - Prevent deletion if the category is currently marked as featured.
+- **What It Explicitly Does Not Own**: Category list table, category tree hierarchy view, featured category reordering (handled by `/admin/categories/featured/`), or feature/unfeature toggle operations.
+- **State Owned**: File selection refs, image preview object URL ref, validation error state, drag-and-drop active state, upload loading state, deletion loading state, delete confirmation modal state.
+- **Calls API**: Yes (`categoryService.uploadFeaturedCategoryIcon`, `categoryService.deleteFeaturedCategoryIcon`).
+- **Related Composables/Services**: `useCategoryService`, `validateFeaturedCategoryIcon`, `useToast`, `UiAdminModal`, `Button`.
+- **Responsive Responsibility**: Max-width desktop modal sizing (`max-w-lg`), scrollable modal body.
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: 64x64px square validation, object URL disposal, drag-and-drop file dropzone behavior, and blocking icon deletion while category is featured.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<UserFormModal>`
 - **Exact File Location**: `/components/admin/UserFormModal.vue`
 - **Component Type**: Form component / Admin Modal
