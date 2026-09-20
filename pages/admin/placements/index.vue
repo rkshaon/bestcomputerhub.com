@@ -487,90 +487,93 @@ onMounted(async () => {
       max-width="max-w-xl"
       @close="modalState.closeModal()"
     >
-      <form @submit.prevent="handleFormSubmit" class="space-y-4 py-1">
-        <!-- Error Banner -->
-        <div v-if="formError" class="p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3 text-destructive text-xs font-medium animate-shake">
-          <AlertCircle class="w-4.5 h-4.5 shrink-0" />
-          <span>{{ formError }}</span>
-        </div>
-
-        <div class="grid grid-cols-1 gap-4">
-          <!-- Name Field -->
-          <div class="space-y-1.5">
-            <label for="placement-name" class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Placement Name <span class="text-destructive">*</span>
-            </label>
-            <input
-              id="placement-name"
-              ref="nameInputRef"
-              v-model="formPayload.name"
-              type="text"
-              placeholder="e.g., Homepage Hero Slider"
-              class="w-full h-10 px-3.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all"
-              required
-            />
-            <p v-if="fieldErrors.name" class="text-[11px] text-destructive font-medium pl-0.5">
-              {{ fieldErrors.name }}
-            </p>
+      <form @submit.prevent="handleFormSubmit" class="w-full relative overflow-hidden flex flex-col cursor-default">
+        <!-- Scrollable Form Fields -->
+        <div class="p-6 md:p-8 space-y-5 overflow-y-auto max-h-[60vh]">
+          <!-- Error Banner -->
+          <div v-if="formError" class="p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3 text-destructive text-xs font-medium animate-shake">
+            <AlertCircle class="w-4.5 h-4.5 shrink-0" />
+            <span>{{ formError }}</span>
           </div>
 
-          <!-- Code Field (slug) -->
-          <div class="space-y-1.5">
-            <label for="placement-code" class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Placement Code <span class="text-destructive">*</span>
-            </label>
-            <input
-              id="placement-code"
-              v-model="formPayload.code"
-              type="text"
-              placeholder="e.g., homepage_hero"
-              class="w-full h-10 px-3.5 rounded-xl border border-border bg-background text-sm font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all uppercase"
-              required
-            />
-            <p class="text-[10px] text-muted-foreground pl-0.5">
-              Unique programmatic identifier used by developers to query active banners in specific zones. Matches alphanumeric characters, underscores, and hyphens.
-            </p>
-            <p v-if="fieldErrors.code" class="text-[11px] text-destructive font-medium pl-0.5">
-              {{ fieldErrors.code }}
-            </p>
-          </div>
-
-          <!-- Description Field -->
-          <div class="space-y-1.5">
-            <label for="placement-desc" class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Description
-            </label>
-            <textarea
-              id="placement-desc"
-              v-model="formPayload.description"
-              rows="3"
-              placeholder="Provide a detailed description of where this placement is located on the storefront..."
-              class="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all resize-none"
-            ></textarea>
-            <p v-if="fieldErrors.description" class="text-[11px] text-destructive font-medium pl-0.5">
-              {{ fieldErrors.description }}
-            </p>
-          </div>
-
-          <!-- Status Toggle -->
-          <div class="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/20">
-            <div class="space-y-0.5">
-              <span class="text-xs font-bold uppercase tracking-wider text-foreground">Is Active</span>
-              <p class="text-[10px] text-muted-foreground">Enable or disable this entire placement zone across the storefront.</p>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer select-none">
-              <input 
-                type="checkbox" 
-                v-model="formPayload.is_active" 
-                class="sr-only peer"
+          <div class="grid grid-cols-1 gap-4">
+            <!-- Name Field -->
+            <div class="space-y-1.5">
+              <label for="placement-name" class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Placement Name <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="placement-name"
+                ref="nameInputRef"
+                v-model="formPayload.name"
+                type="text"
+                placeholder="e.g., Homepage Hero Slider"
+                class="w-full h-10 px-3.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all"
+                required
               />
-              <div class="w-10 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-            </label>
+              <p v-if="fieldErrors.name" class="text-[11px] text-destructive font-medium pl-0.5">
+                {{ fieldErrors.name }}
+              </p>
+            </div>
+
+            <!-- Code Field (slug) -->
+            <div class="space-y-1.5">
+              <label for="placement-code" class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Placement Code <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="placement-code"
+                v-model="formPayload.code"
+                type="text"
+                placeholder="e.g., homepage_hero"
+                class="w-full h-10 px-3.5 rounded-xl border border-border bg-background text-sm font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all uppercase"
+                required
+              />
+              <p class="text-[10px] text-muted-foreground pl-0.5">
+                Unique programmatic identifier used by developers to query active banners in specific zones. Matches alphanumeric characters, underscores, and hyphens.
+              </p>
+              <p v-if="fieldErrors.code" class="text-[11px] text-destructive font-medium pl-0.5">
+                {{ fieldErrors.code }}
+              </p>
+            </div>
+
+            <!-- Description Field -->
+            <div class="space-y-1.5">
+              <label for="placement-desc" class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Description
+              </label>
+              <textarea
+                id="placement-desc"
+                v-model="formPayload.description"
+                rows="3"
+                placeholder="Provide a detailed description of where this placement is located on the storefront..."
+                class="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all resize-none"
+              ></textarea>
+              <p v-if="fieldErrors.description" class="text-[11px] text-destructive font-medium pl-0.5">
+                {{ fieldErrors.description }}
+              </p>
+            </div>
+
+            <!-- Status Toggle -->
+            <div class="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/20">
+              <div class="space-y-0.5">
+                <span class="text-xs font-bold uppercase tracking-wider text-foreground">Is Active</span>
+                <p class="text-[10px] text-muted-foreground">Enable or disable this entire placement zone across the storefront.</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer select-none">
+                <input 
+                  type="checkbox" 
+                  v-model="formPayload.is_active" 
+                  class="sr-only peer"
+                />
+                <div class="w-10 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              </label>
+            </div>
           </div>
         </div>
 
-        <!-- Form Actions Footer -->
-        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-border mt-5">
+        <!-- Form Actions Footer (Fixed) -->
+        <div class="flex items-center justify-end gap-2.5 px-6 md:px-8 py-4 border-t border-border bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
           <UiButton
             type="button"
             variant="outline"
@@ -600,16 +603,18 @@ onMounted(async () => {
       max-width="max-w-md"
       @close="modalState.closeModal()"
     >
-      <div class="space-y-4 py-1">
-        <div class="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive flex gap-3">
-          <AlertCircle class="w-5 h-5 shrink-0 mt-0.5" />
-          <div class="text-xs leading-relaxed">
-            <p class="font-bold mb-1">Warning: Irreversible Operation</p>
-            <p>Deleting a placement zone is permanent. Before completing deletion, you must ensure that no active banners are assigned to this placement, or they will fail to render on the storefront.</p>
+      <div class="w-full flex flex-col">
+        <div class="p-6 md:p-8 space-y-4">
+          <div class="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive flex gap-3">
+            <AlertCircle class="w-5 h-5 shrink-0 mt-0.5" />
+            <div class="text-xs leading-relaxed">
+              <p class="font-bold mb-1">Warning: Irreversible Operation</p>
+              <p>Deleting a placement zone is permanent. Before completing deletion, you must ensure that no active banners are assigned to this placement, or they will fail to render on the storefront.</p>
+            </div>
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
+        <div class="flex items-center justify-end gap-2.5 px-6 md:px-8 py-4 border-t border-border bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
           <UiButton
             type="button"
             variant="outline"
