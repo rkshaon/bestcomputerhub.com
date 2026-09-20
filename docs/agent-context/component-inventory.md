@@ -404,6 +404,24 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<UpdateNotification>`
+- **Exact File Location**: `/components/layout/UpdateNotification.vue`
+- **Component Type**: Layout UI helper / Notification
+- **Scope**: Shared
+- **Purpose**: Non-intrusive floating toast alert notifying users when a new deployment build version is available.
+- **Routes/Pages Used**: Storefront and Admin default layouts.
+- **Main Responsibilities**: Monitor deployment version via `useVersionCheck` and prompt user to refresh for the latest release.
+- **What It Explicitly Does Not Own**: Deployment building or version calculation logic.
+- **State Owned**: None (delegates to `useVersionCheck`).
+- **Calls API**: Indirectly checks `/version.json` via `useVersionCheck`.
+- **Related Composables/Services**: `useVersionCheck`.
+- **Responsive Responsibility**: Floating alert positioning (`top-4 left-4 right-4 sm:left-auto sm:right-6`).
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Non-intrusive dismissal and explicit user-driven reload trigger (`refreshApp`).
+- **Known Architectural Risks**: None.
+
+---
+
 ### Admin Layout Shell (`/layouts/admin.vue`)
 - **Exact File Location**: `/layouts/admin.vue`
 - **Component Type**: Layout
@@ -450,6 +468,26 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<RelatedProductCard>`
+- **Exact File Location**: `/components/commerce/RelatedProductCard.vue`
+- **Component Type**: Domain component / Data-display
+- **Scope**: Storefront
+- **Purpose**: Compact product card representation used for related recommendations and upsell sections.
+- **Routes/Pages Used**: Product detail page (`/product/[slug]/`).
+- **Main Responsibilities**:
+  - Render product thumbnail image, brand name, formatted title with `decodeHtmlEntities`, and prices via `formatCurrency`.
+  - Provide quick "Add to Cart" action button.
+- **What It Explicitly Does Not Own**: Cart state logic (delegates to `useCartStore`).
+- **State Owned**: None.
+- **Calls API**: No.
+- **Related Composables/Services**: `useCartStore`, `formatCurrency`, `decodeHtmlEntities`.
+- **Responsive Responsibility**: Compact height (`h-32 sm:h-36`) image area for dense grid placement.
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: Decodes HTML entities in titles and formats price values.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<CommerceCartDrawer>` / `<CartDrawer>`
 - **Exact File Location**: `/components/commerce/CartDrawer.vue`
 - **Component Type**: Domain component / Feature
@@ -490,24 +528,6 @@ Components are classified using four standard metadata properties:
 - **Responsive Responsibility**: Fluid height aspect ratio, responsive hero headline typography (`text-3xl sm:text-5xl lg:text-6xl`).
 - **Reusability Level**: Medium
 - **Important Behavior to Preserve**: Touch swipe support and accessibility motion reduction checks (`usePreferredReducedMotion`).
-- **Known Architectural Risks**: None.
-
----
-
-### `<HeroSlide>`
-- **Exact File Location**: `/components/home/HeroSlide.vue`
-- **Component Type**: Domain / Home presentation
-- **Scope**: Storefront
-- **Purpose**: Individual slide frame component inside `<HeroSection>`.
-- **Routes/Pages Used**: Used inside `<HeroSection>`.
-- **Main Responsibilities**: Render hero slide background image, promotional badge tag, headline, description body, and CTA action buttons.
-- **What It Explicitly Does Not Own**: Slider timing or index cycling.
-- **State Owned**: None.
-- **Calls API**: No
-- **Related Composables/Services**: None.
-- **Responsive Responsibility**: Two-column layout on desktop (`grid-cols-1 lg:grid-cols-2`), stacked text and image on mobile.
-- **Reusability Level**: Medium
-- **Important Behavior to Preserve**: High visual contrast and CTA button hover animations.
 - **Known Architectural Risks**: None.
 
 ---
@@ -667,6 +687,27 @@ Components are classified using four standard metadata properties:
 - **Reusability Level**: High
 - **Important Behavior to Preserve**: Primary image indicator badge and drag-and-drop file upload handlers.
 - **Known Architectural Risks**: File size is large (~1,560 lines) owing to inline upload dialogs and gallery drag-and-drop reordering logic.
+
+---
+
+### `<ProductImageCropModal>`
+- **Exact File Location**: `/components/admin/ProductImageCropModal.vue`
+- **Component Type**: Form component / Admin Modal
+- **Scope**: Admin
+- **Purpose**: Interactive image crop and scale dialog allowing admins to crop non-square images to a 1:1 canvas before uploading or replacing product images.
+- **Routes/Pages Used**: Admin Product Images Manager (`/admin/product-images/`), `<ProductImageGallery>`.
+- **Main Responsibilities**:
+  - Render source image preview with adjustable zoom scale and drag-to-reposition pan controls.
+  - Execute offscreen canvas cropping and resizing via `cropAndResizeSquareImage`.
+  - Submit cropped image file payload to backend product image API.
+- **What It Explicitly Does Not Own**: Gallery list state.
+- **State Owned**: `cropX`, `cropY`, `cropSize`, `zoomScale`, drag coordinates.
+- **Calls API**: Yes (`productService.replaceProductImage`).
+- **Related Composables/Services**: `cropAndResizeSquareImage`, `useProductService`, `useToast`.
+- **Responsive Responsibility**: Centered modal canvas sizing with touch/mouse drag support.
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Safe crop bounding box clamping and maximum output dimension capping (500x500px).
+- **Known Architectural Risks**: None.
 
 ---
 

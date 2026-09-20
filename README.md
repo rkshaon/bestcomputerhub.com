@@ -473,6 +473,9 @@ api-conventions.md
 ecommerce-domain.md
 design-system.md
 seo-strategy.md
+disabled-features.md
+component-inventory.md
+utility-inventory.md
 ```
 
 Task-specific workflows are stored in:
@@ -485,10 +488,11 @@ Current skills include:
 
 ```text
 api-integration/
+seo/
+storefront-inline-editing/
 storefront-page/
 ui-component/
-admin-crud/
-seo/
+url-driven-dialogs/
 ```
 
 Each skill contains a `SKILL.md`.
@@ -586,16 +590,20 @@ Project architecture and engineering context:
 /docs/agent-context/ecommerce-domain.md
 /docs/agent-context/design-system.md
 /docs/agent-context/seo-strategy.md
+/docs/agent-context/disabled-features.md
+/docs/agent-context/component-inventory.md
+/docs/agent-context/utility-inventory.md
 ```
 
 Agent workflows:
 
 ```text
 /skills/api-integration/SKILL.md
+/skills/seo/SKILL.md
+/skills/storefront-inline-editing/SKILL.md
 /skills/storefront-page/SKILL.md
 /skills/ui-component/SKILL.md
-/skills/admin-crud/SKILL.md
-/skills/seo/SKILL.md
+/skills/url-driven-dialogs/SKILL.md
 ```
 
 Global agent instructions:

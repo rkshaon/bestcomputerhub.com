@@ -16,9 +16,11 @@ POST   /api/v1/products/
 PATCH  /api/v1/products/{id}/
 DELETE /api/v1/products/{id}/
 
-## Storefront URL Route Convention (Trailing Slashes)
+## HTTP API Endpoint Trailing Slashes
 
-Consistent with backend endpoints, all frontend Storefront routes, paths, static/dynamic links, breadcrumbs, and programmatically constructed storefront URLs must strictly include a **trailing slash `/`** (e.g., `/`, `/product/slug/`, `/product-category/slug/`). No storefront url-generating code may intentionally output paths missing a trailing slash.
+All Django REST Framework HTTP API endpoints must include a **trailing slash `/`** (e.g., `/api/v1/products/`).
+
+*(Note: Nuxt storefront browser route conventions such as `/product/{slug}/` are governed separately by `/docs/agent-context/seo-strategy.md` Section 9a).*
 
 ## Pagination
 
@@ -32,7 +34,7 @@ the backend contract genuinely differs.
 ### Page Size Parameter Standard
 
 Admin list endpoints with numbered pagination support the `page_size` query parameter (e.g. `GET /api/v1/{resource}/?page=1&page_size=10`).
-- **Standard Values**: `5`, `10`, `25`, `50`
+- **Standard Values**: `5`, `10`, `25`, `50`, `100`, `1000`
 - **Default Value**: `10`
 - Backend returns standard `PaginatedResponse<T>` containing `count`, `page`, `pages`, `results`, `next`, and `previous`.
 - When `page_size` changes on the frontend, request the dataset starting at `page=1`.
