@@ -201,10 +201,7 @@ defineExpose({
         class="absolute top-full left-0 right-0 z-50 mt-1.5 bg-background border border-border rounded-2xl p-4 sm:p-5 overflow-hidden space-y-3 max-h-[75vh] overflow-y-auto"
       >
         <!-- Header with matching count label and View all results button -->
-        <div class="flex items-center justify-between border-b border-border pb-2.5">
-          <p class="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
-            Matching Catalog Products
-          </p>
+        <div class="flex items-center justify-end border-b border-border pb-2.5">
           <button
             type="button"
             @click="handleSearchSubmit"
