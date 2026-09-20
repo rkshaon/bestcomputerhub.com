@@ -84,15 +84,15 @@ const handleRetry = () => {
       </NuxtLink>
     </div>
 
-    <!-- 1. Loading Skeleton State (8 Placeholders) -->
+    <!-- 1. Loading Skeleton State (10 Placeholders) -->
     <div 
       v-if="isLoading" 
-      class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8"
+      class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 lg:gap-8"
       aria-busy="true"
       aria-label="Loading products"
     >
       <div 
-        v-for="i in 8" 
+        v-for="i in 10" 
         :key="'product-skeleton-' + i" 
         class="bg-card border border-border/60 rounded-2xl overflow-hidden animate-pulse shadow-2xs flex flex-col"
       >
@@ -170,7 +170,7 @@ const handleRetry = () => {
     <!-- 4. Success Product Grid -->
     <div 
       v-else 
-      class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8"
+      class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 lg:gap-8"
     >
       <CommerceProductCard 
         v-for="product in products" 

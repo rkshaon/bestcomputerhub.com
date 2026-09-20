@@ -606,7 +606,7 @@ Components are classified using four standard metadata properties:
 - **State Owned**: Computed title highlight parts.
 - **Calls API**: No
 - **Related Composables/Services**: None.
-- **Responsive Responsibility**: Responsive 2-to-4 column grid (`grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6`).
+- **Responsive Responsibility**: Responsive 2-to-5 column grid (`grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 lg:gap-8`).
 - **Reusability Level**: High
 - **Important Behavior to Preserve**: Highlighted text title rendering logic.
 - **Known Architectural Risks**: None.
