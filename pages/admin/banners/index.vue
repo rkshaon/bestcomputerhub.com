@@ -857,6 +857,15 @@ onMounted(async () => {
         </UiButton>
 
         <UiButton 
+          variant="outline" 
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
+          to="/admin/placements/"
+        >
+          <Layers class="w-3.5 h-3.5" />
+          <span>Manage Placements</span>
+        </UiButton>
+
+        <UiButton 
           v-if="canCreate"
           class="rounded-xl h-9 px-3.5 gap-1.5 shadow-md shadow-primary/10 bg-primary text-primary-foreground font-bold text-xs"
           @click="modalState.openCreate()"
