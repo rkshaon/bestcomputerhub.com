@@ -685,10 +685,10 @@ const resetFilters = () => {
         <UiBreadcrumbs class="mb-6" :items="breadcrumbs" />
 
         <!-- Category Title & Info -->
-        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-          <div class="max-w-4xl space-y-4">
-            <!-- Category Short Description Title Heading / Editor -->
-            <div v-if="category?.short_description_title || canEditCategoryFromStorefront" class="relative group/edit">
+        <div class="w-full space-y-4">
+          <!-- Category Short Description Title Heading / Editor & Actions -->
+          <div v-if="category?.short_description_title || canEditCategoryFromStorefront || canRemoveFromMenu" class="relative group/edit flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="min-w-0 flex-1">
               <template v-if="editingField === 'short_description_title'">
                 <div class="flex items-center gap-2">
                   <input 
@@ -700,7 +700,7 @@ const resetFilters = () => {
                     @keydown.enter="saveField('short_description_title')"
                     @keydown.esc="cancelEditing"
                     :disabled="isFieldSaving === 'short_description_title'"
-                    class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none w-full max-w-2xl animate-none"
+                    class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none w-full animate-none"
                   />
                   <div v-if="isFieldSaving === 'short_description_title'" class="shrink-0">
                     <Loader2 class="w-5 h-5 animate-spin text-primary" />
@@ -730,67 +730,68 @@ const resetFilters = () => {
                 </h1>
               </template>
             </div>
-            <!-- Short Description / Inline Editor -->
-            <div v-if="editingField === 'short_description'" class="max-w-2xl w-full">
-              <div class="flex items-center gap-2">
-                <textarea 
-                  v-model="editShortDescValue"
-                  ref="shortDescInputRef"
-                  rows="2"
-                  @blur="saveField('short_description')"
-                  @keydown.enter.exact.prevent="saveField('short_description')"
-                  @keydown.esc="cancelEditing"
-                  :disabled="isFieldSaving === 'short_description'"
-                  placeholder="Enter short description..."
-                  class="w-full text-sm md:text-base bg-background border border-input rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground leading-relaxed resize-none"
-                ></textarea>
-                <div v-if="isFieldSaving === 'short_description'" class="shrink-0">
-                  <Loader2 class="w-4 h-4 animate-spin text-primary" />
-                </div>
-              </div>
-            </div>
-            <div v-else-if="category?.short_description?.trim()" class="flex items-start gap-2 max-w-2xl">
-              <p class="text-muted-foreground text-sm md:text-base leading-relaxed">
-                {{ category.short_description }}
-              </p>
-              <button 
-                v-if="canEditCategoryFromStorefront" 
-                @click="startEditing('short_description')"
-                class="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer mt-0.5"
-                title="Edit Short Description"
-                aria-label="Edit Short Description"
+
+            <!-- Remove from Menu Action for Authorized Owner/Staff -->
+            <div v-if="canRemoveFromMenu" class="shrink-0 flex items-center">
+              <button
+                type="button"
+                @click="handleRemoveFromMenu"
+                :disabled="isRemovingFromMenu"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm whitespace-nowrap"
+                title="Remove from Menu"
+                aria-label="Remove from Menu"
               >
-                <Edit2 class="w-3.5 h-3.5" />
+                <Loader2 v-if="isRemovingFromMenu" class="w-4 h-4 animate-spin shrink-0" />
+                <Menu v-else class="w-4 h-4 shrink-0" />
+                <span>Remove from Menu</span>
               </button>
             </div>
-            <button 
-              v-else-if="canEditCategoryFromStorefront"
-              type="button"
-              @click="startEditing('short_description')"
-              class="inline-flex items-center gap-2 text-sm text-muted-foreground/80 hover:text-foreground italic cursor-pointer transition-colors group/edit-empty text-left"
-              title="Edit Short Description"
-              aria-label="Edit the short description to display"
-            >
-              <Edit2 class="w-3.5 h-3.5 text-muted-foreground group-hover/edit-empty:text-foreground transition-colors shrink-0" />
-              <span>Edit the short description to display</span>
-            </button>
           </div>
 
-          <!-- Remove from Menu Action for Authorized Owner/Staff -->
-          <div v-if="canRemoveFromMenu" class="shrink-0 flex items-center pt-1">
-            <button
-              type="button"
-              @click="handleRemoveFromMenu"
-              :disabled="isRemovingFromMenu"
-              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm whitespace-nowrap"
-              title="Remove from Menu"
-              aria-label="Remove from Menu"
+          <!-- Short Description / Inline Editor -->
+          <div v-if="editingField === 'short_description'" class="w-full">
+            <div class="flex items-center gap-2 w-full">
+              <textarea 
+                v-model="editShortDescValue"
+                ref="shortDescInputRef"
+                rows="2"
+                @blur="saveField('short_description')"
+                @keydown.enter.exact.prevent="saveField('short_description')"
+                @keydown.esc="cancelEditing"
+                :disabled="isFieldSaving === 'short_description'"
+                placeholder="Enter short description..."
+                class="w-full flex-1 min-w-0 text-sm md:text-base bg-background border border-input rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground leading-relaxed resize-none"
+              ></textarea>
+              <div v-if="isFieldSaving === 'short_description'" class="shrink-0">
+                <Loader2 class="w-4 h-4 animate-spin text-primary" />
+              </div>
+            </div>
+          </div>
+          <div v-else-if="category?.short_description?.trim()" class="w-full flex items-start gap-2">
+            <p class="w-full flex-1 min-w-0 text-muted-foreground text-sm md:text-base leading-relaxed break-words">
+              {{ category.short_description }}
+            </p>
+            <button 
+              v-if="canEditCategoryFromStorefront" 
+              @click="startEditing('short_description')"
+              class="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer mt-0.5"
+              title="Edit Short Description"
+              aria-label="Edit Short Description"
             >
-              <Loader2 v-if="isRemovingFromMenu" class="w-4 h-4 animate-spin shrink-0" />
-              <Menu v-else class="w-4 h-4 shrink-0" />
-              <span>Remove from Menu</span>
+              <Edit2 class="w-3.5 h-3.5" />
             </button>
           </div>
+          <button 
+            v-else-if="canEditCategoryFromStorefront"
+            type="button"
+            @click="startEditing('short_description')"
+            class="inline-flex items-center gap-2 text-sm text-muted-foreground/80 hover:text-foreground italic cursor-pointer transition-colors group/edit-empty text-left"
+            title="Edit Short Description"
+            aria-label="Edit the short description to display"
+          >
+            <Edit2 class="w-3.5 h-3.5 text-muted-foreground group-hover/edit-empty:text-foreground transition-colors shrink-0" />
+            <span>Edit the short description to display</span>
+          </button>
         </div>
 
         <!-- Immediate Subcategory Quick Filter Row -->
