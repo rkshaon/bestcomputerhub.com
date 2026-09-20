@@ -198,10 +198,10 @@ defineExpose({
     >
       <div 
         v-if="isOpen && searchQueryModel.trim().length >= 1" 
-        class="absolute top-full left-0 right-0 z-50 mt-1.5 bg-background/98 backdrop-blur-xl border border-border/80 rounded-2xl shadow-2xl p-4 sm:p-5 overflow-hidden space-y-3 max-h-[75vh] overflow-y-auto"
+        class="absolute top-full left-0 right-0 z-50 mt-1.5 bg-background border border-border rounded-2xl p-4 sm:p-5 overflow-hidden space-y-3 max-h-[75vh] overflow-y-auto"
       >
         <!-- Header with matching count label and View all results button -->
-        <div class="flex items-center justify-between border-b border-border/40 pb-2.5">
+        <div class="flex items-center justify-between border-b border-border pb-2.5">
           <p class="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
             Matching Catalog Products
           </p>
@@ -235,9 +235,9 @@ defineExpose({
             :key="product.id"
             :to="`/product/${product.slug}/`"
             @click="closeDropdown"
-            class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-accent border border-transparent hover:border-border/60 transition-all group"
+            class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-accent border border-transparent hover:border-border transition-all group"
           >
-            <div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border/50">
+            <div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-border">
               <img 
                 v-if="product.images && product.images.length > 0" 
                 :src="product.images[0]" 
