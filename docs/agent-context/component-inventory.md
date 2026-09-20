@@ -778,6 +778,28 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<BannerFormModal>`
+- **Exact File Location**: `/features/admin/banners/components/BannerFormModal.vue`
+- **Component Type**: Form component / Admin Modal
+- **Scope**: Admin
+- **Purpose**: Modal dialog form for creating and editing storefront promotional banner records.
+- **Routes/Pages Used**: Admin Banners Page (`/admin/banners/`).
+- **Main Responsibilities**:
+  - Render form fields for banner zone placement selection, display order, active toggle, headline title, promo description, CTA label, CTA action link, desktop & mobile image drag-and-drop dropzones with live preview/replacement, and scheduling date window.
+  - Handle client-side field validation (required placement, required desktop image for new banners, non-negative order integer, schedule end date after start date).
+  - Dispatch create (`bannerService.createBanner`) and update (`bannerService.updateBanner`) API mutations with multipart `FormData` (when uploading or replacing image assets) or JSON payload (when retaining existing image URLs).
+  - Manage object URL lifecycle cleanup on unmount or file replacement to prevent memory leaks.
+- **What It Explicitly Does Not Own**: Banner list table, placement zone manager, drag-and-drop display order reordering, or URL modal query parameter resolution (managed by parent page's `useAdminModalState`).
+- **State Owned**: Form payload ref, file upload refs & preview URLs, drag-over states, field validation errors, submission loading state.
+- **Calls API**: Yes (`bannerService.createBanner`, `bannerService.updateBanner`).
+- **Related Composables/Services**: `useBannerService`, `useAdminPermissions`, `useToast`.
+- **Responsive Responsibility**: Max-width desktop modal sizing (`max-w-3xl`), scrollable form body (`max-h-[60vh]`), responsive 2-column image dropzones (`grid-cols-1 md:grid-cols-2`).
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Object URL memory cleanup on unmount and image drag-and-drop file replacement behavior.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<UserFormModal>`
 - **Exact File Location**: `/components/admin/UserFormModal.vue`
 - **Component Type**: Form component / Admin Modal
