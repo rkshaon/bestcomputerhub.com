@@ -80,7 +80,9 @@ onMounted(async () => {
     <!-- Brand Marquee -->
     <HomeBrandMarquee :brands="brandsList" />
 
-    <!-- Special Promo Banner -->
+    <!-- TEMPORARILY DISABLED: Enterprise Offer Promo Banner -->
+    <!--
     <HomePromoBanner />
+    -->
   </div>
 </template>

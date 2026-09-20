@@ -115,5 +115,20 @@ This registry tracks application features that have been temporarily commented o
   3. Remove the HTML comment wrappers around the respective buttons/links.
 
 ---
+
+## 6. Feature: Storefront Enterprise Offer Promo Banner (`PromoBanner.vue`)
+
+- **Status**: Temporarily Hidden
+- **Reason**: Client specification requires temporarily hiding the Enterprise Offer promo banner ("Professional Workstations for Remote Innovation") from the storefront homepage.
+- **Scope**: Storefront homepage (`/pages/index.vue`).
+- **Component Preserved**: `/components/home/PromoBanner.vue` (file, markup, styles, CTA button, and internal structure preserved intact).
+- **File**: `/pages/index.vue`
+- **Preservation**: `<HomePromoBanner />` call wrapped in HTML comments inside the homepage template.
+- **Restoration Steps**:
+  1. Open `/pages/index.vue`.
+  2. Locate `<!-- TEMPORARILY DISABLED: Enterprise Offer Promo Banner -->`.
+  3. Remove the HTML comment wrapper around `<HomePromoBanner />`.
+
+---
 *Date Registered*: September 20, 2026
 
