@@ -223,6 +223,7 @@ All administrative list, table, and CRUD interfaces must adhere to established s
 - **Task-Local Changes**: Agents may autonomously perform small, task-local, convention-preserving structural changes required to complete the specific user request.
 - **No Unsolicited Restructuring**: Do not perform broad architectural restructuring, authentication redesign, dependency replacement, or cross-domain refactoring unless explicitly instructed.
 - **Respect User Intent**: Build what was requested cleanly and accurately without introducing unrequested features, speculative abstractions, or cosmetic rewrites of working code.
+- **No Auxiliary/Analysis Scripts**: Do not create auxiliary, temporary, or automatic auditing/analysis scripts (e.g., Python `.py` scripts, shell scripts, Jupyter notebooks, or conversion tools) to analyze the workspace. All auditing, code scanning, or refactoring analysis must be performed using standard workspace tools (e.g., `grep` or IDE search utilities) without writing temporary code files.
 
 ---
 
@@ -232,7 +233,7 @@ Before considering any task complete, verify that:
 1. **TypeScript Validation Passes**: `pnpm lint` (which runs `nuxt typecheck`) passes with zero type errors.
 2. **Production Build Passes**: `pnpm build` completes successfully.
 3. **Flows & Functionality Verified**: All modified workflows, interactive states, and edge cases operate cleanly in the browser.
-4. **No Temporary Artifacts**: Remove all temporary debugging code, console logs, and scratch files.
+4. **No Temporary Artifacts**: Remove all temporary debugging code, console logs, scratch files, and any auxiliary search/auditing scripts (e.g. `.py` or `.sh` files).
 5. **Architectural & Data Compliance**: No architectural boundary was violated, and no fabricated production commerce data was introduced.
 6. **Inventories Updated**: Any new or updated reusable utility, composable, or component is documented in `/docs/agent-context/utility-inventory.md` or `/docs/agent-context/component-inventory.md`.
 
