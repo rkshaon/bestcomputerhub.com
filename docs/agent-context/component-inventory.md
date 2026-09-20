@@ -974,6 +974,28 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<ScanRunModal>`
+- **Exact File Location**: `/features/admin/content-security/components/ScanRunModal.vue`
+- **Component Type**: Feature component / Form component
+- **Scope**: Admin
+- **Purpose**: Modal dialog component for configuring and initiating new content security scans (specific, type-based, or system-wide).
+- **Routes/Pages Used**: Content Security Admin (`/admin/content-security/`).
+- **Main Responsibilities**:
+  - Provide scan mode configuration UI.
+  - Execute scan requests via `contentSecurityService.runContentScan`.
+  - Manage submission loading states and success/error notifications.
+  - Emit completion events to parent for findings/history refresh.
+- **What It Explicitly Does Not Own**: Scan history listing, findings listing, or detection rule management.
+- **State Owned**: `isSubmittingScanRun`, `scanMode`, `selectedScanContentType`, `selectedScanObjectId`, `scanFieldsInput`, `availableScanObjects`, `isScanObjectsLoading`.
+- **Calls API**: Yes (`contentSecurityService.runContentScan`, search endpoints for specific scan targets).
+- **Related Composables/Services**: `useContentSecurityService`, `useProductService`, `useCategoryService`, `useBrandService`, `useBlogService`, `useToast`.
+- **Responsive Responsibility**: Standardized modal responsiveness with compact form inputs.
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: Consistent scan submission payload structure, permission enforcement via backend, debounced search fetching.
+- **Known Architectural Risks**: None.
+
+---
+
 ## 5. Architectural Inferences & Source Code Authority
 
 1. **Inferred Classifications**: All components documented above have been verified directly against source code files in `/components/`, `/layouts/`, and `/features/`. No speculative or unverified components are included.
