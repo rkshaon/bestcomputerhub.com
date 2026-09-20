@@ -58,7 +58,7 @@ const handleCompareClick = () => {
 };
 
 const isSuperAdmin = computed(() => {
-  return authStore.isAdmin;
+  return authStore.isLoggedIn && authStore.isAdmin;
 });
 
 // Load static fallback initially to prevent hydration mismatch
@@ -684,7 +684,9 @@ if (process.client) {
             <span>PC Builder</span>
           </NuxtLink>
 
-          <!-- Compare -->
+          <!-- TEMPORARILY HIDDEN: Compare Header Action -->
+          <!-- Restore when compare functionality in the top header is required again. -->
+          <!--
           <button 
             @click="handleCompareClick"
             type="button"
@@ -695,12 +697,12 @@ if (process.client) {
             <ArrowLeftRight class="w-4 h-4 text-primary shrink-0" />
             <span>Compare</span>
           </button>
+          -->
 
-          <!-- Relocated Utility Bar Links -->
           <!-- Track Your Order -->
           <NuxtLink 
             to="/account/" 
-            class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
             title="Track Your Order"
             aria-label="Track Your Order"
           >
@@ -708,7 +710,9 @@ if (process.client) {
             <span>Track Order</span>
           </NuxtLink>
 
-          <!-- Insights -->
+          <!-- TEMPORARILY HIDDEN: Tech Insights Header Action -->
+          <!-- Restore when blog insights link in the top header is required again. -->
+          <!--
           <NuxtLink 
             to="/blog/" 
             class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
@@ -718,8 +722,11 @@ if (process.client) {
             <BookOpen class="w-3.5 h-3.5 text-primary shrink-0" />
             <span>Insights</span>
           </NuxtLink>
+          -->
 
-          <!-- Store Location -->
+          <!-- TEMPORARILY HIDDEN: Store Location Header Action -->
+          <!-- Restore when store location link in the top header is required again. -->
+          <!--
           <a 
             href="https://www.google.com/maps/place/G.M+Plaza/@23.7388697,90.386565,17z/data=!3m1!5s0x3755b8c81091d773:0x601a730b2bf4e399!4m16!1m9!3m8!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!2sG.M+Plaza!8m2!3d23.7388697!4d90.386565!9m1!1b1!16s%2Fg%2F11c2p4g0df!3m5!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!8m2!3d23.7388697!4d90.386565!16s%2Fg%2F11c2p4g0df?hl=en-US&entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D" 
             target="_blank" 
@@ -731,6 +738,7 @@ if (process.client) {
             <MapPin class="w-3.5 h-3.5 text-primary shrink-0" />
             <span>Store</span>
           </a>
+          -->
 
           <!-- Relocated Login / Account Action -->
           <NuxtLink 

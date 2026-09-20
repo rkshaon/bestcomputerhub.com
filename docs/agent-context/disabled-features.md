@@ -91,5 +91,29 @@ This registry tracks application features that have been temporarily commented o
   3. Remove the HTML comment wrapper around the `<div class="grid grid-cols-1 sm:grid-cols-2 ...">` block.
 
 ---
-*Date Registered*: September 14, 2026
+
+## 5. Feature: Secondary Storefront Header Actions (Compare, Insights, Store)
+
+- **Status**: Temporarily Hidden
+- **Reason**: Client specification requires simplifying the desktop header actions to the right of the search box to keep only `Admin` (authenticated owner/staff), `PC Builder`, `Track Order`, `Account`, and `Add to Cart`.
+- **Scope**: Storefront desktop navigation header (`/components/layout/Header.vue`).
+- **Hidden Actions**:
+  - `Compare` button (`ArrowLeftRight` icon, click handler `handleCompareClick`).
+  - `Insights` link (`/blog/`, `BookOpen` icon).
+  - `Store` location link (Google Maps external URL, `MapPin` icon).
+- **Preserved Actions**:
+  - `Admin`: Visible when authenticated and user type is owner or staff (`isSuperAdmin`).
+  - `PC Builder`: Direct link to `/products/`.
+  - `Track Order`: Direct link to `/account/` with `hidden sm:inline-flex` for responsive desktop presentation.
+  - `Account`: Dynamic login/account link (`/account/` or `/login/`).
+  - `Add to Cart`: Cart toggle button with dynamic badge.
+- **File**: `/components/layout/Header.vue`
+- **Preservation**: All component definitions, imports, click handlers, and route structures remain intact.
+- **Restoration Steps**:
+  1. Open `/components/layout/Header.vue`.
+  2. Locate the `<!-- TEMPORARILY HIDDEN: Compare Header Action -->`, `<!-- TEMPORARILY HIDDEN: Tech Insights Header Action -->`, or `<!-- TEMPORARILY HIDDEN: Store Location Header Action -->` blocks.
+  3. Remove the HTML comment wrappers around the respective buttons/links.
+
+---
+*Date Registered*: September 20, 2026
 
