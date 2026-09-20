@@ -1,6 +1,6 @@
 <!-- File: /pages/admin/banners/index.vue -->
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { 
   Plus, 
   Search, 
@@ -36,6 +36,7 @@ import { useBannerService } from '@/composables/useBannerService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, extractErrorMessage } from '@/composables/useToast';
+import { isNonSquareAspect, isAspectRatioMismatch } from '@/utils/imageValidation';
 import type { Banner, BannerPlacement } from '@/types';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiTable from '@/components/ui/UiTable.vue';
@@ -808,13 +809,97 @@ const placementsCount = computed(() => {
   return placementsList.value.length;
 });
 
+// Image Metadata Cache for aspect ratio detection (3:2 expected)
+const imageMetadataCache = reactive<
+  Record<string, { width?: number; height?: number; size?: number; loaded?: boolean; loading?: boolean }>
+>({});
+
+const fetchImageMetadata = async (url: string) => {
+  if (import.meta.server || !url || imageMetadataCache[url]?.loaded || imageMetadataCache[url]?.loading) return;
+  imageMetadataCache[url] = { ...imageMetadataCache[url], loading: true };
+
+  try {
+    const img = new Image();
+    const dimensionsPromise = new Promise<{ width: number; height: number }>((resolve, reject) => {
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    const sizePromise = fetch(url, { method: 'HEAD' })
+      .then((res) => {
+        const length = res.headers.get('content-length');
+        const parsedLength = length ? parseInt(length, 10) : NaN;
+        return !isNaN(parsedLength) && parsedLength > 0 ? parsedLength : undefined;
+      })
+      .catch(() => undefined);
+
+    const [dims, size] = await Promise.all([
+      dimensionsPromise.catch(() => ({ width: 0, height: 0 })),
+      sizePromise
+    ]);
+
+    imageMetadataCache[url] = {
+      width: dims.width,
+      height: dims.height,
+      size,
+      loaded: true,
+      loading: false
+    };
+  } catch {
+    imageMetadataCache[url] = { loaded: true, loading: false };
+  }
+};
+
+const handleImageLoad = (imageUrl: string, event: Event) => {
+  const target = event.target as HTMLImageElement | null;
+  if (target && target.naturalWidth && target.naturalHeight) {
+    if (!imageMetadataCache[imageUrl] || !imageMetadataCache[imageUrl]?.loaded) {
+      imageMetadataCache[imageUrl] = {
+        ...imageMetadataCache[imageUrl],
+        width: target.naturalWidth,
+        height: target.naturalHeight,
+        loaded: true,
+        loading: false
+      };
+    }
+  }
+};
+
+const isBannerRatioMismatch = (imageUrl?: string | null): boolean => {
+  if (!imageUrl) return false;
+  const meta = imageMetadataCache[imageUrl];
+  if (!meta?.loaded || !meta?.width || !meta?.height) return false;
+  return isAspectRatioMismatch(meta.width, meta.height, 3, 2);
+};
+
+const isBannerRatioMatch = (imageUrl?: string | null): boolean => {
+  if (!imageUrl) return false;
+  const meta = imageMetadataCache[imageUrl];
+  if (!meta?.loaded || !meta?.width || !meta?.height) return false;
+  return !isAspectRatioMismatch(meta.width, meta.height, 3, 2);
+};
+
+watch(
+  () => bannersList.value,
+  (newBanners) => {
+    if (!newBanners) return;
+    newBanners.forEach((banner) => {
+      if (banner.image) {
+        fetchImageMetadata(banner.image);
+      }
+    });
+  },
+  { immediate: true, deep: true }
+);
+
 const tableColumns = computed<UiTableColumn<Banner>[]>(() => {
   const cols: UiTableColumn<Banner>[] = [];
   if (selectedPlacement.value && canEdit.value) {
     cols.push({ key: 'reorder', label: 'Order', width: '90px', align: 'center' });
   }
   cols.push(
-    { key: 'preview', label: 'Preview', width: '100px', align: 'center' },
+    { key: 'preview', label: 'Preview', width: '110px', align: 'center' },
     { key: 'details', label: 'Banner Details', width: '280px' },
     { key: 'placement', label: 'Placement', width: '160px' },
     { key: 'display_order', label: 'Position', width: '90px', align: 'center' },
@@ -1045,18 +1130,61 @@ onMounted(async () => {
               </div>
             </div>
           </template>
-          <!-- Custom Column: Image Preview -->
+          <!-- Custom Column: Image Preview with 3:2 Ratio Indicator -->
           <template #cell-preview="{ item }">
-            <div class="w-16 h-10 rounded-lg bg-muted border border-border/80 overflow-hidden shrink-0 flex items-center justify-center relative group">
-              <img
-                v-if="item.image && !imageErrorMap[item.id]"
-                :src="item.image"
-                :alt="item.title || 'Banner Preview'"
-                class="w-full h-full object-cover transition-transform group-hover:scale-105"
-                @error="handleImageError(item.id)"
-              />
-              <div v-else class="flex flex-col items-center justify-center text-muted-foreground">
-                <ImageIcon class="w-4 h-4" />
+            <div class="flex flex-col items-center justify-center gap-1.5 py-1">
+              <div
+                :class="[
+                  'w-16 h-10 rounded-lg bg-muted border overflow-hidden shrink-0 flex items-center justify-center relative group transition-all',
+                  item.image && isBannerRatioMismatch(item.image)
+                    ? 'border-amber-500/70 dark:border-amber-500/60 ring-1 ring-amber-500/30 shadow-2xs'
+                    : 'border-border/80'
+                ]"
+              >
+                <img
+                  v-if="item.image && !imageErrorMap[item.id]"
+                  :src="item.image"
+                  :alt="item.title || 'Banner Preview'"
+                  class="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  @load="handleImageLoad(item.image, $event)"
+                  @error="handleImageError(item.id)"
+                />
+                <div v-else class="flex flex-col items-center justify-center text-muted-foreground">
+                  <ImageIcon class="w-4 h-4" />
+                </div>
+              </div>
+
+              <!-- Ratio Indicator for Desktop Image -->
+              <div v-if="item.image && !imageErrorMap[item.id]" class="flex items-center justify-center">
+                <!-- Loading State -->
+                <span
+                  v-if="imageMetadataCache[item.image]?.loading"
+                  class="inline-flex items-center gap-1 text-[9px] text-muted-foreground font-mono"
+                  title="Inspecting image aspect ratio..."
+                >
+                  <Loader2 class="w-2.5 h-2.5 animate-spin text-muted-foreground" />
+                  <span class="text-[8.5px]">Checking</span>
+                </span>
+
+                <!-- Mismatch State -->
+                <span
+                  v-else-if="isBannerRatioMismatch(item.image)"
+                  class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 shadow-2xs leading-none"
+                  :title="`Aspect ratio mismatch: Expected 3:2 ratio (${imageMetadataCache[item.image]?.width || 0}×${imageMetadataCache[item.image]?.height || 0}px detected).`"
+                >
+                  <AlertCircle class="w-2.5 h-2.5 text-amber-600 dark:text-amber-400 stroke-[2.5]" />
+                  <span>Non-3:2</span>
+                </span>
+
+                <!-- Matching State -->
+                <span
+                  v-else-if="isBannerRatioMatch(item.image)"
+                  class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 shadow-2xs leading-none"
+                  :title="`3:2 aspect ratio matching (${imageMetadataCache[item.image]?.width || 0}×${imageMetadataCache[item.image]?.height || 0}px).`"
+                >
+                  <Check class="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                  <span>3:2 Match</span>
+                </span>
               </div>
             </div>
           </template>

@@ -107,22 +107,27 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
-### `isNonSquareAspect` & `isExceedingResolution`
+### `isNonSquareAspect`, `isAspectRatioMismatch` & `isExceedingResolution`
 - **File Location**: `/utils/imageValidation.ts`
 - **Category**: Pure utility
-- **Scope**: Shared image workflows (Admin Product Images, Admin Product Details, upload modals, storefront image pickers)
-- **Purpose**: Validates image aspect ratios (identifying non-1:1 images) and detects whether image dimensions exceed maximum resolution thresholds (default 500px).
+- **Scope**: Shared image workflows (Admin Product Images, Admin Banners, Admin Product Details, upload modals, storefront image pickers)
+- **Purpose**: Validates image aspect ratios (identifying non-1:1 or custom aspect ratio mismatches like 3:2) and detects whether image dimensions exceed maximum resolution thresholds (default 500px).
 - **Parameters & Return Values**:
-  - `isNonSquareAspect(width?: number | null, height?: number | null): boolean` — Returns `true` if width and height are valid positive numbers and `width !== height`.
+  - `isAspectRatioMismatch(width?: number | null, height?: number | null, targetWidth: number = 1, targetHeight: number = 1, tolerance: number = 0.01): boolean` — Returns `true` if width and height are valid positive numbers and aspect ratio does not match target ratio (`targetWidth / targetHeight`).
+  - `isNonSquareAspect(width?: number | null, height?: number | null, targetWidth: number = 1, targetHeight: number = 1, tolerance: number = 0.01): boolean` — Alias/wrapper for `isAspectRatioMismatch`. Defaults to 1:1 check (`width !== height`).
   - `isExceedingResolution(width?: number | null, height?: number | null, maxDimension: number = 500): boolean` — Returns `true` if either valid positive `width` or `height` exceeds `maxDimension`.
 - **Example Usage**:
   ```ts
-  import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
+  import { isNonSquareAspect, isAspectRatioMismatch, isExceedingResolution } from '@/utils/imageValidation';
 
-  const isInvalidRatio = isNonSquareAspect(600, 400); // true
+  const isInvalidSquare = isNonSquareAspect(600, 400); // true (1:1 mismatch)
+  const isInvalidBanner = isAspectRatioMismatch(1000, 1000, 3, 2); // true (3:2 mismatch)
+  const isValidBanner = isAspectRatioMismatch(1200, 800, 3, 2); // false (3:2 match)
   const isTooLarge = isExceedingResolution(600, 400, 500); // true
   ```
-- **Files or Features Currently Using It**: `/pages/admin/product-images/index.vue` (Admin Product Images registry list and grid views).
+- **Files or Features Currently Using It**:
+  - `/pages/admin/product-images/index.vue` (Admin Product Images registry list and grid views).
+  - `/pages/admin/banners/index.vue` (Admin Banners management list desktop image 3:2 ratio mismatch indicator).
 - **Side Effects**: None (Pure functions).
 - **Accesses Browser State**: No.
 - **Performs Network Work**: No.

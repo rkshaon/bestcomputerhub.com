@@ -3,16 +3,22 @@
  */
 
 /**
- * Checks if an image has a non-1:1 aspect ratio.
+ * Checks if an image has an aspect ratio mismatch against an expected target ratio (default 1:1 square).
  * Returns false if dimensions are missing, null, non-positive, or invalid.
  *
  * @param width - The width of the image in pixels
  * @param height - The height of the image in pixels
- * @returns True if width and height are valid positive numbers and width !== height
+ * @param targetWidth - The expected width ratio component (default: 1)
+ * @param targetHeight - The expected height ratio component (default: 1)
+ * @param tolerance - Permitted tolerance for floating-point aspect ratios (default: 0.01)
+ * @returns True if dimensions are valid positive numbers and aspect ratio does not match target ratio
  */
-export function isNonSquareAspect(
+export function isAspectRatioMismatch(
   width?: number | null,
-  height?: number | null
+  height?: number | null,
+  targetWidth: number = 1,
+  targetHeight: number = 1,
+  tolerance: number = 0.01
 ): boolean {
   if (width === undefined || width === null || height === undefined || height === null) {
     return false;
@@ -20,10 +26,36 @@ export function isNonSquareAspect(
   if (typeof width !== 'number' || typeof height !== 'number' || isNaN(width) || isNaN(height)) {
     return false;
   }
-  if (width <= 0 || height <= 0) {
+  if (width <= 0 || height <= 0 || targetWidth <= 0 || targetHeight <= 0) {
     return false;
   }
-  return width !== height;
+  if (targetWidth === 1 && targetHeight === 1) {
+    return width !== height;
+  }
+  const actualRatio = width / height;
+  const expectedRatio = targetWidth / targetHeight;
+  return Math.abs(actualRatio - expectedRatio) > tolerance;
+}
+
+/**
+ * Checks if an image has a non-1:1 aspect ratio (or optional target aspect ratio).
+ * Returns false if dimensions are missing, null, non-positive, or invalid.
+ *
+ * @param width - The width of the image in pixels
+ * @param height - The height of the image in pixels
+ * @param targetWidth - Optional expected width ratio component (default: 1)
+ * @param targetHeight - Optional expected height ratio component (default: 1)
+ * @param tolerance - Permitted tolerance for floating-point aspect ratios (default: 0.01)
+ * @returns True if dimensions are valid positive numbers and aspect ratio does not match target ratio
+ */
+export function isNonSquareAspect(
+  width?: number | null,
+  height?: number | null,
+  targetWidth: number = 1,
+  targetHeight: number = 1,
+  tolerance: number = 0.01
+): boolean {
+  return isAspectRatioMismatch(width, height, targetWidth, targetHeight, tolerance);
 }
 
 /**
