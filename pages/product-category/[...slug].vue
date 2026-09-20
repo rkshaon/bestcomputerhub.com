@@ -973,10 +973,10 @@ const resetFilters = () => {
             v-if="isProductsLoading" 
             :class="cn(
               'grid gap-6',
-              viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
+              viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'grid-cols-1'
             )"
           >
-            <div v-for="i in 6" :key="i" class="bg-card rounded-2xl border p-6 space-y-4 animate-pulse">
+            <div v-for="i in 10" :key="i" class="bg-card rounded-2xl border p-6 space-y-4 animate-pulse">
               <div class="aspect-video bg-muted rounded-xl w-full"></div>
               <div class="space-y-2">
                 <div class="h-4 bg-muted rounded w-1/3"></div>
@@ -993,7 +993,7 @@ const resetFilters = () => {
             <div 
               :class="cn(
                 'grid gap-6',
-                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
+                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'grid-cols-1'
               )"
             >
               <CommerceProductCard 
