@@ -1,404 +1,260 @@
 # Best Computer Hub Frontend — Agent Guidelines
 
-## Project
+## 1. Project Overview & Technology Stack
 
-This repository contains the Best Computer Hub e-commerce
-frontend.
-
-The application is being migrated from an existing
-WordPress/WooCommerce storefront.
+This repository contains the Best Computer Hub e-commerce storefront, migrated from WordPress/WooCommerce to a decoupled modern frontend with a Django REST Framework (DRF) backend.
 
 The frontend is built with:
-
-- Nuxt 4
-- Vue 3
-- TypeScript
-- Tailwind CSS 3
-- Pinia
-- VueUse
-- lucide-vue-next
-- pnpm
-
-The backend is Django REST Framework.
-
-## Primary Goals
-
-The storefront must prioritize:
-
-1. SEO
-2. performance
-3. accessibility
-4. maintainability
-5. responsive design
-6. commerce-data accuracy
-
-## Architecture
-
-Use this dependency direction where practical:
-
-Page
-  ↓
-Feature / Component
-  ↓
-Store / Composable
-  ↓
-Domain Service
-  ↓
-useApiClient
-  ↓
-DRF
-
-Pages should primarily handle:
-
-- routing
-- server data fetching
-- SEO
-- route-level errors
-- feature composition
-
-Components should primarily handle presentation and
-user interaction.
-
-Domain services own API-specific operations.
-
-useApiClient owns shared HTTP concerns.
-
-### Reusable Logic & Utility-First Development
-
-* Before implementing any new task that requires a helper function, calculation, validation, formatting, transformation, or other reusable logic, first read `/docs/agent-context/utility-inventory.md`.
-* Search the utility inventory and existing implementation for a suitable utility or helper.
-* If an existing utility solves the requirement, reuse it. Do not create a duplicate utility or rewrite equivalent logic.
-* Reusable calculation and domain-independent logic must be implemented in a reusable utility function rather than directly inside Vue components or templates.
-* Keep components focused on presentation, user interaction, and component-specific UI state.
-* Keep page-specific orchestration, reactive state, API fetching, and workflow coordination in the appropriate page, composable, store, or service layer.
-* Do not create a shared utility for trivial, one-off presentation logic that has no meaningful reuse value.
-* If no suitable existing utility exists and reusable logic is genuinely needed, create a new utility following the project's established conventions.
-* Whenever a new reusable utility file or function is created, update `/docs/agent-context/utility-inventory.md` in the same task.
-* The inventory entry must accurately document the utility's file location, purpose, exported functions, parameters, return values, and relevant behavior according to the existing inventory format.
-* Before creating a new utility, inspect the existing utility inventory and project conventions to avoid unnecessary duplication or over-engineering.
-
-## TypeScript
-
-TypeScript strict mode is enabled.
-
-Avoid `any`.
-
-Do not use `any` merely because an API response differs
-from the frontend model.
-
-Model API contracts explicitly.
-
-## Commerce Data Integrity
-
-Never fabricate production commerce data.
-
-This includes:
-
-- prices
-- discounts
-- stock
-- ratings
-- reviews
-- specifications
-- warranty
-- certifications
-- shipping promises
-- product compatibility
-- availability
-
-Mock values are allowed only inside explicitly isolated
-mock/demo systems.
-
-The backend is authoritative for commerce-critical
-business data and calculations.
-
-## Authentication & Authorization
-
-Never infer permissions or roles from:
-
-- email addresses
-- usernames
-- routes
-- frontend state
-
-Roles and permissions come from the backend.
-
-Frontend route/UI guards improve UX but are not security
-boundaries.
-
-DRF must enforce protected operations.
-
-## Package Management
-
-Use pnpm exclusively.
-
-Do not use npm or yarn.
-
-Do not generate package-lock.json.
-
-## Styling
-
-Use Tailwind CSS and the project's semantic design tokens.
-
-Prefer:
-
-bg-primary
-text-primary-foreground
-bg-card
-text-card-foreground
-border-border
-
-over hard-coded theme-dependent colors.
-
-Use lucide-vue-next for icons.
-
-## API
-
-All DRF endpoints must use trailing slashes.
-
-Do not guess API field names, query parameters, response
-structures, or authentication contracts.
-
-Integrate against the established backend contract.
-
-All shared HTTP communication must go through useApiClient.
-
-## Storefront URL Route Convention (Trailing Slashes)
-
-All public Storefront URLs, links, navigation paths, and routes must strictly use a **trailing slash `/`** at the end of the URL path. 
-
-This convention applies to:
-- **Homepage**: `/`
-- **Static Storefront Routes**: (e.g., `/about/`, `/sustainability/`, `/careers/`, `/privacy/`)
-- **Product URLs**: `/product/{slug}/` (e.g., `/product/dji-mavic-3-pro-fly-more-combo-4k-drone-with-remote-controller/`)
-- **Category URLs**: `/product-category/{slug}/` (e.g., `/product-category/gaming-component/laptop/msi-laptop/`)
-- **Dynamic segments / links**: Brand pages, blog archives, and posts (e.g., `/blog/{slug}/`, `/brand/{slug}/`)
-- **User experience navigation links**: (e.g., `/offers/`, `/new-arrivals/`)
-- **Breadcrumb links**: Every intermediate path in breadcrumb arrays must terminate with a trailing slash.
-- **Programmatically generated URLs**: Any URL resolved via services or composables (e.g. `categoryService.getCategoryPath()`, product dynamic links).
-
-New Storefront links, Nuxt page components, navigation handlers, and programmatically generated storefront routes must NOT intentionally generate URLs lacking the trailing slash. Maintaining trailing slashes is crucial to preserve original SEO juice, replicate the original WordPress URL patterns, and prevent canonicalization/duplicate content conflicts.
-
-## SEO
-
-Public catalog and content pages are SEO-sensitive.
-
-Product, category, brand and content pages should be
-server-renderable and expose appropriate metadata.
-
-Do not replace existing WordPress URLs without considering
-SEO migration and redirects.
-
-## Reusable Admin Infrastructure & State Patterns
-
-### 1. Reusable Admin Pagination Standards (`<UiPagination />` & `<UiInfiniteScroll />`)
-All admin list views and paginated collections must use the established, reusable pagination primitives rather than creating custom or page-specific pagination UI.
-
-- **Standard Admin Numbered Pagination (`<UiPagination />` from `/components/ui/UiPagination.vue`)**:
-  - **Mandatory Standard**: `<UiPagination />` is the single required standard for all admin list and table views that require numbered page navigation.
-  - **No Duplication**: Admin pages must never create local page-specific pagination UI or duplicate page calculation/navigation logic.
-  - **Preserved Design & Behavior**: All instances must maintain the standardized behavior:
-    - Previous/Next navigation controls.
-    - Multiple visible page numbers with balanced end-range visibility (showing multiple pages near both start and end bounds).
-    - Ellipsis (`...`) strictly for skipped page ranges.
-    - Stable, fixed-slot pagination layout and width across page transitions (preventing layout shift).
-    - Concise `Showing X–Y of Z` summary format (e.g., `Showing 1–10 of 1,572`).
-  - **Extensibility Rule**: If a page requires pagination functionality not currently supported, extend the reusable `<UiPagination />` component directly rather than creating a bespoke local implementation.
-
-- **Infinite Scroll (`useInfinitePagination<T>` & `<UiInfiniteScroll />`)**:
-  - Use `useInfinitePagination<T>()` from `/composables/useInfinitePagination.ts` and `<UiInfiniteScroll />` from `/components/ui/UiInfiniteScroll.vue` for continuous infinite-scroll feeds, dropdown selectors, or compact modal list views where streaming items continuously is preferred over discrete page numbers.
-  - **Paginated Filter Option Standard**: All filter option lists across the application — including Admin pages, Storefront interfaces, and reusable filter/select components — whose option API returns paginated data must implement infinite scrolling using `useInfinitePagination<T>()` and/or `<UiInfiniteScroll />` according to these project-wide rules:
-    - **`next` Link Page Checks**: Use the API response `next` pagination URL/value to evaluate whether subsequent option pages exist.
-    - **End-of-List Scroll Triggering**: Load the next page automatically when the user scrolls to the end of available options.
-    - **Option Appending**: Append newly loaded options to the existing options list; never overwrite or replace previously loaded options.
-    - **Termination**: Continue loading sequential pages upon scrolling until `next` is `null`. Do not request another page when there is no `next` page.
-    - **Duplicate & Concurrency Prevention**: Prevent duplicate or concurrent API requests for the same next page while a fetch request is pending (`isFetchingNextPage`).
-    - **Option State Preservation**: Preserve already-loaded filter options when the filter popover or dropdown is closed and reopened where the component or state lifecycle permits.
-    - **Demand-Driven Lazy Loading**: Fetch filter options strictly on demand when the user opens or interacts with the filter workflow; never issue pre-emptive option requests on page or component mount.
-    - **Data Reuse**: Reuse previously loaded option collections across UI open triggers instead of dispatching redundant requests.
-    - **Search Debouncing**: When the filter supports search, maintain immediate local typing responsiveness while debouncing downstream API queries (standard 300ms delay via `refDebounced`).
-
-- **Pattern Selection Guideline**:
-  - Use **`<UiPagination />`** when users need explicit page jumping, total record count visibility, or standard tabular admin dataset navigation.
-  - Use **`<UiInfiniteScroll />`** when users stream through items continuously (e.g., dropdown search pickers, live audit logs, or infinite catalog feeds) without needing discrete page jumps.
-
-- **Admin View-Based Pagination Rule (Grid View vs. List/Table View)**:
-  For any existing or future Admin page that provides both Grid View and List/Table View:
-  - **Grid View**: Must use infinite-scroll data loading using the existing `useInfinitePagination()` + `<UiInfiniteScroll />` pattern.
-  - **List/Table View**: Must use numbered pagination using the existing numbered pagination pattern with `<UiPagination />`.
-  - **Strategy Switching**: The active view mode determines the active pagination/data-loading strategy.
-  - **State Reset on Switch**: Pagination and data-loading state must be reset appropriately when switching between Grid and List views so state from one strategy is not incorrectly carried into the other.
-  - **Separation of Responsibilities**: `<UiTable />`, `<UiPagination />`, and `<UiInfiniteScroll />` remain strictly separate reusable responsibilities.
-  - **No Infrastructure Duplication**: Do not duplicate pagination infrastructure for individual pages.
-
-### 2. URL-Driven Admin Modal State (`useAdminModalState` & `<UiAdminModal />`)
-All admin CRUD dialogs (Create/Edit/View/Delete) must synchronize their state directly with route query parameters using `useAdminModalState<T>()` from `/composables/useAdminModalState.ts` and `<UiAdminModal />` from `/components/ui/UiAdminModal.vue`.
-- Standard URL query format: `?modal=create`, `?modal=edit&id=15`, `?modal=view&id=15`, `?modal=delete&id=15`.
-- **Single Source of Truth**: The URL drives modal visibility and entity resolution. Opens, closes, reloads, and browser Back/Forward navigation automatically stay synchronized.
-- **Unified Dismissal Flow**: All close triggers (Cancel button, Close 'X' button, clicking backdrop/outside area, and Escape key) must call the same canonical `closeModal()` method to clear query parameters and restore URL state.
-- **UI Container Requirement**: All admin modals must wrap their markup in `<UiAdminModal>` to enforce consistent z-indexing, backdrop blur, mousedown-outside tracking, and keyboard accessibility.
-
-### 3. Centralized Permission-Based Authorization (`useAdminPermissions`)
-All admin navigation, route access, module visibility, page-level data fetching, and action controls (Create/Edit/Delete buttons) must consume the centralized Admin Permission Registry via `useAdminPermissions()` from `/composables/useAdminPermissions.ts`.
-- **Single Source of Truth**: Backend permissions returned in `GET /api/v1/users/me/` drive frontend authorization decisions.
-- **Route & Sidebar Integration**: Navigation items in `/layouts/admin.vue` and global route guards in `/middleware/auth.global.ts` enforce module-level permission rules using `canViewModule(route)`. Unauthorized direct access routes to `/admin/forbidden` (403) rather than redirecting to login.
-- **Action-Level Gating**: Buttons and CRUD controls must check module create/edit/delete permissions (`canCreateInModule`, `canEditInModule`, `canDeleteInModule`) or specific codenames via `hasPermission()`. Unprivileged users must not trigger unauthorized API calls.
-
-#### 3.1. Admin Access & Action-Authorization Model
-
-Admin panel routing (`/admin/*`) and CRUD actions are restricted by a triple-gated authorization model:
+- **Framework**: Nuxt 4 (Vue 3)
+- **Language**: TypeScript (strict mode enabled)
+- **Styling**: Tailwind CSS 3 with semantic design tokens
+- **State Management**: Pinia, VueUse
+- **Icons**: `lucide-vue-next`
+- **Package Manager**: `pnpm` exclusively (never use `npm` or `yarn`; never generate `package-lock.json`)
+
+### Primary Storefront Goals
+1. SEO & search crawlability
+2. Performance & Core Web Vitals
+3. Accessibility (WCAG AA)
+4. Maintainability & clean abstraction
+5. Responsive mobile-first design
+6. Commerce-data accuracy & backend authority
+
+---
+
+## 2. Core Architecture & Dependency Hierarchy
+
+Strictly maintain the following dependency direction across all features:
 
 ```text
-Authenticated user
-        AND
-User type is Owner OR Staff
-        AND
-User has the required action-specific permission
+Page (/pages/)
+  ↓
+Feature / Component (/features/, /components/)
+  ↓
+Store / Composable (/stores/, /composables/)
+  ↓
+Domain Service (/composables/use*Service.ts)
+  ↓
+useApiClient (/composables/useApiClient.ts)
+  ↓
+Django REST Framework (DRF Backend)
 ```
 
-The system resolves access according to these precise definitions:
+### Layer Responsibilities
+- **Pages (`/pages/`)**: Own routing, server data fetching (SSR), SEO metadata, route-level error/404 handling, and high-level feature composition. Pages must remain thin; extract UI into components or features.
+- **Components (`/components/`)**: Own visual presentation and local UI interactions. UI primitives (`/components/ui/`) must remain domain-agnostic. Commerce components (`/components/commerce/`) handle presentation of products, cart, and prices.
+- **Features (`/features/`)**: Own larger domain-specific modules with multiple tightly coupled components (e.g., admin dashboard widgets).
+- **Domain Services (`/composables/use*Service.ts`)**: Own entity-specific API communication and business calls. Never put raw API endpoints in components or pages.
+- **`useApiClient`**: Owns centralized HTTP transport, authentication headers, base URLs, token refresh, and standardized network error handling.
+- **Stores (`/stores/`)**: Own client-side cross-component state (auth session, cart items, UI drawers, cookie preferences). Stores must not duplicate or replace backend calculations.
 
-*   **Unauthenticated User**:
-    *   Cannot access `/admin/*`.
-    *   Must be redirected to the existing login flow automatically.
-*   **Owner**:
-    *   Has access to the `/admin/*` router.
-    *   Action-level access is determined by the permission system. Users flagged with `is_superuser` or `is_superadmin` (typically Owners) bypass specific checks via the standard permission override.
-*   **Staff**:
-    *   Has access to the `/admin/*` router.
-    *   Must possess the specific permission required for each individual CRUD action.
-    *   Being Staff alone does not grant default CRUD or feature-level permissions.
-*   **Other User Types (e.g., Customer)**:
-    *   Cannot access Admin. Attempted routing results in a redirection to `/admin/forbidden`.
+*Authoritative details*: `/docs/agent-context/architecture.md`.
 
-#### 3.2. Permission Rules: Action-Specific and Non-Transitive
+---
 
-Permissions are strictly action-specific and non-transitive. Having one permission must never implicitly grant another. The project uses standard backend/frontend permission naming conventions:
+## 3. Reusable Logic & Inventory Mandates
 
-*   **View Permission** (e.g., `product_api.view_product`): Grants read-only visibility to the data view and sidebar nodes.
-*   **Create Permission** (e.g., `product_api.add_product`): Required to trigger creation actions or view creation forms/modals.
-*   **Edit Permission** (e.g., `product_api.change_product`): Required to trigger update actions or view edit forms/modals.
-*   **Delete Permission** (e.g., `product_api.delete_product`): Required to execute deletion operations.
+To prevent code duplication, enforce utility-first development and component reuse across all tasks:
 
-#### 3.3. Frontend vs Backend Responsibilities
+- **Check Inventories First**: Before implementing any new helper, formatter, calculation, normalizer, or UI component:
+  1. Read `/docs/agent-context/utility-inventory.md` for existing utilities, composables, and helpers.
+  2. Read `/docs/agent-context/component-inventory.md` for existing UI primitives, layout elements, and commerce components.
+  3. Search the codebase (`/utils/`, `/composables/`, `/components/`) for similar implementations.
+- **Reuse Over Duplication**: If an existing utility or component satisfies or can be cleanly extended to satisfy the requirement, reuse it. Do not create local duplicate logic.
+- **Keep Inventories Synchronized**: Whenever you create, relocate, or substantially modify a reusable utility, helper, or component, update `/docs/agent-context/utility-inventory.md` or `/docs/agent-context/component-inventory.md` within the same task.
+- **Extraction Criteria**: Extract code only for genuine reuse across multiple contexts, distinct domain ownership, or complex encapsulated state—never merely to meet arbitrary file-length limits.
 
-*   **Frontend**: Permission checks control component visibility and user experience. The frontend must prevent unauthorized actions from being triggered or initiated in the UI. Frontend authorization is **not the security boundary**.
-*   **Backend**: Django REST Framework (DRF) backend permissions remain the authoritative security boundary.
+---
 
-#### 3.4. Centralized Permission Checking
+## 4. TypeScript & Code Quality
 
-All Admin permission checks must use the existing `useAdminPermissions` pattern/utilities to manage:
-*   Sidebar visibility.
-*   Route/module access (such as global route guards).
-*   Page-level visibility.
-*   View, Create, Edit, and Delete action controls.
-*   Feature-specific validation checks.
+- **Strict Typing**: TypeScript strict mode is enabled. Avoid `any`.
+- **Explicit Contracts**: Never use `any` simply because a backend response differs from frontend models. Define explicit request, response, and entity contracts in `/types/`.
+- **Imports**: Place imports at the top of the file. Use named imports (`import { ... }`).
+- **No Inline Styles**: Use Tailwind CSS utility classes and semantic tokens. Avoid inline `style=""` attributes and custom CSS files.
 
-Never create separate custom permission or role logic for individual Admin features. Use only `useAdminPermissions`.
+---
 
+## 5. Commerce Data Integrity & Backend Authority
 
-### 4. Global Search & Filter Debouncing
-All user-input-driven API searches and filters must be debounced by default using `@vueuse/core`'s `refDebounced` (standard 300ms delay).
-- **Separation of Concerns**: Immediate local input state must remain responsive on every keystroke, while the API query state must be debounced.
-- **Architectural Placement**: Debounce belongs at the query/composable/component layer (e.g. `useInfinitePagination`, storefront listings, admin tables), never inside the central `useApiClient` HTTP client or via global request interceptors.
-- **Exemptions**: Explicit actions (e.g. clicking 'Apply Filters', 'Save', pagination buttons, page initial loads, mutations) must remain immediate.
+The Django REST Framework backend is the single authoritative source for commerce data, business calculations, and access permissions.
 
-### 5. Efficient & Demand-Driven API Calling
-API requests must be driven by actual data requirements, not merely by component mounting, watchers, reactive state changes, or anticipated future actions.
-- **Demand-Driven Principle**: Before dispatching an API call, verify if the data is required for the current view or user action. If data is already available in props, state, or stores, reuse it.
-- **Lazy Workflow Fetching**: Fetch workflow-specific or auxiliary data (such as form selection lists or modal entity details) only when the user actively opens or triggers that specific workflow, never on page or parent component mount.
-- **No Duplicate Requests**: Avoid redundant API calls when usable data has already been fetched or is currently being processed.
+- **Never Fabricate Commerce Data**: You are strictly forbidden from fabricating or hard-coding production commerce values, including:
+  - Prices, discounts, and sale figures
+  - Stock levels and availability statuses
+  - Ratings, review counts, and customer feedback
+  - Technical specifications and attributes
+  - Warranty terms and certifications
+  - Shipping promises, delivery dates, and compatibility
+- **Mock Data Boundary**: Mock values are permitted only inside explicitly isolated mock/demo test fixtures.
+- **Calculations**: Never recalculate discounts, taxes, or cart order totals independently on the client; always display values returned or confirmed by the backend.
 
-### 6. Centralized API Error Message Handling
-All API errors (`400`, `401`, `403`, `404`, `409`, `422`, `429`, `500`, etc.) must be processed centrally through the existing API client and toast error-handling architecture (`useApiClient` / `useToast`'s `handleApiError` / `extractErrorMessage`).
-- **No Independent Component Parsing**: Components and feature views must NOT manually parse API errors independently unless explicitly required by a specific feature workflow.
-- **Error Message Priority & Extraction**: The centralized handler must inspect error responses, extract user-facing messages provided by the backend (e.g. `detail`, `message`, `error`, `non_field_errors`, or field errors), and display them via the toast notification system.
-- **User-Friendly Fallbacks**: When no backend error message is provided, fall back to a clear, generic user-facing message (e.g. "An unexpected error occurred.").
-- **No Raw Technical Strings**: Never expose raw HTTP request signatures, URLs, HTTP methods, status code headers (e.g. `[POST] "...": 403 Forbidden`), or internal error objects to end users in toasts or UI error states.
+*Authoritative details*: `/docs/agent-context/ecommerce-domain.md`.
 
-### 7. Icon-Only Action Buttons
-For common, visually recognizable secondary actions (such as View, Edit, Delete, Add, Remove) on cards, tables, list items, or dense admin interfaces, prefer compact icon-only action buttons.
-- **When to Use Visible Text**: Retain text labels for primary CTAs, non-obvious actions, or when additional context is needed to prevent ambiguity.
-- **Accessibility Requirements**: All icon-only action buttons MUST include an accessible `aria-label` and an appropriate `title`/tooltip for sighted users while using the project's standard icon library (`lucide-vue-next`).
+---
 
-### 8. Standard Reusable Admin Table Pattern (`<UiTable />`)
-All administrative list and data views displaying tabular data must use the standard `<UiTable />` component (`/components/ui/UiTable.vue`) rather than implementing raw `<table>` HTML markup or inline table styling directly within pages.
+## 6. Authentication & Authorization Boundaries
 
-- **Mandatory Reusable Primitive**: `<UiTable />` is the required standard primitive for all Admin list and tabular data views. Future and existing Admin pages displaying tabular data must first check for and reuse `<UiTable />` instead of creating raw custom table markup or duplicate table components.
-- **Encapsulated Presentation Responsibilities**: `<UiTable />` handles core table structure and visual presentation:
-  - Responsive table container wrapper handling overflow and scroll behavior (`overflow-x-auto`).
-  - Standardized header rendering (`<thead>`, `<th>`) and column configuration API.
-  - Consistent row (`<tr>`) and cell (`<td>`) padding, borders, typography, alignment, hover states, and semantic design tokens (`bg-card`, `text-card-foreground`, `border-border`, etc.).
-  - Built-in empty state rendering when dataset collections are empty.
-  - Built-in loading state rendering (skeletons or spinners) during asynchronous operations.
-- **Flexible Column & Cell Rendering API**:
-  - Entity-specific fields, badges, avatars, action buttons, and custom formatters must be supported via a flexible slot/prop API (e.g., named cell slots like `#cell(columnKey)` or `#cell-name`) without hardcoding domain entity logic inside `<UiTable />`.
-- **Strict Separation of Concerns**:
-  - **Pagination**: Kept strictly separate. `<UiPagination />` and `<UiInfiniteScroll />` remain responsible for pagination controls and page navigation, positioned outside `<UiTable />`.
-  - **Business & Data Logic**: Sorting, searching, filtering, permissions checking, row action handlers, and API data-fetching logic remain outside `<UiTable />`, managed by pages, composables, or stores and passed into `<UiTable />` via props/slots.
+- **Backend Authority**: User roles, permissions, and session validity are strictly determined by the backend (`GET /api/v1/users/me/`).
+- **No Inferred Roles**: Never infer permissions or user types from email addresses, usernames, routes, or local storage.
+- **Defense in Depth**: Frontend route guards (`middleware/auth.global.ts`) and UI checks improve user experience by hiding inaccessible controls, but they are not security boundaries. DRF must enforce protected operations.
+- **Centralized Admin Authorization**: All Admin panel routing (`/admin/*`) and CRUD actions are restricted by a triple-gated authorization model:
+  ```text
+  Authenticated user AND User type is Owner or Staff AND User has specific permission
+  ```
+  - Unauthenticated users redirect to login. Non-staff users (e.g., Customers) redirect to `/admin/forbidden` (403).
+  - Permissions are action-specific and non-transitive (`view_*`, `add_*`, `change_*`, `delete_*`). Having one permission never grants another.
+  - All admin checks must use `useAdminPermissions()`. Never create custom role logic.
 
-### 9. Admin UI Layout & Information-Density Standards
-All Admin pages must maintain high information density, clear visual hierarchy, and compact container spacing across all modules (Categories, Products, Brands, Orders, Inventory, Users/Staff, Roles, Permissions, Notifications, Security, etc.):
-- **Single-Row Page Header**: On pages with breadcrumbs, combine the breadcrumb path and page title on the left side of the header row with page action buttons right-aligned on the same row. Omit redundant descriptive subtitles to save vertical viewport space.
-- **Viewport Information Density**: Maximize visible data and controls within the viewport by reducing outer container padding and section vertical gaps. Do not shrink font sizes or interactive control targets below standard guidelines.
-- **Compact Search & Filter Containers**: Outer search/filter bar wrappers must remain vertically compact (e.g., `px-3.5 py-2.5`), while individual filter controls retain comfortable internal heights (`h-9`) and breathing room. Never shrink search input components.
-- **Full Guidance**: See `/docs/agent-context/design-system.md` for detailed authoritative layout and density standards.
+*Authoritative details*: `/docs/agent-context/architecture.md` (Section 5) and `/docs/agent-context/ecommerce-domain.md` (Section 5).
 
-### 10. Admin Categories Tree Sibling-Level Accordion Expansion Standard
-The Admin Categories Tree view must use **sibling-level accordion behavior**, not global single-node expansion:
-- **Canonical Rule**: At each hierarchy level, only one sibling branch may be expanded at a time. Expanding a category collapses other expanded siblings with the same immediate parent, while all ancestors of the selected category remain expanded.
-- **Siblings**: Categories with the same immediate parent are siblings; root categories are treated as siblings at the root level.
-- **Hierarchical Ancestor Retention**: A child can be expanded while its parent remains expanded. A grandchild can be expanded while both parent and grandparent remain expanded. Never collapse an ancestor simply because a descendant is expanded.
-- **Lazy Loading**: Expanding a category continues to utilize demand-driven lazy child loading (`categoryService.getCategoryChildrenBatch`), loading children only when not already cached and without introducing redundant API requests.
-- **State Management**: Use the existing centralized tree/category expansion state (`expandedCategoryIds`, `isNodeExpanded`, `setNodeExpanded`) rather than creating duplicate, local, or globally exclusive state abstractions.
-- **Menu Tree Parity**: The same hierarchical sibling-level expansion principle applies to Menu Tree views while preserving menu filtering behavior (`is_menu=true`).
-- **Full Guidance & Examples**: See `/docs/agent-context/design-system.md` Section 42.
+---
 
-### 11. Standard Admin List Page-Size Selector ("Show: X / page")
-All Admin list pages displaying tabular data with numbered pagination (including Products, Categories, Brands, Users, Roles, and future Admin list views) must provide a standardized **Show / page-size selector** integrated directly into the list controls.
+## 7. Styling & Semantic Design Tokens
 
-- **Authoritative Reference Implementation**: Follow the reference implementation established on the Admin Products list page (`/pages/admin/products/index.vue`).
-- **Standardized Values & Default**:
-  - Allowed options: `5 / page`, `10 / page`, `25 / page`, `50 / page`, `100 / page`, and `1000 / page` (numeric values: `5`, `10`, `25`, `50`, `100`, `1000`).
-  - Standard default page size: `10`.
-  - Do not invent custom or arbitrary page-size increments.
-- **Visual Presentation & Placement**:
-  - Positioned inside the compact search/filter container on the right side, separated from preceding filter controls with a subtle left border delimiter (`border-l border-border pl-2.5`).
-  - Label: `<span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>`.
-  - Control: Standardized `<select>` using design tokens (`h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer`).
-  - View-Mode Gating: Rendered when the active view is List/Table view (`v-if="viewMode === 'list'"`). In Grid view, data loading follows infinite scrolling with `useInfinitePagination`.
-- **Architectural & State Patterns**:
-  - **URL Query Initialization**: `const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10)`.
-  - **URL Query Synchronization**: Synchronize state with route query `pageSize` when value differs from default (10), e.g. `pageSize: itemsPerPage.value !== 10 ? itemsPerPage.value : undefined`.
-  - **Pagination Reset on Change**: Changing `itemsPerPage` must reset `currentPage.value = 1` before dispatching API fetching (via reactive watcher on `itemsPerPage`).
-  - **API Contract**: Pass `page_size: itemsPerPage.value` into the domain service request parameters (e.g. `productService.getProductsList({ page, page_size, search, ... })`).
-  - **`<UiPagination />` Integration**: Pass `:items-per-page="itemsPerPage"` into `<UiPagination />` to maintain accurate `Showing X–Y of Z` summary rendering and compute `totalPages = Math.ceil(totalCount / itemsPerPage)`.
-- **Scope**: Products (reference), Categories, Brands, Users, Roles, and all future admin list pages.
+- **Semantic Tokens**: Build interfaces using the project's semantic Tailwind tokens rather than hardcoded hex codes or arbitrary palette colors:
+  - Backgrounds: `bg-background`, `bg-card`, `bg-muted`, `bg-primary`
+  - Foregrounds: `text-foreground`, `text-card-foreground`, `text-muted-foreground`, `text-primary-foreground`
+  - Borders: `border-border`, `border-input`
+  - Rings: `ring-ring`
+- **Iconography**: Use `lucide-vue-next` exclusively.
+- **Icon-Only Action Buttons**: For common secondary table/card actions (View, Edit, Delete), use compact icon-only buttons. Primary CTAs retain visible text. All icon buttons must provide accessible `aria-label` and `title` attributes.
 
-### 12. Storefront Inline Editing Standard
-All storefront-level edit capabilities provided to administrative users (Owners or Staff) must follow the **Storefront Inline Editing** pattern rather than redirecting to full admin views or using large decorative edit modules/banners.
-- **Authority**: Must be triple-gated using the centralized permission and auth registry (`useAdminPermissions`). Unprivileged visitors or guests must see a clean, standard read-only storefront.
-- **UI Presentation**: Add a small, context-aware edit icon beside editable elements (such as product name, short description, full description, technical specifications). When clicked, only that specific target field shifts into edit mode.
-- **Save on Focus Loss (Blur)**: Modifications must save automatically upon input field blur or when focusing out of a rich-text editor wrapper container.
-- **Minimal Request Payload**: Send only the modified field in an HTTP PATCH request to prevent content clobbering. Perform pre-flight HTML clean comparisons to avoid redundant API saves.
-- **Full Guidance**: See `/docs/agent-context/design-system.md` Section 44 and the custom skill `/skills/storefront-inline-editing/SKILL.md` for complete design conventions and code implementations.
+*Authoritative details*: `/docs/agent-context/design-system.md`.
 
-## Structural Changes
+---
 
-Agents may autonomously perform small, task-local,
-convention-preserving structural changes.
+## 8. API Communication Conventions
 
-Do not perform broad architectural restructuring,
-authentication redesign, dependency replacement or
-cross-domain refactoring unless required by the task.
+- **Trailing Slashes**: All DRF API endpoints must terminate with a trailing slash `/` (e.g., `/api/v1/products/`).
+- **Standard HTTP Client**: All shared HTTP communication must go through `useApiClient`.
+- **Search & Filter Debouncing**: All user-input searches and filter queries must be debounced by default (standard 300ms delay via `@vueuse/core`'s `refDebounced`). Debouncing belongs at the query/component layer, never inside `useApiClient`. Explicit user actions (Apply button, Save, Pagination clicks) remain immediate.
+- **Demand-Driven API Fetching**: API requests must be driven strictly by immediate view requirements. Verify if data is already available in props, stores, or state before fetching. Defer auxiliary workflow data (such as modal options) until the workflow is actively opened.
+- **Centralized Error Handling**: Process all API errors (`400`, `401`, `403`, `404`, `500`, etc.) centrally through `useApiClient` and `useToast` (`handleApiError` / `extractErrorMessage`). Extract user-facing backend messages; never expose raw URLs, HTTP methods, status strings, or stack traces in toasts.
 
-## Definition of Done
+*Authoritative details*: `/docs/agent-context/api-conventions.md` and `/docs/agent-context/architecture.md` (Sections 11–13).
 
-Before considering implementation complete:
+---
 
-- TypeScript passes
-- build passes
-- affected flows are verified
-- no temporary artifacts remain
-- no obvious architectural violation was introduced
-- no fabricated production commerce data was introduced
+## 9. Storefront URL Route Convention (Trailing Slashes)
+
+All public Storefront URLs, links, navigation paths, and routes must strictly terminate with a **trailing slash `/`**:
+- Homepage: `/`
+- Static pages: `/about/`, `/sustainability/`, `/careers/`, `/privacy/`
+- Products: `/product/{slug}/`
+- Categories: `/product-category/{slug}/`
+- Brands & blog: `/brand/{slug}/`, `/blog/{slug}/`
+- Navigation & dynamic links: `/offers/`, `/new-arrivals/`
+- Breadcrumb paths: Every intermediate and terminal link must have a trailing slash.
+
+Never generate storefront links lacking a trailing slash. Maintaining trailing slashes preserves SEO equity, matches legacy WordPress URLs, and prevents canonical redirect chains.
+
+*Authoritative details*: `/docs/agent-context/seo-strategy.md` (Section 9a).
+
+---
+
+## 10. SEO & Public Storefront Principles
+
+- **Server-Side Rendering (SSR)**: Catalog pages (products, categories, brands) and content pages are SEO-sensitive and must be fully server-renderable with valid metadata (`useSeoMeta`).
+- **URL Stability**: Never alter, replace, or remove existing storefront URLs without considering WordPress migration parity, redirects, and canonical URL consistency.
+- **Sitemap Rules**: Only indexable, active products, categories, and public pages belong in sitemaps. Exclude admin routes, auth flows, carts, checkout, and private customer areas.
+
+*Authoritative details*: `/docs/agent-context/seo-strategy.md` and `/skills/seo/SKILL.md`.
+
+---
+
+## 11. Reusable Admin Infrastructure Standards
+
+All administrative list, table, and CRUD interfaces must adhere to established shared patterns rather than building page-local implementations:
+
+1. **Admin Numbered Pagination (`<UiPagination />`)**:
+   - `<UiPagination />` from `/components/ui/UiPagination.vue` is the single mandatory standard for admin tabular list pagination.
+   - Shows concise `Showing X–Y of Z` summary on the left, balanced boundary page buttons with ellipsis (`...`) for skipped ranges on the right, and stable layout width.
+   - *Authoritative details*: `/docs/agent-context/design-system.md` (Section 39).
+
+2. **Continuous Streaming & Paginated Filter Options (`useInfinitePagination` & `<UiInfiniteScroll />`)**:
+   - Continuous feeds, search pickers, compact modal lists, and all paginated filter option dropdowns across Admin and Storefront must use `useInfinitePagination<T>()` and `<UiInfiniteScroll />`.
+   - Must evaluate API `next` URLs, append subsequent pages on end-of-list scroll without overwriting existing options, stop when `next` is null, guard against duplicate in-flight requests, and fetch strictly on demand.
+   - *Authoritative details*: `/docs/agent-context/design-system.md` (Section 39) and `/docs/agent-context/architecture.md` (Section 12).
+
+3. **Dual View-Mode Pagination Rule (Grid vs. List/Table)**:
+   - When a page provides both Grid and List views: **List/Table View** uses numbered pagination (`<UiPagination />`); **Grid View** uses infinite scrolling (`useInfinitePagination`).
+   - Switching views resets data loading state cleanly.
+   - *Authoritative details*: `/docs/agent-context/design-system.md` (Sections 38, 39).
+
+4. **URL-Driven Admin Modals (`useAdminModalState` & `<UiAdminModal />`)**:
+   - All admin CRUD dialogs (Create, Edit, View, Delete) must synchronize visibility and active entity IDs directly with route query parameters (`?modal=create`, `?modal=edit&id=15`).
+   - Must use `useAdminModalState()` and wrap dialog markup in `<UiAdminModal>`.
+   - *Authoritative details*: `/skills/url-driven-dialogs/SKILL.md`.
+
+5. **Standard Admin Table Primitive (`<UiTable />`)**:
+   - Tabular admin datasets must use `<UiTable />` from `/components/ui/UiTable.vue` instead of raw `<table>` HTML.
+   - Encapsulates horizontal scroll wrappers, standardized headers, cell padding, hover states, empty states, and loading states.
+   - Cell content is customized via named slots (`#cell(key)`). Sorting, filtering, and pagination controls remain outside `<UiTable />`.
+   - *Authoritative details*: `/docs/agent-context/design-system.md` (Section 40).
+
+6. **Admin Layout & Information Density**:
+   - Use single-row page headers combining breadcrumbs, page title, and action buttons.
+   - Maximize visible data in the viewport by keeping container padding compact (e.g., search/filter container `px-3.5 py-2.5`). Controls inside maintain standard height (`h-9`).
+   - Increase density by reducing whitespace, not by shrinking accessible font sizes or control hit targets below WCAG AA.
+   - *Authoritative details*: `/docs/agent-context/design-system.md` (Section 41).
+
+7. **Category Tree Sibling-Level Accordion Expansion**:
+   - The Admin Categories Tree and Menu Tree must use sibling-level accordion expansion: at any hierarchy level, only one sibling branch may be expanded at a time. Expanding a category collapses only other siblings with the same immediate parent.
+   - Ancestors always remain expanded. Lazy child loading loads data on demand without redundant requests.
+   - *Authoritative details*: `/docs/agent-context/design-system.md` (Section 42).
+
+8. **Admin List Page-Size Selector ("Show: X / page")**:
+   - Admin tabular list pages with numbered pagination must provide the standard page-size selector integrated into the filter bar.
+   - Allowed options: `5 / page`, `10 / page`, `25 / page`, `50 / page`, `100 / page`, and `1000 / page` (default: `10`).
+   - Changing page size resets current page to 1, synchronizes the `pageSize` URL query parameter, and passes `page_size` to the API.
+   - *Authoritative details*: `/docs/agent-context/design-system.md` (Section 43) and `/docs/agent-context/architecture.md` (Section 14).
+
+9. **Storefront Inline Editing**:
+   - Storefront administrative editing must use contextual inline editing rather than intrusive banners or redirecting to admin pages.
+   - Contextual edit icon visible only to authorized users (triple-gated via `useAdminPermissions`).
+   - Saves automatically on focus loss (blur), validates change detection pre-flight, and submits minimal PATCH payloads.
+   - *Authoritative details*: `/docs/agent-context/design-system.md` (Section 44) and `/skills/storefront-inline-editing/SKILL.md`.
+
+---
+
+## 12. Structural Changes & Scope Discipline
+
+- **Task-Local Changes**: Agents may autonomously perform small, task-local, convention-preserving structural changes required to complete the specific user request.
+- **No Unsolicited Restructuring**: Do not perform broad architectural restructuring, authentication redesign, dependency replacement, or cross-domain refactoring unless explicitly instructed.
+- **Respect User Intent**: Build what was requested cleanly and accurately without introducing unrequested features, speculative abstractions, or cosmetic rewrites of working code.
+
+---
+
+## 13. Definition of Done
+
+Before considering any task complete, verify that:
+1. **TypeScript Validation Passes**: `pnpm lint` (which runs `nuxt typecheck`) passes with zero type errors.
+2. **Production Build Passes**: `pnpm build` completes successfully.
+3. **Flows & Functionality Verified**: All modified workflows, interactive states, and edge cases operate cleanly in the browser.
+4. **No Temporary Artifacts**: Remove all temporary debugging code, console logs, and scratch files.
+5. **Architectural & Data Compliance**: No architectural boundary was violated, and no fabricated production commerce data was introduced.
+6. **Inventories Updated**: Any new or updated reusable utility, composable, or component is documented in `/docs/agent-context/utility-inventory.md` or `/docs/agent-context/component-inventory.md`.
+
+---
+
+## 14. Authoritative Knowledge Base Reference Map
+
+For detailed implementation specifications, consult the authoritative documentation:
+
+| Domain / Responsibility | Authoritative File Location |
+| :--- | :--- |
+| **System Architecture & Layers** | `/docs/agent-context/architecture.md` |
+| **Design System, UI Tokens & Admin Standards** | `/docs/agent-context/design-system.md` |
+| **E-Commerce Domain & Backend Authority** | `/docs/agent-context/ecommerce-domain.md` |
+| **SEO, Metadata, SSR & Redirects** | `/docs/agent-context/seo-strategy.md` |
+| **API Conventions & HTTP Standards** | `/docs/agent-context/api-conventions.md` |
+| **Temporarily Disabled Features** | `/docs/agent-context/disabled-features.md` |
+| **Component Inventory & Reuse** | `/docs/agent-context/component-inventory.md` |
+| **Utility & Helper Inventory** | `/docs/agent-context/utility-inventory.md` |
+| **Admin Modal Dialog Lifecycle** | `/skills/url-driven-dialogs/SKILL.md` |
+| **Storefront Inline Editing Lifecycle** | `/skills/storefront-inline-editing/SKILL.md` |
+| **Storefront Page Creation Workflow** | `/skills/storefront-page/SKILL.md` |
+| **UI Component Creation Workflow** | `/skills/ui-component/SKILL.md` |
+| **DRF API Endpoint Integration** | `/skills/api-integration/SKILL.md` |
+| **SEO Strategy Verification Workflow** | `/skills/seo/SKILL.md` |
