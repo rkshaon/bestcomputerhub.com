@@ -393,6 +393,46 @@ const getFindingReviewStatusBadge = (status?: string | null) => {
   }
 };
 
+const getSeverityBadge = (severity?: string) => {
+  switch (severity?.toUpperCase()) {
+    case 'CRITICAL':
+      return 'bg-rose-500/10 text-rose-600 border-rose-500/20';
+    case 'HIGH':
+      return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
+    case 'MEDIUM':
+      return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+    case 'LOW':
+      return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
+    case 'INFO':
+    default:
+      return 'bg-slate-500/10 text-slate-600 border-slate-500/20';
+  }
+};
+
+const getStatusBadge = (status?: string) => {
+  switch (status) {
+    case 'Critical':
+      return { icon: AlertOctagon, label: 'Critical' };
+    case 'High Risk':
+      return { icon: ShieldAlert, label: 'High Risk' };
+    case 'Needs Review':
+      return { icon: AlertTriangle, label: 'Needs Review' };
+    case 'Clean':
+    default:
+      return { icon: ShieldCheck, label: 'Clean' };
+  }
+};
+
+const scanResultColumns: UiTableColumn<ContentScan>[] = [
+  { key: 'id', label: 'Scan ID', width: '90px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap font-mono text-xs font-semibold' },
+  { key: 'content_type', label: 'Target / Scope', width: '150px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs font-semibold' },
+  { key: 'status', label: 'Status', width: '130px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'risk_score', label: 'Risk Score', width: '140px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'finding_count', label: 'Findings', width: '100px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap font-mono text-xs' },
+  { key: 'scanned_at', label: 'Scanned At', width: '180px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
+  { key: 'actions', label: '', width: '60px', headerClass: 'px-4 py-3', cellClass: 'px-4 py-3 text-right' }
+];
+
 // URL Routing/Query Management
 const route = useRoute();
 const router = useRouter();
@@ -1431,43 +1471,8 @@ const submitScanRun = async () => {
   }
 };
 
-// Re-added utility helper functions and table column definitions for findings/scans
-const getSeverityBadge = (severity?: string) => {
-  switch (severity?.toUpperCase()) {
-    case 'CRITICAL':
-      return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30';
-    case 'HIGH':
-      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
-    case 'MEDIUM':
-      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
-    case 'LOW':
-    case 'INFO':
-    default:
-      return 'bg-muted text-muted-foreground border-border';
-  }
-};
 
-const getStatusBadge = (status?: string) => {
-  switch (status) {
-    case 'Critical':
-      return { icon: ShieldAlert, class: 'bg-rose-500/10 text-rose-600 border-rose-500/20' };
-    case 'High Risk':
-      return { icon: AlertTriangle, class: 'bg-orange-500/10 text-orange-600 border-orange-500/20' };
-    case 'Needs Review':
-      return { icon: AlertCircle, class: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
-    default:
-      return { icon: CheckCircle, class: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
-  }
-};
 
-const scanResultColumns: UiTableColumn[] = [
-  { key: 'id', label: 'Scan ID', width: '80px', align: 'left', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-xs font-bold text-foreground' },
-  { key: 'content_type', label: 'Target / Entity', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 font-mono text-xs' },
-  { key: 'status', label: 'Status', width: '120px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
-  { key: 'risk_score', label: 'Risk Score', width: '140px', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap' },
-  { key: 'scanned_at', label: 'Scanned At', headerClass: 'px-4 py-3 whitespace-nowrap', cellClass: 'px-4 py-3 whitespace-nowrap text-xs text-muted-foreground' },
-  { key: 'actions', label: 'Actions', align: 'right', width: '80px', headerClass: 'px-4 py-3 text-right whitespace-nowrap', cellClass: 'px-4 py-3 text-right whitespace-nowrap' }
-];
 
 </script>
 
@@ -2823,7 +2828,8 @@ const scanResultColumns: UiTableColumn[] = [
       </div>
     </UiAdminModal>
 
-        <!-- Run Content Scan Modal -->
+
+    <!-- Run Content Scan Modal -->
     <UiAdminModal
       :is-open="isRunScanModalOpen"
       title="Run New Content Scan"

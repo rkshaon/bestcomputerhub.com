@@ -397,6 +397,8 @@ export interface HtmlAttributeRule {
   id: number;
   attribute?: string;
   pattern?: string;
+  attribute_name?: string;
+  attribute_value?: string;
   category: KeywordCategory;
   severity: KeywordSeverity;
   is_enabled: boolean;
@@ -408,6 +410,8 @@ export interface HtmlAttributeRuleDetail {
   id: number;
   attribute?: string;
   pattern?: string;
+  attribute_name?: string;
+  attribute_value?: string;
   category: KeywordCategory;
   severity: KeywordSeverity;
   is_enabled: boolean;
@@ -432,7 +436,9 @@ export interface HtmlAttributeRuleDetail {
 }
 
 export interface CreateHtmlAttributeRulePayload {
-  attribute: string;
+  attribute?: string;
+  attribute_name?: string;
+  attribute_value?: string;
   category: KeywordCategory;
   severity: KeywordSeverity;
   is_enabled?: boolean;
@@ -441,6 +447,8 @@ export interface CreateHtmlAttributeRulePayload {
 
 export interface UpdateHtmlAttributeRulePayload {
   attribute?: string;
+  attribute_name?: string;
+  attribute_value?: string;
   category?: KeywordCategory;
   severity?: KeywordSeverity;
   is_enabled?: boolean;
@@ -451,6 +459,7 @@ export interface HtmlAttributeRulesQueryParams {
   search?: string;
   category?: KeywordCategory;
   severity?: KeywordSeverity;
+  attribute_name?: string;
   is_active?: boolean;
   is_enabled?: boolean;
   ordering?: string;
@@ -470,6 +479,7 @@ export interface PaginatedHtmlAttributeRules {
 export interface HtmlTagRule {
   id: number;
   tag?: string;
+  tag_name?: string;
   pattern?: string;
   category: KeywordCategory;
   severity: KeywordSeverity;
@@ -481,6 +491,7 @@ export interface HtmlTagRule {
 export interface HtmlTagRuleDetail {
   id: number;
   tag?: string;
+  tag_name?: string;
   pattern?: string;
   category: KeywordCategory;
   severity: KeywordSeverity;
@@ -506,7 +517,8 @@ export interface HtmlTagRuleDetail {
 }
 
 export interface CreateHtmlTagRulePayload {
-  tag: string;
+  tag?: string;
+  tag_name?: string;
   category: KeywordCategory;
   severity: KeywordSeverity;
   is_enabled?: boolean;
@@ -515,6 +527,7 @@ export interface CreateHtmlTagRulePayload {
 
 export interface UpdateHtmlTagRulePayload {
   tag?: string;
+  tag_name?: string;
   category?: KeywordCategory;
   severity?: KeywordSeverity;
   is_enabled?: boolean;
