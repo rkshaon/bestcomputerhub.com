@@ -183,19 +183,19 @@ const isExternalUrl = (url?: string) => {
 <template>
   <!-- Loading Skeleton State -->
   <section v-if="status === 'pending'" class="container mx-auto px-4 pt-2" aria-label="Loading hero banners">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-[540px] w-full">
-      <div class="lg:col-span-8 rounded-3xl bg-muted/60 animate-pulse min-h-[360px] lg:min-h-[540px] p-8 md:p-12 flex flex-col justify-end space-y-4">
+    <div class="hero-banner-grid grid grid-cols-1 gap-4 w-full">
+      <div class="aspect-[3/2] w-full rounded-3xl bg-muted/60 animate-pulse p-6 sm:p-8 md:p-12 flex flex-col justify-end space-y-4">
         <div class="w-1/3 h-6 bg-muted rounded-full"></div>
         <div class="w-2/3 h-10 bg-muted rounded-lg"></div>
         <div class="w-1/2 h-5 bg-muted rounded-lg"></div>
         <div class="w-32 h-11 bg-muted rounded-full"></div>
       </div>
-      <div class="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-4">
-        <div class="flex-1 rounded-2xl bg-muted/60 animate-pulse min-h-[200px] p-6 flex flex-col justify-end space-y-2">
+      <div class="flex flex-col sm:flex-row lg:flex-col gap-4 w-full">
+        <div class="aspect-[3/2] w-full rounded-2xl bg-muted/60 animate-pulse p-5 sm:p-6 flex flex-col justify-end space-y-2">
           <div class="w-3/4 h-6 bg-muted rounded-md"></div>
           <div class="w-1/2 h-4 bg-muted rounded-md"></div>
         </div>
-        <div class="flex-1 rounded-2xl bg-muted/60 animate-pulse min-h-[200px] p-6 flex flex-col justify-end space-y-2">
+        <div class="aspect-[3/2] w-full rounded-2xl bg-muted/60 animate-pulse p-5 sm:p-6 flex flex-col justify-end space-y-2">
           <div class="w-3/4 h-6 bg-muted rounded-md"></div>
           <div class="w-1/2 h-4 bg-muted rounded-md"></div>
         </div>
@@ -222,14 +222,11 @@ const isExternalUrl = (url?: string) => {
       @keydown="handleKeyDown"
       tabindex="0"
     >
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-0 lg:min-h-[540px] w-full">
+      <div :class="['grid grid-cols-1 gap-4 w-full', hasRightBanners && hasHeroBanners ? 'hero-banner-grid' : '']">
         <!-- Primary Hero Area (homepage_hero) -->
         <div
           v-if="hasHeroBanners && currentHeroBanner"
-          :class="[
-            'relative rounded-3xl overflow-hidden bg-muted flex items-center p-8 md:p-12 shadow-xl group/primary min-h-[360px] lg:min-h-[540px]',
-            hasRightBanners ? 'lg:col-span-8' : 'lg:col-span-12'
-          ]"
+          class="relative aspect-[3/2] w-full rounded-3xl overflow-hidden bg-muted flex items-center p-6 sm:p-8 md:p-12 shadow-xl group/primary"
         >
           <!-- Banner Image with Responsive Picture Support -->
           <Transition :name="prefersReducedMotion === 'reduce' ? 'fade' : `slide-${direction}`">
@@ -248,22 +245,22 @@ const isExternalUrl = (url?: string) => {
           </Transition>
 
           <!-- Banner Copy and CTA -->
-          <div v-if="currentHeroBanner.title || currentHeroBanner.subtitle || currentHeroBanner.cta_text || currentHeroBanner.cta_url" class="relative z-10 max-w-xl space-y-6">
-            <h1 v-if="currentHeroBanner.title" class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.05] text-white">
+          <div v-if="currentHeroBanner.title || currentHeroBanner.subtitle || currentHeroBanner.cta_text || currentHeroBanner.cta_url" class="relative z-10 max-w-xl space-y-3 sm:space-y-4 md:space-y-6">
+            <h1 v-if="currentHeroBanner.title" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-display font-extrabold tracking-tight leading-[1.05] text-white">
               {{ currentHeroBanner.title }}
             </h1>
 
-            <p v-if="currentHeroBanner.subtitle" class="text-base sm:text-lg text-white/80 leading-relaxed font-normal max-w-lg">
+            <p v-if="currentHeroBanner.subtitle" class="text-sm sm:text-base md:text-lg text-white/80 leading-relaxed font-normal max-w-lg line-clamp-2 sm:line-clamp-3">
               {{ currentHeroBanner.subtitle }}
             </p>
 
-            <div v-if="currentHeroBanner.cta_text || currentHeroBanner.cta_url" class="flex flex-wrap items-center gap-3 pt-2">
+            <div v-if="currentHeroBanner.cta_text || currentHeroBanner.cta_url" class="flex flex-wrap items-center gap-3 pt-1 sm:pt-2">
               <a
                 v-if="isExternalUrl(currentHeroBanner.cta_url)"
                 :href="currentHeroBanner.cta_url"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-7 text-sm font-semibold gap-2 transition-colors shadow-md"
+                class="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 h-9 sm:h-11 px-5 sm:px-7 text-xs sm:text-sm font-semibold gap-2 transition-colors shadow-md"
               >
                 <span>{{ currentHeroBanner.cta_text || 'Explore Now' }}</span>
                 <ChevronRight class="w-4 h-4" />
@@ -271,7 +268,7 @@ const isExternalUrl = (url?: string) => {
               <UiButton
                 v-else
                 size="lg"
-                class="rounded-full gap-2 px-7 font-semibold"
+                class="rounded-full gap-2 px-5 sm:px-7 h-9 sm:h-11 text-xs sm:text-sm font-semibold"
                 :to="currentHeroBanner.cta_url || '/products/'"
               >
                 <span>{{ currentHeroBanner.cta_text || 'Explore Now' }}</span>
@@ -284,22 +281,22 @@ const isExternalUrl = (url?: string) => {
           <template v-if="heroBanners.length > 1">
             <button
               @click="prevSlide"
-              class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-background/60 dark:bg-black/50 hover:bg-background/90 dark:hover:bg-black/80 backdrop-blur-md text-foreground border border-border/50 flex items-center justify-center transition-all duration-200 shadow-md opacity-80 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              class="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-background/60 dark:bg-black/50 hover:bg-background/90 dark:hover:bg-black/80 backdrop-blur-md text-foreground border border-border/50 flex items-center justify-center transition-all duration-200 shadow-md opacity-80 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="Previous slide"
             >
-              <ChevronLeft class="w-5 h-5" />
+              <ChevronLeft class="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             <button
               @click="nextSlide"
-              class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-background/60 dark:bg-black/50 hover:bg-background/90 dark:hover:bg-black/80 backdrop-blur-md text-foreground border border-border/50 flex items-center justify-center transition-all duration-200 shadow-md opacity-80 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-background/60 dark:bg-black/50 hover:bg-background/90 dark:hover:bg-black/80 backdrop-blur-md text-foreground border border-border/50 flex items-center justify-center transition-all duration-200 shadow-md opacity-80 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="Next slide"
             >
-              <ChevronRight class="w-5 h-5" />
+              <ChevronRight class="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             <!-- Bottom Indicators -->
-            <div class="absolute bottom-4 left-6 md:left-12 z-20 flex items-center gap-3">
+            <div class="absolute bottom-3 sm:bottom-4 left-4 sm:left-6 md:left-12 z-20 flex items-center gap-3">
               <div class="flex items-center gap-2 bg-black/40 dark:bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-sm">
                 <button
                   v-for="(b, idx) in heroBanners"
@@ -330,10 +327,7 @@ const isExternalUrl = (url?: string) => {
         <!-- Right Stacked Secondary Banners (homepage_right_top & homepage_right_bottom) -->
         <div
           v-if="hasRightBanners"
-          :class="[
-            'flex flex-col sm:flex-row lg:flex-col gap-4 h-full',
-            hasHeroBanners ? 'lg:col-span-4' : 'lg:col-span-12'
-          ]"
+          class="flex flex-col sm:flex-row lg:flex-col gap-4 w-full"
         >
           <!-- Right Top Banner -->
           <component
@@ -342,7 +336,7 @@ const isExternalUrl = (url?: string) => {
             :[isExternalUrl(currentRightTopBanner?.cta_url)?'href':'to']="currentRightTopBanner.cta_url || '/products/'"
             :target="isExternalUrl(currentRightTopBanner?.cta_url) ? '_blank' : undefined"
             :rel="isExternalUrl(currentRightTopBanner?.cta_url) ? 'noopener noreferrer' : undefined"
-            class="flex-1 relative rounded-2xl overflow-hidden bg-card border border-border/60 p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300 min-h-[200px] lg:min-h-0"
+            class="aspect-[3/2] w-full relative rounded-2xl overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
           >
             <picture class="absolute inset-0 z-0">
               <source v-if="currentRightTopBanner.mobile_image" media="(max-width: 639px)" :srcset="currentRightTopBanner.mobile_image" />
@@ -355,19 +349,19 @@ const isExternalUrl = (url?: string) => {
             </picture>
 
             <div class="relative z-10 flex items-start justify-between">
-              <div class="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors ml-auto">
-                <ArrowUpRight class="w-4 h-4" />
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors ml-auto">
+                <ArrowUpRight class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
 
-            <div v-if="currentRightTopBanner.title || currentRightTopBanner.subtitle || currentRightTopBanner.cta_text" class="relative z-10 space-y-1.5 pt-4">
-              <h3 v-if="currentRightTopBanner.title" class="text-xl font-display font-bold text-foreground group-hover:text-primary transition-colors">
+            <div v-if="currentRightTopBanner.title || currentRightTopBanner.subtitle || currentRightTopBanner.cta_text" class="relative z-10 space-y-1 sm:space-y-1.5 pt-4">
+              <h3 v-if="currentRightTopBanner.title" class="text-base sm:text-lg lg:text-xl font-display font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                 {{ currentRightTopBanner.title }}
               </h3>
-              <p v-if="currentRightTopBanner.subtitle" class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+              <p v-if="currentRightTopBanner.subtitle" class="text-xs text-muted-foreground line-clamp-1 sm:line-clamp-2 leading-relaxed">
                 {{ currentRightTopBanner.subtitle }}
               </p>
-              <div v-if="currentRightTopBanner.cta_text" class="inline-flex items-center gap-1 text-xs font-bold text-primary group-hover:underline pt-1">
+              <div v-if="currentRightTopBanner.cta_text" class="inline-flex items-center gap-1 text-xs font-bold text-primary group-hover:underline pt-0.5 sm:pt-1">
                 <span>{{ currentRightTopBanner.cta_text }}</span>
                 <ChevronRight class="w-3 h-3" />
               </div>
@@ -381,7 +375,7 @@ const isExternalUrl = (url?: string) => {
             :[isExternalUrl(currentRightBottomBanner?.cta_url)?'href':'to']="currentRightBottomBanner.cta_url || '/products/'"
             :target="isExternalUrl(currentRightBottomBanner?.cta_url) ? '_blank' : undefined"
             :rel="isExternalUrl(currentRightBottomBanner?.cta_url) ? 'noopener noreferrer' : undefined"
-            class="flex-1 relative rounded-2xl overflow-hidden bg-card border border-border/60 p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300 min-h-[200px] lg:min-h-0"
+            class="aspect-[3/2] w-full relative rounded-2xl overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
           >
             <picture class="absolute inset-0 z-0">
               <source v-if="currentRightBottomBanner.mobile_image" media="(max-width: 639px)" :srcset="currentRightBottomBanner.mobile_image" />
@@ -394,19 +388,19 @@ const isExternalUrl = (url?: string) => {
             </picture>
 
             <div class="relative z-10 flex items-start justify-between">
-              <div class="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors ml-auto">
-                <ArrowUpRight class="w-4 h-4" />
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors ml-auto">
+                <ArrowUpRight class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
 
-            <div v-if="currentRightBottomBanner.title || currentRightBottomBanner.subtitle || currentRightBottomBanner.cta_text" class="relative z-10 space-y-1.5 pt-4">
-              <h3 v-if="currentRightBottomBanner.title" class="text-xl font-display font-bold text-foreground group-hover:text-primary transition-colors">
+            <div v-if="currentRightBottomBanner.title || currentRightBottomBanner.subtitle || currentRightBottomBanner.cta_text" class="relative z-10 space-y-1 sm:space-y-1.5 pt-4">
+              <h3 v-if="currentRightBottomBanner.title" class="text-base sm:text-lg lg:text-xl font-display font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                 {{ currentRightBottomBanner.title }}
               </h3>
-              <p v-if="currentRightBottomBanner.subtitle" class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+              <p v-if="currentRightBottomBanner.subtitle" class="text-xs text-muted-foreground line-clamp-1 sm:line-clamp-2 leading-relaxed">
                 {{ currentRightBottomBanner.subtitle }}
               </p>
-              <div v-if="currentRightBottomBanner.cta_text" class="inline-flex items-center gap-1 text-xs font-bold text-primary group-hover:underline pt-1">
+              <div v-if="currentRightBottomBanner.cta_text" class="inline-flex items-center gap-1 text-xs font-bold text-primary group-hover:underline pt-0.5 sm:pt-1">
                 <span>{{ currentRightBottomBanner.cta_text }}</span>
                 <ChevronRight class="w-3 h-3" />
               </div>
@@ -419,6 +413,18 @@ const isExternalUrl = (url?: string) => {
 </template>
 
 <style scoped>
+.hero-banner-grid {
+  --banner-gap: 1rem;
+  gap: var(--banner-gap);
+}
+
+@media (min-width: 1024px) {
+  .hero-banner-grid {
+    display: grid;
+    grid-template-columns: calc((200% - 0.5 * var(--banner-gap)) / 3) calc((100% - 2.5 * var(--banner-gap)) / 3);
+  }
+}
+
 /* Slide animations */
 .slide-next-enter-active,
 .slide-next-leave-active,
@@ -429,6 +435,7 @@ const isExternalUrl = (url?: string) => {
   top: 0;
   left: 0;
   width: 100%;
+  height: 100%;
 }
 
 .slide-next-enter-from {
