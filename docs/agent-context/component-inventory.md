@@ -948,6 +948,7 @@ Components are classified using four standard metadata properties:
 ### Content Security Rule Management Components
 - **Exact File Locations**: 
   - `/features/admin/content-security/components/DetectionRuleCreateModal.vue`
+  - `/features/admin/content-security/components/ScanRunModal.vue`
   - `/features/admin/content-security/components/KeywordRulesTab.vue`
   - `/features/admin/content-security/components/DomainRulesTab.vue`
   - `/features/admin/content-security/components/HiddenContentRulesTab.vue`
@@ -957,15 +958,16 @@ Components are classified using four standard metadata properties:
   - `/features/admin/content-security/components/HtmlTagRulesTab.vue`
 - **Component Type**: Feature component / Data-display / Form component
 - **Scope**: Admin
-- **Purpose**: Decomposed, modular detection-rule management sections extracted from `/pages/admin/content-security/index.vue` to handle security inspection criteria (Keywords, Domains, Hidden Content, Obfuscation, Redirects, HTML Attributes, HTML Tags).
+- **Purpose**: Decomposed, modular detection-rule and scan-run management sections extracted from `/pages/admin/content-security/index.vue` to handle security inspection criteria and execution (Scan Modal, Keywords, Domains, Hidden Content, Obfuscation, Redirects, HTML Attributes, HTML Tags).
 - **Routes/Pages Used**: Content Security Rule Admin (`/admin/content-security/`).
 - **Main Responsibilities**:
   - Independent rule search, filtering, and numbered pagination.
   - Creation and editing of security rules via customized modals with full permission enforcement.
   - Interactive rule activation toggles and risk score visual indicators.
-- **What They Explicitly Do Not Own**: Content Scanning execution or findings listing (managed by the core `/pages/admin/content-security/index.vue` page).
-- **State Owned**: Local query states (search, categories, severities, page, page size, list arrays).
-- **Calls API**: Yes, via `useContentSecurityService`.
+  - Executing content security scans across specific items, content types, or entire system via `<ScanRunModal>`.
+- **What They Explicitly Do Not Own**: Content Security dashboard page structure.
+- **State Owned**: Local query states (search, categories, severities, page, page size, list arrays, scan mode and object search).
+- **Calls API**: Yes, via `useContentSecurityService`, `useProductService`, `useCategoryService`, `useBrandService`, `useBlogService`.
 - **Related Composables/Services**: `useContentSecurityService`, `useAdminPermissions`, `useAdminModalState`.
 - **Responsive Responsibility**: Clean tabular scaling, overflow-x-auto containers, unified responsive dialog actions.
 - **Reusability Level**: Medium

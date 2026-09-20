@@ -1244,130 +1244,18 @@ const closeScanDetail = () => {
   selectedContentScan.value = null;
 };
 
-// ==========================================
-// Scan Action & Mode Selection
-// ==========================================
-export type ScanMode = 'specific' | 'content_type' | 'everything';
-
-const scanMode = ref<ScanMode>('specific');
-const selectedScanContentType = ref<string>('Product');
-const selectedScanObjectId = ref<string | number>('');
-const scanFieldsInput = ref<string>('');
-
-const availableScanObjects = ref<Array<{ id: string | number; label: string; sublabel?: string; type: string; typeLabel: string }>>([]);
-const isScanObjectsLoading = ref(false);
-const scanObjectSearchQuery = ref('');
-const debouncedScanObjectQuery = refDebounced(scanObjectSearchQuery, 300);
-
-const scanProductService = useProductService();
-const scanCategoryService = useCategoryService();
-const scanBrandService = useBrandService();
-const scanBlogService = useBlogService();
-
-const supportedContentTypes = computed(() => [
-  { value: 'Product', label: 'Products' },
-  { value: 'Category', label: 'Categories' },
-  { value: 'Brand', label: 'Brands' },
-  { value: 'Blog', label: 'Blog Posts' }
-]);
-
-const fetchAvailableScanObjects = async () => {
-  if (scanMode.value !== 'specific') return;
-  isScanObjectsLoading.value = true;
-  
-  try {
-    const query = debouncedScanObjectQuery.value.trim();
-    let list: Array<{ id: string | number; label: string; sublabel?: string; type: string; typeLabel: string }> = [];
-
-    // Fetch from all supported endpoints concurrently
-    const [productsRes, categoriesRes, brandsRes, blogsRes] = await Promise.allSettled([
-      scanProductService.getProductsList({ search: query, page_size: 10 }),
-      scanCategoryService.getCategoriesList({ search: query, page_size: 10 }),
-      scanBrandService.getBrandsList({ search: query }),
-      scanBlogService.getPosts({ query })
-    ]);
-
-    if (productsRes.status === 'fulfilled') {
-      list.push(...(productsRes.value.results || []).map(p => ({
-        id: p.id,
-        label: p.name || (p as any).title || `Product #${p.id}`,
-        sublabel: p.slug ? `slug: ${p.slug}` : `ID: ${p.id}`,
-        type: 'Product',
-        typeLabel: 'Product'
-      })));
-    }
-    
-    if (categoriesRes.status === 'fulfilled') {
-      list.push(...(categoriesRes.value.results || []).map(c => ({
-        id: c.id,
-        label: c.name || `Category #${c.id}`,
-        sublabel: c.slug ? `slug: ${c.slug}` : `ID: ${c.id}`,
-        type: 'Category',
-        typeLabel: 'Category'
-      })));
-    }
-
-    if (brandsRes.status === 'fulfilled') {
-      const bData = (brandsRes.value as any).value || brandsRes.value || [];
-      const brandList = Array.isArray(bData) ? bData : (bData.results || []);
-      list.push(...brandList.map((b: any) => ({
-        id: b.id,
-        label: b.name || `Brand #${b.id}`,
-        sublabel: b.slug ? `slug: ${b.slug}` : `ID: ${b.id}`,
-        type: 'Brand',
-        typeLabel: 'Brand'
-      })));
-    }
-
-    if (blogsRes.status === 'fulfilled') {
-      const pData = (blogsRes.value as any).value || blogsRes.value || [];
-      const postList = Array.isArray(pData) ? pData : (pData.results || []);
-      list.push(...postList.map((p: any) => ({
-        id: p.id,
-        label: p.title || `Post #${p.id}`,
-        sublabel: p.slug ? `slug: ${p.slug}` : `ID: ${p.id}`,
-        type: 'Blog',
-        typeLabel: 'Blog Post'
-      })));
-    }
-
-    availableScanObjects.value = list;
-
-    // Do not auto-select to avoid overwriting user selection when searching
-    if (list.length > 0 && (!selectedScanObjectId.value || !list.some(item => String(item.id) === String(selectedScanObjectId.value) && item.type === selectedScanContentType.value))) {
-      // We no longer auto-select the first item because it can be jarring
-    }
-  } catch (err) {
-    console.error('Failed to fetch scannable objects:', err);
-    availableScanObjects.value = [];
-  } finally {
-    isScanObjectsLoading.value = false;
-  }
-};
-
-watch([debouncedScanObjectQuery, scanMode], ([newQuery, newMode]) => {
-  if (newMode === 'specific') {
-    fetchAvailableScanObjects();
-  }
-});
-
 const findingsTab = ref<InstanceType<typeof FindingsTab> | null>(null);
 
 const runFullScan = () => {
   isRunScanModalOpen.value = true;
 };
+
 const handleScanCompleted = async () => {
   await fetchContentScans();
   if (findingsTab.value && canViewFindings.value) {
     await findingsTab.value.refresh();
   }
 };
-
-// Remove isRunScanModalOpen, isSubmittingScanRun, runFullScan, submitScanRun
-// Removed from here because they are now in ScanRunModal.vue
-
-
-
 
 </script>
 
