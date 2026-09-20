@@ -27,27 +27,12 @@ const categoryService = useCategoryService();
 const { toastInfo } = useToast();
 const route = useRoute();
 
-// Expanded Search State
-const isSearchExpanded = ref(false);
+// Search State
 const searchQuery = ref('');
-const searchContainerRef = ref<HTMLElement | null>(null);
-const searchOverlayRef = ref<InstanceType<typeof HeaderSearchOverlay> | null>(null);
-
-const openSearch = () => {
-  isSearchExpanded.value = true;
-  nextTick(() => {
-    searchOverlayRef.value?.focus();
-  });
-};
-
-const closeSearch = () => {
-  isSearchExpanded.value = false;
-};
 
 const handleSearchSubmit = () => {
   if (searchQuery.value.trim()) {
     navigateTo(`/products?q=${encodeURIComponent(searchQuery.value.trim())}`);
-    closeSearch();
   }
 };
 
@@ -358,7 +343,7 @@ onUnmounted(() => {
   }
 });
 
-watch([categories, isSearchExpanded], () => {
+watch(categories, () => {
   nextTick(() => {
     updateAdaptiveNav();
   });
@@ -372,13 +357,6 @@ if (process.client) {
     // if (!target.closest('.theme-dropdown')) {
     //   isThemeMenuOpen.value = false;
     // }
-    if (
-      isSearchExpanded.value &&
-      searchContainerRef.value &&
-      !searchContainerRef.value.contains(e.target as Node)
-    ) {
-      closeSearch();
-    }
     if (!target.closest('.group\\/more') && !target.closest('.group\\/moreitem')) {
       isMoreOpen.value = false;
     }
@@ -388,9 +366,6 @@ if (process.client) {
     if (e.key === 'Escape') {
       activeMegaMenuId.value = null;
       isMoreOpen.value = false;
-      if (isSearchExpanded.value) {
-        closeSearch();
-      }
     }
   };
 
@@ -417,11 +392,7 @@ if (process.client) {
     -->
 
     <div 
-      ref="searchContainerRef" 
-      :class="cn(
-        'container mx-auto px-4 relative py-2 sm:py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0',
-        !isSearchExpanded && 'md:grid md:grid-cols-[auto_1fr] md:gap-x-5 lg:gap-x-6'
-      )"
+      class="container mx-auto px-4 relative py-2 sm:py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0 md:grid md:grid-cols-[auto_1fr] md:gap-x-5 lg:gap-x-6"
     >
       <!-- Mobile Row 1 (< md): [ Menu Toggle ] [ Brand Logo ] [ Theme & Bag ] -->
       <div class="flex md:hidden items-center justify-between w-full gap-2 py-0.5">
@@ -438,7 +409,6 @@ if (process.client) {
           to="/" 
           class="flex items-center justify-center shrink-0 group transition-all duration-300"
           aria-label="Best Computer Hub Home"
-          @click="closeSearch"
         >
           <UiBrandLogo 
             size="lg" 
@@ -486,12 +456,8 @@ if (process.client) {
           v-model="searchQuery"
           type="text" 
           placeholder="Search products, brands or models..." 
-          role="combobox"
-          :aria-expanded="isSearchExpanded"
-          aria-autocomplete="list"
           aria-label="Search items"
           class="w-full bg-muted/60 border border-input focus:border-primary/50 rounded-full outline-none h-10 text-xs px-10 transition-all focus:bg-background focus:ring-2 focus:ring-primary/20 font-medium"
-          @focus="openSearch"
           @keyup.enter="handleSearchSubmit"
         />
         <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -499,7 +465,7 @@ if (process.client) {
           v-if="searchQuery" 
           type="button" 
           @click="searchQuery = ''"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 rounded-full hover:bg-muted"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 rounded-full hover:bg-muted cursor-pointer"
           aria-label="Clear search text"
         >
           <X class="w-3.5 h-3.5" />
@@ -509,45 +475,28 @@ if (process.client) {
       <!-- Desktop Spanning Brand Logo (md: and up) -->
       <NuxtLink 
         to="/" 
-        :class="cn(
-          'hidden md:flex items-center justify-center shrink-0 group transition-all duration-300',
-          !isSearchExpanded && 'md:col-start-1 md:row-start-1 md:row-span-2 md:self-center pr-2 lg:pr-3'
-        )"
+        class="hidden md:flex items-center justify-center shrink-0 group transition-all duration-300 md:col-start-1 md:row-start-1 md:row-span-2 md:self-center pr-2 lg:pr-3"
         aria-label="Best Computer Hub Home"
-        @click="closeSearch"
       >
         <UiBrandLogo 
           size="lg" 
           :show-text="false" 
-          :img-class="cn(
-            'object-contain transition-all duration-300 group-hover:scale-105 shrink-0',
-            isSearchExpanded 
-              ? 'h-9 w-auto md:h-11' 
-              : 'h-9 w-auto md:h-[80px] lg:h-[84px] max-h-[86px]'
-          )"
+          img-class="object-contain transition-all duration-300 group-hover:scale-105 shrink-0 h-9 w-auto md:h-[80px] lg:h-[84px] max-h-[86px]"
         />
       </NuxtLink>
 
       <!-- Desktop Main Row (md: and up) -->
       <div 
-        :class="cn(
-          'hidden md:flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader flex-1 min-w-0',
-          !isSearchExpanded && 'md:col-start-2 md:row-start-1'
-        )"
+        class="hidden md:flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader flex-1 min-w-0 md:col-start-2 md:row-start-1"
       >
-        <!-- Live Desktop Search Overlay -->
+        <!-- Desktop Search Bar -->
         <HeaderSearchOverlay
-          ref="searchOverlayRef"
-          v-model:is-expanded="isSearchExpanded"
           v-model:search-query="searchQuery"
-          :categories="categories"
-          :all-categories="allCategories"
-          @close="closeSearch"
           @submit="handleSearchSubmit"
         />
 
-        <!-- Normal Header Actions (Hidden when Search is Expanded) -->
-        <div v-if="!isSearchExpanded" class="flex items-center gap-1 sm:gap-2 shrink-0 transition-opacity duration-200">
+        <!-- Normal Header Actions -->
+        <div class="flex items-center gap-1 sm:gap-2 shrink-0 transition-opacity duration-200">
           <!-- TEMPORARILY DISABLED: Storefront Theme Mode Selection (Desktop) -->
           <!-- Restore when storefront theme selection is required again. -->
           <!--
@@ -775,9 +724,8 @@ if (process.client) {
 
       </div>
 
-      <!-- Category Navigation Row (Hidden when Search is Expanded) -->
+      <!-- Category Navigation Row -->
       <nav 
-        v-if="!isSearchExpanded" 
         ref="navRef"
         :class="cn(
           'hidden md:flex relative items-center justify-between w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50 md:col-start-2 md:row-start-2 transition-all duration-200',
