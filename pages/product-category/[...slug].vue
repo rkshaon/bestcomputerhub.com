@@ -700,7 +700,7 @@ const resetFilters = () => {
                     @keydown.enter="saveField('short_description_title')"
                     @keydown.esc="cancelEditing"
                     :disabled="isFieldSaving === 'short_description_title'"
-                    class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none w-full animate-none"
+                    class="text-2xl text-[24px] font-display font-black tracking-tight text-foreground transition-all bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none w-full animate-none"
                   />
                   <div v-if="isFieldSaving === 'short_description_title'" class="shrink-0">
                     <Loader2 class="w-5 h-5 animate-spin text-primary" />
@@ -708,12 +708,12 @@ const resetFilters = () => {
                 </div>
               </template>
               <template v-else>
-                <h1 class="text-4xl md:text-5xl font-display font-black tracking-tight text-foreground transition-all flex items-center gap-2.5">
+                <h1 class="text-2xl text-[24px] font-display font-black tracking-tight text-foreground transition-all flex items-center gap-2.5">
                   <span v-if="category?.short_description_title">{{ decodeHtmlEntities(category.short_description_title) }}</span>
                   <span 
                     v-else 
                     :class="[
-                      'text-muted-foreground/60 italic font-medium text-3xl md:text-4xl select-none',
+                      'text-muted-foreground/60 italic font-medium text-2xl text-[24px] select-none',
                       canEditCategoryFromStorefront ? 'cursor-pointer hover:text-muted-foreground/80' : ''
                     ]"
                     @click="canEditCategoryFromStorefront && startEditing('short_description_title')"
@@ -760,7 +760,7 @@ const resetFilters = () => {
                 @keydown.esc="cancelEditing"
                 :disabled="isFieldSaving === 'short_description'"
                 placeholder="Enter short description..."
-                class="w-full flex-1 min-w-0 text-sm md:text-base bg-background border border-input rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground leading-relaxed resize-none"
+                class="w-full flex-1 min-w-0 text-sm text-[14px] bg-background border border-input rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground leading-relaxed resize-none"
               ></textarea>
               <div v-if="isFieldSaving === 'short_description'" class="shrink-0">
                 <Loader2 class="w-4 h-4 animate-spin text-primary" />
@@ -768,7 +768,7 @@ const resetFilters = () => {
             </div>
           </div>
           <div v-else-if="category?.short_description?.trim()" class="w-full flex items-start gap-2">
-            <p class="w-full flex-1 min-w-0 text-muted-foreground text-sm md:text-base leading-relaxed break-words">
+            <p class="w-full flex-1 min-w-0 text-muted-foreground text-sm text-[14px] leading-relaxed break-words">
               {{ category.short_description }}
             </p>
             <button 
@@ -785,7 +785,7 @@ const resetFilters = () => {
             v-else-if="canEditCategoryFromStorefront"
             type="button"
             @click="startEditing('short_description')"
-            class="inline-flex items-center gap-2 text-sm text-muted-foreground/80 hover:text-foreground italic cursor-pointer transition-colors group/edit-empty text-left"
+            class="inline-flex items-center gap-2 text-sm text-[14px] text-muted-foreground/80 hover:text-foreground italic cursor-pointer transition-colors group/edit-empty text-left"
             title="Edit Short Description"
             aria-label="Edit the short description to display"
           >
