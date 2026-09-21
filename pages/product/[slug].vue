@@ -811,41 +811,8 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               </template>
             </div>
 
-            <!-- Short Description / Editor -->
-            <div class="space-y-2 mt-4">
-              <div class="flex items-center gap-2" v-if="canEditProductFromStorefront">
-                <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Short Description</span>
-                <button 
-                  v-if="editingField !== 'short_description'"
-                  @click="startEditing('short_description')"
-                  class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  title="Edit Short Description"
-                >
-                  <Edit2 class="w-3 h-3" />
-                </button>
-                <div v-else-if="isFieldSaving === 'short_description'" class="flex items-center gap-1 text-[10px] text-amber-500 font-bold uppercase tracking-wider">
-                  <Loader2 class="w-3 h-3 animate-spin" /> Saving...
-                </div>
-              </div>
-              
-              <div v-if="editingField === 'short_description'">
-                <div @focusout="handleFocusOut($event, 'short_description')" class="w-full">
-                  <UiRichTextEditor 
-                    v-model="editShortDescValue"
-                    min-height="min-h-[120px]"
-                    :disabled="isFieldSaving === 'short_description'"
-                    placeholder="Enter short description..."
-                  />
-                </div>
-              </div>
-              <div v-else>
-                <div v-if="product.short_description" class="prose prose-sm prose-slate dark:prose-invert max-w-none text-sm text-[14px] text-muted-foreground leading-relaxed" v-html="product.short_description"></div>
-                <div v-else-if="product.description" class="text-sm text-[14px] text-muted-foreground leading-relaxed line-clamp-3" v-html="product.description"></div>
-              </div>
-            </div>
-            
             <!-- Metadata & Attributes -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3 border-t">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3 pb-1 border-t mt-4">
               <div class="p-3 bg-muted/20 rounded-xl border border-border/50 space-y-1">
                 <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Availability</span>
                 <p class="text-xs font-semibold text-foreground flex items-center gap-1.5">
@@ -876,6 +843,39 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <p class="text-xs font-mono font-medium text-foreground truncate">
                   {{ product.sku || `ID-${product.id}` }}
                 </p>
+              </div>
+            </div>
+
+            <!-- Short Description / Editor -->
+            <div class="space-y-2 pt-3 border-t mt-4">
+              <div class="flex items-center gap-2" v-if="canEditProductFromStorefront">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Short Description</span>
+                <button 
+                  v-if="editingField !== 'short_description'"
+                  @click="startEditing('short_description')"
+                  class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Edit Short Description"
+                >
+                  <Edit2 class="w-3 h-3" />
+                </button>
+                <div v-else-if="isFieldSaving === 'short_description'" class="flex items-center gap-1 text-[10px] text-amber-500 font-bold uppercase tracking-wider">
+                  <Loader2 class="w-3 h-3 animate-spin" /> Saving...
+                </div>
+              </div>
+              
+              <div v-if="editingField === 'short_description'">
+                <div @focusout="handleFocusOut($event, 'short_description')" class="w-full">
+                  <UiRichTextEditor 
+                    v-model="editShortDescValue"
+                    min-height="min-h-[120px]"
+                    :disabled="isFieldSaving === 'short_description'"
+                    placeholder="Enter short description..."
+                  />
+                </div>
+              </div>
+              <div v-else>
+                <div v-if="product.short_description" class="prose prose-sm prose-slate dark:prose-invert max-w-none text-sm text-[14px] text-muted-foreground leading-relaxed" v-html="product.short_description"></div>
+                <div v-else-if="product.description" class="text-sm text-[14px] text-muted-foreground leading-relaxed line-clamp-3" v-html="product.description"></div>
               </div>
             </div>
 
