@@ -639,10 +639,11 @@ const fetchProducts = async () => {
   }
 };
 
-watch(category, async (newCat, oldCat) => {
+watch(() => category.value?.id, async (newId, oldId) => {
+  if (!newId) return;
   currentPage.value = 1;
   // If category changed, reset brand filter, selected subcategory, and price range
-  if (!oldCat || !newCat || oldCat.id !== newCat.id) {
+  if (newId !== oldId) {
     isResolvingCategory.value = true;
     filters.brand = '';
     selectedSubcategoryId.value = null;
@@ -656,7 +657,7 @@ watch(category, async (newCat, oldCat) => {
     isResolvingCategory.value = false;
   }
   fetchProducts();
-}, { deep: true, immediate: true });
+}, { immediate: true });
 
 watch(
   [debouncedSearchQuery, () => filters.brand, () => filters.minPrice, () => filters.maxPrice, () => filters.sort],
