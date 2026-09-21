@@ -43,9 +43,18 @@ const searchQueryModel = computed({
 const debouncedSearchQuery = refDebounced(searchQueryModel, 300);
 
 const searchResults = ref<Product[]>([]);
+const totalResultCount = ref(0);
 const isSearching = ref(false);
 const searchError = ref<string | null>(null);
 const isOpen = ref(false);
+
+const resultCountText = computed(() => {
+  const showing = searchResults.value.length;
+  const total = totalResultCount.value;
+  if (showing === 0 || total === 0) return '';
+  const noun = total === 1 ? 'product' : 'products';
+  return `Showing ${showing} out of ${total} ${noun}`;
+});
 
 let currentRequestId = 0;
 
@@ -55,6 +64,7 @@ watch(searchQueryModel, (newQuery) => {
   if (trimmed.length < 1) {
     currentRequestId++;
     searchResults.value = [];
+    totalResultCount.value = 0;
     isSearching.value = false;
     searchError.value = null;
     isOpen.value = false;
@@ -70,6 +80,7 @@ watch(debouncedSearchQuery, async (newQuery) => {
   const trimmed = newQuery.trim();
   if (trimmed.length < 1) {
     searchResults.value = [];
+    totalResultCount.value = 0;
     isSearching.value = false;
     searchError.value = null;
     return;
@@ -91,6 +102,7 @@ watch(debouncedSearchQuery, async (newQuery) => {
     }
 
     searchResults.value = res?.results || [];
+    totalResultCount.value = typeof res?.count === 'number' ? res.count : searchResults.value.length;
   } catch (err: any) {
     if (requestId !== currentRequestId) {
       return;
@@ -98,6 +110,7 @@ watch(debouncedSearchQuery, async (newQuery) => {
     console.error('Header search error:', err);
     searchError.value = 'Failed to load matching products.';
     searchResults.value = [];
+    totalResultCount.value = 0;
   } finally {
     if (requestId === currentRequestId) {
       isSearching.value = false;
@@ -125,6 +138,7 @@ const handleSearchSubmit = () => {
 
 const handleClear = () => {
   searchQueryModel.value = '';
+  totalResultCount.value = 0;
   closeDropdown();
   searchInputRef.value?.focus();
 };
@@ -201,11 +215,17 @@ defineExpose({
         class="absolute top-full left-0 right-0 z-50 mt-1.5 bg-background border border-border rounded-2xl p-4 sm:p-5 overflow-hidden space-y-3 max-h-[75vh] overflow-y-auto"
       >
         <!-- Header with matching count label and View all results button -->
-        <div class="flex items-center justify-end border-b border-border pb-2.5">
+        <div class="flex items-center justify-between border-b border-border pb-2.5 gap-3">
+          <div class="text-xs text-muted-foreground font-medium truncate">
+            <span v-if="!isSearching && !searchError && resultCountText">
+              {{ resultCountText }}
+            </span>
+          </div>
+
           <button
             type="button"
             @click="handleSearchSubmit"
-            class="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+            class="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer shrink-0 ml-auto"
           >
             <span>View all results</span>
             <ArrowRight class="w-3.5 h-3.5" />
