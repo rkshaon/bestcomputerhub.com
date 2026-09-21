@@ -694,11 +694,11 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
     </div>
 
     <!-- Product Loaded Content -->
-    <div v-else class="container mx-auto px-4 mt-6 sm:mt-8 lg:mt-12">
+    <div v-else class="container mx-auto px-4 mt-4 sm:mt-6 lg:mt-8">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16">
         <!-- Gallery / Image View -->
-        <div class="space-y-4 sm:space-y-6">
-          <div class="flex flex-col-reverse sm:flex-row items-center sm:items-start justify-center sm:justify-start gap-3 sm:gap-4">
+        <div class="space-y-3 sm:space-y-4">
+          <div class="flex flex-col-reverse sm:flex-row items-center sm:items-start justify-center sm:justify-start gap-2 sm:gap-3">
             <!-- Image Thumbnails (if multiple images exist) -->
             <div 
               v-if="galleryImages.length > 1" 
@@ -767,8 +767,8 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
         </div>
 
         <!-- Info & Actions -->
-        <div class="space-y-6 sm:space-y-8 lg:space-y-10">
-          <div class="space-y-3 sm:space-y-4">
+        <div class="space-y-4 sm:space-y-5 lg:space-y-6">
+          <div class="space-y-2 sm:space-y-3">
             <div v-if="product.rating" class="flex flex-wrap items-center gap-2">
               <div class="flex items-center gap-1.5 px-2.5 py-1 bg-muted/80 rounded-full">
                 <Star class="w-3.5 h-3.5 text-yellow-500 fill-current shrink-0" />
@@ -812,9 +812,9 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </div>
 
             <!-- Metadata & Attributes as Compact Chips -->
-            <div class="flex flex-wrap items-center gap-2 pt-3 pb-1 border-t mt-2">
+            <div class="flex flex-wrap items-center gap-1.5 pt-2 pb-0 border-t mt-1">
               <!-- Availability Chip -->
-              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-card rounded-md border border-border text-xs">
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-card rounded-md border border-border text-xs">
                 <span class="text-muted-foreground font-medium">Availability:</span>
                 <span class="font-semibold text-foreground flex items-center gap-1.5">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
@@ -823,7 +823,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               </div>
 
               <!-- Brand Chip -->
-              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-card rounded-md border border-border text-xs">
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-card rounded-md border border-border text-xs">
                 <span class="text-muted-foreground font-medium">Brand:</span>
                 <NuxtLink 
                   v-if="productBrandName && productBrandSlug" 
@@ -841,7 +841,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               </div>
 
               <!-- SKU Chip -->
-              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-card rounded-md border border-border text-xs">
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-card rounded-md border border-border text-xs">
                 <span class="text-muted-foreground font-medium">SKU:</span>
                 <span class="font-semibold font-mono text-foreground">
                   {{ product.sku || `ID-${product.id}` }}
@@ -850,7 +850,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </div>
 
             <!-- Short Description / Editor -->
-            <div class="space-y-2 pt-3 border-t mt-2">
+            <div class="space-y-1.5 pt-2 border-t mt-1">
               <div class="flex items-center gap-2" v-if="canEditProductFromStorefront">
                 <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Short Description</span>
                 <button 
@@ -904,7 +904,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
           </div>
 
           <!-- Pricing & Actions -->
-          <div class="p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl bg-muted/30 border border-muted space-y-5 sm:space-y-6 lg:space-y-8">
+          <div class="p-4 sm:p-5 lg:p-6 rounded-2xl sm:rounded-3xl bg-muted/30 border border-muted space-y-4 sm:space-y-5 lg:space-y-6">
             <div class="relative group/edit flex flex-wrap items-baseline gap-2 sm:gap-4">
               <template v-if="editingField === 'price'">
                 <div class="flex items-center gap-2 w-full sm:w-auto">
@@ -950,7 +950,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </div>
 
             <!-- Price History Timeline (Public Safe: price & changed_at only) -->
-            <div v-if="product.price_histories && product.price_histories.length > 0" class="space-y-2 text-xs text-muted-foreground bg-background/60 p-3 rounded-xl border border-border/40">
+            <div v-if="product.price_histories && product.price_histories.length > 0" class="space-y-2 text-xs text-muted-foreground bg-background/60 p-2.5 rounded-xl border border-border/40">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2 font-medium text-foreground">
                   <Clock class="w-3.5 h-3.5 text-primary shrink-0" />
@@ -1019,7 +1019,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
       </div>
 
       <!-- Split Layout: Details Tabs Content + Similar Products Sidebar -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-16 pt-10 sm:pt-14 lg:pt-20 border-t items-start mt-8 sm:mt-12 lg:mt-16">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-16 pt-6 sm:pt-8 lg:pt-10 border-t items-start mt-4 sm:mt-6 lg:mt-8">
         <!-- Main: Details Tabs -->
         <main class="lg:col-span-8 xl:col-span-9">
           <!-- Tabs Navigation -->
@@ -1029,7 +1029,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               :key="tab"
               @click="activeTab = tab"
               :class="cn(
-                'px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-5 text-xs sm:text-sm font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-all relative shrink-0 cursor-pointer',
+                'px-4 sm:px-5 lg:px-6 py-2.5 sm:py-3 lg:py-4 text-xs sm:text-sm font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-all relative shrink-0 cursor-pointer',
                 activeTab === tab ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )"
             >
@@ -1039,9 +1039,9 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
           </div>
 
           <!-- Tab Content -->
-          <div class="py-6 sm:py-8 lg:py-12 animate-in fade-in slide-in-from-left-4 duration-500">
+          <div class="py-4 sm:py-6 lg:py-8 animate-in fade-in slide-in-from-left-4 duration-500">
             <!-- Description Tab -->
-            <div v-if="activeTab === 'description'" class="space-y-8 sm:space-y-12">
+            <div v-if="activeTab === 'description'" class="space-y-6 sm:space-y-8">
               <div class="flex items-center justify-between border-b pb-2 mb-4" v-if="canEditProductFromStorefront">
                 <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Description Control</span>
                 <button 
@@ -1068,7 +1068,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                   />
                 </div>
               </div>
-              <div v-else class="space-y-8 sm:space-y-12">
+              <div v-else class="space-y-6 sm:space-y-8">
                 <div class="prose prose-slate dark:prose-invert max-w-none">
                   <div v-if="product.description" v-html="product.description" class="text-base sm:text-lg text-muted-foreground leading-relaxed"></div>
                   <p v-else class="text-base sm:text-lg text-muted-foreground leading-relaxed">
@@ -1077,14 +1077,14 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-                  <div class="bg-muted/30 p-5 sm:p-8 lg:p-10 rounded-2xl sm:rounded-[2.5rem] space-y-3 sm:space-y-4 border border-transparent hover:border-primary/20 transition-colors group">
+                  <div class="bg-muted/30 p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-[2.5rem] space-y-3 sm:space-y-4 border border-transparent hover:border-primary/20 transition-colors group">
                     <div class="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-xl sm:rounded-2xl flex items-center justify-center text-white mb-2 group-hover:scale-110 transition-transform">
                        <Cpu class="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     <h4 class="text-lg sm:text-xl font-bold">Premium Engineering</h4>
                     <p class="text-xs sm:text-sm text-muted-foreground leading-relaxed">Engineered to official specifications, ensuring stable operation under continuous workloads.</p>
                   </div>
-                  <div class="bg-muted/30 p-5 sm:p-8 lg:p-10 rounded-2xl sm:rounded-[2.5rem] space-y-3 sm:space-y-4 border border-transparent hover:border-primary/20 transition-colors group">
+                  <div class="bg-muted/30 p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-[2.5rem] space-y-3 sm:space-y-4 border border-transparent hover:border-primary/20 transition-colors group">
                     <div class="w-10 h-10 sm:w-12 sm:h-12 bg-black dark:bg-slate-800 rounded-xl sm:rounded-2xl flex items-center justify-center text-white mb-2 group-hover:scale-110 transition-transform">
                        <Zap class="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
@@ -1096,7 +1096,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </div>
 
             <!-- Specification Tab -->
-            <div v-if="activeTab === 'specification'" class="space-y-6 sm:space-y-10">
+            <div v-if="activeTab === 'specification'" class="space-y-4 sm:space-y-6">
               <div class="flex items-center justify-between border-b pb-2 mb-4" v-if="canEditProductFromStorefront">
                 <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Specifications Control</span>
                 <button 
@@ -1124,10 +1124,10 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                   />
                 </div>
               </div>
-              <div v-else class="space-y-6 sm:space-y-10">
+              <div v-else class="space-y-4 sm:space-y-6">
                 <!-- Render HTML specifications if string -->
                 <div v-if="typeof product.specifications === 'string' && product.specifications.trim()" class="prose prose-slate dark:prose-invert max-w-none">
-                  <div v-html="product.specifications" class="text-base text-muted-foreground bg-card border rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-8 overflow-x-auto"></div>
+                  <div v-html="product.specifications" class="text-base text-muted-foreground bg-card border rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-6 overflow-x-auto"></div>
                 </div>
 
                 <!-- Fallback to normalized specs if it's an array/object -->
@@ -1137,7 +1137,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                       v-for="(spec, idx) in normalizedSpecs" 
                       :key="spec.key" 
                       :class="cn(
-                        'flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 px-4 sm:px-8 lg:px-10 gap-1 sm:gap-4 transition-colors hover:bg-muted/30',
+                        'flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 px-4 sm:px-6 lg:px-8 gap-1 sm:gap-4 transition-colors hover:bg-muted/30',
                         idx !== normalizedSpecs.length - 1 && 'border-b border-muted'
                       )"
                     >
@@ -1155,15 +1155,15 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 </div>
               </div>
               
-              <div class="flex items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-6 lg:p-8 bg-primary/5 rounded-2xl sm:rounded-3xl border border-primary/10">
+              <div class="flex items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 lg:p-6 bg-primary/5 rounded-2xl sm:rounded-3xl border border-primary/10">
                  <Info class="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0 mt-0.5 sm:mt-0" />
                  <p class="text-xs sm:text-sm text-muted-foreground font-medium leading-relaxed">Specifications are manufacturer certified. Actual system performance may vary with integration topology and environmental parameters.</p>
               </div>
             </div>
 
             <!-- Reviews Tab -->
-            <div v-if="activeTab === 'reviews'" class="space-y-6 sm:space-y-12">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 bg-muted/20 p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border">
+            <div v-if="activeTab === 'reviews'" class="space-y-4 sm:space-y-8">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 bg-muted/20 p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border">
                 <div class="space-y-1 sm:space-y-2">
                   <h4 class="text-xl sm:text-2xl md:text-3xl font-display font-bold">Customer Feedback</h4>
                   <div class="flex flex-wrap items-center gap-2">
@@ -1179,8 +1179,8 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <UiButton variant="outline" class="rounded-full font-bold px-6 sm:px-8 h-10 sm:h-12 border-primary/20 text-primary hover:bg-primary/5 text-xs sm:text-sm w-full sm:w-auto shrink-0">Submit Review</UiButton>
               </div>
 
-              <div class="space-y-4 sm:space-y-6">
-                <div class="p-5 sm:p-8 bg-card border rounded-2xl sm:rounded-[2.5rem] space-y-4 sm:space-y-6 hover:shadow-xl hover:shadow-primary/5 transition-all">
+              <div class="space-y-3 sm:space-y-4">
+                <div class="p-4 sm:p-6 bg-card border rounded-2xl sm:rounded-[2.5rem] space-y-3 sm:space-y-4 hover:shadow-xl hover:shadow-primary/5 transition-all">
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3 sm:gap-4">
                       <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-muted flex items-center justify-center font-bold text-base sm:text-xl text-primary shrink-0">BC</div>
@@ -1208,7 +1208,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
         </main>
 
         <!-- Sidebar: Similar Trending Products -->
-        <aside class="lg:col-span-4 xl:col-span-3 space-y-6 sm:space-y-8 lg:sticky lg:top-28">
+        <aside class="lg:col-span-4 xl:col-span-3 space-y-4 sm:space-y-6 lg:sticky lg:top-28">
           <div class="space-y-1.5 sm:space-y-2">
             <h3 class="text-xl sm:text-2xl font-display font-bold">Related <span class="text-primary italic">Products</span></h3>
             <p class="text-xs text-muted-foreground leading-relaxed">Frequently evaluated alongside this component for related deployments.</p>
