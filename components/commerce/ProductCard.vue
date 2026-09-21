@@ -36,7 +36,7 @@ const cartStore = useCartStore();
     </div>
 
     <!-- Content -->
-    <div class="p-3.5 sm:p-5">
+    <div class="p-2.5 sm:p-3.5">
       <div class="flex items-center justify-between mb-1.5 sm:mb-2">
         <span class="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate max-w-[100px] sm:max-w-none">{{ decodeHtmlEntities(product.brand) }}</span>
         <div class="flex items-center gap-1 text-yellow-500 shrink-0">
@@ -46,7 +46,7 @@ const cartStore = useCartStore();
       </div>
 
       <NuxtLink :to="`/product/${product.slug}/`" class="block group/link">
-        <h3 class="font-bold text-xs sm:text-sm line-clamp-2 min-h-[32px] sm:min-h-[40px] group-hover/link:text-primary transition-colors mb-2 sm:mb-3 leading-snug">
+        <h3 class="font-bold text-xs sm:text-sm line-clamp-2 min-h-[32px] sm:min-h-[36px] group-hover/link:text-primary transition-colors mb-2 sm:mb-3 leading-snug">
           {{ decodeHtmlEntities(product.name) }}
         </h3>
       </NuxtLink>
@@ -56,13 +56,13 @@ const cartStore = useCartStore();
           <span v-if="product.originalPrice" class="text-[10px] sm:text-xs text-muted-foreground line-through decoration-destructive/30 truncate">
             {{ formatCurrency(product.originalPrice) }}
           </span>
-          <span class="font-display font-bold text-sm sm:text-lg text-primary truncate">
+          <span class="font-display font-bold text-sm sm:text-base text-primary truncate">
             {{ formatCurrency(product.price) }}
           </span>
         </div>
         
-        <UiButton size="icon" variant="primary" @click="cartStore.addToCart(product)" class="rounded-xl h-8 w-8 sm:h-10 sm:w-10 shrink-0" title="Add to cart" aria-label="Add to cart">
-          <ShoppingCart class="w-4 h-4 sm:w-5 sm:h-5" />
+        <UiButton size="icon" variant="primary" @click="cartStore.addToCart(product)" class="rounded-xl h-8 w-8 sm:h-9 sm:w-9 shrink-0" title="Add to cart" aria-label="Add to cart">
+          <ShoppingCart class="w-4 h-4" />
         </UiButton>
       </div>
     </div>
