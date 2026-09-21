@@ -43,8 +43,16 @@ const socialLinks = [
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-12 mb-10 sm:mb-20">
         <!-- Brand -->
         <div class="sm:col-span-2 space-y-6">
-          <NuxtLink to="/" class="flex items-center">
-            <UiBrandLogo size="lg" />
+          <NuxtLink to="/" class="flex items-center gap-2.5 select-none shrink-0 group">
+            <img 
+              src="/round-logo.jpg" 
+              alt="Best Computer Hub Logo" 
+              class="object-contain transition-transform duration-300 group-hover:scale-105 shrink-0 w-11 h-11 rounded-full"
+              referrerPolicy="no-referrer"
+            />
+            <span class="font-display font-black tracking-tight text-foreground transition-all duration-300 text-xl sm:text-2xl">
+              Best Computer <span class="text-primary">Hub</span>
+            </span>
           </NuxtLink>
           <p class="text-muted-foreground text-xs sm:text-sm max-w-sm leading-relaxed">
             Premier e-commerce platform dedicated to professional hardware and cutting-edge computing components. Trusted by thousands of tech enthusiasts and engineers.
