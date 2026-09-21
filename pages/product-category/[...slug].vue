@@ -338,6 +338,7 @@ const resolveCategory = async () => {
 
   // 1. Instantly check for match in allCategoriesList (from menu's data/hierarchy list)
   let match = findCategoryBySlug(allCategoriesList.value, targetSlug);
+  const foundInTaxonomy = !!match;
   
   // 2. Fall back to static mock categories if not found in list
   if (!match) {
@@ -351,7 +352,9 @@ const resolveCategory = async () => {
 
   // 3. Regardless of finding local match, call the Category Details API to load full rich content/description & ID
   try {
-    const detail = await categoryService.getCategoryDetails(targetSlug);
+    // If a matching category is found in allCategoriesList, pass its numeric id to avoid redundant search query, else pass targetSlug
+    const lookupId = (foundInTaxonomy && match && match.id) ? String(match.id) : targetSlug;
+    const detail = await categoryService.getCategoryDetails(lookupId);
     if (detail) {
       if (activeCategory.value) {
         // Merge rich details (like full description/guide) onto the basic category object
