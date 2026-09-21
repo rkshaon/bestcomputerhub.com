@@ -723,7 +723,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </div>
 
             <!-- Main Product Image -->
-            <div class="flex-1 min-w-0 w-full aspect-square mx-auto sm:mx-0 rounded-2xl sm:rounded-3xl lg:rounded-[2rem] overflow-hidden bg-muted/40 border group relative flex items-center justify-center p-2">
+            <div class="flex-1 min-w-0 w-full sm:max-w-[380px] lg:max-w-[420px] aspect-square mx-auto sm:mx-0 rounded-2xl sm:rounded-3xl lg:rounded-[2rem] overflow-hidden bg-muted/40 border group relative flex items-center justify-center p-2">
               <img 
                 v-if="selectedImage" 
                 :src="selectedImage" 
