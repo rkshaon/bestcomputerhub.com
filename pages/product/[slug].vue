@@ -13,8 +13,7 @@ import {
   Plus, 
   Minus, 
   Zap, 
-  Cpu, 
-  Globe, 
+  Globe,  
   Check, 
   Package, 
   AlertCircle, 
@@ -1068,29 +1067,12 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                   />
                 </div>
               </div>
-              <div v-else class="space-y-6 sm:space-y-8">
+              <div v-else>
                 <div class="prose prose-slate dark:prose-invert max-w-none">
                   <div v-if="product.description" v-html="product.description" class="text-base sm:text-lg text-muted-foreground leading-relaxed"></div>
                   <p v-else class="text-base sm:text-lg text-muted-foreground leading-relaxed">
                     Authentic hardware component engineered to rigorous enterprise standards with comprehensive manufacturer validation.
                   </p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-                  <div class="bg-muted/30 p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-[2.5rem] space-y-3 sm:space-y-4 border border-transparent hover:border-primary/20 transition-colors group">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-xl sm:rounded-2xl flex items-center justify-center text-white mb-2 group-hover:scale-110 transition-transform">
-                       <Cpu class="w-5 h-5 sm:w-6 sm:h-6" />
-                    </div>
-                    <h4 class="text-lg sm:text-xl font-bold">Premium Engineering</h4>
-                    <p class="text-xs sm:text-sm text-muted-foreground leading-relaxed">Engineered to official specifications, ensuring stable operation under continuous workloads.</p>
-                  </div>
-                  <div class="bg-muted/30 p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-[2.5rem] space-y-3 sm:space-y-4 border border-transparent hover:border-primary/20 transition-colors group">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-black dark:bg-slate-800 rounded-xl sm:rounded-2xl flex items-center justify-center text-white mb-2 group-hover:scale-110 transition-transform">
-                       <Zap class="w-5 h-5 sm:w-6 sm:h-6" />
-                    </div>
-                    <h4 class="text-lg sm:text-xl font-bold">Efficiency Focus</h4>
-                    <p class="text-xs sm:text-sm text-muted-foreground leading-relaxed">Optimized for power-to-performance efficiency and thermal stability across diverse system architectures.</p>
-                  </div>
                 </div>
               </div>
             </div>
