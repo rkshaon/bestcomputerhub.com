@@ -207,6 +207,19 @@ watch(
     }
   }
 );
+
+/**
+ * Group sub-menu items into vertical columns (chunks of 7 items).
+ * Preserves ordering sequentially within each column.
+ */
+const columns = computed<Category[][]>(() => {
+  const chunks: Category[][] = [];
+  const list = props.items;
+  for (let i = 0; i < list.length; i += 7) {
+    chunks.push(list.slice(i, i + 7));
+  }
+  return chunks;
+});
 </script>
 
 <template>
@@ -231,16 +244,18 @@ watch(
 
     <div
       ref="outerCardRef"
-      class="bg-card border border-border shadow-2xl rounded-xl text-card-foreground relative overflow-visible min-w-[200px] max-w-[260px]"
+      class="bg-card border border-border shadow-2xl rounded-xl text-card-foreground relative overflow-visible flex items-stretch divide-x divide-border/40"
     >
       <div
-        class="p-1.5 overflow-y-auto custom-submenu-scrollbar"
+        v-for="(colItems, colIdx) in columns"
+        :key="colIdx"
+        class="p-1.5 overflow-y-auto custom-submenu-scrollbar w-[220px] shrink-0"
         :style="{ maxHeight: maxScrollHeight ? `${maxScrollHeight}px` : '420px' }"
         @scroll="handleViewportChange"
       >
         <ul class="space-y-0.5">
           <li
-            v-for="item in items"
+            v-for="item in colItems"
             :key="item.id"
             :ref="el => setItemRef(String(item.id), el)"
             class="relative group/item"
