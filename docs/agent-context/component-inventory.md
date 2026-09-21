@@ -563,9 +563,9 @@ Components are classified using four standard metadata properties:
 - **Purpose**: Interactive promotional hero slider on the homepage.
 - **Routes/Pages Used**: Homepage (`/`).
 - **Main Responsibilities**:
-  - Cycle through promotional hero slides with automated 6s autoplay.
+  - Cycle through promotional hero slides with automated autoplay (5s default, configurable via `autoplay` and `autoplayInterval` props).
   - Support mouse hover pause, touch swipe gestures (`useSwipe`), and directional slide transition animations.
-  - Render slide pagination dot indicators and manual previous/next controls.
+  - Render horizontally centered slide pagination dot indicators and hideable previous/next navigation controls (controlled via `showControls` prop and styling).
 - **What It Explicitly Does Not Own**: Static hero slide data (imported from `@/data/heroSlides`).
 - **State Owned**: `currentIndex`, `direction`, `isPaused`, slider DOM ref.
 - **Calls API**: No
