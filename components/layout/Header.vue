@@ -481,7 +481,7 @@ if (process.client) {
           aria-label="Best Computer Hub Home"
         >
           <img 
-            src="/logo.svg"
+            src="/logo.png"
             alt="Best Computer Hub"
             class="object-contain transition-all duration-300 group-hover:scale-105 shrink-0 h-9 lg:h-10 w-auto max-w-[200px]"
           />
