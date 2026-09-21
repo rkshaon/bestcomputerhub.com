@@ -819,7 +819,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 -->
                 <span class="font-semibold text-foreground flex items-center gap-1.5">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                  {{ product.stock > 0 ? `${product.stock} Units In Stock` : 'Available to Order' }}
+                  {{ product.stock > 0 ? `${product.stock} Units In Stock` : 'Available' }}
                 </span>
               </div>
 
