@@ -811,38 +811,41 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               </template>
             </div>
 
-            <!-- Metadata & Attributes -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3 pb-1 border-t mt-4">
-              <div class="p-3 bg-muted/20 rounded-xl border border-border/50 space-y-1">
-                <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Availability</span>
-                <p class="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <!-- Metadata & Attributes as Compact Chips -->
+            <div class="flex flex-wrap items-center gap-2 pt-3 pb-1 border-t mt-4">
+              <!-- Availability Chip -->
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-card rounded-md border border-border text-xs">
+                <span class="text-muted-foreground font-medium">Availability:</span>
+                <span class="font-semibold text-foreground flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                   {{ product.stock > 0 ? `${product.stock} Units In Stock` : 'Available to Order' }}
-                </p>
+                </span>
               </div>
 
-              <div class="p-3 bg-muted/20 rounded-xl border border-border/50 space-y-1">
-                <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Brand</span>
+              <!-- Brand Chip -->
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-card rounded-md border border-border text-xs">
+                <span class="text-muted-foreground font-medium">Brand:</span>
                 <NuxtLink 
                   v-if="productBrandName && productBrandSlug" 
                   :to="`/brand/${productBrandSlug}/`" 
-                  class="text-xs font-semibold text-primary hover:underline block truncate"
+                  class="font-semibold text-primary hover:underline"
                 >
                   {{ decodeHtmlEntities(productBrandName) }}
                 </NuxtLink>
-                <span v-else-if="productBrandName" class="text-xs font-semibold text-foreground block truncate">
+                <span v-else-if="productBrandName" class="font-semibold text-foreground">
                   {{ decodeHtmlEntities(productBrandName) }}
                 </span>
-                <span v-else class="text-xs font-semibold text-muted-foreground/60 block truncate">
+                <span v-else class="font-semibold text-muted-foreground/60">
                   N/A
                 </span>
               </div>
 
-              <div class="p-3 bg-muted/20 rounded-xl border border-border/50 space-y-1 col-span-2 sm:col-span-1">
-                <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Product Code</span>
-                <p class="text-xs font-mono font-medium text-foreground truncate">
+              <!-- SKU Chip -->
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-card rounded-md border border-border text-xs">
+                <span class="text-muted-foreground font-medium">SKU:</span>
+                <span class="font-semibold font-mono text-foreground">
                   {{ product.sku || `ID-${product.id}` }}
-                </p>
+                </span>
               </div>
             </div>
 
