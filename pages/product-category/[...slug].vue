@@ -496,16 +496,80 @@ const fetchSubcategories = async () => {
     return;
   }
   isSubcategoriesLoading.value = true;
-  try {
-    const children = await categoryService.getCategoryChildrenBatch([category.value.id]);
-    subcategories.value = Array.isArray(children) ? children : [];
-  } catch (err: any) {
-    console.warn('Failed to load category children for quick filters:', err?.message || err);
-    subcategories.value = [];
-  } finally {
-    isSubcategoriesLoading.value = false;
+  
+  // Helper to flatten a hierarchical category list to find direct or parent-linked nodes
+  const flattenCategories = (list: Category[]): Category[] => {
+    let result: Category[] = [];
+    for (const c of list) {
+      result.push(c);
+      if (c.children && c.children.length > 0) {
+        result = result.concat(flattenCategories(c.children));
+      }
+    }
+    return result;
+  };
+
+  // Helper to find any category in the hierarchical list by its ID
+  const findCategoryInList = (list: Category[], targetId: string): Category | null => {
+    for (const c of list) {
+      if (String(c.id) === String(targetId)) {
+        return c;
+      }
+      if (c.children && c.children.length > 0) {
+        const found = findCategoryInList(c.children, targetId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const activeId = String(category.value.id);
+  
+  // Try to find the category node inside our loaded taxonomy (allCategoriesList)
+  let foundCategory = findCategoryInList(allCategoriesList.value, activeId);
+  
+  // If not found in loaded taxonomy, search in static mock categories
+  if (!foundCategory) {
+    foundCategory = findCategoryInList(productService.getCategories(), activeId);
   }
+  
+  let childrenList: Category[] = [];
+  
+  // Case A: Found category node has direct children array
+  if (foundCategory && foundCategory.children && foundCategory.children.length > 0) {
+    childrenList = foundCategory.children;
+  } else {
+    // Case B: Search by filtering direct parent relationship (in flat or flattened structure)
+    const flatList = flattenCategories([...allCategoriesList.value, ...productService.getCategories()]);
+    // Filter duplicates by unique ID, keeping only those whose parent is the active category
+    const idMap = new Map<string, Category>();
+    for (const c of flatList) {
+      if (c.parentCategoryId && String(c.parentCategoryId) === activeId) {
+        idMap.set(String(c.id), c);
+      }
+    }
+    childrenList = Array.from(idMap.values());
+  }
+
+  // Ensure unique subcategories by ID
+  const uniqueChildren: Category[] = [];
+  const seenIds = new Set<string>();
+  for (const c of childrenList) {
+    const cid = String(c.id);
+    if (!seenIds.has(cid)) {
+      seenIds.add(cid);
+      uniqueChildren.push(c);
+    }
+  }
+
+  subcategories.value = uniqueChildren;
+  isSubcategoriesLoading.value = false;
 };
+
+// Re-evaluate subcategories once the full taxonomy loads asynchronously
+watch(allCategoriesList, () => {
+  fetchSubcategories();
+}, { deep: true });
 
 const currentPathSlugs = computed(() => {
   if (Array.isArray(categoryPath.value) && categoryPath.value.length > 0) {
