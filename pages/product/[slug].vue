@@ -918,7 +918,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                       @keydown.enter="saveField('price')"
                       @keydown.esc="cancelEditing"
                       :disabled="isFieldSaving === 'price'"
-                      class="text-3xl sm:text-4xl font-display font-extrabold tracking-tight leading-tight w-[200px] sm:w-[240px] bg-background border border-input rounded-xl pl-10 sm:pl-12 pr-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      class="text-2xl font-display font-black tracking-tight leading-snug w-[200px] sm:w-[240px] bg-background border border-input rounded-xl pl-10 sm:pl-12 pr-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                     />
                   </div>
                   <div v-if="isFieldSaving === 'price'" class="flex items-center gap-1.5 text-xs text-amber-500 font-bold uppercase tracking-wider shrink-0 px-2 py-1">
@@ -928,7 +928,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               </template>
               <template v-else>
                 <div class="flex items-center gap-2">
-                  <span class="text-3xl sm:text-4xl font-display font-extrabold text-foreground group-hover/edit:text-primary transition-colors">
+                  <span class="text-2xl font-display font-black text-foreground group-hover/edit:text-primary transition-colors">
                     {{ formatCurrency(product.current_selling_price || product.price) }}
                   </span>
                   <button 
@@ -940,7 +940,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                     <Edit2 class="w-4 h-4" />
                   </button>
                 </div>
-                <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="text-lg sm:text-xl text-muted-foreground line-through decoration-destructive/30">
+                <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="text-base text-muted-foreground line-through decoration-destructive/30">
                   {{ formatCurrency(product.originalPrice) }}
                 </span>
                 <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold rounded-md">
@@ -981,7 +981,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 >
                   <Minus class="w-4 h-4" />
                 </button>
-                <span class="font-bold text-center min-w-[2rem] text-sm sm:text-base">{{ quantity }}</span>
+                <span class="font-bold text-center min-w-[2rem] text-sm">{{ quantity }}</span>
                 <button 
                   @click="quantity++" 
                   class="p-2 hover:bg-muted rounded-lg transition-colors cursor-pointer" 
@@ -993,7 +993,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               
               <UiButton 
                 @click="addToCart" 
-                class="h-12 sm:h-14 w-full sm:w-auto sm:flex-grow px-6 sm:px-10 gap-3 rounded-xl sm:rounded-2xl text-base sm:text-lg font-bold"
+                class="h-12 sm:h-14 w-full sm:w-auto sm:flex-grow px-6 sm:px-10 gap-3 rounded-xl sm:rounded-2xl text-base font-bold"
               >
                 <ShoppingCart class="w-5 h-5" />
                 {{ isItemInCart ? 'Add More to Cart' : 'Add to Cart' }}
