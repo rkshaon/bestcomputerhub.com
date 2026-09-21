@@ -3,7 +3,7 @@
 import { navigateTo } from '#app';
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 // TEMPORARILY DISABLED: Storefront Theme Mode Icons (Sun, Moon, Monitor)
-import { Handbag, Search, User, Menu, X, /* Sun, Moon, Monitor, */ PackageSearch, Grid2X2, ShieldCheck, Home, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, Tag, Sparkles, Zap, Clock, MapPin, BookOpen } from 'lucide-vue-next';
+import { Handbag, Search, User, Menu, X, /* Sun, Moon, Monitor, */ PackageSearch, Grid2X2, ShieldCheck, Cpu, ArrowLeftRight, ChevronRight, ChevronDown, Tag, Sparkles, Zap, Clock, MapPin, BookOpen } from 'lucide-vue-next';
 import { cn, decodeHtmlEntities } from '@/utils';
 import { useUIStore } from '@/stores/ui';
 import { useCartStore } from '@/stores/cart';
@@ -207,7 +207,6 @@ const keepMegaMenuOpen = () => {
 // ==========================================
 const navRef = ref<HTMLElement | null>(null);
 const measureContainerRef = ref<HTMLElement | null>(null);
-const measureHomeRef = ref<HTMLElement | null>(null);
 const measureMoreRef = ref<HTMLElement | null>(null);
 const measureItemRefs = ref<HTMLElement[]>([]);
 
@@ -254,12 +253,11 @@ const updateAdaptiveNav = () => {
     isNavUltraCompact.value = false;
   }
 
-  // Outer gap between [Home], [Categories Container], and [More]
+  // Outer gap between [Categories Container] and [More]
   const outerGap = isNavUltraCompact.value ? 8 : (isNavCompact.value ? 12 : 16);
   // Minimum padding/spacing required per item in categories container
   const minItemGap = isNavUltraCompact.value ? 4 : (isNavCompact.value ? 6 : 8);
 
-  const homeWidth = measureHomeRef.value?.offsetWidth || 32;
   const moreWidth = measureMoreRef.value?.offsetWidth || 75;
 
   const itemWidths = categories.value.map((_, idx) => {
@@ -270,14 +268,14 @@ const updateAdaptiveNav = () => {
   const totalItemsWidth = itemWidths.reduce((a, b) => a + b, 0);
 
   // Space needed if ALL categories fit without "More" button
-  const totalSpaceNeededForAll = homeWidth + outerGap + totalItemsWidth + Math.max(0, categories.value.length - 1) * minItemGap;
+  const totalSpaceNeededForAll = totalItemsWidth + Math.max(0, categories.value.length - 1) * minItemGap;
 
   if (totalSpaceNeededForAll <= availableWidth) {
     // All categories fit! No "More" menu needed.
     visibleCount.value = categories.value.length;
   } else {
     // Overflow occurs: calculate space available inside the Categories container
-    const spaceForCategoryContainer = availableWidth - homeWidth - moreWidth - (2 * outerGap);
+    const spaceForCategoryContainer = availableWidth - moreWidth - outerGap;
 
     let fitCount = 0;
     let accumulatedWidth = 0;
@@ -732,20 +730,6 @@ if (process.client) {
           isNavUltraCompact ? 'gap-2' : (isNavCompact ? 'gap-3' : 'gap-4')
         )"
       >
-        <!-- Static Home Link -->
-        <NuxtLink 
-          to="/" 
-          aria-label="Home"
-          title="Home"
-          :class="cn(
-            'relative flex items-center justify-center font-semibold tracking-normal transition-colors whitespace-nowrap py-1.5 px-1 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xs',
-            isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
-            route.path === '/' ? 'text-primary font-bold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
-          )"
-        >
-          <Home class="w-4 h-4" />
-        </NuxtLink>
-
         <!-- Categories Flexible Container (Grows to occupy all remaining horizontal space) -->
         <div class="flex-1 flex items-center justify-between min-w-0 h-full">
           <div 
@@ -859,10 +843,6 @@ if (process.client) {
         :class="isNavUltraCompact ? 'gap-1' : (isNavCompact ? 'gap-1.5' : 'gap-2.5')"
         aria-hidden="true"
       >
-        <div ref="measureHomeRef" class="py-1.5 px-1 font-semibold" :class="isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]')">
-          <Home class="w-4 h-4" />
-        </div>
-
         <div 
           v-for="(cat, idx) in categories" 
           :key="cat.id" 
