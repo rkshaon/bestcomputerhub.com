@@ -390,7 +390,7 @@ if (process.client) {
     -->
 
     <div 
-      class="container mx-auto px-4 relative py-2 sm:py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0 md:grid md:grid-cols-[auto_1fr] md:gap-x-5 lg:gap-x-6"
+      class="container mx-auto px-4 relative py-2 sm:py-2.5 flex flex-col gap-2 md:gap-0"
     >
       <!-- Mobile Row 1 (< md): [ Menu Toggle ] [ Brand Logo ] [ Theme & Bag ] -->
       <div class="flex md:hidden items-center justify-between w-full gap-2 py-0.5">
@@ -470,23 +470,23 @@ if (process.client) {
         </button>
       </div>
 
-      <!-- Desktop Spanning Brand Logo (md: and up) -->
-      <NuxtLink 
-        to="/" 
-        class="hidden md:flex items-center justify-center shrink-0 group transition-all duration-300 md:col-start-1 md:row-start-1 md:row-span-2 md:self-center pr-2 lg:pr-3"
-        aria-label="Best Computer Hub Home"
-      >
-        <UiBrandLogo 
-          size="lg" 
-          :show-text="false" 
-          img-class="object-contain transition-all duration-300 group-hover:scale-105 shrink-0 h-9 w-auto md:h-[80px] lg:h-[84px] max-h-[86px]"
-        />
-      </NuxtLink>
-
-      <!-- Desktop Main Row (md: and up) -->
+      <!-- Desktop Main Row (md: and up): [ Brand Logo ] [ Search Bar ] [ Actions ] -->
       <div 
-        class="hidden md:flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader flex-1 min-w-0 md:col-start-2 md:row-start-1"
+        class="hidden md:flex items-center justify-between gap-3 sm:gap-4 md:gap-6 group/mainheader w-full min-w-0"
       >
+        <!-- Desktop Brand Wordmark Logo -->
+        <NuxtLink 
+          to="/" 
+          class="flex items-center justify-center shrink-0 group transition-all duration-300 pr-2 lg:pr-3"
+          aria-label="Best Computer Hub Home"
+        >
+          <img 
+            src="/logo.svg"
+            alt="Best Computer Hub"
+            class="object-contain transition-all duration-300 group-hover:scale-105 shrink-0 h-9 lg:h-10 w-auto max-w-[200px]"
+          />
+        </NuxtLink>
+
         <!-- Desktop Search Bar -->
         <HeaderSearchOverlay
           v-model:search-query="searchQuery"
@@ -726,7 +726,7 @@ if (process.client) {
       <nav 
         ref="navRef"
         :class="cn(
-          'hidden md:flex relative items-center justify-between w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50 md:col-start-2 md:row-start-2 transition-all duration-200',
+          'hidden md:flex relative items-center justify-between w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50 transition-all duration-200',
           isNavUltraCompact ? 'gap-2' : (isNavCompact ? 'gap-3' : 'gap-4')
         )"
       >
