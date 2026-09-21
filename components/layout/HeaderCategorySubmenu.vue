@@ -209,14 +209,14 @@ watch(
 );
 
 /**
- * Group sub-menu items into vertical columns (chunks of 7 items).
+ * Group sub-menu items into vertical columns (chunks of 10 items).
  * Preserves ordering sequentially within each column.
  */
 const columns = computed<Category[][]>(() => {
   const chunks: Category[][] = [];
   const list = props.items;
-  for (let i = 0; i < list.length; i += 7) {
-    chunks.push(list.slice(i, i + 7));
+  for (let i = 0; i < list.length; i += 10) {
+    chunks.push(list.slice(i, i + 10));
   }
   return chunks;
 });
