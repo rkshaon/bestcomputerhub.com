@@ -769,21 +769,8 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
         <!-- Info & Actions -->
         <div class="space-y-6 sm:space-y-8 lg:space-y-10">
           <div class="space-y-3 sm:space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <span v-if="productBrandName" class="text-xs sm:text-sm font-bold text-primary uppercase tracking-widest">
-                <NuxtLink 
-                  v-if="productBrandSlug" 
-                  :to="`/brand/${productBrandSlug}/`"
-                  class="hover:underline hover:text-primary/80 transition-colors"
-                >
-                  {{ decodeHtmlEntities(productBrandName) }}
-                </NuxtLink>
-                <template v-else>
-                  {{ decodeHtmlEntities(productBrandName) }}
-                </template>
-              </span>
-
-              <div v-if="product.rating" class="flex items-center gap-1.5 px-2.5 py-1 bg-muted/80 rounded-full">
+            <div v-if="product.rating" class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center gap-1.5 px-2.5 py-1 bg-muted/80 rounded-full">
                 <Star class="w-3.5 h-3.5 text-yellow-500 fill-current shrink-0" />
                 <span class="text-xs sm:text-sm font-bold">{{ product.rating }}</span>
                 <span v-if="product.reviewCount" class="text-[11px] sm:text-xs text-muted-foreground">({{ product.reviewCount }} Reviews)</span>
