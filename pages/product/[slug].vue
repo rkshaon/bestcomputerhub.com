@@ -1070,9 +1070,9 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 </div>
               </div>
               <div v-else>
-                <div class="prose prose-slate dark:prose-invert max-w-none">
-                  <div v-if="product.description" v-html="product.description" class="text-base sm:text-lg text-muted-foreground leading-relaxed"></div>
-                  <p v-else class="text-base sm:text-lg text-muted-foreground leading-relaxed">
+                <div class="prose prose-sm prose-slate dark:prose-invert max-w-none">
+                  <div v-if="product.description" v-html="product.description" class="text-sm text-[14px] text-muted-foreground leading-relaxed"></div>
+                  <p v-else class="text-sm text-[14px] text-muted-foreground leading-relaxed">
                     Authentic hardware component engineered to rigorous enterprise standards with comprehensive manufacturer validation.
                   </p>
                 </div>
