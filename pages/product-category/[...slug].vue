@@ -679,15 +679,15 @@ const resetFilters = () => {
 <template>
   <div class="min-h-screen pb-24 bg-background">
     <!-- Breadcrumbs & Category Header -->
-    <div class="bg-card border-b py-12 transition-all duration-300">
+    <div class="bg-card border-b pt-3 sm:pt-4 pb-3.5 sm:pb-4 transition-all duration-300">
       <div class="container mx-auto px-4">
         <!-- Breadcrumbs Navigation -->
-        <UiBreadcrumbs class="mb-6" :items="breadcrumbs" />
+        <UiBreadcrumbs class="mb-2 sm:mb-2.5" :items="breadcrumbs" />
 
         <!-- Category Title & Info -->
-        <div class="w-full space-y-4">
+        <div class="w-full space-y-2 sm:space-y-2.5">
           <!-- Category Short Description Title Heading / Editor & Actions -->
-          <div v-if="category?.short_description_title || canEditCategoryFromStorefront || canRemoveFromMenu" class="relative group/edit flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div v-if="category?.short_description_title || canEditCategoryFromStorefront || canRemoveFromMenu" class="relative group/edit flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
             <div class="min-w-0 flex-1">
               <template v-if="editingField === 'short_description_title'">
                 <div class="flex items-center gap-2">
@@ -795,7 +795,7 @@ const resetFilters = () => {
         </div>
 
         <!-- Immediate Subcategory Quick Filter Row -->
-        <div v-if="isSubcategoriesLoading || subcategories.length > 0" class="mt-4 pt-3 border-t border-border/40">
+        <div v-if="isSubcategoriesLoading || subcategories.length > 0" class="mt-3 pt-2.5 border-t border-border/40">
           <!-- Wrapping Subcategories Container -->
           <div class="flex flex-wrap items-center gap-2">
             <!-- Loading Skeletons -->
@@ -826,7 +826,7 @@ const resetFilters = () => {
     </div>
 
     <!-- Main Section -->
-    <div class="container mx-auto px-4 py-12">
+    <div class="container mx-auto px-4 pt-5 sm:pt-6 pb-12 sm:pb-16">
       <div class="flex flex-col lg:flex-row gap-8 lg:gap-10 items-start">
         <!-- Sidebar Filters -->
         <aside class="w-full lg:w-64 xl:w-72 shrink-0 space-y-8">
