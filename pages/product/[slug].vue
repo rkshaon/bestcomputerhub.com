@@ -904,7 +904,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
           </div>
 
           <!-- Pricing & Actions -->
-          <div class="p-4 sm:p-5 lg:p-6 rounded-2xl sm:rounded-3xl bg-muted/30 border border-muted space-y-4 sm:space-y-5 lg:space-y-6">
+          <div class="p-3 sm:p-4 lg:p-5 rounded-2xl sm:rounded-3xl bg-muted/30 border border-muted space-y-3 sm:space-y-4">
             <div class="relative group/edit flex flex-wrap items-baseline gap-2 sm:gap-4">
               <template v-if="editingField === 'price'">
                 <div class="flex items-center gap-2 w-full sm:w-auto">
@@ -918,7 +918,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                       @keydown.enter="saveField('price')"
                       @keydown.esc="cancelEditing"
                       :disabled="isFieldSaving === 'price'"
-                      class="text-2xl font-display font-black tracking-tight leading-snug w-[200px] sm:w-[240px] bg-background border border-input rounded-xl pl-10 sm:pl-12 pr-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      class="text-xl sm:text-2xl font-display font-black tracking-tight leading-snug w-[200px] sm:w-[240px] bg-background border border-input rounded-xl pl-10 sm:pl-12 pr-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                     />
                   </div>
                   <div v-if="isFieldSaving === 'price'" class="flex items-center gap-1.5 text-xs text-amber-500 font-bold uppercase tracking-wider shrink-0 px-2 py-1">
@@ -928,7 +928,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               </template>
               <template v-else>
                 <div class="flex items-center gap-2">
-                  <span class="text-2xl font-display font-black text-foreground group-hover/edit:text-primary transition-colors">
+                  <span class="text-xl sm:text-2xl font-display font-black text-foreground group-hover/edit:text-primary transition-colors">
                     {{ formatCurrency(product.current_selling_price || product.price) }}
                   </span>
                   <button 
@@ -940,10 +940,10 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                     <Edit2 class="w-4 h-4" />
                   </button>
                 </div>
-                <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="text-base text-muted-foreground line-through decoration-destructive/30">
+                <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="text-xs sm:text-sm text-muted-foreground line-through decoration-destructive/30">
                   {{ formatCurrency(product.originalPrice) }}
                 </span>
-                <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold rounded-md">
+                <span v-if="product.originalPrice && product.originalPrice > (product.current_selling_price || product.price)" class="px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 text-[11px] font-bold rounded-md">
                   SAVE {{ Math.round((1 - (product.current_selling_price || product.price) / product.originalPrice) * 100) }}%
                 </span>
               </template>
@@ -972,11 +972,11 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-              <div class="flex items-center justify-between sm:justify-start gap-4 bg-background border h-12 sm:h-14 rounded-xl sm:rounded-2xl px-4 py-2 w-full sm:w-auto shrink-0">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
+              <div class="flex items-center justify-between sm:justify-start gap-3 bg-background border h-10 sm:h-11 rounded-xl px-3 py-1.5 w-full sm:w-auto shrink-0">
                 <button 
                   @click="quantity = Math.max(1, quantity - 1)" 
-                  class="p-2 hover:bg-muted rounded-lg transition-colors cursor-pointer" 
+                  class="p-1.5 hover:bg-muted rounded-lg transition-colors cursor-pointer" 
                   aria-label="Decrease quantity"
                 >
                   <Minus class="w-4 h-4" />
@@ -984,7 +984,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <span class="font-bold text-center min-w-[2rem] text-sm">{{ quantity }}</span>
                 <button 
                   @click="quantity++" 
-                  class="p-2 hover:bg-muted rounded-lg transition-colors cursor-pointer" 
+                  class="p-1.5 hover:bg-muted rounded-lg transition-colors cursor-pointer" 
                   aria-label="Increase quantity"
                 >
                   <Plus class="w-4 h-4" />
@@ -993,9 +993,9 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
               
               <UiButton 
                 @click="addToCart" 
-                class="h-12 sm:h-14 w-full sm:w-auto sm:flex-grow px-6 sm:px-10 gap-3 rounded-xl sm:rounded-2xl text-base font-bold"
+                class="h-10 sm:h-11 w-full sm:w-auto sm:flex-grow px-4 sm:px-6 gap-2 rounded-xl text-sm sm:text-base font-bold"
               >
-                <ShoppingCart class="w-5 h-5" />
+                <ShoppingCart class="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 {{ isItemInCart ? 'Add More to Cart' : 'Add to Cart' }}
               </UiButton>
             </div>
