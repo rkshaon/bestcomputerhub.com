@@ -1001,6 +1001,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </div>
 
             <!-- Trust Badges -->
+            <!--
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t">
               <div v-for="(item, idx) in [
                 { icon: Truck, text: 'Express Delivery' },
@@ -1012,6 +1013,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <span class="text-[10px] sm:text-[11px] font-bold uppercase text-muted-foreground leading-tight">{{ item.text }}</span>
               </div>
             </div>
+            -->
           </div>
         </div>
       </div>
