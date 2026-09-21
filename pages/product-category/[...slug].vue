@@ -800,7 +800,7 @@ const resetFilters = () => {
           <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <!-- Loading Skeletons -->
             <template v-if="isSubcategoriesLoading">
-              <div v-for="i in 5" :key="i" class="h-6 sm:h-7 w-20 sm:w-24 bg-muted/60 rounded-full animate-pulse"></div>
+              <div v-for="i in 5" :key="i" class="h-5 sm:h-6 w-16 sm:w-20 bg-muted/60 rounded-full animate-pulse"></div>
             </template>
 
             <!-- Dynamic Subcategory Chips -->
@@ -811,10 +811,10 @@ const resetFilters = () => {
                 :to="getSubcategoryUrl(subcat)"
                 @click="handleSubcategoryClick(subcat)"
                 :class="[
-                  'inline-flex items-center justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-200 cursor-pointer border select-none max-w-full text-center break-words',
+                  'inline-flex items-center justify-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-medium transition-all duration-200 cursor-pointer border select-none max-w-full text-center break-words',
                   isSubcategoryActive(subcat)
                     ? 'bg-primary text-primary-foreground border-primary shadow-xs scale-[1.02]'
-                    : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-border/80 hover:border-border'
+                    : 'bg-transparent hover:bg-background text-muted-foreground hover:text-foreground border-border/80 hover:border-border'
                 ]"
               >
                 {{ decodeHtmlEntities(subcat.name) }}
