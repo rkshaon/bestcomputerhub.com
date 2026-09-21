@@ -355,7 +355,16 @@ const resolveCategory = async () => {
     if (detail) {
       if (activeCategory.value) {
         // Merge rich details (like full description/guide) onto the basic category object
-        activeCategory.value = { ...activeCategory.value, ...detail };
+        const currentId = activeCategory.value.id;
+        const detailId = detail.id;
+        
+        // If current ID is numeric (real) and detail ID is non-numeric (mock), keep the numeric ID
+        const isCurrentReal = currentId && /^\d+$/.test(String(currentId));
+        const isDetailReal = detailId && /^\d+$/.test(String(detailId));
+        
+        const mergedId = (isCurrentReal && !isDetailReal) ? currentId : detailId;
+        
+        activeCategory.value = { ...activeCategory.value, ...detail, id: mergedId };
       } else {
         activeCategory.value = detail;
       }

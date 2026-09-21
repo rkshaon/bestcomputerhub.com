@@ -349,11 +349,30 @@ export const useCategoryService = () => {
     if (checkMockMode()) {
       await new Promise(resolve => setTimeout(resolve, 400));
       isLoading.value = false;
-      return getMockCategories().find(c => c.id === id) || null;
+      return getMockCategories().find(c => c.id === id || c.slug === id) || null;
     }
 
     try {
-      const data = await apiClient.request<any>(`/api/v1/categories/${id}/`, {
+      let resolvedId = id;
+      // If the ID is a non-numeric slug, resolve it to the numeric ID first
+      if (id && !/^\d+$/.test(id.trim())) {
+        const listRes = await getCategoriesList({ search: id, page_size: 10 });
+        const exactMatch = listRes.results.find(c => c.slug?.toLowerCase() === id.trim().toLowerCase());
+        if (exactMatch && exactMatch.id) {
+          resolvedId = String(exactMatch.id);
+        } else {
+          // Fall back to mock if not found in backend list
+          const mockMatch = getMockCategories().find(c => c.slug === id || c.id === id);
+          if (mockMatch) {
+            isLoading.value = false;
+            return mockMatch;
+          }
+          isLoading.value = false;
+          return null;
+        }
+      }
+
+      const data = await apiClient.request<any>(`/api/v1/categories/${resolvedId}/`, {
         method: 'GET'
       });
       isLoading.value = false;
@@ -361,7 +380,7 @@ export const useCategoryService = () => {
     } catch (err: any) {
       errorMsg.value = extractErrorMessage(err, 'Failed to retrieve category details.');
       isLoading.value = false;
-      return getMockCategories().find(c => c.id === id) || null;
+      return getMockCategories().find(c => c.id === id || c.slug === id) || null;
     }
   };
 
@@ -1166,17 +1185,6 @@ export const useCategoryService = () => {
       return allCached;
     }
 
-    // Mark parent IDs as currently loading
-    missingParentIds.forEach(id => loadingParentIds.value.add(id));
-
-    const idsParam = missingParentIds.join(',');
-    const queryParams = new URLSearchParams();
-    queryParams.append('ids', idsParam);
-    if (options.is_menu !== undefined) {
-      queryParams.append('is_menu', options.is_menu.toString());
-    }
-    const endpoint = `/api/v1/categories/children/?${queryParams.toString()}`;
-
     if (checkMockMode()) {
       try {
         await new Promise(resolve => setTimeout(resolve, 150));
@@ -1199,6 +1207,50 @@ export const useCategoryService = () => {
         missingParentIds.forEach(id => loadingParentIds.value.delete(id));
       }
     }
+
+    // Real API mode: filter out and resolve non-numeric (mock/slug) IDs instantly from mock categories
+    // to prevent cache-poisoning or invalid API requests.
+    const numericMissingIds: string[] = [];
+    const nonNumericMissingIds: string[] = [];
+
+    missingParentIds.forEach(id => {
+      if (/^\d+$/.test(id)) {
+        numericMissingIds.push(id);
+      } else {
+        nonNumericMissingIds.push(id);
+      }
+    });
+
+    // Instantly resolve non-numeric IDs using mock categories
+    nonNumericMissingIds.forEach(pId => {
+      const allMock = getMockCategories();
+      let children = allMock.filter(c => String(c.parentCategoryId) === pId);
+      if (options.is_menu) {
+        children = children.filter(c => c.show_in_menu === true || c.is_menu === true);
+      }
+      const mapped = children.map(mapCategoryResponse);
+      storeChildrenInCache(pId, mapped);
+    });
+
+    // If there are no numeric missing IDs left to load, return everything from cache
+    if (numericMissingIds.length === 0) {
+      const result: Category[] = [];
+      parentIdStrings.forEach(pId => {
+        result.push(...getChildrenForParent(pId));
+      });
+      return result;
+    }
+
+    // Mark remaining numeric parent IDs as currently loading
+    numericMissingIds.forEach(id => loadingParentIds.value.add(id));
+
+    const idsParam = numericMissingIds.join(',');
+    const queryParams = new URLSearchParams();
+    queryParams.append('ids', idsParam);
+    if (options.is_menu !== undefined) {
+      queryParams.append('is_menu', options.is_menu.toString());
+    }
+    const endpoint = `/api/v1/categories/children/?${queryParams.toString()}`;
 
     try {
       const data = await apiClient.request<any>(endpoint, {
@@ -1238,14 +1290,14 @@ export const useCategoryService = () => {
       const fetchedChildren = rawItems.map(mapCategoryResponse);
 
       // Store fetched direct children in cache keyed by parent category ID
-      missingParentIds.forEach(pId => {
+      numericMissingIds.forEach(pId => {
         const normalizedPId = String(pId);
         let childrenForParent = fetchedChildren.filter(
           child => child.parentCategoryId !== undefined && String(child.parentCategoryId) === normalizedPId
         );
 
         // Fallback for single parent request if parentCategoryId was not explicitly returned on child objects
-        if (childrenForParent.length === 0 && missingParentIds.length === 1 && fetchedChildren.length > 0) {
+        if (childrenForParent.length === 0 && numericMissingIds.length === 1 && fetchedChildren.length > 0) {
           fetchedChildren.forEach(child => {
             child.parentCategoryId = normalizedPId;
           });
@@ -1269,7 +1321,7 @@ export const useCategoryService = () => {
       });
       return fallbackResult;
     } finally {
-      missingParentIds.forEach(id => loadingParentIds.value.delete(id));
+      numericMissingIds.forEach(id => loadingParentIds.value.delete(id));
     }
   };
 
