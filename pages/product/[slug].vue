@@ -812,7 +812,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </div>
 
             <!-- Metadata & Attributes as Compact Chips -->
-            <div class="flex flex-wrap items-center gap-2 pt-3 pb-1 border-t mt-4">
+            <div class="flex flex-wrap items-center gap-2 pt-3 pb-1 border-t mt-2">
               <!-- Availability Chip -->
               <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-card rounded-md border border-border text-xs">
                 <span class="text-muted-foreground font-medium">Availability:</span>
@@ -850,7 +850,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             </div>
 
             <!-- Short Description / Editor -->
-            <div class="space-y-2 pt-3 border-t mt-4">
+            <div class="space-y-2 pt-3 border-t mt-2">
               <div class="flex items-center gap-2" v-if="canEditProductFromStorefront">
                 <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Short Description</span>
                 <button 
