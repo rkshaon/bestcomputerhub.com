@@ -1,7 +1,7 @@
 <!-- File: /components/layout/Footer.vue -->
 <script setup lang="ts">
 // TEMPORARILY DISABLED: Newsletter Icons (Mail, ArrowRight)
-import { Facebook, Twitter, Instagram, Youtube /*, Mail, PackageSearch, ArrowRight */ } from 'lucide-vue-next';
+import { Facebook, Twitter, Linkedin, Youtube /*, Mail, PackageSearch, ArrowRight */ } from 'lucide-vue-next';
 
 const currentYear = new Date().getFullYear();
 
@@ -9,28 +9,28 @@ const socialLinks = [
   { 
     label: 'Facebook', 
     icon: Facebook, 
-    href: '#',
+    href: 'https://www.facebook.com/bestcomputerhubltd',
     brandBg: 'bg-[#1877F2]',
     brandBorder: 'border-[#1877F2]'
   },
   { 
-    label: 'Twitter', 
+    label: 'X / Twitter', 
     icon: Twitter, 
-    href: '#',
+    href: 'https://x.com/bestcomhubltd',
     brandBg: 'bg-[#1DA1F2]',
     brandBorder: 'border-[#1DA1F2]'
   },
   { 
-    label: 'Instagram', 
-    icon: Instagram, 
-    href: '#',
-    brandBg: 'bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888]',
-    brandBorder: 'border-transparent'
+    label: 'LinkedIn', 
+    icon: Linkedin, 
+    href: 'https://www.linkedin.com/company/best-computer-hub-ltd/home/',
+    brandBg: 'bg-[#0A66C2]',
+    brandBorder: 'border-[#0A66C2]'
   },
   { 
-    label: 'Youtube', 
+    label: 'YouTube', 
     icon: Youtube, 
-    href: '#',
+    href: 'https://www.youtube.com/@bestcomputerhubltd',
     brandBg: 'bg-[#FF0000]',
     brandBorder: 'border-[#FF0000]'
   }
@@ -55,6 +55,8 @@ const socialLinks = [
               :key="social.label" 
               :href="social.href" 
               :aria-label="social.label"
+              target="_blank"
+              rel="noopener noreferrer"
               :class="[
                 'relative overflow-hidden w-9 h-9 sm:w-10 sm:h-10 border rounded-full flex items-center justify-center transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:border-primary group shadow-xs hover:shadow-md',
                 social.brandBorder
