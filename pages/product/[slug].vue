@@ -802,7 +802,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                     @keydown.enter="saveField('name')"
                     @keydown.esc="cancelEditing"
                     :disabled="isFieldSaving === 'name'"
-                    class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold tracking-tight leading-tight w-full bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    class="text-2xl font-display font-black tracking-tight leading-snug w-full bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
                   <div v-if="isFieldSaving === 'name'" class="shrink-0">
                     <Loader2 class="w-5 h-5 animate-spin text-primary" />
@@ -810,7 +810,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 </div>
               </template>
               <template v-else>
-                <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold tracking-tight leading-tight break-words flex items-center gap-2.5">
+                <h1 class="text-2xl font-display font-black tracking-tight leading-snug break-words flex items-center gap-2.5">
                   <span>{{ decodeHtmlEntities(product.name) }}</span>
                   <button 
                     v-if="canEditProductFromStorefront" 
@@ -852,8 +852,8 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 </div>
               </div>
               <div v-else>
-                <div v-if="product.short_description" class="prose prose-slate dark:prose-invert max-w-none text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed" v-html="product.short_description"></div>
-                <div v-else-if="product.description" class="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed line-clamp-3" v-html="product.description"></div>
+                <div v-if="product.short_description" class="prose prose-sm prose-slate dark:prose-invert max-w-none text-sm text-[14px] text-muted-foreground leading-relaxed" v-html="product.short_description"></div>
+                <div v-else-if="product.description" class="text-sm text-[14px] text-muted-foreground leading-relaxed line-clamp-3" v-html="product.description"></div>
               </div>
             </div>
             
