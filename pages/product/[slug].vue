@@ -647,7 +647,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
   <div class="pb-16 sm:pb-20">
     <!-- Breadcrumbs -->
     <div class="bg-muted/30 border-b">
-      <div class="container mx-auto px-4 py-3 sm:py-4">
+      <div class="container mx-auto px-4 py-2 sm:py-2.5">
         <UiBreadcrumbs :items="[...categoryBreadcrumbs, { name: product?.name || slug, url: route.path }]" />
       </div>
     </div>
