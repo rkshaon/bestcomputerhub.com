@@ -814,7 +814,9 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             <div class="flex flex-wrap items-center gap-1.5 pt-2 pb-0 border-t mt-1">
               <!-- Availability Chip -->
               <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-card rounded-md border border-border text-xs">
+                <!--
                 <span class="text-muted-foreground font-medium">Availability:</span>
+                -->
                 <span class="font-semibold text-foreground flex items-center gap-1.5">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                   {{ product.stock > 0 ? `${product.stock} Units In Stock` : 'Available to Order' }}
