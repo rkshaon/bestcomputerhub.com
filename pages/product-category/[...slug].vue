@@ -306,6 +306,10 @@ const loadAllCategories = async (): Promise<Category[]> => {
 };
 
 const activeCategory = ref<Category | null>(null);
+const subcategories = ref<Category[]>([]);
+const isSubcategoriesLoading = ref(false);
+const selectedSubcategoryId = ref<string | number | null>(null);
+let currentSubcategoriesFetchId: string | number | null = null;
 
 const pageTitle = computed(() => {
   if (activeCategory.value?.name) {
@@ -336,7 +340,13 @@ const resolveCategory = async () => {
   const targetSlug = categorySlug.value ? categorySlug.value.toLowerCase() : '';
   if (!targetSlug) {
     activeCategory.value = null;
+    subcategories.value = [];
     return;
+  }
+
+  // If navigating to a different category slug, reset subcategories to prevent showing stale chips
+  if (activeCategory.value && activeCategory.value.slug?.toLowerCase() !== targetSlug) {
+    subcategories.value = [];
   }
 
   // Ensure category taxonomy is loaded before resolving to prevent race conditions and duplicate API requests
@@ -653,214 +663,75 @@ const debouncedMaxPrice = refDebounced(toRef(filters, 'maxPrice'), 300);
 const categoryBrands = ref<Brand[]>([]);
 const isBrandsLoading = ref(false);
 
-const isSubcategoriesLoading = ref(false);
-const selectedSubcategoryId = ref<string | number | null>(null);
-
 /**
- * Resolves direct subcategories of the active category entirely from in-memory taxonomy data.
- * Supports:
- * - Direct `children` array on active category or taxonomy match
- * - `subCategories` string/numeric identifier array resolved against taxonomy by ID or slug
- * - Flat taxonomy entries whose `parentCategoryId` matches the parent by ID or slug
- * - Deduplication by stable ID and slug
- * - Preservation of ordering (explicit list order or display_order/order)
- * - Purely in-memory resolution without triggering any network requests
+ * Fetches immediate direct children for the active category using the existing
+ * categoryService.getCategoryChildrenBatch abstraction.
+ *
+ * Ensures:
+ * - Only requests children when a valid category ID is available
+ * - Handles loading state with isSubcategoriesLoading
+ * - Resets subcategories to avoid stale state from previous categories
+ * - Guards against race conditions and stale async responses
+ * - Relies on the authoritative /api/v1/categories/children/?ids={id} endpoint for real categories
  */
-const resolveDirectSubcategories = (): Category[] => {
-  const activeCat = category.value;
-  if (!activeCat) {
-    return [];
-  }
-
-  const activeId = activeCat.id !== undefined && activeCat.id !== null ? String(activeCat.id).trim() : '';
-  const activeSlug = (activeCat.slug || categorySlug.value || '').trim().toLowerCase();
-
-  if (!activeId && !activeSlug) {
-    return [];
-  }
-
-  // Combine taxonomy sources: authoritative allCategoriesList + static fallback
-  const sourceList: Category[] = [
-    ...(allCategoriesList.value || []),
-    ...(productService.getCategories() || [])
-  ];
-
-  // Helper to flatten hierarchical category lists (including nested children)
-  const flattenTaxonomy = (list: Category[]): Category[] => {
-    const result: Category[] = [];
-    const visited = new Set<string>();
-
-    const traverse = (nodes: Category[]) => {
-      for (const node of nodes) {
-        if (!node) continue;
-        const key = (node.id !== undefined && node.id !== null ? String(node.id).trim() : '') + '::' + (node.slug || '').trim().toLowerCase();
-        if (!visited.has(key)) {
-          visited.add(key);
-          result.push(node);
-        }
-        if (node.children && Array.isArray(node.children) && node.children.length > 0) {
-          traverse(node.children);
-        }
-      }
-    };
-
-    traverse(list);
-    return result;
-  };
-
-  const allFlat = flattenTaxonomy(sourceList);
-
-  // Build lookups by ID and Slug
-  const nodeById = new Map<string, Category>();
-  const nodeBySlug = new Map<string, Category>();
-
-  for (const cat of allFlat) {
-    if (cat.id !== undefined && cat.id !== null) {
-      nodeById.set(String(cat.id).trim(), cat);
-    }
-    if (cat.slug) {
-      nodeBySlug.set(cat.slug.trim().toLowerCase(), cat);
-    }
-  }
-
-  const findNode = (idOrSlug: string): Category | null => {
-    if (!idOrSlug) return null;
-    const trimmed = String(idOrSlug).trim();
-    const lower = trimmed.toLowerCase();
-    return nodeById.get(trimmed) || nodeBySlug.get(lower) || null;
-  };
-
-  // Find the active category node within the taxonomy sources to extract full taxonomy relations
-  let foundCategory: Category | null = null;
-  if (activeId) {
-    foundCategory = nodeById.get(activeId) || null;
-  }
-  if (!foundCategory && activeSlug) {
-    foundCategory = nodeBySlug.get(activeSlug) || null;
-  }
-
-  // Collect all known identifiers (IDs and Slugs) for the active parent category
-  const parentIds = new Set<string>();
-  const parentSlugs = new Set<string>();
-
-  if (activeId) parentIds.add(activeId);
-  if (activeSlug) parentSlugs.add(activeSlug);
-
-  if (activeCat.id !== undefined && activeCat.id !== null) {
-    parentIds.add(String(activeCat.id).trim());
-  }
-  if (activeCat.slug) {
-    parentSlugs.add(activeCat.slug.trim().toLowerCase());
-  }
-
-  if (foundCategory) {
-    if (foundCategory.id !== undefined && foundCategory.id !== null) {
-      parentIds.add(String(foundCategory.id).trim());
-    }
-    if (foundCategory.slug) {
-      parentSlugs.add(foundCategory.slug.trim().toLowerCase());
-    }
-  }
-
-  const isSameAsParent = (cat: Category): boolean => {
-    const cid = cat.id !== undefined && cat.id !== null ? String(cat.id).trim() : '';
-    const cslug = cat.slug ? cat.slug.trim().toLowerCase() : '';
-    return (cid ? parentIds.has(cid) : false) || (cslug ? parentSlugs.has(cslug) : false);
-  };
-
-  const candidates: Category[] = [];
-
-  // Source 1: Direct children array on active category or found node
-  const directChildren = (activeCat.children && Array.isArray(activeCat.children) && activeCat.children.length > 0)
-    ? activeCat.children
-    : (foundCategory?.children && Array.isArray(foundCategory.children) && foundCategory.children.length > 0)
-      ? foundCategory.children
-      : [];
-
-  for (const child of directChildren) {
-    if (!child) continue;
-    const enriched = (child.id !== undefined && nodeById.get(String(child.id).trim()))
-      || (child.slug && nodeBySlug.get(child.slug.trim().toLowerCase()))
-      || child;
-    candidates.push(enriched);
-  }
-
-  // Source 2: Direct subCategories identifiers (IDs or slugs) on active category or found node
-  const subCatIdentifiers = (activeCat.subCategories && Array.isArray(activeCat.subCategories) && activeCat.subCategories.length > 0)
-    ? activeCat.subCategories
-    : (foundCategory?.subCategories && Array.isArray(foundCategory.subCategories) && foundCategory.subCategories.length > 0)
-      ? foundCategory.subCategories
-      : [];
-
-  for (const identifier of subCatIdentifiers) {
-    if (typeof identifier === 'string' || typeof identifier === 'number') {
-      const resolved = findNode(String(identifier));
-      if (resolved) {
-        candidates.push(resolved);
-      }
-    } else if (identifier && typeof identifier === 'object') {
-      const obj = identifier as Category;
-      const resolved = (obj.id !== undefined && nodeById.get(String(obj.id).trim()))
-        || (obj.slug && nodeBySlug.get(obj.slug.trim().toLowerCase()))
-        || obj;
-      candidates.push(resolved);
-    }
-  }
-
-  // Source 3: Flat taxonomy entries whose parentCategoryId references the active category (by ID or slug)
-  const flatChildren: Category[] = [];
-  for (const cat of allFlat) {
-    if (!cat.parentCategoryId) continue;
-    const pRef = String(cat.parentCategoryId).trim();
-    const pRefLower = pRef.toLowerCase();
-
-    const matchesId = parentIds.has(pRef);
-    const matchesSlug = parentSlugs.has(pRefLower);
-
-    if (matchesId || matchesSlug) {
-      flatChildren.push(cat);
-    }
-  }
-
-  // If flat taxonomy entries have explicit display_order/order, sort them
-  flatChildren.sort((a, b) => {
-    const orderA = a.display_order !== undefined ? Number(a.display_order) : (a.order !== undefined ? Number(a.order) : 0);
-    const orderB = b.display_order !== undefined ? Number(b.display_order) : (b.order !== undefined ? Number(b.order) : 0);
-    return orderA - orderB;
-  });
-
-  candidates.push(...flatChildren);
-
-  // Deduplicate direct children by stable ID and slug, excluding the parent itself
-  const uniqueChildren: Category[] = [];
-  const seenIds = new Set<string>();
-  const seenSlugs = new Set<string>();
-
-  for (const cat of candidates) {
-    if (!cat || isSameAsParent(cat)) continue;
-
-    const idKey = cat.id !== undefined && cat.id !== null ? String(cat.id).trim() : '';
-    const slugKey = cat.slug ? cat.slug.trim().toLowerCase() : '';
-
-    if (idKey && seenIds.has(idKey)) continue;
-    if (slugKey && seenSlugs.has(slugKey)) continue;
-
-    if (idKey) seenIds.add(idKey);
-    if (slugKey) seenSlugs.add(slugKey);
-
-    uniqueChildren.push(cat);
-  }
-
-  return uniqueChildren;
-};
-
-// Computed property ensures automatic, reliable reactivity whenever activeCategory, category detail, or taxonomy changes
-const subcategories = computed<Category[]>(() => {
-  return resolveDirectSubcategories();
-});
-
 const fetchSubcategories = async (): Promise<Category[]> => {
-  return subcategories.value;
+  const currentCat = category.value;
+  const targetId = currentCat?.id;
+
+  // Do not make request if there is no valid category ID
+  if (targetId === undefined || targetId === null || targetId === '') {
+    subcategories.value = [];
+    isSubcategoriesLoading.value = false;
+    currentSubcategoriesFetchId = null;
+    return [];
+  }
+
+  const fetchId = targetId;
+  currentSubcategoriesFetchId = fetchId;
+  isSubcategoriesLoading.value = true;
+  subcategories.value = [];
+
+  try {
+    const children = await categoryService.getCategoryChildrenBatch([fetchId]);
+
+    // Prevent stale responses from a previous route/category from replacing the current category's children
+    if (currentSubcategoriesFetchId !== fetchId || category.value?.id !== fetchId) {
+      return [];
+    }
+
+    // Fallback resolution for non-numeric mock fixture IDs only (never overrides real production category IDs)
+    if ((!children || children.length === 0) && !/^\d+$/.test(String(fetchId))) {
+      const mockChildren: Category[] = [];
+      const allMock = productService.getCategories();
+      
+      // Check subCategories array on the mock category
+      if (currentCat && Array.isArray(currentCat.subCategories)) {
+        for (const subIdentifier of currentCat.subCategories) {
+          const subStr = String(subIdentifier).toLowerCase();
+          const match = allMock.find(c => String(c.id).toLowerCase() === subStr || c.slug?.toLowerCase() === subStr);
+          if (match) mockChildren.push(match);
+        }
+      }
+      
+      if (mockChildren.length > 0) {
+        subcategories.value = mockChildren;
+        return mockChildren;
+      }
+    }
+
+    subcategories.value = Array.isArray(children) ? children : [];
+    return subcategories.value;
+  } catch (err) {
+    console.error('Failed to load subcategories for category:', fetchId, err);
+    if (currentSubcategoriesFetchId === fetchId) {
+      subcategories.value = [];
+    }
+    return [];
+  } finally {
+    if (currentSubcategoriesFetchId === fetchId) {
+      isSubcategoriesLoading.value = false;
+    }
+  }
 };
 
 const currentPathSlugs = computed(() => {
@@ -1018,7 +889,12 @@ const fetchProducts = async () => {
 };
 
 watch(() => category.value?.id, async (newId, oldId) => {
-  if (!newId) return;
+  if (!newId) {
+    subcategories.value = [];
+    isSubcategoriesLoading.value = false;
+    currentSubcategoriesFetchId = null;
+    return;
+  }
   currentPage.value = 1;
   // If category changed, reset brand filter, selected subcategory, and price range
   if (newId !== oldId) {
@@ -1026,6 +902,7 @@ watch(() => category.value?.id, async (newId, oldId) => {
     isResolvingCategory.value = true;
     filters.brand = '';
     selectedSubcategoryId.value = null;
+    subcategories.value = [];
     
     await Promise.all([
       fetchSubcategories(),
