@@ -653,90 +653,215 @@ const debouncedMaxPrice = refDebounced(toRef(filters, 'maxPrice'), 300);
 const categoryBrands = ref<Brand[]>([]);
 const isBrandsLoading = ref(false);
 
-const subcategories = ref<Category[]>([]);
 const isSubcategoriesLoading = ref(false);
 const selectedSubcategoryId = ref<string | number | null>(null);
 
-const fetchSubcategories = async () => {
-  if (!category.value?.id) {
-    subcategories.value = [];
-    return;
+/**
+ * Resolves direct subcategories of the active category entirely from in-memory taxonomy data.
+ * Supports:
+ * - Direct `children` array on active category or taxonomy match
+ * - `subCategories` string/numeric identifier array resolved against taxonomy by ID or slug
+ * - Flat taxonomy entries whose `parentCategoryId` matches the parent by ID or slug
+ * - Deduplication by stable ID and slug
+ * - Preservation of ordering (explicit list order or display_order/order)
+ * - Purely in-memory resolution without triggering any network requests
+ */
+const resolveDirectSubcategories = (): Category[] => {
+  const activeCat = category.value;
+  if (!activeCat) {
+    return [];
   }
-  isSubcategoriesLoading.value = true;
-  
-  // Helper to flatten a hierarchical category list to find direct or parent-linked nodes
-  const flattenCategories = (list: Category[]): Category[] => {
-    let result: Category[] = [];
-    for (const c of list) {
-      result.push(c);
-      if (c.children && c.children.length > 0) {
-        result = result.concat(flattenCategories(c.children));
+
+  const activeId = activeCat.id !== undefined && activeCat.id !== null ? String(activeCat.id).trim() : '';
+  const activeSlug = (activeCat.slug || categorySlug.value || '').trim().toLowerCase();
+
+  if (!activeId && !activeSlug) {
+    return [];
+  }
+
+  // Combine taxonomy sources: authoritative allCategoriesList + static fallback
+  const sourceList: Category[] = [
+    ...(allCategoriesList.value || []),
+    ...(productService.getCategories() || [])
+  ];
+
+  // Helper to flatten hierarchical category lists (including nested children)
+  const flattenTaxonomy = (list: Category[]): Category[] => {
+    const result: Category[] = [];
+    const visited = new Set<string>();
+
+    const traverse = (nodes: Category[]) => {
+      for (const node of nodes) {
+        if (!node) continue;
+        const key = (node.id !== undefined && node.id !== null ? String(node.id).trim() : '') + '::' + (node.slug || '').trim().toLowerCase();
+        if (!visited.has(key)) {
+          visited.add(key);
+          result.push(node);
+        }
+        if (node.children && Array.isArray(node.children) && node.children.length > 0) {
+          traverse(node.children);
+        }
       }
-    }
+    };
+
+    traverse(list);
     return result;
   };
 
-  // Helper to find any category in the hierarchical list by its ID
-  const findCategoryInList = (list: Category[], targetId: string): Category | null => {
-    for (const c of list) {
-      if (String(c.id) === String(targetId)) {
-        return c;
-      }
-      if (c.children && c.children.length > 0) {
-        const found = findCategoryInList(c.children, targetId);
-        if (found) return found;
-      }
+  const allFlat = flattenTaxonomy(sourceList);
+
+  // Build lookups by ID and Slug
+  const nodeById = new Map<string, Category>();
+  const nodeBySlug = new Map<string, Category>();
+
+  for (const cat of allFlat) {
+    if (cat.id !== undefined && cat.id !== null) {
+      nodeById.set(String(cat.id).trim(), cat);
     }
-    return null;
+    if (cat.slug) {
+      nodeBySlug.set(cat.slug.trim().toLowerCase(), cat);
+    }
+  }
+
+  const findNode = (idOrSlug: string): Category | null => {
+    if (!idOrSlug) return null;
+    const trimmed = String(idOrSlug).trim();
+    const lower = trimmed.toLowerCase();
+    return nodeById.get(trimmed) || nodeBySlug.get(lower) || null;
   };
 
-  const activeId = String(category.value.id);
-  
-  // Try to find the category node inside our loaded taxonomy (allCategoriesList)
-  let foundCategory = findCategoryInList(allCategoriesList.value, activeId);
-  
-  // If not found in loaded taxonomy, search in static mock categories
-  if (!foundCategory) {
-    foundCategory = findCategoryInList(productService.getCategories(), activeId);
+  // Find the active category node within the taxonomy sources to extract full taxonomy relations
+  let foundCategory: Category | null = null;
+  if (activeId) {
+    foundCategory = nodeById.get(activeId) || null;
   }
-  
-  let childrenList: Category[] = [];
-  
-  // Case A: Found category node has direct children array
-  if (foundCategory && foundCategory.children && foundCategory.children.length > 0) {
-    childrenList = foundCategory.children;
-  } else {
-    // Case B: Search by filtering direct parent relationship (in flat or flattened structure)
-    const flatList = flattenCategories([...allCategoriesList.value, ...productService.getCategories()]);
-    // Filter duplicates by unique ID, keeping only those whose parent is the active category
-    const idMap = new Map<string, Category>();
-    for (const c of flatList) {
-      if (c.parentCategoryId && String(c.parentCategoryId) === activeId) {
-        idMap.set(String(c.id), c);
-      }
-    }
-    childrenList = Array.from(idMap.values());
+  if (!foundCategory && activeSlug) {
+    foundCategory = nodeBySlug.get(activeSlug) || null;
   }
 
-  // Ensure unique subcategories by ID
+  // Collect all known identifiers (IDs and Slugs) for the active parent category
+  const parentIds = new Set<string>();
+  const parentSlugs = new Set<string>();
+
+  if (activeId) parentIds.add(activeId);
+  if (activeSlug) parentSlugs.add(activeSlug);
+
+  if (activeCat.id !== undefined && activeCat.id !== null) {
+    parentIds.add(String(activeCat.id).trim());
+  }
+  if (activeCat.slug) {
+    parentSlugs.add(activeCat.slug.trim().toLowerCase());
+  }
+
+  if (foundCategory) {
+    if (foundCategory.id !== undefined && foundCategory.id !== null) {
+      parentIds.add(String(foundCategory.id).trim());
+    }
+    if (foundCategory.slug) {
+      parentSlugs.add(foundCategory.slug.trim().toLowerCase());
+    }
+  }
+
+  const isSameAsParent = (cat: Category): boolean => {
+    const cid = cat.id !== undefined && cat.id !== null ? String(cat.id).trim() : '';
+    const cslug = cat.slug ? cat.slug.trim().toLowerCase() : '';
+    return (cid ? parentIds.has(cid) : false) || (cslug ? parentSlugs.has(cslug) : false);
+  };
+
+  const candidates: Category[] = [];
+
+  // Source 1: Direct children array on active category or found node
+  const directChildren = (activeCat.children && Array.isArray(activeCat.children) && activeCat.children.length > 0)
+    ? activeCat.children
+    : (foundCategory?.children && Array.isArray(foundCategory.children) && foundCategory.children.length > 0)
+      ? foundCategory.children
+      : [];
+
+  for (const child of directChildren) {
+    if (!child) continue;
+    const enriched = (child.id !== undefined && nodeById.get(String(child.id).trim()))
+      || (child.slug && nodeBySlug.get(child.slug.trim().toLowerCase()))
+      || child;
+    candidates.push(enriched);
+  }
+
+  // Source 2: Direct subCategories identifiers (IDs or slugs) on active category or found node
+  const subCatIdentifiers = (activeCat.subCategories && Array.isArray(activeCat.subCategories) && activeCat.subCategories.length > 0)
+    ? activeCat.subCategories
+    : (foundCategory?.subCategories && Array.isArray(foundCategory.subCategories) && foundCategory.subCategories.length > 0)
+      ? foundCategory.subCategories
+      : [];
+
+  for (const identifier of subCatIdentifiers) {
+    if (typeof identifier === 'string' || typeof identifier === 'number') {
+      const resolved = findNode(String(identifier));
+      if (resolved) {
+        candidates.push(resolved);
+      }
+    } else if (identifier && typeof identifier === 'object') {
+      const obj = identifier as Category;
+      const resolved = (obj.id !== undefined && nodeById.get(String(obj.id).trim()))
+        || (obj.slug && nodeBySlug.get(obj.slug.trim().toLowerCase()))
+        || obj;
+      candidates.push(resolved);
+    }
+  }
+
+  // Source 3: Flat taxonomy entries whose parentCategoryId references the active category (by ID or slug)
+  const flatChildren: Category[] = [];
+  for (const cat of allFlat) {
+    if (!cat.parentCategoryId) continue;
+    const pRef = String(cat.parentCategoryId).trim();
+    const pRefLower = pRef.toLowerCase();
+
+    const matchesId = parentIds.has(pRef);
+    const matchesSlug = parentSlugs.has(pRefLower);
+
+    if (matchesId || matchesSlug) {
+      flatChildren.push(cat);
+    }
+  }
+
+  // If flat taxonomy entries have explicit display_order/order, sort them
+  flatChildren.sort((a, b) => {
+    const orderA = a.display_order !== undefined ? Number(a.display_order) : (a.order !== undefined ? Number(a.order) : 0);
+    const orderB = b.display_order !== undefined ? Number(b.display_order) : (b.order !== undefined ? Number(b.order) : 0);
+    return orderA - orderB;
+  });
+
+  candidates.push(...flatChildren);
+
+  // Deduplicate direct children by stable ID and slug, excluding the parent itself
   const uniqueChildren: Category[] = [];
   const seenIds = new Set<string>();
-  for (const c of childrenList) {
-    const cid = String(c.id);
-    if (!seenIds.has(cid)) {
-      seenIds.add(cid);
-      uniqueChildren.push(c);
-    }
+  const seenSlugs = new Set<string>();
+
+  for (const cat of candidates) {
+    if (!cat || isSameAsParent(cat)) continue;
+
+    const idKey = cat.id !== undefined && cat.id !== null ? String(cat.id).trim() : '';
+    const slugKey = cat.slug ? cat.slug.trim().toLowerCase() : '';
+
+    if (idKey && seenIds.has(idKey)) continue;
+    if (slugKey && seenSlugs.has(slugKey)) continue;
+
+    if (idKey) seenIds.add(idKey);
+    if (slugKey) seenSlugs.add(slugKey);
+
+    uniqueChildren.push(cat);
   }
 
-  subcategories.value = uniqueChildren;
-  isSubcategoriesLoading.value = false;
+  return uniqueChildren;
 };
 
-// Re-evaluate subcategories once the full taxonomy loads asynchronously
-watch(allCategoriesList, () => {
-  fetchSubcategories();
-}, { deep: true });
+// Computed property ensures automatic, reliable reactivity whenever activeCategory, category detail, or taxonomy changes
+const subcategories = computed<Category[]>(() => {
+  return resolveDirectSubcategories();
+});
+
+const fetchSubcategories = async (): Promise<Category[]> => {
+  return subcategories.value;
+};
 
 const currentPathSlugs = computed(() => {
   if (Array.isArray(categoryPath.value) && categoryPath.value.length > 0) {
