@@ -1289,6 +1289,11 @@ export const useCategoryService = () => {
 
       const fetchedChildren = rawItems.map(mapCategoryResponse);
 
+      // Check if the backend response contains any usable parent identifier for the missing parent IDs
+      const responseHasParentIdentifiers = fetchedChildren.some(
+        child => child.parentCategoryId !== undefined && numericMissingIds.includes(String(child.parentCategoryId))
+      );
+
       // Store fetched direct children in cache keyed by parent category ID
       numericMissingIds.forEach(pId => {
         const normalizedPId = String(pId);
@@ -1304,7 +1309,18 @@ export const useCategoryService = () => {
           childrenForParent = fetchedChildren;
         }
 
-        storeChildrenInCache(normalizedPId, childrenForParent);
+        // Only store/cache if we are confident:
+        // - It's a single parent request (fallback was applied or genuinely empty)
+        // - Or there are genuinely no children in the response (all requested parents are empty)
+        // - Or the response genuinely contains parent identifiers to map children
+        const isConfident = 
+          numericMissingIds.length === 1 || 
+          fetchedChildren.length === 0 || 
+          responseHasParentIdentifiers;
+
+        if (isConfident) {
+          storeChildrenInCache(normalizedPId, childrenForParent);
+        }
       });
 
       const combinedResult: Category[] = [];
