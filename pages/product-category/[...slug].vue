@@ -12,7 +12,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
 import { cn } from '@/utils';
-import type { Category, Product, Brand } from '@/types';
+import type { Category, Product, Brand, CategoryPathItem } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import CommerceProductCard from '@/components/commerce/ProductCard.vue';
 import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
@@ -406,34 +406,162 @@ watch(() => route.params.slug, async () => {
   await resolveCategory();
 }, { immediate: true, deep: true });
 
-// Target category identifier for category path API
-const targetCategoryIdentifier = computed(() => {
-  if (category.value?.id) {
-    return { id: category.value.id, slug: category.value.slug || categorySlug.value };
-  }
-  if (categorySlug.value) {
-    return categorySlug.value;
-  }
-  return null;
-});
+/**
+ * Local category breadcrumb hierarchy path computed directly from allCategoriesList taxonomy.
+ * Traverses parent-child relationships from the active category up to the root category,
+ * eliminating the redundant GET /api/v1/categories/path/ API request.
+ */
+const categoryPath = computed<CategoryPathItem[]>(() => {
+  const currentCat = category.value;
+  const targetId = currentCat?.id ? String(currentCat.id) : '';
+  const targetSlug = currentCat?.slug || categorySlug.value || '';
 
-// Category path hierarchy fetched via Category Path API: GET /api/v1/categories/path/
-const { data: categoryPath } = await useAsyncData(
-  `category-page-path-${slugs.value.join('-') || 'root'}`,
-  async () => {
-    const target = targetCategoryIdentifier.value;
-    if (!target) return [];
-    try {
-      return await categoryService.getCategoryPath(target);
-    } catch (e) {
-      console.warn('Failed to load category path for category page:', e);
-      return [];
-    }
-  },
-  {
-    watch: [targetCategoryIdentifier]
+  if (!targetId && !targetSlug && slugs.value.length === 0) {
+    return [];
   }
-);
+
+  // Combine taxonomy sources: authoritative allCategoriesList + mock fallback
+  const sourceList = [
+    ...(allCategoriesList.value || []),
+    ...(productService.getCategories() || [])
+  ];
+
+  // Map categories by ID and Slug, and index parent relationships from nested tree
+  const nodeById = new Map<string, Category>();
+  const nodeBySlug = new Map<string, Category>();
+  const parentOf = new Map<string, Category>();
+
+  const indexHierarchy = (nodes: Category[], parent?: Category) => {
+    for (const node of nodes) {
+      if (!node) continue;
+      const idKey = node.id !== undefined && node.id !== null ? String(node.id) : '';
+      const slugKey = node.slug ? node.slug.toLowerCase() : '';
+
+      if (idKey && !nodeById.has(idKey)) {
+        nodeById.set(idKey, node);
+      }
+      if (slugKey && !nodeBySlug.has(slugKey)) {
+        nodeBySlug.set(slugKey, node);
+      }
+
+      if (parent) {
+        if (idKey && !parentOf.has(idKey)) {
+          parentOf.set(idKey, parent);
+        }
+        if (slugKey && !parentOf.has(slugKey)) {
+          parentOf.set(slugKey, parent);
+        }
+      }
+
+      if (node.children && Array.isArray(node.children) && node.children.length > 0) {
+        indexHierarchy(node.children, node);
+      }
+    }
+  };
+
+  indexHierarchy(sourceList);
+
+  const findNode = (identifier: string): Category | null => {
+    if (!identifier) return null;
+    const lower = identifier.toLowerCase();
+    return nodeById.get(identifier) || nodeBySlug.get(lower) || null;
+  };
+
+  // Find starting category node in the taxonomy
+  let startNode: Category | null = null;
+  if (targetId) {
+    startNode = findNode(targetId);
+  }
+  if (!startNode && targetSlug) {
+    startNode = findNode(targetSlug);
+  }
+  if (!startNode && currentCat?.name) {
+    startNode = currentCat;
+  }
+
+  // If start node cannot be resolved from taxonomy yet, construct initial path from route slugs
+  if (!startNode) {
+    if (slugs.value.length > 0) {
+      return slugs.value.map(s => {
+        const matched = findNode(s);
+        return {
+          id: matched?.id ?? s,
+          slug: matched?.slug ?? s,
+          name: matched?.name ?? s
+        };
+      });
+    }
+    return [];
+  }
+
+  // Walk up ancestor lineage from startNode to root
+  const trail: CategoryPathItem[] = [];
+  const visited = new Set<string>();
+  let current: Category | null = startNode;
+
+  while (current) {
+    const currentId: string = current.id !== undefined && current.id !== null ? String(current.id) : '';
+    const currentSlug: string = current.slug ? current.slug.toLowerCase() : '';
+    const cycleKey = currentId || currentSlug;
+
+    if (cycleKey) {
+      if (visited.has(cycleKey)) {
+        break;
+      }
+      visited.add(cycleKey);
+    }
+
+    trail.unshift({
+      id: current.id,
+      slug: current.slug,
+      name: current.name
+    });
+
+    // Determine parent node:
+    // 1. From tree relationship (parentOf map)
+    let parentNode: Category | null = null;
+    if (currentId && parentOf.has(currentId)) {
+      parentNode = parentOf.get(currentId)!;
+    } else if (currentSlug && parentOf.has(currentSlug)) {
+      parentNode = parentOf.get(currentSlug)!;
+    }
+
+    // 2. From parentCategoryId property
+    if (!parentNode && current.parentCategoryId) {
+      const parentIdStr = String(current.parentCategoryId);
+      parentNode = findNode(parentIdStr);
+    }
+
+    current = parentNode;
+  }
+
+  // Edge case: If route has multiple slugs (e.g. /product-category/computers/laptops/gaming-laptops/)
+  // but parent relationship links were missing in taxonomy, map each slug segment sequentially
+  if (trail.length === 1 && slugs.value.length > 1) {
+    const routeTrail: CategoryPathItem[] = [];
+    for (const slugSeg of slugs.value) {
+      const matched = findNode(slugSeg);
+      if (matched) {
+        routeTrail.push({
+          id: matched.id,
+          slug: matched.slug,
+          name: matched.name
+        });
+      } else {
+        routeTrail.push({
+          id: slugSeg,
+          slug: slugSeg,
+          name: slugSeg.charAt(0).toUpperCase() + slugSeg.slice(1).replace(/-/g, ' ')
+        });
+      }
+    }
+    if (routeTrail.length > 1) {
+      return routeTrail;
+    }
+  }
+
+  return trail;
+});
 
 interface BreadcrumbItem {
   name: string;
