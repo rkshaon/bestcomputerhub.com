@@ -1051,16 +1051,53 @@ export const useCategoryService = () => {
     return `/product-category/${path.join('/')}/`;
   };
 
-  const isChildrenLoading = (parentId: string | number): boolean => {
-    return loadingParentIds.value.has(String(parentId));
+  const isChildrenLoading = (parentId: string | number, isMenu?: boolean): boolean => {
+    const key = String(parentId);
+    let targetIsMenu = isMenu;
+    if (targetIsMenu === undefined) {
+      const route = useRoute();
+      const isAdmin = route && route.path && route.path.includes('/admin/');
+      targetIsMenu = !isAdmin;
+    }
+    const cacheKey = `${key}:${targetIsMenu ? 'menu' : 'all'}`;
+    return loadingParentIds.value.has(cacheKey);
   };
 
-  const getChildrenForParent = (parentId: string | number): Category[] => {
-    return categoryChildrenCache.value[String(parentId)] || [];
+  const getChildrenForParent = (parentId: string | number, isMenu?: boolean): Category[] => {
+    const key = String(parentId);
+    let targetIsMenu = isMenu;
+    if (targetIsMenu === undefined) {
+      const route = useRoute();
+      const isAdmin = route && route.path && route.path.includes('/admin/');
+      targetIsMenu = !isAdmin;
+    }
+
+    if (targetIsMenu) {
+      if (loadedChildrenParentIds.value.has(`${key}:all`)) {
+        const unfiltered = categoryChildrenCache.value[`${key}:all`] || [];
+        return unfiltered.filter(c => c.show_in_menu === true || c.is_menu === true);
+      }
+      return categoryChildrenCache.value[`${key}:menu`] || [];
+    } else {
+      return categoryChildrenCache.value[`${key}:all`] || [];
+    }
   };
 
-  const hasChildrenLoaded = (parentId: string | number): boolean => {
-    return loadedChildrenParentIds.value.has(String(parentId));
+  const hasChildrenLoaded = (parentId: string | number, isMenu?: boolean): boolean => {
+    const key = String(parentId);
+    if (isMenu === true) {
+      return loadedChildrenParentIds.value.has(`${key}:all`) || loadedChildrenParentIds.value.has(`${key}:menu`);
+    } else if (isMenu === false) {
+      return loadedChildrenParentIds.value.has(`${key}:all`);
+    } else {
+      const route = useRoute();
+      const isAdmin = route && route.path && route.path.includes('/admin/');
+      if (isAdmin) {
+        return loadedChildrenParentIds.value.has(`${key}:all`);
+      } else {
+        return loadedChildrenParentIds.value.has(`${key}:all`) || loadedChildrenParentIds.value.has(`${key}:menu`);
+      }
+    }
   };
 
   const isNodeExpanded = (id: string | number): boolean => {
@@ -1068,7 +1105,11 @@ export const useCategoryService = () => {
   };
 
   const collapseDescendants = (parentId: string, set: Set<string>) => {
-    const children = categoryChildrenCache.value[parentId] || [];
+    // Check both potential cache entries
+    const children = [
+      ...(categoryChildrenCache.value[`${parentId}:all`] || []),
+      ...(categoryChildrenCache.value[`${parentId}:menu`] || [])
+    ];
     children.forEach(child => {
       const childId = String(child.id);
       if (set.has(childId)) {
@@ -1146,11 +1187,19 @@ export const useCategoryService = () => {
     setNodeExpanded(id, false);
   };
 
-  const storeChildrenInCache = (parentId: string | number, children: Category[]) => {
+  const storeChildrenInCache = (parentId: string | number, children: Category[], isMenu?: boolean) => {
     const key = String(parentId);
+    let targetIsMenu = isMenu;
+    if (targetIsMenu === undefined) {
+      const hasNonMenu = children.some(c => c.show_in_menu === false || c.is_menu === false);
+      targetIsMenu = !hasNonMenu;
+    }
+
+    const cacheKey = `${key}:${targetIsMenu ? 'menu' : 'all'}`;
+
     categoryChildrenCache.value = {
       ...categoryChildrenCache.value,
-      [key]: children
+      [cacheKey]: children
     };
     children.forEach(child => {
       if (child.id) {
@@ -1158,7 +1207,7 @@ export const useCategoryService = () => {
       }
     });
     const updatedLoadedSet = new Set(loadedChildrenParentIds.value);
-    updatedLoadedSet.add(key);
+    updatedLoadedSet.add(cacheKey);
     loadedChildrenParentIds.value = updatedLoadedSet;
   };
 
@@ -1169,18 +1218,17 @@ export const useCategoryService = () => {
     if (!parentIds.length) return [];
 
     const parentIdStrings = parentIds.map(String);
+    const isMenuOpt = options.is_menu;
     const missingParentIds = options.force
       ? parentIdStrings
-      : parentIdStrings.filter(id => !loadedChildrenParentIds.value.has(id));
+      : parentIdStrings.filter(id => !hasChildrenLoaded(id, isMenuOpt));
 
     // If all requested parent IDs already have their direct children loaded and not forcing, return from cache immediately
     if (missingParentIds.length === 0 && !options.force) {
       const allCached: Category[] = [];
       parentIdStrings.forEach(pId => {
-        const cached = categoryChildrenCache.value[pId];
-        if (cached) {
-          allCached.push(...cached);
-        }
+        const cached = getChildrenForParent(pId, isMenuOpt);
+        allCached.push(...cached);
       });
       return allCached;
     }
@@ -1195,16 +1243,19 @@ export const useCategoryService = () => {
             children = children.filter(c => c.show_in_menu === true || c.is_menu === true);
           }
           const mapped = children.map(mapCategoryResponse);
-          storeChildrenInCache(pId, mapped);
+          storeChildrenInCache(pId, mapped, options.is_menu);
         });
 
         const result: Category[] = [];
         parentIdStrings.forEach(pId => {
-          result.push(...getChildrenForParent(pId));
+          result.push(...getChildrenForParent(pId, isMenuOpt));
         });
         return result;
       } finally {
-        missingParentIds.forEach(id => loadingParentIds.value.delete(id));
+        missingParentIds.forEach(id => {
+          const cacheKey = `${id}:${isMenuOpt ? 'menu' : 'all'}`;
+          loadingParentIds.value.delete(cacheKey);
+        });
       }
     }
 
@@ -1229,20 +1280,23 @@ export const useCategoryService = () => {
         children = children.filter(c => c.show_in_menu === true || c.is_menu === true);
       }
       const mapped = children.map(mapCategoryResponse);
-      storeChildrenInCache(pId, mapped);
+      storeChildrenInCache(pId, mapped, options.is_menu);
     });
 
     // If there are no numeric missing IDs left to load, return everything from cache
     if (numericMissingIds.length === 0) {
       const result: Category[] = [];
       parentIdStrings.forEach(pId => {
-        result.push(...getChildrenForParent(pId));
+        result.push(...getChildrenForParent(pId, isMenuOpt));
       });
       return result;
     }
 
     // Mark remaining numeric parent IDs as currently loading
-    numericMissingIds.forEach(id => loadingParentIds.value.add(id));
+    numericMissingIds.forEach(id => {
+      const cacheKey = `${id}:${isMenuOpt ? 'menu' : 'all'}`;
+      loadingParentIds.value.add(cacheKey);
+    });
 
     const idsParam = numericMissingIds.join(',');
     const queryParams = new URLSearchParams();
@@ -1319,13 +1373,13 @@ export const useCategoryService = () => {
           responseHasParentIdentifiers;
 
         if (isConfident) {
-          storeChildrenInCache(normalizedPId, childrenForParent);
+          storeChildrenInCache(normalizedPId, childrenForParent, options.is_menu);
         }
       });
 
       const combinedResult: Category[] = [];
       parentIdStrings.forEach(pId => {
-        combinedResult.push(...getChildrenForParent(pId));
+        combinedResult.push(...getChildrenForParent(pId, isMenuOpt));
       });
 
       return combinedResult;
@@ -1333,11 +1387,14 @@ export const useCategoryService = () => {
       console.warn('Failed to load category children batch:', err.message || err);
       const fallbackResult: Category[] = [];
       parentIdStrings.forEach(pId => {
-        fallbackResult.push(...getChildrenForParent(pId));
+        fallbackResult.push(...getChildrenForParent(pId, isMenuOpt));
       });
       return fallbackResult;
     } finally {
-      numericMissingIds.forEach(id => loadingParentIds.value.delete(id));
+      numericMissingIds.forEach(id => {
+        const cacheKey = `${id}:${isMenuOpt ? 'menu' : 'all'}`;
+        loadingParentIds.value.delete(cacheKey);
+      });
     }
   };
 
