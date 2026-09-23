@@ -271,21 +271,38 @@ const categorySlug = computed(() => {
 const allCategoriesList = ref<Category[]>([]);
 const isPageLoading = ref(true);
 
-const loadAllCategories = async () => {
-  isPageLoading.value = true;
-  try {
-    const listResponse = await categoryService.getCategoriesList({ page_size: 200 });
-    if (listResponse && listResponse.results && listResponse.results.length) {
-      allCategoriesList.value = listResponse.results;
-    } else {
-      allCategoriesList.value = productService.getCategories();
-    }
-  } catch {
-    allCategoriesList.value = productService.getCategories();
-  } finally {
-    isPageLoading.value = false;
-    await resolveCategory();
+let taxonomyPromise: Promise<Category[]> | null = null;
+let hasAttemptedTaxonomyLoad = false;
+
+const loadAllCategories = async (): Promise<Category[]> => {
+  if (allCategoriesList.value.length > 0) {
+    return allCategoriesList.value;
   }
+  if (taxonomyPromise) {
+    return taxonomyPromise;
+  }
+
+  isPageLoading.value = true;
+  hasAttemptedTaxonomyLoad = true;
+
+  taxonomyPromise = (async () => {
+    try {
+      const listResponse = await categoryService.getCategoriesList({ page_size: 200 });
+      if (listResponse && listResponse.results && listResponse.results.length) {
+        allCategoriesList.value = listResponse.results;
+      } else {
+        allCategoriesList.value = productService.getCategories();
+      }
+    } catch {
+      allCategoriesList.value = productService.getCategories();
+    } finally {
+      isPageLoading.value = false;
+      taxonomyPromise = null;
+    }
+    return allCategoriesList.value;
+  })();
+
+  return taxonomyPromise;
 };
 
 const activeCategory = ref<Category | null>(null);
@@ -322,6 +339,19 @@ const resolveCategory = async () => {
     return;
   }
 
+  // Ensure category taxonomy is loaded before resolving to prevent race conditions and duplicate API requests
+  if (allCategoriesList.value.length === 0 && !hasAttemptedTaxonomyLoad) {
+    await loadAllCategories();
+  } else if (taxonomyPromise) {
+    await taxonomyPromise;
+  }
+
+  // Guard against route navigation during taxonomy fetch
+  const currentSlugAfterTaxonomy = (categorySlug.value || '').toLowerCase();
+  if (currentSlugAfterTaxonomy !== targetSlug || !route.path.startsWith('/product-category/')) {
+    return;
+  }
+
   // Recursive search helper to find category by slug in a hierarchy tree
   const findCategoryBySlug = (categories: Category[], slug: string): Category | null => {
     for (const cat of categories) {
@@ -350,11 +380,18 @@ const resolveCategory = async () => {
     activeCategory.value = { ...match };
   }
 
-  // 3. Regardless of finding local match, call the Category Details API to load full rich content/description & ID
+  // 3. Call Category Details API to load full rich content/description & ID
   try {
     // If a matching category is found in allCategoriesList, pass its numeric id to avoid redundant search query, else pass targetSlug
     const lookupId = (foundInTaxonomy && match && match.id) ? String(match.id) : targetSlug;
     const detail = await categoryService.getCategoryDetails(lookupId);
+
+    // Guard against route navigation during category details fetch
+    const currentSlugAfterDetail = (categorySlug.value || '').toLowerCase();
+    if (currentSlugAfterDetail !== targetSlug || !route.path.startsWith('/product-category/')) {
+      return;
+    }
+
     if (detail) {
       if (activeCategory.value) {
         // Merge rich details (like full description/guide) onto the basic category object
