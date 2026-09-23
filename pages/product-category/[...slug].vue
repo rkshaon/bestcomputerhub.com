@@ -1,7 +1,7 @@
 <!-- File: /pages/product-category/[...slug].vue -->
 <script setup lang="ts">
 import { decodeHtmlEntities } from '@/utils';
-import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, reactive, onMounted, watch, nextTick, toRef } from 'vue';
 import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft, Menu, Loader2, Edit2, Save } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
 import { refDebounced } from '@vueuse/core';
@@ -647,6 +647,8 @@ const isPriceSliderDisabled = computed(() => {
 
 const searchQuery = ref('');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
+const debouncedMinPrice = refDebounced(toRef(filters, 'minPrice'), 300);
+const debouncedMaxPrice = refDebounced(toRef(filters, 'maxPrice'), 300);
 
 const categoryBrands = ref<Brand[]>([]);
 const isBrandsLoading = ref(false);
@@ -828,6 +830,8 @@ const totalPages = ref(1);
 const totalCount = ref(0);
 const pageSize = ref(12);
 
+let lastFetchedParams = '';
+
 const fetchProducts = async () => {
   if (!category.value) {
     loadedProducts.value = [];
@@ -835,13 +839,32 @@ const fetchProducts = async () => {
     totalPages.value = 1;
     return;
   }
+
+  const minPriceParam = (!isPriceSliderDisabled.value && filters.minPrice > minPriceLimit.value) ? filters.minPrice : undefined;
+  const maxPriceParam = (!isPriceSliderDisabled.value && filters.maxPrice < maxPriceLimit.value) ? filters.maxPrice : undefined;
+
+  const currentParams = JSON.stringify({
+    cat: category.value.id,
+    q: debouncedSearchQuery.value || undefined,
+    min: minPriceParam,
+    max: maxPriceParam,
+    b: filters.brand !== '' ? filters.brand : undefined,
+    s: filters.sort,
+    p: currentPage.value
+  });
+
+  if (currentParams === lastFetchedParams) {
+    return;
+  }
+  lastFetchedParams = currentParams;
+
   isProductsLoading.value = true;
   try {
     const res = await productService.getProductsList({
       categories: category.value.id,
       query: debouncedSearchQuery.value || undefined,
-      minPrice: (!isPriceSliderDisabled.value && filters.minPrice > minPriceLimit.value) ? filters.minPrice : undefined,
-      maxPrice: (!isPriceSliderDisabled.value && filters.maxPrice < maxPriceLimit.value) ? filters.maxPrice : undefined,
+      minPrice: minPriceParam,
+      maxPrice: maxPriceParam,
       brands: filters.brand !== '' ? filters.brand : undefined,
       sort: filters.sort,
       page: currentPage.value,
@@ -851,12 +874,13 @@ const fetchProducts = async () => {
     totalCount.value = res.count;
     totalPages.value = res.pages;
   } catch {
+    lastFetchedParams = '';
     // Fallback sync query
     const fallbackProducts = productService.getProducts({
       category: category.value.id || category.value.slug,
       query: debouncedSearchQuery.value,
-      minPrice: (!isPriceSliderDisabled.value && filters.minPrice > minPriceLimit.value) ? filters.minPrice : undefined,
-      maxPrice: (!isPriceSliderDisabled.value && filters.maxPrice < maxPriceLimit.value) ? filters.maxPrice : undefined,
+      minPrice: minPriceParam,
+      maxPrice: maxPriceParam,
       brands: filters.brand !== '' ? filters.brand : undefined,
       sort: filters.sort
     });
@@ -873,6 +897,7 @@ watch(() => category.value?.id, async (newId, oldId) => {
   currentPage.value = 1;
   // If category changed, reset brand filter, selected subcategory, and price range
   if (newId !== oldId) {
+    lastFetchedParams = '';
     isResolvingCategory.value = true;
     filters.brand = '';
     selectedSubcategoryId.value = null;
@@ -889,7 +914,7 @@ watch(() => category.value?.id, async (newId, oldId) => {
 }, { immediate: true });
 
 watch(
-  [debouncedSearchQuery, () => filters.brand, () => filters.minPrice, () => filters.maxPrice, () => filters.sort],
+  [debouncedSearchQuery, () => filters.brand, debouncedMinPrice, debouncedMaxPrice, () => filters.sort],
   () => {
     if (isResolvingCategory.value) return;
     currentPage.value = 1;
