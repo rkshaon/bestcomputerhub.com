@@ -42,6 +42,8 @@ const megaMenu = useMegaMenu();
 
 const activeItemId = ref<string | null>(null);
 const activeItemTop = ref(0);
+const activeColumnLeft = ref<number | null>(null);
+const activeColumnRight = ref<number | null>(null);
 const flyoutLeftMap = ref<Record<string, boolean>>({});
 const maxScrollHeight = ref<number | null>(null);
 
@@ -105,7 +107,7 @@ const updateMaxScrollHeight = () => {
   }
 };
 
-const updateActiveItemTop = () => {
+const updateActiveItemGeometry = () => {
   if (!activeItemId.value || !outerCardRef.value) return;
   const itemEl = itemElements.get(activeItemId.value);
   if (!itemEl) return;
@@ -117,7 +119,17 @@ const updateActiveItemTop = () => {
     activeItemId.value = null;
     return;
   }
+  
+  // Vertical position
   activeItemTop.value = Math.max(0, itemRect.top - cardRect.top);
+
+  // Horizontal position based on actual rendered column geometry
+  const columnEl = itemEl.closest('div');
+  if (columnEl) {
+    const columnRect = columnEl.getBoundingClientRect();
+    activeColumnLeft.value = Math.round(columnRect.right - cardRect.left);
+    activeColumnRight.value = Math.round(cardRect.right - columnRect.left);
+  }
 };
 
 const handleItemEnter = async (item: Category, event?: MouseEvent | FocusEvent) => {
@@ -132,7 +144,7 @@ const handleItemEnter = async (item: Category, event?: MouseEvent | FocusEvent) 
     flyoutLeftMap.value = { ...flyoutLeftMap.value, [itemId]: shouldFlyoutLeft(target) };
   }
   await nextTick();
-  updateActiveItemTop();
+  updateActiveItemGeometry();
 
   if (item.has_children === false) {
     return;
@@ -143,7 +155,7 @@ const handleItemEnter = async (item: Category, event?: MouseEvent | FocusEvent) 
 
   if (activeItemId.value === itemId) {
     await nextTick();
-    updateActiveItemTop();
+    updateActiveItemGeometry();
   }
 };
 
@@ -177,7 +189,7 @@ const handleLinkClick = () => {
 
 const handleViewportChange = () => {
   updateMaxScrollHeight();
-  updateActiveItemTop();
+  updateActiveItemGeometry();
 };
 
 onMounted(() => {
@@ -204,9 +216,18 @@ watch(
     } else {
       clearHoverTimer();
       activeItemId.value = null;
+      activeColumnLeft.value = null;
+      activeColumnRight.value = null;
     }
   }
 );
+
+watch(activeItemId, (id) => {
+  if (!id) {
+    activeColumnLeft.value = null;
+    activeColumnRight.value = null;
+  }
+});
 
 /**
  * Group sub-menu items into vertical columns (chunks of 10 items).
@@ -220,6 +241,43 @@ const columns = computed<Category[][]>(() => {
   }
   return chunks;
 });
+
+/**
+ * Find the column index of the currently active/hovered item.
+ */
+const activeItemColIdx = computed(() => {
+  if (!activeItem.value) return -1;
+  const idx = props.items.findIndex(item => String(item.id) === activeItemId.value);
+  return idx !== -1 ? Math.floor(idx / 10) : -1;
+});
+
+/**
+ * Dynamic styles for the next-level flyout, positioning it immediately
+ * to the left or right of the hovered parent column inside outerCardRef.
+ * Uses exact bounding client geometry of the rendered columns, falling back gracefully to column index math if not yet measured.
+ */
+const childSubmenuStyle = computed<Record<string, string>>(() => {
+  const style: Record<string, string> = {
+    top: `${activeItemTop.value}px`
+  };
+
+  if (!activeItem.value) return style;
+
+  const isFlyoutLeft = flyoutLeftMap.value[String(activeItem.value.id)] === true;
+  if (isFlyoutLeft) {
+    const rightVal = activeColumnRight.value !== null 
+      ? activeColumnRight.value 
+      : (columns.value.length - activeItemColIdx.value) * 220;
+    style.right = `${rightVal}px`;
+  } else {
+    const leftVal = activeColumnLeft.value !== null 
+      ? activeColumnLeft.value 
+      : (activeItemColIdx.value + 1) * 220;
+    style.left = `${leftVal}px`;
+  }
+
+  return style;
+});
 </script>
 
 <template>
@@ -229,7 +287,7 @@ const columns = computed<Category[][]>(() => {
       'absolute z-[100] origin-top pointer-events-auto',
       level === 1
         ? (alignRight ? 'top-full right-0 pt-1.5' : 'top-full left-0 pt-1.5')
-        : (flyoutLeft ? 'right-full top-0 pr-1.5' : 'left-full top-0 pl-1.5')
+        : (flyoutLeft ? 'top-0 pr-1.5' : 'top-0 pl-1.5')
     )"
     :style="customStyle"
     @mouseenter="handlePanelEnter"
@@ -298,7 +356,7 @@ const columns = computed<Category[][]>(() => {
         :level="level + 1"
         :is-open="true"
         :flyout-left="flyoutLeftMap[String(activeItem.id)] === true"
-        :custom-style="{ top: `${activeItemTop}px` }"
+        :custom-style="childSubmenuStyle"
         @keep-open="handlePanelEnter"
         @close="activeItemId = null"
       />
