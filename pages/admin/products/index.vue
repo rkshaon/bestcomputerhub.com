@@ -704,7 +704,7 @@ onUnmounted(() => {
               v-if="isCategoryDropdownOpen"
               @click.stop
               @keydown.esc.stop="closeCategoryDropdown(true)"
-              class="absolute left-0 z-30 mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+              class="absolute left-0 z-30 mt-1.5 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-card border border-border rounded-xl shadow-lg p-2 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
             >
               <!-- Category Search Input inside Popover -->
               <div class="relative mb-2">
@@ -737,12 +737,19 @@ onUnmounted(() => {
                   type="button"
                   @click="clearCategorySelection"
                   :class="[
-                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer gap-2',
                     selectedCategoryIds.length === 0 ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
                   ]"
                 >
-                  <span>All Categories</span>
-                  <Check v-if="selectedCategoryIds.length === 0" class="w-3.5 h-3.5 text-primary" />
+                  <div class="flex items-center gap-2 truncate min-w-0">
+                    <div 
+                      class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
+                      :class="selectedCategoryIds.length === 0 ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background'"
+                    >
+                      <Check v-if="selectedCategoryIds.length === 0" class="w-3 h-3 stroke-[3]" />
+                    </div>
+                    <span class="truncate">All Categories</span>
+                  </div>
                 </button>
 
                 <button
@@ -751,17 +758,22 @@ onUnmounted(() => {
                   type="button"
                   @click="toggleCategorySelection(cat.id)"
                   :class="[
-                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between cursor-pointer gap-2',
                     isCategorySelected(cat.id) ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'
                   ]"
                 >
-                  <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
-                  <div 
-                    class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
-                    :class="isCategorySelected(cat.id) ? 'bg-primary border-primary text-primary-foreground' : 'border-input bg-background'"
-                  >
-                    <Check v-if="isCategorySelected(cat.id)" class="w-3 h-3 stroke-[3]" />
+                  <div class="flex items-center gap-2 truncate min-w-0">
+                    <div 
+                      class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
+                      :class="isCategorySelected(cat.id) ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background'"
+                    >
+                      <Check v-if="isCategorySelected(cat.id)" class="w-3 h-3 stroke-[3]" />
+                    </div>
+                    <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
                   </div>
+                  <span v-if="cat.slug" class="text-[10px] text-muted-foreground font-mono shrink-0 ml-1">
+                    /{{ cat.slug }}
+                  </span>
                 </button>
 
                 <!-- Loading spinner when initial loading -->
