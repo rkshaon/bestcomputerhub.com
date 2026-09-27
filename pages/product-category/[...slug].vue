@@ -362,10 +362,9 @@ const resolveCategory = async () => {
     return;
   }
 
-  // Try to resolve using the full URL slugs path through getCategoryPath first
-  const pathString = slugs.value.join('/');
+  // Try to resolve using the leaf category slug through getCategoryPath first
   try {
-    const pathItems = await categoryService.getCategoryPath(pathString);
+    const pathItems = await categoryService.getCategoryPath(targetSlug);
     if (pathItems && pathItems.length > 0) {
       const leafItem = pathItems[pathItems.length - 1];
       if (leafItem && leafItem.id !== undefined && leafItem.id !== null) {
