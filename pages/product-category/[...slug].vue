@@ -362,7 +362,31 @@ const resolveCategory = async () => {
     return;
   }
 
-  // Recursive search helper to find category by slug in a hierarchy tree
+  // Try to resolve using the full URL slugs path through getCategoryPath first
+  const pathString = slugs.value.join('/');
+  try {
+    const pathItems = await categoryService.getCategoryPath(pathString);
+    if (pathItems && pathItems.length > 0) {
+      const leafItem = pathItems[pathItems.length - 1];
+      if (leafItem && leafItem.id !== undefined && leafItem.id !== null) {
+        // Fetch full details using the resolved authoritative numeric ID
+        const detail = await categoryService.getCategoryDetails(String(leafItem.id));
+        
+        // Guard against route navigation during category details fetch
+        const currentSlugAfterDetail = (categorySlug.value || '').toLowerCase();
+        if (currentSlugAfterDetail === targetSlug && route.path.startsWith('/product-category/')) {
+          if (detail) {
+            activeCategory.value = detail;
+            return;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to resolve category via path API:', e);
+  }
+
+  // Recursive search helper to find category by slug in a hierarchy tree (local fallback)
   const findCategoryBySlug = (categories: Category[], slug: string): Category | null => {
     for (const cat of categories) {
       if (cat.slug?.toLowerCase() === slug.toLowerCase()) {
