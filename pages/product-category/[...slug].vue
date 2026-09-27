@@ -306,6 +306,7 @@ const loadAllCategories = async (): Promise<Category[]> => {
 };
 
 const activeCategory = ref<Category | null>(null);
+const activeCategoryPath = ref<CategoryPathItem[]>([]);
 const subcategories = ref<Category[]>([]);
 const isSubcategoriesLoading = ref(false);
 const selectedSubcategoryId = ref<string | number | null>(null);
@@ -340,12 +341,14 @@ const resolveCategory = async () => {
   const targetSlug = categorySlug.value ? categorySlug.value.toLowerCase() : '';
   if (!targetSlug) {
     activeCategory.value = null;
+    activeCategoryPath.value = [];
     subcategories.value = [];
     return;
   }
 
   // If navigating to a different category slug, reset subcategories to prevent showing stale chips
   if (activeCategory.value && activeCategory.value.slug?.toLowerCase() !== targetSlug) {
+    activeCategoryPath.value = [];
     subcategories.value = [];
   }
 
@@ -366,6 +369,7 @@ const resolveCategory = async () => {
   try {
     const pathItems = await categoryService.getCategoryPath(targetSlug);
     if (pathItems && pathItems.length > 0) {
+      activeCategoryPath.value = pathItems;
       const leafItem = pathItems[pathItems.length - 1];
       if (leafItem && leafItem.id !== undefined && leafItem.id !== null) {
         // Fetch full details using the resolved authoritative numeric ID
@@ -482,6 +486,10 @@ watch(() => route.params.slug, async () => {
  * eliminating the redundant GET /api/v1/categories/path/ API request.
  */
 const categoryPath = computed<CategoryPathItem[]>(() => {
+  if (activeCategoryPath.value && activeCategoryPath.value.length > 0) {
+    return activeCategoryPath.value;
+  }
+
   const currentCat = category.value;
   const targetId = currentCat?.id ? String(currentCat.id) : '';
   const targetSlug = currentCat?.slug || categorySlug.value || '';
