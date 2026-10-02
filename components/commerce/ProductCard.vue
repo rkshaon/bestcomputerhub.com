@@ -57,12 +57,11 @@ const cartStore = useCartStore();
         </h3>
       </NuxtLink>
 
-      <p 
+      <div 
         v-if="showDescription && product.short_description?.trim()" 
-        class="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 mb-2 sm:mb-3 leading-relaxed"
-      >
-        {{ decodeHtmlEntities(product.short_description) }}
-      </p>
+        class="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 mb-2 sm:mb-3 leading-relaxed [&_p]:inline [&_ul]:inline [&_li]:inline"
+        v-html="product.short_description"
+      />
 
       <div class="flex items-center justify-between gap-1">
         <div class="flex flex-col min-w-0">
