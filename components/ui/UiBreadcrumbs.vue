@@ -15,7 +15,7 @@ defineProps<{
 <template>
   <nav class="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium uppercase tracking-widest text-muted-foreground overflow-x-auto whitespace-nowrap custom-submenu-scrollbar py-1" aria-label="Breadcrumb">
     <NuxtLink to="/" class="hover:text-primary transition-colors shrink-0 flex items-center gap-1.5" aria-label="Home">
-      <Home class="w-3.5 h-3.5 shrink-0" />
+      <Home class="w-3.5 h-3.5 shrink-0 fill-current" />
       <span class="hidden sm:inline">Home</span>
     </NuxtLink>
 
