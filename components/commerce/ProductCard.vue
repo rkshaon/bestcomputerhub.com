@@ -59,7 +59,7 @@ const cartStore = useCartStore();
 
       <div 
         v-if="showDescription && product.short_description?.trim()" 
-        class="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 mb-2 sm:mb-3 leading-relaxed [&_p]:inline [&_ul]:inline [&_li]:inline"
+        class="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 mb-2 sm:mb-3 leading-relaxed [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:leading-normal"
         v-html="product.short_description"
       />
 
