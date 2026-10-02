@@ -1371,7 +1371,8 @@ const resetFilters = () => {
               <CommerceProductCard 
                 v-for="product in products" 
                 :key="product.id" 
-                :product="product" 
+                :product="product"
+                :show-description="true" 
               />
             </div>
 

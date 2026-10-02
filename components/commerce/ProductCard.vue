@@ -5,9 +5,15 @@ import type { Product } from '@/types';
 import { formatCurrency, decodeHtmlEntities } from '@/utils';
 import { useCartStore } from '@/stores/cart';
 
-const props = defineProps<{
-  product: Product;
-}>();
+const props = withDefaults(
+  defineProps<{
+    product: Product;
+    showDescription?: boolean;
+  }>(),
+  {
+    showDescription: false
+  }
+);
 
 const cartStore = useCartStore();
 </script>
@@ -50,6 +56,13 @@ const cartStore = useCartStore();
           {{ decodeHtmlEntities(product.name) }}
         </h3>
       </NuxtLink>
+
+      <p 
+        v-if="showDescription && product.short_description?.trim()" 
+        class="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 mb-2 sm:mb-3 leading-relaxed"
+      >
+        {{ decodeHtmlEntities(product.short_description) }}
+      </p>
 
       <div class="flex items-center justify-between gap-1">
         <div class="flex flex-col min-w-0">
