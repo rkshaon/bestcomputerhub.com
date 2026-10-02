@@ -877,7 +877,8 @@ const fetchProducts = async () => {
     max: maxPriceParam,
     b: filters.brand !== '' ? filters.brand : undefined,
     s: filters.sort,
-    p: currentPage.value
+    p: currentPage.value,
+    ps: pageSize.value
   });
 
   if (currentParams === lastFetchedParams) {
