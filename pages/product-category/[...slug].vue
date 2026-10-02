@@ -1352,24 +1352,18 @@ const resetFilters = () => {
         v-if="canEditCategoryFromStorefront || (category?.description && (category.description.includes('<') || category.description.length > 200))" 
         class="mt-16 bg-card border border-border/80 rounded-[2rem] p-8 md:p-12 space-y-6 shadow-sm"
       >
-        <div class="flex items-center justify-between border-b pb-4">
-          <h2 class="text-2xl font-display font-black tracking-tight text-foreground">
-            Detailed Guide to {{ category?.name || 'this Category' }}
-          </h2>
-          
-          <div v-if="canEditCategoryFromStorefront" class="shrink-0">
-            <button 
-              v-if="editingField !== 'description'"
-              @click="startEditing('description')"
-              class="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-              title="Edit Description"
-            >
-              <Edit2 class="w-3.5 h-3.5" />
-              <span>Edit Description</span>
-            </button>
-            <div v-else-if="isFieldSaving === 'description'" class="flex items-center gap-1.5 text-xs text-amber-500 font-bold uppercase tracking-wider">
-              <Loader2 class="w-3.5 h-3.5 animate-spin" /> Saving...
-            </div>
+        <div v-if="canEditCategoryFromStorefront" class="flex items-center justify-end border-b pb-4">
+          <button 
+            v-if="editingField !== 'description'"
+            @click="startEditing('description')"
+            class="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+            title="Edit Description"
+          >
+            <Edit2 class="w-3.5 h-3.5" />
+            <span>Edit Description</span>
+          </button>
+          <div v-else-if="isFieldSaving === 'description'" class="flex items-center gap-1.5 text-xs text-amber-500 font-bold uppercase tracking-wider">
+            <Loader2 class="w-3.5 h-3.5 animate-spin" /> Saving...
           </div>
         </div>
 
