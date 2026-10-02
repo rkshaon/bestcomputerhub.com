@@ -1375,32 +1375,17 @@ const resetFilters = () => {
               />
             </div>
 
-            <!-- Modern Paginated Controls -->
-            <div v-if="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-8">
-              <span class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Page <span class="text-foreground font-black">{{ currentPage }}</span> of <span class="text-foreground font-black">{{ totalPages }}</span>
-              </span>
-              <div class="flex items-center gap-3">
-                <UiButton 
-                  variant="outline" 
-                  size="sm" 
-                  :disabled="currentPage === 1" 
-                  @click="handlePageChange(currentPage - 1)"
-                  class="rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
-                >
-                  Previous
-                </UiButton>
-                <UiButton 
-                  variant="outline" 
-                  size="sm" 
-                  :disabled="currentPage === totalPages" 
-                  @click="handlePageChange(currentPage + 1)"
-                  class="rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
-                >
-                  Next
-                </UiButton>
-              </div>
-            </div>
+            <!-- Modern Paginated Controls using UiPagination -->
+            <UiPagination 
+              v-if="totalPages > 1"
+              :current-page="currentPage"
+              @update:current-page="handlePageChange"
+              :total-pages="totalPages"
+              :total-count="totalCount"
+              :items-per-page="pageSize"
+              variant="card"
+              class="mt-8"
+            />
           </div>
 
           <!-- Empty State -->
