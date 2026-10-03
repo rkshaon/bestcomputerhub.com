@@ -24,7 +24,7 @@ defineProps<{
             <div class="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center p-1.5 overflow-hidden group-hover/brand:scale-105 group-hover/brand:border-primary/20 transition-all duration-300 shadow-sm">
               <img 
                 :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
-                :alt="brand.name" 
+                :alt="decodeHtmlEntities(brand.name)" 
                 class="w-full h-full object-contain"
               />
             </div>

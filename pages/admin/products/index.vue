@@ -460,7 +460,7 @@ const getProductImageAlt = (product: Product): string => {
   if (product.default_image && typeof product.default_image === 'object' && product.default_image.alt_text) {
     return product.default_image.alt_text;
   }
-  return product.name || 'Product Image';
+  return decodeHtmlEntities(product.name) || 'Product Image';
 };
 
 // Product Details Modal Gallery State

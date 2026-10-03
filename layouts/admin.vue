@@ -323,7 +323,7 @@ const breadcrumbs = computed(() => {
               </p>
             </div>
             <div class="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center overflow-hidden">
-              <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" class="w-full h-full object-cover" />
+              <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" :alt="authStore.user?.name || 'User avatar'" class="w-full h-full object-cover" />
               <UserIcon v-else class="w-5 h-5 text-muted-foreground" />
             </div>
           </NuxtLink>

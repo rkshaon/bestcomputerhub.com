@@ -295,7 +295,7 @@ const toggleReadStatus = (notification: Notification) => {
             <div v-if="n.user || n.actionUrl" class="flex items-center gap-4 pt-2">
               <div v-if="n.user" class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-800">
                 <div class="w-5 h-5 rounded-full overflow-hidden bg-slate-200">
-                  <img :src="`https://api.dicebear.com/7.x/initials/svg?seed=${n.user.name}`" />
+                  <img :src="`https://api.dicebear.com/7.x/initials/svg?seed=${n.user.name}`" :alt="n.user.name || 'User avatar'" />
                 </div>
                 <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">{{ n.user.name }}</span>
               </div>

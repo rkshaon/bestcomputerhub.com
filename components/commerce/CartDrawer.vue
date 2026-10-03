@@ -74,7 +74,7 @@ const handleCheckout = () => {
           class="flex gap-4 group"
         >
           <div class="w-24 h-24 rounded-xl overflow-hidden bg-muted shrink-0 border">
-            <img :src="item.product.images[0]" class="w-full h-full object-cover" />
+            <img :src="item.product.images[0]" :alt="decodeHtmlEntities(item.product.name)" class="w-full h-full object-cover" />
           </div>
           <div class="flex-grow space-y-1">
             <div class="flex justify-between items-start gap-2">

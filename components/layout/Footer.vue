@@ -147,7 +147,7 @@ const socialLinks = [
           <NuxtLink to="/cookies/" class="hover:text-primary transition-colors">Cookie Settings</NuxtLink>
         </div>
         <div class="flex items-center gap-6 opacity-30 grayscale saturate-0">
-          <img v-for="i in 5" :key="i" :src="`https://placehold.co/40x24/png?text=Card${i}`" class="h-6" />
+          <img v-for="i in 5" :key="i" :src="`https://placehold.co/40x24/png?text=Card${i}`" class="h-6" alt="" />
         </div>
       </div>
     </div>

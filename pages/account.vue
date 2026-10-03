@@ -15,7 +15,7 @@ import {
   ArrowRight
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
-import { formatCurrency, cn } from '@/utils';
+import { formatCurrency, cn, decodeHtmlEntities } from '@/utils';
 
 useSeoMeta({
   title: 'My Account',
@@ -154,7 +154,7 @@ const handleLogout = async () => {
               >
                 <div class="flex flex-col md:flex-row gap-6">
                   <div class="w-full md:w-24 h-24 bg-muted rounded-2xl overflow-hidden shrink-0">
-                    <img :src="order.image" class="w-full h-full object-cover" />
+                    <img :src="order.image" :alt="decodeHtmlEntities((order as any).title) || 'Order item image'" class="w-full h-full object-cover" />
                   </div>
                   
                   <div class="flex-grow space-y-4">

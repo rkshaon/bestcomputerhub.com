@@ -16,7 +16,7 @@ import {
   Truck
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
-import { formatCurrency, cn } from '@/utils';
+import { formatCurrency, cn, decodeHtmlEntities } from '@/utils';
 import type { Product } from '@/types';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 
@@ -137,7 +137,7 @@ const removeImage = (index: number) => {
           </h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div v-for="(img, i) in product.images" :key="i" class="aspect-square rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 relative group overflow-hidden">
-               <img :src="img" class="w-full h-full object-cover" />
+               <img :src="img" :alt="decodeHtmlEntities(product.name) || `Product image ${i + 1}`" class="w-full h-full object-cover" />
                <button 
                  @click="removeImage(i)" 
                  class="absolute top-2 right-2 w-7 h-7 bg-black/60 backdrop-blur-md text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"

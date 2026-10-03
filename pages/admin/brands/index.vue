@@ -795,7 +795,7 @@ const getTableRowAttrs = (brand: Brand) => ({
                 <div class="w-14 h-14 bg-background border border-border rounded-xl flex items-center justify-center p-2 shadow-sm overflow-hidden group-hover:scale-105 transition-transform duration-300">
                   <img 
                     :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
-                    :alt="brand.name" 
+                    :alt="decodeHtmlEntities(brand.name)" 
                     class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
                   />
                 </div>
@@ -1336,7 +1336,7 @@ const getTableRowAttrs = (brand: Brand) => ({
           
           <div class="flex items-center gap-5 p-6 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/85">
             <div class="w-20 h-20 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-center p-3 shadow-md overflow-hidden shrink-0">
-              <img :src="selectedBrand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" :alt="selectedBrand.name" class="w-full h-full object-contain" />
+              <img :src="selectedBrand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" :alt="decodeHtmlEntities(selectedBrand.name)" class="w-full h-full object-contain" />
             </div>
             <div>
               <h4 class="text-lg font-black font-display tracking-tight text-slate-900 dark:text-slate-100 leading-tight">{{ selectedBrand.name }}</h4>
