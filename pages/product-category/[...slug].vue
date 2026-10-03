@@ -671,11 +671,14 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   return items;
 });
 
+const initialSort = (route.query.ordering || route.query.sort) as string;
+const validOrderingValues = ['price_low', 'price_high', 'popularity', 'rating', 'latest', 'name_asc', 'name_desc'];
+
 const filters = reactive({
   brand: '' as string | number,
   minPrice: 0,
   maxPrice: 10000,
-  sort: 'newest'
+  sort: validOrderingValues.includes(initialSort) ? initialSort : 'popularity'
 });
 
 const minPriceLimit = ref(0);
@@ -893,6 +896,7 @@ const fetchProducts = async () => {
       minPrice: minPriceParam,
       maxPrice: maxPriceParam,
       brands: filters.brand !== '' ? filters.brand : undefined,
+      ordering: filters.sort,
       sort: filters.sort,
       page: currentPage.value,
       page_size: pageSize.value
@@ -971,7 +975,7 @@ const resetFilters = () => {
   filters.brand = '';
   filters.minPrice = minPriceLimit.value;
   filters.maxPrice = maxPriceLimit.value;
-  filters.sort = 'newest';
+  filters.sort = 'popularity';
   searchQuery.value = '';
 };
 </script>
@@ -1261,10 +1265,13 @@ const resetFilters = () => {
                 class="h-11 bg-background border border-border/85 rounded-xl px-3 sm:px-4 text-xs font-bold uppercase tracking-wider outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 shrink-0"
                 aria-label="Sort products"
               >
-                <option value="newest">Latest Arrivals</option>
-                <option value="price-low-high">Price: Low to High</option>
-                <option value="price-high-low">Price: High to Low</option>
-                <option value="rating">Top Performance</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+                <option value="popularity">Popularity</option>
+                <option value="rating">Rating</option>
+                <option value="latest">Latest</option>
+                <option value="name_asc">Name: A to Z</option>
+                <option value="name_desc">Name: Z to A</option>
               </select>
             </div>
           </div>

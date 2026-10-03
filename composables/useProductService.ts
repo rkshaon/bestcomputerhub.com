@@ -277,16 +277,21 @@ export const useProductService = () => {
       }
 
       // Ordering Sort logic
-      if (sort === 'price-low-high' || ordering === 'price') {
+      const sortKey = ordering || sort;
+      if (sortKey === 'price_low' || sortKey === 'price-low-high' || sortKey === 'price') {
         filtered.sort((a, b) => a.price - b.price);
-      } else if (sort === 'price-high-low' || ordering === '-price') {
+      } else if (sortKey === 'price_high' || sortKey === 'price-high-low' || sortKey === '-price') {
         filtered.sort((a, b) => b.price - a.price);
-      } else if (sort === 'rating' || ordering === '-rating') {
-        filtered.sort((a, b) => b.rating - a.rating);
-      } else if (ordering === 'name') {
+      } else if (sortKey === 'rating' || sortKey === '-rating') {
+        filtered.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      } else if (sortKey === 'latest' || sortKey === 'newest' || sortKey === '-id') {
+        filtered.sort((a, b) => (b.id ? Number(b.id) : 0) - (a.id ? Number(a.id) : 0));
+      } else if (sortKey === 'name_asc' || sortKey === 'name') {
         filtered.sort((a, b) => a.name.localeCompare(b.name));
-      } else if (ordering === '-name') {
+      } else if (sortKey === 'name_desc' || sortKey === '-name') {
         filtered.sort((a, b) => b.name.localeCompare(a.name));
+      } else if (sortKey === 'popularity') {
+        filtered.sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
       }
 
       const totalCount = filtered.length;
@@ -344,17 +349,15 @@ export const useProductService = () => {
         qParams.append('maxPrice', maxPrice.toString());
       }
 
-      // Forward ordering / sorting options
-      if (sort) {
-        let backendOrdering = sort;
-        if (sort === 'price-low-high') backendOrdering = 'price';
-        if (sort === 'price-high-low') backendOrdering = '-price';
-        if (sort === 'rating') backendOrdering = '-rating';
-        if (sort === 'newest') backendOrdering = '-id';
-        
-        qParams.append('ordering', backendOrdering);
-      } else if (ordering) {
-        qParams.append('ordering', ordering);
+      // Forward ordering / sorting options using public contract values
+      const targetOrdering = ordering || sort;
+      if (targetOrdering) {
+        let publicOrdering = targetOrdering;
+        if (targetOrdering === 'price-low-high') publicOrdering = 'price_low';
+        else if (targetOrdering === 'price-high-low') publicOrdering = 'price_high';
+        else if (targetOrdering === 'newest') publicOrdering = 'latest';
+
+        qParams.append('ordering', publicOrdering);
       }
 
       const urlSuffix = qParams.toString() ? `?${qParams.toString()}` : '';
