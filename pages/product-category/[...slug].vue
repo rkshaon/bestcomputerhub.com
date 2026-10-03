@@ -1306,7 +1306,7 @@ const resetFilters = () => {
               :total-count="totalCount"
               :items-per-page="pageSize"
               variant="card"
-              class="mt-8 p-6"
+              class="mt-8 py-3 sm:py-4 px-5 sm:px-6"
             />
           </div>
 
