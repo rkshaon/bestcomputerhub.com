@@ -678,7 +678,7 @@ const filters = reactive({
   brand: '' as string | number,
   minPrice: 0,
   maxPrice: 10000,
-  sort: validOrderingValues.includes(initialSort) ? initialSort : 'popularity'
+  sort: validOrderingValues.includes(initialSort) ? initialSort : 'price_high'
 });
 
 const minPriceLimit = ref(0);
@@ -975,7 +975,7 @@ const resetFilters = () => {
   filters.brand = '';
   filters.minPrice = minPriceLimit.value;
   filters.maxPrice = maxPriceLimit.value;
-  filters.sort = 'popularity';
+  filters.sort = 'price_high';
   searchQuery.value = '';
 };
 </script>
