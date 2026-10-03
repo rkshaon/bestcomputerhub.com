@@ -1329,9 +1329,9 @@ const resetFilters = () => {
       <!-- Bottom Rich Category Details Section -->
       <div 
         v-if="canEditCategoryFromStorefront || (category?.description && (category.description.includes('<') || category.description.length > 200))" 
-        class="mt-16 bg-card border border-border/80 rounded-[2rem] p-8 md:p-12 space-y-6 shadow-sm"
+        class="mt-8 md:mt-10 bg-card border border-border/80 rounded-2xl p-6 md:p-8 space-y-5 shadow-2xs"
       >
-        <div v-if="canEditCategoryFromStorefront" class="flex items-center justify-end border-b pb-4">
+        <div v-if="canEditCategoryFromStorefront" class="flex items-center justify-end border-b pb-3">
           <button 
             v-if="editingField !== 'description'"
             @click="startEditing('description')"
@@ -1372,23 +1372,29 @@ const resetFilters = () => {
 </template>
 
 <style>
+.prose > :first-child {
+  margin-top: 0 !important;
+}
+.prose > :last-child {
+  margin-bottom: 0 !important;
+}
 .prose h2 {
-  @apply text-xl font-bold text-foreground mt-8 mb-4;
+  @apply text-lg sm:text-xl font-bold text-foreground mt-6 mb-3;
 }
 .prose h3 {
-  @apply text-lg font-bold text-foreground mt-6 mb-3;
+  @apply text-base sm:text-lg font-bold text-foreground mt-5 mb-2.5;
 }
 .prose h4 {
-  @apply text-base font-bold text-foreground mt-4 mb-2;
+  @apply text-sm sm:text-base font-bold text-foreground mt-4 mb-2;
 }
 .prose p {
-  @apply mb-4 text-muted-foreground leading-relaxed text-sm;
+  @apply mb-3.5 text-muted-foreground leading-relaxed text-xs sm:text-sm;
 }
 .prose ul {
-  @apply list-disc pl-6 mb-6 space-y-2;
+  @apply list-disc pl-5 mb-4 space-y-1.5;
 }
 .prose li {
-  @apply text-muted-foreground text-sm leading-relaxed;
+  @apply text-muted-foreground text-xs sm:text-sm leading-relaxed;
 }
 .prose a {
   @apply text-primary hover:underline transition-all;
