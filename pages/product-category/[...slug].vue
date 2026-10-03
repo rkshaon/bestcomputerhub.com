@@ -1000,7 +1000,7 @@ const resetFilters = () => {
                     @keydown.enter="saveField('short_description_title')"
                     @keydown.esc="cancelEditing"
                     :disabled="isFieldSaving === 'short_description_title'"
-                    class="text-2xl text-[24px] font-display font-black tracking-tight text-foreground transition-all bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none w-full animate-none"
+                    class="text-[26px] font-display font-black tracking-tight text-foreground transition-all bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none w-full animate-none"
                   />
                   <div v-if="isFieldSaving === 'short_description_title'" class="shrink-0">
                     <Loader2 class="w-5 h-5 animate-spin text-primary" />
@@ -1008,12 +1008,12 @@ const resetFilters = () => {
                 </div>
               </template>
               <template v-else>
-                <h1 class="text-2xl text-[24px] font-display font-black tracking-tight text-foreground transition-all flex items-center gap-2.5">
+                <h1 class="text-[26px] font-display font-black tracking-tight text-foreground transition-all flex items-center gap-2.5">
                   <template v-if="category?.short_description_title">{{ decodeHtmlEntities(category.short_description_title) }}</template>
                   <span 
                     v-else 
                     :class="[
-                      'text-muted-foreground/60 italic font-medium text-2xl text-[24px] select-none',
+                      'text-muted-foreground/60 italic font-medium text-[26px] select-none',
                       canEditCategoryFromStorefront ? 'cursor-pointer hover:text-muted-foreground/80' : ''
                     ]"
                     @click="canEditCategoryFromStorefront && startEditing('short_description_title')"
@@ -1131,7 +1131,7 @@ const resetFilters = () => {
         <!-- Sidebar Filters -->
         <aside class="w-full lg:w-64 xl:w-72 shrink-0 space-y-8">
           <div class="flex items-center justify-between border-b pb-4">
-            <h3 class="font-bold text-base flex items-center gap-2">
+            <h3 class="font-bold text-[20px] flex items-center gap-2">
               <SlidersHorizontal class="w-4.5 h-4.5 text-primary" />
               Advanced Filters
             </h3>
@@ -1145,7 +1145,7 @@ const resetFilters = () => {
 
           <!-- Search in this Category -->
           <div class="space-y-3">
-            <h4 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Search Category</h4>
+            <h4 class="text-[18px] font-extrabold uppercase tracking-widest text-muted-foreground">Search Category</h4>
             <div class="relative">
               <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input 
@@ -1159,7 +1159,7 @@ const resetFilters = () => {
 
           <!-- Price Threshold -->
           <div class="space-y-3">
-            <h4 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Price Threshold</h4>
+            <h4 class="text-[18px] font-extrabold uppercase tracking-widest text-muted-foreground">Price Threshold</h4>
             <div class="space-y-4">
               <input 
                 type="range" 
@@ -1180,7 +1180,7 @@ const resetFilters = () => {
 
           <!-- Brands Selection -->
           <div class="space-y-3">
-            <h4 class="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Brands</h4>
+            <h4 class="text-[18px] font-extrabold uppercase tracking-widest text-muted-foreground">Brands</h4>
             
             <!-- Loading State -->
             <div v-if="isBrandsLoading" class="space-y-2 py-1">
@@ -1372,6 +1372,9 @@ const resetFilters = () => {
 </template>
 
 <style>
+:deep(.group\/link h3) {
+  @apply text-[20px] !important;
+}
 .prose > :first-child {
   margin-top: 0 !important;
 }
@@ -1379,13 +1382,13 @@ const resetFilters = () => {
   margin-bottom: 0 !important;
 }
 .prose h2 {
-  @apply text-base sm:text-lg font-bold text-foreground mt-4 sm:mt-5 mb-2;
+  @apply text-[24px] font-bold text-foreground mt-4 sm:mt-5 mb-2;
 }
 .prose h3 {
-  @apply text-sm sm:text-base font-bold text-foreground mt-3.5 sm:mt-4 mb-1.5;
+  @apply text-[20px] font-bold text-foreground mt-3.5 sm:mt-4 mb-1.5;
 }
 .prose h4 {
-  @apply text-xs sm:text-sm font-bold text-foreground mt-3 mb-1;
+  @apply text-[18px] font-bold text-foreground mt-3 mb-1;
 }
 .prose p {
   @apply mb-2.5 sm:mb-3 text-muted-foreground leading-relaxed text-xs sm:text-sm;
