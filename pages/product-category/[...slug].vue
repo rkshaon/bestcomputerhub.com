@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { decodeHtmlEntities } from '@/utils';
 import { ref, computed, reactive, onMounted, watch, nextTick, toRef } from 'vue';
-import { SlidersHorizontal, Grid, List, Search, ChevronRight, Home, ArrowLeft, Menu, Loader2, Edit2, Save } from 'lucide-vue-next';
+import { SlidersHorizontal, Search, ChevronRight, Home, ArrowLeft, Menu, Loader2, Edit2, Save } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
 import { refDebounced } from '@vueuse/core';
 import { useProductService } from '@/composables/useProductService';
@@ -849,7 +849,6 @@ const fetchCategoryPriceRange = async () => {
   }
 };
 
-const viewMode = ref<'grid' | 'list'>('grid');
 const loadedProducts = ref<Product[]>([]);
 const isProductsLoading = ref(false);
 const currentPage = ref(1);
@@ -966,16 +965,6 @@ const handlePageChange = (newPage: number) => {
 };
 
 const products = computed(() => loadedProducts.value);
-
-const startCount = computed(() => {
-  if (totalCount.value === 0) return 0;
-  return (currentPage.value - 1) * pageSize.value + 1;
-});
-
-const endCount = computed(() => {
-  if (totalCount.value === 0) return 0;
-  return Math.min(currentPage.value * pageSize.value, totalCount.value);
-});
 
 // Reset filters helper
 const resetFilters = () => {
@@ -1242,111 +1231,48 @@ const resetFilters = () => {
 
         <!-- Product Grid Area -->
         <div class="flex-1 min-w-0 w-full space-y-8">
-          <!-- Toolbar Area: Exactly Two Rows -->
-          <div class="space-y-4 pb-6 border-b border-border/60">
-            <!-- ROW 1: Category H1 Title (Left) & Result Summary (Right) -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <h1 class="text-2xl font-display font-black tracking-tight text-foreground">
-                {{ pageTitle }}
-              </h1>
-              <div class="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
-                <template v-if="totalCount > 0">
-                  Showing <span class="font-bold text-foreground">{{ startCount }}–{{ endCount }}</span> of <span class="font-bold text-foreground">{{ totalCount }}</span> results
-                </template>
-                <template v-else>
-                  Showing <span class="font-bold text-foreground">0</span> results
-                </template>
-              </div>
-            </div>
+          <!-- Product Toolbar Area -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/60">
+            <!-- Category Title -->
+            <h1 class="text-2xl font-display font-black tracking-tight text-foreground">
+              {{ pageTitle }}
+            </h1>
 
-            <!-- ROW 2: View Controls (Left), Filter/Sort & Page-Size (Middle), Pagination (Right) -->
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4 pt-2">
-              <!-- Left: Grid/List View Controls -->
-              <div class="flex items-center border rounded-lg overflow-hidden shrink-0">
-                <button 
-                  @click="viewMode = 'grid'"
-                  :class="cn('p-2.5 transition-all shrink-0 cursor-pointer', viewMode === 'grid' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted')" 
-                  title="Grid view" 
-                  aria-label="Grid view"
-                >
-                  <Grid class="w-4 h-4" />
-                </button>
-                <button 
-                  @click="viewMode = 'list'"
-                  :class="cn('p-2.5 transition-all shrink-0 cursor-pointer', viewMode === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted')" 
-                  title="List view" 
-                  aria-label="List view"
-                >
-                  <List class="w-4 h-4" />
-                </button>
-              </div>
-
-              <!-- Middle: Filter/Sort & Page-Size Controls -->
-              <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-center shrink-0">
-                <!-- Page Size Option -->
-                <div class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  <span class="hidden sm:inline">Show:</span>
-                  <select 
-                    v-model="pageSize"
-                    class="h-11 bg-background border border-border/85 rounded-xl px-3 text-xs font-bold uppercase tracking-wider outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 shrink-0"
-                    aria-label="Show items per page"
-                  >
-                    <option :value="12">12 / page</option>
-                    <option :value="24">24 / page</option>
-                    <option :value="48">48 / page</option>
-                    <option :value="96">96 / page</option>
-                  </select>
-                </div>
-
-                <!-- Sort Selector -->
+            <!-- Controls: Page-Size & Sorting -->
+            <div class="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
+              <!-- Page Size Selector -->
+              <div class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <span class="hidden sm:inline">Show:</span>
                 <select 
-                  v-model="filters.sort"
-                  class="h-11 bg-background border border-border/85 rounded-xl px-3 sm:px-4 text-xs font-bold uppercase tracking-wider outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 shrink-0"
-                  aria-label="Sort products"
+                  v-model="pageSize"
+                  class="h-11 bg-background border border-border/85 rounded-xl px-3 text-xs font-bold uppercase tracking-wider outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 shrink-0"
+                  aria-label="Show items per page"
                 >
-                  <option value="newest">Latest Arrivals</option>
-                  <option value="price-low-high">Price: Low to High</option>
-                  <option value="price-high-low">Price: High to Low</option>
-                  <option value="rating">Top Performance</option>
+                  <option :value="12">12 / page</option>
+                  <option :value="24">24 / page</option>
+                  <option :value="48">48 / page</option>
+                  <option :value="96">96 / page</option>
                 </select>
               </div>
 
-              <!-- Right: Pagination Controls -->
-              <div class="flex items-center gap-2 shrink-0">
-                <UiButton 
-                  variant="outline" 
-                  size="sm" 
-                  :disabled="currentPage === 1" 
-                  @click="handlePageChange(currentPage - 1)"
-                  class="rounded-xl px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer"
-                  aria-label="Previous page"
-                >
-                  Previous
-                </UiButton>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap px-1">
-                  Page <span class="text-foreground font-black">{{ currentPage }}</span> / <span class="text-foreground font-black">{{ totalPages }}</span>
-                </span>
-                <UiButton 
-                  variant="outline" 
-                  size="sm" 
-                  :disabled="currentPage >= totalPages" 
-                  @click="handlePageChange(currentPage + 1)"
-                  class="rounded-xl px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer"
-                  aria-label="Next page"
-                >
-                  Next
-                </UiButton>
-              </div>
+              <!-- Sorting Selector -->
+              <select 
+                v-model="filters.sort"
+                class="h-11 bg-background border border-border/85 rounded-xl px-3 sm:px-4 text-xs font-bold uppercase tracking-wider outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 shrink-0"
+                aria-label="Sort products"
+              >
+                <option value="newest">Latest Arrivals</option>
+                <option value="price-low-high">Price: Low to High</option>
+                <option value="price-high-low">Price: High to Low</option>
+                <option value="rating">Top Performance</option>
+              </select>
             </div>
           </div>
 
           <!-- Grid of Products / Skeletons -->
           <div 
             v-if="isProductsLoading" 
-            :class="cn(
-              'grid gap-6',
-              viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
-            )"
+            class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           >
             <div v-for="i in 10" :key="i" class="bg-card rounded-2xl border p-6 space-y-4 animate-pulse">
               <div class="aspect-video bg-muted rounded-xl w-full"></div>
@@ -1362,12 +1288,7 @@ const resetFilters = () => {
           </div>
 
           <div v-else-if="products.length > 0" class="space-y-12">
-            <div 
-              :class="cn(
-                'grid gap-6',
-                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
-              )"
-            >
+            <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               <CommerceProductCard 
                 v-for="product in products" 
                 :key="product.id" 
