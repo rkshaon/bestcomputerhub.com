@@ -977,7 +977,7 @@ const resetFilters = () => {
 </script>
 
 <template>
-  <div class="min-h-screen pb-24 bg-background">
+  <div class="min-h-screen pb-2 bg-background">
     <!-- Breadcrumbs & Category Header -->
     <div class="bg-card border-b py-6 transition-all duration-300">
       <div class="container mx-auto px-4">
