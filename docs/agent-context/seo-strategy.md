@@ -1272,3 +1272,26 @@ Does the page perform well?
 ```
 
 SEO decisions should protect customer experience and existing search visibility while enabling the Nuxt storefront to improve over time.
+
+---
+
+## 43. Global Image Accessibility & SEO Standard
+
+Every `<img>` element rendered across the storefront and administrative interfaces must explicitly define an `alt` attribute.
+
+### Image Alt Classification Rules
+
+| Image Category | Alt Attribute Requirement | Fallback Hierarchy |
+| :--- | :--- | :--- |
+| **Informative / Content Image** | Concise, meaningful descriptive text explaining the image content | Content-provided alt text → Descriptive entity/section title |
+| **Product Image** | Specific product name and image context | CMS/API `alt_text` → `${product.name}` (with view/thumbnail index) |
+| **Functional Image** | Text describing the function or action triggered by the image | Action name (e.g. "View Product", "Close Dialog", "Search") |
+| **Decorative Image** | Explicit empty string `alt=""` | `alt=""` (Never omit the attribute) |
+
+### Key Requirements
+
+1. **Explicit Attribute Mandate**: Never omit the `alt` attribute from any `<img>` tag. An omitted `alt` attribute breaks screen readers and fails accessibility validation.
+2. **Decorative Images**: Images that are purely decorative or redundant must specify `alt=""` so screen readers ignore them cleanly.
+3. **No Keyword Stuffing**: Alt attributes must provide genuine accessibility context. Do not stuff SEO keywords into `alt` text.
+4. **Fallback Hierarchy**: Use CMS/API provided alt text when available; otherwise fallback to meaningful entity names (e.g. product name, brand name, category name). Never fabricate fake product details.
+5. **HTML Decoding**: Always pass dynamic alt strings through `decodeHtmlEntities()` when rendering text containing HTML entities.

@@ -159,8 +159,9 @@ Never generate storefront links lacking a trailing slash. Maintaining trailing s
 - **Server-Side Rendering (SSR)**: Catalog pages (products, categories, brands) and content pages are SEO-sensitive and must be fully server-renderable with valid metadata (`useSeoMeta`).
 - **URL Stability**: Never alter, replace, or remove existing storefront URLs without considering WordPress migration parity, redirects, and canonical URL consistency.
 - **Sitemap Rules**: Only indexable, active products, categories, and public pages belong in sitemaps. Exclude admin routes, auth flows, carts, checkout, and private customer areas.
+- **Global Image Alt Standard**: Every `<img>` tag must explicitly define an `alt` attribute. Informative/product images use descriptive alt text (falling back to entity names via `decodeHtmlEntities()`); decorative images use explicit `alt=""`. Never omit `alt` or keyword-stuff alt text.
 
-*Authoritative details*: `/docs/agent-context/seo-strategy.md` and `/skills/seo/SKILL.md`.
+*Authoritative details*: `/docs/agent-context/seo-strategy.md` (Section 43) and `/skills/seo/SKILL.md`.
 
 ---
 
