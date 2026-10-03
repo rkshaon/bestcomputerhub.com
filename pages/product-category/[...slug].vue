@@ -1009,7 +1009,7 @@ const resetFilters = () => {
               </template>
               <template v-else>
                 <h1 class="text-2xl text-[24px] font-display font-black tracking-tight text-foreground transition-all flex items-center gap-2.5">
-                  <span v-if="category?.short_description_title">{{ decodeHtmlEntities(category.short_description_title) }}</span>
+                  <template v-if="category?.short_description_title">{{ decodeHtmlEntities(category.short_description_title) }}</template>
                   <span 
                     v-else 
                     :class="[
