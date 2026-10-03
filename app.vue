@@ -37,7 +37,6 @@ onMounted(() => {
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
-    <LayoutCookieBanner />
     <LayoutFloatingActions />
     <LayoutBackToTop />
     <LayoutUpdateNotification />
