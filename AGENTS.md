@@ -118,6 +118,7 @@ The Django REST Framework backend is the single authoritative source for commerc
   - Borders: `border-border`, `border-input`
   - Rings: `ring-ring`
 - **Iconography**: Use `lucide-vue-next` exclusively.
+- **Heading Typography Scale**: All headings across Storefront and Admin interfaces must adhere to the standardized H1–H4 scale defined in `design-system.md`: H1 (26px / `text-[26px]`), H2 (24px / `text-[24px]`), H3 (20px / `text-[20px]`), and H4 (18px / `text-[18px]`).
 - **Icon-Only Action Buttons**: For common secondary table/card actions (View, Edit, Delete), use compact icon-only buttons. Primary CTAs retain visible text. All icon buttons must provide accessible `aria-label` and `title` attributes.
 
 *Authoritative details*: `/docs/agent-context/design-system.md`.

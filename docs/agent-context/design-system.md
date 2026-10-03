@@ -266,6 +266,17 @@ Do not overuse uppercase text for long content.
 
 Product names and important customer information should remain easy to scan.
 
+### Standard Heading Typography Scale
+
+All storefront and administrative headings must adhere to the standardized H1–H4 scale:
+
+| Heading | Font Size | Tailwind Usage | Semantic Purpose |
+| :--- | :--- | :--- | :--- |
+| **H1** | 26px | `text-[26px]` / `text-2xl sm:text-[26px]` | Primary page title / main storefront category header |
+| **H2** | 24px | `text-[24px]` / `text-2xl` | Product-list category heading / major section title |
+| **H3** | 20px | `text-[20px]` / `text-xl` | Card group title / modal title / widget header |
+| **H4** | 18px | `text-[18px]` / `text-lg` | Sub-section title / sidebar filter section heading |
+
 ---
 
 ## 8. Spacing
