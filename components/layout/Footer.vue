@@ -43,6 +43,7 @@ const socialLinks = [
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-12 mb-10 sm:mb-20">
         <!-- Brand -->
         <div class="sm:col-span-2 space-y-6">
+          <!--
           <NuxtLink to="/" class="flex items-center gap-2.5 select-none shrink-0 group">
             <img 
               src="/round-logo.jpg" 
@@ -54,6 +55,7 @@ const socialLinks = [
               Best Computer <span class="text-primary">Hub</span>
             </span>
           </NuxtLink>
+          -->
           <p class="text-muted-foreground text-xs sm:text-sm max-w-sm leading-relaxed">
             Premier e-commerce platform dedicated to professional hardware and cutting-edge computing components. Trusted by thousands of tech enthusiasts and engineers.
           </p>
