@@ -1323,48 +1323,48 @@ const resetFilters = () => {
             </div>
             <UiButton variant="outline" @click="resetFilters">Clear All Filters</UiButton>
           </div>
-        </div>
-      </div>
 
-      <!-- Bottom Rich Category Details Section -->
-      <div 
-        v-if="canEditCategoryFromStorefront || (category?.description && (category.description.includes('<') || category.description.length > 200))" 
-        class="mt-8 bg-card border border-border/80 rounded-2xl p-6 space-y-4 shadow-2xs"
-      >
-        <div v-if="canEditCategoryFromStorefront" class="flex items-center justify-end border-b pb-2 sm:pb-2.5">
-          <button 
-            v-if="editingField !== 'description'"
-            @click="startEditing('description')"
-            class="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-            title="Edit Description"
-          >
-            <Edit2 class="w-3.5 h-3.5" />
-            <span>Edit Description</span>
-          </button>
-          <div v-else-if="isFieldSaving === 'description'" class="flex items-center gap-1.5 text-xs text-amber-500 font-bold uppercase tracking-wider">
-            <Loader2 class="w-3.5 h-3.5 animate-spin" /> Saving...
-          </div>
-        </div>
-
-        <div v-if="editingField === 'description'">
-          <div @focusout="handleFocusOut($event, 'description')" class="w-full">
-            <UiRichTextEditor 
-              v-model="editDescValue"
-              min-height="min-h-[220px]"
-              :disabled="isFieldSaving === 'description'"
-              placeholder="Enter category detailed description..."
-            />
-          </div>
-        </div>
-        <div v-else>
+          <!-- Bottom Rich Category Details Section -->
           <div 
-            v-if="category?.description"
-            class="prose prose-slate dark:prose-invert max-w-none"
-            v-html="category.description"
-          />
-          <p v-else class="text-sm text-muted-foreground italic">
-            No detailed description available. Click "Edit Description" to add one.
-          </p>
+            v-if="canEditCategoryFromStorefront || (category?.description && (category.description.includes('<') || category.description.length > 200))" 
+            class="bg-card border border-border/80 rounded-2xl p-6 space-y-4 shadow-2xs"
+          >
+            <div v-if="canEditCategoryFromStorefront" class="flex items-center justify-end border-b pb-2 sm:pb-2.5">
+              <button 
+                v-if="editingField !== 'description'"
+                @click="startEditing('description')"
+                class="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                title="Edit Description"
+              >
+                <Edit2 class="w-3.5 h-3.5" />
+                <span>Edit Description</span>
+              </button>
+              <div v-else-if="isFieldSaving === 'description'" class="flex items-center gap-1.5 text-xs text-amber-500 font-bold uppercase tracking-wider">
+                <Loader2 class="w-3.5 h-3.5 animate-spin" /> Saving...
+              </div>
+            </div>
+
+            <div v-if="editingField === 'description'">
+              <div @focusout="handleFocusOut($event, 'description')" class="w-full">
+                <UiRichTextEditor 
+                  v-model="editDescValue"
+                  min-height="min-h-[220px]"
+                  :disabled="isFieldSaving === 'description'"
+                  placeholder="Enter category detailed description..."
+                />
+              </div>
+            </div>
+            <div v-else>
+              <div 
+                v-if="category?.description"
+                class="prose prose-slate dark:prose-invert max-w-none"
+                v-html="category.description"
+              />
+              <p v-else class="text-sm text-muted-foreground italic">
+                No detailed description available. Click "Edit Description" to add one.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
