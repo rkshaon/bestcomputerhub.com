@@ -1234,7 +1234,7 @@ const resetFilters = () => {
           <!-- Product Toolbar Area -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/60">
             <!-- Category Title -->
-            <h2 class="text-2xl font-display font-black tracking-tight text-foreground">
+            <h2 class="text-2xl font-display font-bold tracking-tight text-foreground">
               {{ pageTitle }}
             </h2>
 
