@@ -985,7 +985,7 @@ const resetFilters = () => {
         <UiBreadcrumbs class="mb-2 sm:mb-2.5" :items="breadcrumbs" />
 
         <!-- Category Title & Info -->
-        <div class="w-full space-y-2 sm:space-y-2.5">
+        <div class="w-full space-y-1.5 sm:space-y-2">
           <!-- Category Short Description Title Heading / Editor & Actions -->
           <div v-if="category?.short_description_title || canEditCategoryFromStorefront || canRemoveFromMenu" class="relative group/edit flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
             <div class="min-w-0 flex-1">
@@ -1095,7 +1095,7 @@ const resetFilters = () => {
         </div>
 
         <!-- Immediate Subcategory Quick Filter Row -->
-        <div v-if="isSubcategoriesLoading || subcategories.length > 0" class="mt-3 pt-2.5 border-t border-border/40">
+        <div v-if="isSubcategoriesLoading || subcategories.length > 0" class="mt-2.5 pt-2 border-t border-border/40">
           <!-- Wrapping Subcategories Container -->
           <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <!-- Loading Skeletons -->
