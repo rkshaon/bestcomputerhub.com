@@ -1329,7 +1329,7 @@ const resetFilters = () => {
       <!-- Bottom Rich Category Details Section -->
       <div 
         v-if="canEditCategoryFromStorefront || (category?.description && (category.description.includes('<') || category.description.length > 200))" 
-        class="mt-6 sm:mt-8 bg-card border border-border/80 rounded-2xl p-4 sm:p-5 md:p-6 space-y-3.5 sm:space-y-4 shadow-2xs"
+        class="mt-8 bg-card border border-border/80 rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs"
       >
         <div v-if="canEditCategoryFromStorefront" class="flex items-center justify-end border-b pb-2 sm:pb-2.5">
           <button 
