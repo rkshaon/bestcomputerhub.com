@@ -854,7 +854,7 @@ const isProductsLoading = ref(false);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const totalCount = ref(0);
-const pageSize = ref(12);
+const pageSize = ref(16);
 
 let lastFetchedParams = '';
 
@@ -1248,7 +1248,7 @@ const resetFilters = () => {
                   class="h-11 bg-background border border-border/85 rounded-xl px-3 text-xs font-bold uppercase tracking-wider outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 shrink-0"
                   aria-label="Show items per page"
                 >
-                  <option :value="12">12 / page</option>
+                  <option :value="16">16 / page</option>
                   <option :value="24">24 / page</option>
                   <option :value="48">48 / page</option>
                   <option :value="96">96 / page</option>
