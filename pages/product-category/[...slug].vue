@@ -979,7 +979,7 @@ const resetFilters = () => {
 <template>
   <div class="min-h-screen pb-24 bg-background">
     <!-- Breadcrumbs & Category Header -->
-    <div class="bg-card border-b pt-3 sm:pt-4 pb-3.5 sm:pb-4 transition-all duration-300">
+    <div class="bg-card border-b py-6 transition-all duration-300">
       <div class="container mx-auto px-4">
         <!-- Breadcrumbs Navigation -->
         <UiBreadcrumbs class="mb-2 sm:mb-2.5" :items="breadcrumbs" />
@@ -1126,7 +1126,7 @@ const resetFilters = () => {
     </div>
 
     <!-- Main Section -->
-    <div class="container mx-auto px-4 pt-5 sm:pt-6 pb-12 sm:pb-16">
+    <div class="container mx-auto px-4 py-6">
       <div class="flex flex-col lg:flex-row gap-8 lg:gap-10 items-start">
         <!-- Sidebar Filters -->
         <aside class="w-full lg:w-64 xl:w-72 shrink-0 space-y-8">
@@ -1287,7 +1287,7 @@ const resetFilters = () => {
             </div>
           </div>
 
-          <div v-else-if="products.length > 0" class="space-y-12">
+          <div v-else-if="products.length > 0">
             <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               <CommerceProductCard 
                 v-for="product in products" 
@@ -1306,7 +1306,7 @@ const resetFilters = () => {
               :total-count="totalCount"
               :items-per-page="pageSize"
               variant="card"
-              class="mt-8"
+              class="mt-8 p-6"
             />
           </div>
 
@@ -1329,7 +1329,7 @@ const resetFilters = () => {
       <!-- Bottom Rich Category Details Section -->
       <div 
         v-if="canEditCategoryFromStorefront || (category?.description && (category.description.includes('<') || category.description.length > 200))" 
-        class="mt-8 bg-card border border-border/80 rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs"
+        class="mt-8 bg-card border border-border/80 rounded-2xl p-6 space-y-4 shadow-2xs"
       >
         <div v-if="canEditCategoryFromStorefront" class="flex items-center justify-end border-b pb-2 sm:pb-2.5">
           <button 

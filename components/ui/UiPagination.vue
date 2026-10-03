@@ -109,8 +109,8 @@ const paginationSlots = computed<PaginationSlot[]>(() => {
   <div 
     :class="cn(
       variant === 'card'
-        ? 'bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-full overflow-hidden'
-        : 'bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-900/50 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-full overflow-hidden',
+        ? 'bg-card border border-border rounded-2xl shadow-sm p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-full overflow-hidden'
+        : 'bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-900/50 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-full overflow-hidden',
       $attrs.class as string
     )"
   >
