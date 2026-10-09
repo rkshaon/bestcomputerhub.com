@@ -39,6 +39,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
+  <div>Test Content</div>
   <form @submit.prevent="handleSubmit" class="space-y-6">
     <div class="space-y-2">
       <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Current Password</label>
