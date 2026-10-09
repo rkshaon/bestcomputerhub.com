@@ -3,7 +3,7 @@
 import { decodeHtmlEntities } from '@/utils';
 import { ref, computed, reactive, onMounted, watch, nextTick, toRef } from 'vue';
 import { SlidersHorizontal, Search, ChevronRight, Home, ArrowLeft, Menu, Loader2, Edit2, Save } from 'lucide-vue-next';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { refDebounced } from '@vueuse/core';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
@@ -19,6 +19,7 @@ import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 
 const route = useRoute();
+const router = useRouter();
 const productService = useProductService();
 const categoryService = useCategoryService();
 const brandService = useBrandService();
@@ -955,6 +956,9 @@ watch(
   () => {
     if (isResolvingCategory.value) return;
     currentPage.value = 1;
+    router.replace({ 
+      query: { ...route.query, ordering: filters.sort } 
+    });
     fetchProducts();
   }
 );
