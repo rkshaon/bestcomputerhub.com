@@ -10,7 +10,9 @@ useSeoMeta({
 });
 
 const authStore = useAuthStore();
-const name = ref('');
+const firstName = ref('');
+const middleName = ref('');
+const lastName = ref('');
 const email = ref('');
 const phone = ref('');
 const password = ref('');
@@ -20,8 +22,8 @@ const isSuccess = ref(false);
 const error = ref('');
 
 const handleSignUp = async () => {
-  if (!name.value || !email.value || !password.value || !confirmPassword.value) {
-    error.value = 'Please fill in all fields';
+  if (!firstName.value || !email.value || !password.value || !confirmPassword.value) {
+    error.value = 'Please fill in all required fields';
     toastWarning('Please fill in all required fields.');
     return;
   }
@@ -37,7 +39,9 @@ const handleSignUp = async () => {
 
   try {
     await authStore.signUp({
-      name: name.value,
+      first_name: firstName.value,
+      middle_name: middleName.value,
+      last_name: lastName.value,
       email: email.value,
       password: password.value,
       confirmPassword: confirmPassword.value,
@@ -89,7 +93,7 @@ const handleSignUp = async () => {
               <CheckCircle2 class="w-10 h-10" />
             </div>
             <h2 class="text-2xl font-bold mb-2">Account Created!</h2>
-            <p class="text-muted-foreground mb-8">Welcome aboard, {{ name.split(' ')[0] }}. We're preparing your enterprise dashboard...</p>
+            <p class="text-muted-foreground mb-8">Welcome aboard, {{ firstName }}. We're preparing your enterprise dashboard...</p>
             <div class="flex items-center gap-2 text-primary font-bold animate-pulse">
               <Loader2 class="w-4 h-4 animate-spin" /> Redirecting...
             </div>
@@ -101,20 +105,19 @@ const handleSignUp = async () => {
               {{ error }}
             </div>
 
-            <!-- Name Field -->
-            <div class="space-y-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Full Name</label>
-              <div class="relative group">
-                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                  <User class="w-4 h-4" />
-                </div>
-                <input 
-                  v-model="name"
-                  type="text" 
-                  placeholder="Sarah Anderson"
-                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm"
-                  required
-                />
+            <!-- Name Fields -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="space-y-1.5 md:col-span-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">First Name</label>
+                <input v-model="firstName" type="text" placeholder="John" class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm" required />
+              </div>
+              <div class="space-y-1.5 md:col-span-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Middle Name</label>
+                <input v-model="middleName" type="text" placeholder="Michael" class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm" />
+              </div>
+              <div class="space-y-1.5 md:col-span-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Last Name</label>
+                <input v-model="lastName" type="text" placeholder="Doe" class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm" />
               </div>
             </div>
 

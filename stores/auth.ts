@@ -63,10 +63,12 @@ export const useAuthStore = defineStore('auth', {
         
         try {
           const body = {
-            full_name: payload.name || payload.full_name,
             email: payload.email,
             password: payload.password,
             confirm_password: payload.confirmPassword || payload.confirm_password,
+            first_name: payload.first_name,
+            middle_name: payload.middle_name || '',
+            last_name: payload.last_name || '',
             phone: payload.phone || ''
           };
 
