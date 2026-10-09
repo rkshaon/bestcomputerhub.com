@@ -1,7 +1,7 @@
 <!-- File: /pages/login.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { User, Lock, ArrowRight, Github, Chrome, ShieldCheck, Eye, EyeOff, Loader2 } from 'lucide-vue-next';
+import { User, Lock, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { cn } from '@/utils';
 
@@ -71,8 +71,8 @@ if (authStore.isLoggedIn) {
           <NuxtLink to="/" class="inline-flex items-center justify-center mb-4">
             <UiBrandLogo size="lg" />
           </NuxtLink>
-          <h1 class="text-3xl font-display font-extrabold tracking-tight">Sign In</h1>
-          <p class="text-muted-foreground text-sm">Enter your account credentials to continue</p>
+          <h1 class="text-3xl font-display font-extrabold tracking-tight">Welcome Back</h1>
+          <p class="text-muted-foreground text-sm">Sign in to manage your account and orders.</p>
         </div>
 
         <!-- Login Card -->
@@ -145,29 +145,14 @@ if (authStore.isLoggedIn) {
                 <Loader2 class="w-5 h-5 animate-spin" /> Verifying...
               </div>
               <div v-else class="flex items-center gap-2">
-                Sign In to Best Computer Hub <ArrowRight class="w-5 h-5" />
+                Sign In <ArrowRight class="w-5 h-5" />
               </div>
             </UiButton>
           </form>
 
-          <!-- Divider -->
-          <div class="relative my-10">
-            <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-border/50"></div>
-            </div>
-            <div class="relative flex justify-center text-[10px] uppercase tracking-[0.2em] font-bold">
-              <span class="bg-background px-4 text-muted-foreground">Account Access</span>
-            </div>
-          </div>
-
-          <!-- Social Logins -->
-          <div class="grid grid-cols-2 gap-4">
-            <button type="button" aria-label="Sign in with Google" class="flex items-center justify-center gap-3 h-12 bg-muted/30 border border-border/50 rounded-2xl text-sm font-bold hover:bg-muted/50 hover:border-border transition-all">
-              <Chrome class="w-4 h-4" /> Google
-            </button>
-            <button type="button" aria-label="Sign in with GitHub" class="flex items-center justify-center gap-3 h-12 bg-muted/30 border border-border/50 rounded-2xl text-sm font-bold hover:bg-muted/50 hover:border-border transition-all">
-              <Github class="w-4 h-4" /> GitHub
-            </button>
+          <!-- Reassurance -->
+          <div class="mt-6 text-center">
+            <p class="text-xs text-muted-foreground">Sign in to track orders, manage addresses, and view your purchase history.</p>
           </div>
         </div>
 
