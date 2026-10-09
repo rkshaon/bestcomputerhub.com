@@ -974,7 +974,31 @@ Components are classified using four standard metadata properties:
 - **Important Behavior to Preserve**: Real backend REST communications, Trailing slashes in navigation, Permission-gated administrative CRUD actions.
 - **Known Architectural Risks**: None.
 
+
 ---
+
+### `<ChangePasswordForm>`
+- **Exact File Location**: `/components/commerce/ChangePasswordForm.vue`
+- **Component Type**: Form component / Feature
+- **Scope**: Storefront
+- **Purpose**: Authenticated user password update form.
+- **Routes/Pages Used**: Account page (`/account/`) Security tab.
+- **Main Responsibilities**:
+  - Provide current password, new password, and confirm new password fields.
+  - Implement show/hide password toggle.
+  - Dispatch change password request (`userService.changePassword`).
+  - Provide validation feedback.
+- **What It Explicitly Does Not Own**: User authentication session management.
+- **State Owned**: Form field values, field visibility toggle states, submission loading state.
+- **Calls API**: Yes (`userService.changePassword`).
+- **Related Composables/Services**: `useUserService`, `useToast`.
+- **Responsive Responsibility**: Responsive form layout for password fields.
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Password field show/hide toggles and `isSubmitting` submission guard.
+- **Known Architectural Risks**: None.
+
+---
+
 
 ## 5. Architectural Inferences & Source Code Authority
 

@@ -245,8 +245,17 @@ const handleLogout = async () => {
             </div>
           </div>
 
+          <!-- Security Tab -->
+          <div v-if="activeTab === 'security'" class="space-y-8 animate-in fade-in duration-500">
+            <h2 class="text-2xl font-display font-bold">Security Settings</h2>
+            
+            <div class="bg-card border rounded-[2.5rem] p-8 md:p-10">
+              <ChangePasswordForm />
+            </div>
+          </div>
+
           <!-- Other tabs placeholders -->
-          <div v-if="['addresses', 'payment', 'security', 'notifications'].includes(activeTab)" class="h-96 flex flex-col items-center justify-center bg-card border border-dashed rounded-[2.5rem] text-center p-12">
+          <div v-if="['addresses', 'payment', 'notifications'].includes(activeTab)" class="h-96 flex flex-col items-center justify-center bg-card border border-dashed rounded-[2.5rem] text-center p-12">
             <div class="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mb-6">
               <component :is="tabs.find(t => t.id === activeTab)?.icon" class="w-10 h-10 text-muted-foreground opacity-40" />
             </div>
@@ -256,6 +265,7 @@ const handleLogout = async () => {
                Back to Orders <ArrowRight class="w-4 h-4" />
             </UiButton>
           </div>
+
         </main>
       </div>
     </div>
