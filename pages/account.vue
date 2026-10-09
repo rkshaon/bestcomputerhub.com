@@ -77,12 +77,12 @@ const handleLogout = async () => {
 <template>
   <div class="min-h-screen pb-20 bg-muted/20">
     <!-- Account Header -->
-    <section class="bg-black text-white pt-32 pb-20 overflow-hidden relative">
+    <section class="bg-card text-card-foreground pt-32 pb-20 overflow-hidden relative">
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.1),transparent_50%)]"></div>
       <div class="container mx-auto px-4 relative">
         <div class="flex flex-col md:flex-row items-center gap-8">
           <div class="relative">
-            <div class="w-32 h-32 rounded-[2.5rem] overflow-hidden border-4 border-white/10 ring-4 ring-primary/20">
+            <div class="w-32 h-32 rounded-[2.5rem] overflow-hidden border-4 border-border ring-4 ring-primary/20">
               <img :src="authStore.user?.avatar" :alt="authStore.user?.name" class="w-full h-full object-cover" />
             </div>
             <button class="absolute -bottom-2 -right-2 bg-primary text-white p-2.5 rounded-2xl shadow-xl hover:scale-110 transition-transform" title="Account settings" aria-label="Account settings">
@@ -93,17 +93,17 @@ const handleLogout = async () => {
           <div class="text-center md:text-left space-y-2">
             <h1 class="text-4xl md:text-5xl font-display font-bold">{{ authStore.user?.name }}</h1>
             <div class="flex flex-wrap items-center justify-center md:justify-start gap-4">
-              <span class="text-white/60 text-sm font-medium flex items-center gap-1.5">
+              <span class="text-muted-foreground text-sm font-medium flex items-center gap-1.5">
                 <Clock class="w-4 h-4" /> Member since Nov 2023
               </span>
-              <span class="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-primary border border-white/5">
+              <span class="px-3 py-1 bg-muted rounded-full text-[10px] font-bold uppercase tracking-widest text-primary border border-border">
                 Enterprise Member
               </span>
             </div>
           </div>
 
           <div class="md:ml-auto flex items-center gap-4">
-            <UiButton variant="outline" class="rounded-full text-white border-white/20 hover:bg-white/10" @click="handleLogout">
+            <UiButton variant="outline" class="rounded-full" @click="handleLogout">
               <LogOut class="w-4 h-4 mr-2" /> Logout
             </UiButton>
           </div>
