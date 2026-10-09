@@ -12,9 +12,11 @@ import {
   ShieldCheck,
   Bell,
   Clock,
-  ArrowRight
+  ArrowRight,
+  AlertTriangle
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
+import { useEmailVerification } from '@/composables/useEmailVerification';
 import { formatCurrency, cn, decodeHtmlEntities } from '@/utils';
 
 useSeoMeta({
@@ -23,6 +25,9 @@ useSeoMeta({
 });
 
 const authStore = useAuthStore();
+const { emailVerified, loadingResend, fetchStatus, resendEmail } = useEmailVerification();
+
+onMounted(fetchStatus);
 
 // Redirect to login if not logged in
 if (process.client && !authStore.isLoggedIn) {
@@ -100,6 +105,13 @@ const handleLogout = async () => {
                 Enterprise Member
               </span>
             </div>
+          </div>
+
+          <div v-if="emailVerified === false" class="flex items-center justify-center md:justify-start gap-2 pt-2">
+            <UiBadge variant="warning">Email Not Verified</UiBadge>
+            <UiButton variant="outline" size="sm" class="rounded-full text-xs font-bold" :disabled="loadingResend" @click="resendEmail">
+              {{ loadingResend ? 'Sending...' : 'Resend Verification Email' }}
+            </UiButton>
           </div>
 
           <div class="md:ml-auto flex items-center gap-4">

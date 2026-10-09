@@ -554,6 +554,7 @@ When selecting or implementing helper functions, agents must respect these struc
 | `useRoleService` | Roles & Groups | `/api/v1/roles/` (Django Groups) | Role/Group listing, RBAC role CRUD, permission assignments. |
 | `usePermissionService` | Permissions Matrix | `/api/v1/permissions/` | Fetches available backend permissions and content types for RBAC role matrix pickers. |
 | `useRequestLogService` | Security Audit Logs | `/api/v1/request-logs/` | Security and request log entry filtering and listing for audit views. |
+| `useEmailVerification` | Email Verification | `/api/v1/auth/email-verification/status/`, `/api/v1/auth/email-verification/request/` | Email verification status checking, resend verification email request, reactive email verification status tracking. |
 | `useContentSecurityService` | CSP & Security Rules | `/api/v1/content-security/*` | Keyword, domain, hidden content, redirect, and HTML tag security rules management. |
 
 ---
