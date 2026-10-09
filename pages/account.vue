@@ -75,9 +75,9 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen pb-20 bg-muted/20">
+  <div class="min-h-screen pb-20 bg-background">
     <!-- Account Header -->
-    <section class="bg-card text-card-foreground pt-32 pb-20 overflow-hidden relative">
+    <section class="bg-background text-card-foreground pt-32 pb-20 overflow-hidden relative">
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.1),transparent_50%)]"></div>
       <div class="container mx-auto px-4 relative">
         <div class="flex flex-col md:flex-row items-center gap-8">
