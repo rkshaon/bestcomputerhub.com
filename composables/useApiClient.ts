@@ -517,6 +517,29 @@ export const useApiClient = () => {
       return { message: 'Logged out successfully' } as unknown as T;
     }
 
+    if (url.includes('/api/v1/auth/password-reset/request/')) {
+      const body = options.body || {};
+      if (!body.email) {
+        throwSimulatedError('Email is required.');
+      }
+      isSuccess.value = true;
+      isLoading.value = false;
+      return undefined as unknown as T;
+    }
+
+    if (url.includes('/api/v1/auth/password-reset/confirm/')) {
+      const body = options.body || {};
+      if (!body.token || !body.password || !body.confirm_password) {
+        throwSimulatedError('Missing required fields.');
+      }
+      if (body.password !== body.confirm_password) {
+        throwSimulatedError('Passwords do not match.');
+      }
+      isSuccess.value = true;
+      isLoading.value = false;
+      return undefined as unknown as T;
+    }
+
     // Default mock response for other routes
     isSuccess.value = true;
     isLoading.value = false;

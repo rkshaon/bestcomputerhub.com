@@ -3,6 +3,7 @@
 import { ref } from 'vue';
 import { Mail, ArrowLeft, ArrowRight, ShieldCheck, Loader2, CheckCircle2 } from 'lucide-vue-next';
 import { cn } from '@/utils';
+import type { PasswordResetRequestPayload } from '@/types';
 
 const email = ref('');
 const isLoading = ref(false);
@@ -15,15 +16,18 @@ const handleResetRequest = async () => {
     return;
   }
 
+  const { request, isLoading: loading, errorMsg } = useApiClient();
   isLoading.value = true;
   error.value = '';
 
   try {
-    // Simulate API call to send reset link
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await request('/api/v1/auth/password-reset/request/', {
+      method: 'POST',
+      body: { email: email.value } as PasswordResetRequestPayload
+    });
     isSubmitted.value = true;
   } catch (err) {
-    error.value = 'Could not process your request. Please try again.';
+    error.value = errorMsg.value || 'Could not process your request. Please try again.';
   } finally {
     isLoading.value = false;
   }

@@ -83,3 +83,13 @@ export interface UserProfileResponse {
   date_joined?: string;
   joinedAt?: string;
 }
+
+export interface PasswordResetRequestPayload {
+  email: string;
+}
+
+export interface PasswordResetConfirmPayload {
+  token: string;
+  password: string;
+  confirm_password: string;
+}
