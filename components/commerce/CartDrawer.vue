@@ -80,7 +80,7 @@ const handleCheckout = () => {
             <div class="flex justify-between items-start gap-2">
               <h4 class="font-bold text-sm line-clamp-1 truncate flex-1 min-w-0">{{ decodeHtmlEntities(item.product.name) }}</h4>
               <button 
-                @click="cartStore.removeFromCart(item.productId)"
+                @click="cartStore.removeFromCart(Number(item.productId))"
                 class="text-muted-foreground hover:text-destructive transition-colors"
                 title="Remove item"
                 aria-label="Remove item"
@@ -92,7 +92,7 @@ const handleCheckout = () => {
             <div class="flex items-center justify-between mt-3">
               <div class="flex items-center gap-3 bg-muted rounded-lg p-1">
                 <button 
-                  @click="cartStore.updateQuantity(item.productId, item.quantity - 1)"
+                  @click="cartStore.updateQuantity(Number(item.productId), item.quantity - 1)"
                   class="p-1 hover:bg-background rounded transition-colors disabled:opacity-30"
                   :disabled="item.quantity <= 1"
                   title="Decrease quantity"
@@ -102,7 +102,7 @@ const handleCheckout = () => {
                 </button>
                 <span class="text-xs font-bold w-4 text-center">{{ item.quantity }}</span>
                 <button 
-                  @click="cartStore.updateQuantity(item.productId, item.quantity + 1)"
+                  @click="cartStore.updateQuantity(Number(item.productId), item.quantity + 1)"
                   class="p-1 hover:bg-background rounded transition-colors"
                   title="Increase quantity"
                   aria-label="Increase quantity"
