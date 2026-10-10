@@ -529,10 +529,12 @@ export const useApiClient = () => {
 
     if (url.includes('/api/v1/auth/password-reset/confirm/')) {
       const body = options.body || {};
-      if (!body.token || !body.password || !body.confirm_password) {
+      if (!body.uid || !body.token || (!body.new_password && !body.password) || (!body.confirm_new_password && !body.confirm_password)) {
         throwSimulatedError('Missing required fields.');
       }
-      if (body.password !== body.confirm_password) {
+      const newPwd = body.new_password || body.password;
+      const confirmPwd = body.confirm_new_password || body.confirm_password;
+      if (newPwd !== confirmPwd) {
         throwSimulatedError('Passwords do not match.');
       }
       isSuccess.value = true;

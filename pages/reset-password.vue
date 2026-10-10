@@ -1,7 +1,7 @@
 <!-- File: /pages/reset-password.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { Lock, ArrowRight, Loader2, CheckCircle2 } from 'lucide-vue-next';
+import { Lock, ArrowRight, Loader2, CheckCircle2, AlertTriangle } from 'lucide-vue-next';
 import { useApiClient } from '@/composables/useApiClient';
 import { useToast } from '@/composables/useToast';
 import type { PasswordResetConfirmPayload } from '@/types';
@@ -11,6 +11,7 @@ const router = useRouter();
 const { toastSuccess, handleApiError } = useToast();
 const { request } = useApiClient();
 
+const uid = route.query.uid as string;
 const token = route.query.token as string;
 const password = ref('');
 const confirmPassword = ref('');
@@ -19,19 +20,23 @@ const isSuccess = ref(false);
 const error = ref('');
 
 onMounted(() => {
-  if (!token) {
-    handleApiError(new Error('Reset token is missing.'), 'Invalid password reset link.');
+  if (!uid || !token) {
+    handleApiError(new Error('Reset UID or token is missing.'), 'Invalid or incomplete password reset link.');
     router.push('/forgot-password/');
   }
 });
 
 const handleResetConfirm = async () => {
+  if (!uid || !token) {
+    error.value = 'Missing reset identifier or token. Please request a new link.';
+    return;
+  }
   if (!password.value || !confirmPassword.value) {
-    error.value = 'Please enter both fields';
+    error.value = 'Please enter both password fields.';
     return;
   }
   if (password.value !== confirmPassword.value) {
-    error.value = 'Passwords do not match';
+    error.value = 'Passwords do not match.';
     return;
   }
 
@@ -42,9 +47,10 @@ const handleResetConfirm = async () => {
     await request('/api/v1/auth/password-reset/confirm/', {
       method: 'POST',
       body: {
+        uid,
         token,
-        password: password.value,
-        confirm_password: confirmPassword.value
+        new_password: password.value,
+        confirm_new_password: confirmPassword.value
       } as PasswordResetConfirmPayload
     });
 
@@ -62,8 +68,18 @@ const handleResetConfirm = async () => {
   <div class="min-h-screen pt-20 pb-12 flex flex-col justify-center bg-muted/20 relative overflow-hidden">
     <div class="container mx-auto px-4 relative z-10">
       <div class="max-w-md mx-auto bg-background/80 backdrop-blur-xl border border-border/50 rounded-[2.5rem] shadow-2xl p-8 md:p-10">
+        <!-- Missing Token / UID State -->
+        <div v-if="!uid || !token" class="text-center space-y-6">
+          <div class="w-20 h-20 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto">
+            <AlertTriangle class="w-10 h-10" />
+          </div>
+          <h2 class="text-2xl font-display font-bold">Invalid Reset Link</h2>
+          <p class="text-muted-foreground text-sm">The password reset link is missing required parameters or has expired.</p>
+          <UiButton to="/forgot-password/" class="w-full h-14 rounded-2xl font-bold">Request New Link</UiButton>
+        </div>
+
         <!-- Success State -->
-        <div v-if="isSuccess" class="text-center space-y-6">
+        <div v-else-if="isSuccess" class="text-center space-y-6">
           <div class="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
             <CheckCircle2 class="w-10 h-10" />
           </div>

@@ -89,7 +89,8 @@ export interface PasswordResetRequestPayload {
 }
 
 export interface PasswordResetConfirmPayload {
+  uid: string;
   token: string;
-  password: string;
-  confirm_password: string;
+  new_password: string;
+  confirm_new_password: string;
 }
