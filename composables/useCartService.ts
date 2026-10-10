@@ -3,23 +3,22 @@ import { useApiClient } from './useApiClient';
 import type { CartItem } from '@/types';
 
 export const useCartService = () => {
-  const { api } = useApiClient();
+  const { request } = useApiClient();
 
   const getCartItems = async (): Promise<CartItem[]> => {
-    const response = await api.get('/api/v1/cart/items/');
-    return response.data;
+    return await request<CartItem[]>('/api/v1/cart/items/');
   };
 
   const addToCart = async (productId: number, quantity: number): Promise<void> => {
-    await api.post('/api/v1/cart/items/', { product: productId, quantity });
+    await request('/api/v1/cart/items/', { method: 'POST', body: { product: productId, quantity } });
   };
 
   const updateCartItem = async (itemId: number, quantity: number): Promise<void> => {
-    await api.patch(`/api/v1/cart/items/${itemId}/`, { quantity });
+    await request(`/api/v1/cart/items/${itemId}/`, { method: 'PATCH', body: { quantity } });
   };
 
   const removeFromCart = async (itemId: number): Promise<void> => {
-    await api.delete(`/api/v1/cart/items/${itemId}/`);
+    await request(`/api/v1/cart/items/${itemId}/`, { method: 'DELETE' });
   };
 
   return {

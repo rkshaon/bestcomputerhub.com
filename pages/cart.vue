@@ -17,9 +17,9 @@ const updateQty = (id: string, delta: number) => {
   if (item) {
     const newQty = item.quantity + delta;
     if (newQty <= 0) {
-      cartStore.removeFromCart(id);
+      cartStore.removeFromCart(Number(id));
     } else {
-      cartStore.updateQuantity(id, newQty);
+      cartStore.updateQuantity(Number(id), newQty);
     }
   }
 };
@@ -98,7 +98,7 @@ const updateQty = (id: string, delta: number) => {
                 class="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-destructive/10"
                 title="Remove item"
                 aria-label="Remove item"
-                @click="cartStore.removeFromCart(item.product.id)"
+                @click="cartStore.removeFromCart(Number(item.product.id))"
               >
                 <Trash2 class="w-4 h-4" />
               </button>
