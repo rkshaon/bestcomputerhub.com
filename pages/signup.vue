@@ -10,6 +10,7 @@ useSeoMeta({
 });
 
 const authStore = useAuthStore();
+const route = useRoute();
 const firstName = ref('');
 const middleName = ref('');
 const lastName = ref('');
@@ -22,6 +23,12 @@ const showConfirmPassword = ref(false);
 const isLoading = ref(false);
 const isSuccess = ref(false);
 const error = ref('');
+
+const redirectTarget = computed(() => {
+  const redirect = route.query.redirect as string;
+  if (redirect) return redirect;
+  return '/account';
+});
 
 const handleSignUp = async () => {
   if (!firstName.value || !email.value || !password.value || !confirmPassword.value) {
@@ -55,9 +62,9 @@ const handleSignUp = async () => {
     setTimeout(async () => {
       try {
         await authStore.login({ email: email.value, password: password.value });
-        navigateTo('/account');
+        navigateTo(redirectTarget.value);
       } catch (loginErr) {
-        navigateTo('/login');
+        navigateTo(`/login?redirect=${encodeURIComponent(redirectTarget.value)}`);
       }
     }, 2000);
   } catch (err: any) {

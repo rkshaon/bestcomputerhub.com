@@ -41,6 +41,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
       return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`);
     }
   }
+
+  if (to.path.startsWith('/checkout')) {
+    if (!authStore.isLoggedIn) {
+      return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`);
+    }
+  }
 });
 
 

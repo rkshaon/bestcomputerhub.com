@@ -11,7 +11,18 @@ useSeoMeta({
 });
 
 const cartStore = useCartStore();
+const authStore = useAuthStore();
 const step = ref(1);
+
+onMounted(async () => {
+  if (authStore.isLoggedIn) {
+    try {
+      await cartStore.fetchCart();
+    } catch (err) {
+      console.error('Failed to fetch cart on checkout load', err);
+    }
+  }
+});
 
 const form = reactive({
   email: '',
