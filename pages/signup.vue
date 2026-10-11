@@ -1,7 +1,7 @@
 <!-- File: /pages/signup.vue -->
 <script setup lang="ts">
 import { ref } from 'vue';
-import { User, Mail, Lock, Phone, ArrowRight, ShieldCheck, Loader2, CheckCircle2 } from 'lucide-vue-next';
+import { User, Mail, Lock, Phone, ArrowRight, ShieldCheck, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 
 useSeoMeta({
@@ -17,6 +17,8 @@ const email = ref('');
 const phone = ref('');
 const password = ref('');
 const confirmPassword = ref('');
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 const isLoading = ref(false);
 const isSuccess = ref(false);
 const error = ref('');
@@ -163,11 +165,20 @@ const handleSignUp = async () => {
                 </div>
                 <input 
                   v-model="password"
-                  type="password" 
+                  :type="showPassword ? 'text' : 'password'" 
                   placeholder="••••••••"
-                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium tracking-widest text-sm"
+                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-12 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium tracking-widest text-sm"
                   required
                 />
+                <button 
+                  type="button"
+                  @click="showPassword = !showPassword"
+                  :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Eye v-if="!showPassword" class="w-4 h-4" />
+                  <EyeOff v-else class="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -180,11 +191,20 @@ const handleSignUp = async () => {
                 </div>
                 <input 
                   v-model="confirmPassword"
-                  type="password" 
+                  :type="showConfirmPassword ? 'text' : 'password'" 
                   placeholder="••••••••"
-                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium tracking-widest text-sm"
+                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-12 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium tracking-widest text-sm"
                   required
                 />
+                <button 
+                  type="button"
+                  @click="showConfirmPassword = !showConfirmPassword"
+                  :aria-label="showConfirmPassword ? 'Hide password' : 'Show password'"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Eye v-if="!showConfirmPassword" class="w-4 h-4" />
+                  <EyeOff v-else class="w-4 h-4" />
+                </button>
               </div>
             </div>
 
