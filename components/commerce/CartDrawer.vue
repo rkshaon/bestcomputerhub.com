@@ -70,17 +70,17 @@ const handleCheckout = () => {
 
         <div 
           v-for="item in cartStore.items" 
-          :key="item.productId"
+          :key="item.productId || item.id || item.product?.id"
           class="flex gap-4 group"
         >
           <div class="w-24 h-24 rounded-xl overflow-hidden bg-muted shrink-0 border">
-            <img :src="item.product.images[0]" :alt="decodeHtmlEntities(item.product.name)" class="w-full h-full object-cover" />
+            <img :src="item.product?.images?.[0] || 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80'" :alt="decodeHtmlEntities(item.product?.name || 'Product')" class="w-full h-full object-cover" />
           </div>
           <div class="flex-grow space-y-1">
             <div class="flex justify-between items-start gap-2">
-              <h4 class="font-bold text-sm line-clamp-1 truncate flex-1 min-w-0">{{ decodeHtmlEntities(item.product.name) }}</h4>
+              <h4 class="font-bold text-sm line-clamp-1 truncate flex-1 min-w-0">{{ decodeHtmlEntities(item.product?.name || 'Product') }}</h4>
               <button 
-                @click="cartStore.removeFromCart(Number(item.productId))"
+                @click="cartStore.removeFromCart(Number(item.productId || item.id || item.product?.id))"
                 class="text-muted-foreground hover:text-destructive transition-colors"
                 title="Remove item"
                 aria-label="Remove item"
@@ -88,7 +88,7 @@ const handleCheckout = () => {
                 <Trash2 class="w-4 h-4" />
               </button>
             </div>
-            <p class="text-xs text-muted-foreground">{{ decodeHtmlEntities(item.product.brand) }}</p>
+            <p class="text-xs text-muted-foreground">{{ decodeHtmlEntities(item.product?.brand || '') }}</p>
             <div class="flex items-center justify-between mt-3">
               <div class="flex items-center gap-3 bg-muted rounded-lg p-1">
                 <button 

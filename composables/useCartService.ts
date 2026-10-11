@@ -6,7 +6,11 @@ export const useCartService = () => {
   const { request } = useApiClient();
 
   const getCartItems = async (): Promise<CartItem[]> => {
-    return await request<CartItem[]>('/api/v1/cart/items/');
+    const res = await request<any>('/api/v1/cart/items/');
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.results)) return res.results;
+    if (res && Array.isArray(res.items)) return res.items;
+    return [];
   };
 
   const addToCart = async (productId: number, quantity: number): Promise<void> => {

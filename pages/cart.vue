@@ -53,20 +53,20 @@ const updateQty = (id: string, delta: number) => {
         <div class="lg:col-span-8 space-y-4">
           <div 
             v-for="item in cartStore.items" 
-            :key="item.product.id"
+            :key="item.product?.id || item.productId || item.id"
             class="bg-card border border-border rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-4 shadow-sm hover:border-primary/30 transition-all"
           >
             <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-muted/50 p-2 shrink-0 flex items-center justify-center overflow-hidden">
-              <img :src="item.product.images[0]" :alt="decodeHtmlEntities(item.product.name)" class="max-w-full max-h-full object-contain" />
+              <img :src="item.product?.images?.[0] || 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80'" :alt="decodeHtmlEntities(item.product?.name || 'Product')" class="max-w-full max-h-full object-contain" />
             </div>
 
             <div class="flex-1 text-center sm:text-left">
-              <NuxtLink :to="`/product/${item.product.slug}/`" class="font-bold text-foreground hover:text-primary transition-colors line-clamp-2 text-sm sm:text-base">
-                {{ decodeHtmlEntities(item.product.name) }}
+              <NuxtLink :to="`/product/${item.product?.slug || ''}/`" class="font-bold text-foreground hover:text-primary transition-colors line-clamp-2 text-sm sm:text-base">
+                {{ decodeHtmlEntities(item.product?.name || 'Product') }}
               </NuxtLink>
-              <p class="text-xs text-muted-foreground mt-1 uppercase tracking-wider font-semibold">SKU: {{ item.product.sku }}</p>
+              <p class="text-xs text-muted-foreground mt-1 uppercase tracking-wider font-semibold">SKU: {{ item.product?.sku || 'N/A' }}</p>
               <div class="text-primary font-black text-base sm:text-lg mt-2">
-                {{ formatCurrency(item.product.price) }}
+                {{ formatCurrency(item.product?.price || 0) }}
               </div>
             </div>
 

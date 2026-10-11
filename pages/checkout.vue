@@ -239,15 +239,15 @@ const handlePlaceOrder = () => {
           <div class="bg-background rounded-3xl p-8 border shadow-sm sticky top-32">
             <h3 class="text-xl font-display font-bold mb-6">Order Summary</h3>
             <div class="space-y-4 max-h-60 overflow-y-auto mb-6 pr-2">
-              <div v-for="item in cartStore.items" :key="item.productId" class="flex gap-4">
+              <div v-for="item in cartStore.items" :key="item.productId || item.id || item.product?.id" class="flex gap-4">
                 <div class="w-16 h-16 rounded-lg overflow-hidden border shrink-0 bg-muted">
-                  <img :src="item.product.images[0]" :alt="decodeHtmlEntities(item.product.name)" class="w-full h-full object-cover" />
+                  <img :src="item.product?.images?.[0] || 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80'" :alt="decodeHtmlEntities(item.product?.name || 'Product')" class="w-full h-full object-cover" />
                 </div>
                 <div class="flex-grow">
-                  <p class="font-bold text-sm line-clamp-1">{{ decodeHtmlEntities(item.product.name) }}</p>
+                  <p class="font-bold text-sm line-clamp-1">{{ decodeHtmlEntities(item.product?.name || 'Product') }}</p>
                   <p class="text-xs text-muted-foreground">Qty: {{ item.quantity }}</p>
                 </div>
-                <span class="font-bold text-sm">{{ formatCurrency(item.product.price * item.quantity) }}</span>
+                <span class="font-bold text-sm">{{ formatCurrency((item.product?.price || 0) * item.quantity) }}</span>
               </div>
             </div>
 

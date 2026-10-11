@@ -40,8 +40,14 @@ export const useCartStore = defineStore('cart', {
     };
   },
   getters: {
-    totalItems: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
-    totalPrice: (state) => state.items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
+    totalItems: (state) => {
+      const list = Array.isArray(state.items) ? state.items : [];
+      return list.reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0);
+    },
+    totalPrice: (state) => {
+      const list = Array.isArray(state.items) ? state.items : [];
+      return list.reduce((sum, item) => sum + ((Number(item?.product?.price) || 0) * (Number(item?.quantity) || 0)), 0);
+    },
   },
   actions: {
     _isLoggedIn() {
@@ -90,9 +96,11 @@ export const useCartStore = defineStore('cart', {
         const cartService = useCartService();
         try {
           this.isLoading = true;
-          this.items = await cartService.getCartItems();
+          const res = await cartService.getCartItems();
+          this.items = Array.isArray(res) ? res : [];
         } catch (err) {
           useToast().toastError('Failed to load cart items.');
+          this.items = [];
         } finally {
           this.isLoading = false;
         }
