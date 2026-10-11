@@ -7,7 +7,12 @@ import type {
   CreateShippingMethodPayload, 
   UpdateShippingMethodPayload, 
   ShippingMethodQueryParams, 
-  PaginatedShippingMethods 
+  PaginatedShippingMethods,
+  ShippingZone,
+  CreateShippingZonePayload,
+  UpdateShippingZonePayload,
+  ShippingZoneQueryParams,
+  PaginatedShippingZones
 } from '@/types';
 
 export const useShippingService = () => {
@@ -173,12 +178,171 @@ export const useShippingService = () => {
     }
   };
 
+  /**
+   * List shipping zones with optional query parameters.
+   */
+  const getShippingZones = async (params: ShippingZoneQueryParams = {}): Promise<PaginatedShippingZones> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.page && params.page > 0) {
+        queryParams.append('page', params.page.toString());
+      }
+      if (params.page_size && params.page_size > 0) {
+        queryParams.append('page_size', params.page_size.toString());
+      }
+      if (params.search && params.search.trim()) {
+        queryParams.append('search', params.search.trim());
+      }
+      if (params.is_active !== undefined) {
+        queryParams.append('is_active', params.is_active.toString());
+      }
+
+      const queryString = queryParams.toString();
+      const endpoint = queryString ? `/api/v1/shipping/zones/?${queryString}` : '/api/v1/shipping/zones/';
+
+      const data = await apiClient.request<any>(endpoint, {
+        method: 'GET'
+      });
+
+      isLoading.value = false;
+
+      if (data && typeof data === 'object') {
+        if (Array.isArray(data.results)) {
+          return {
+            count: typeof data.count === 'number' ? data.count : data.results.length,
+            next: data.next || null,
+            previous: data.previous || null,
+            results: data.results
+          };
+        } else if (Array.isArray(data)) {
+          return {
+            count: data.length,
+            next: null,
+            previous: null,
+            results: data
+          };
+        }
+      }
+
+      return {
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      };
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve shipping zones.');
+      isLoading.value = false;
+      return {
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      };
+    }
+  };
+
+  /**
+   * Retrieve a specific shipping zone by ID.
+   */
+  const getShippingZone = async (id: number | string): Promise<ShippingZone | null> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<ShippingZone>(`/api/v1/shipping/zones/${id}/`, {
+        method: 'GET'
+      });
+      isLoading.value = false;
+      return data || null;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, `Failed to retrieve shipping zone #${id}.`);
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  /**
+   * Create a new shipping zone.
+   */
+  const createShippingZone = async (payload: CreateShippingZonePayload): Promise<ShippingZone | null> => {
+    isCreating.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<ShippingZone>('/api/v1/shipping/zones/', {
+        method: 'POST',
+        body: payload
+      });
+      isCreating.value = false;
+      return data || null;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to create shipping zone.');
+      isCreating.value = false;
+      throw err;
+    }
+  };
+
+  /**
+   * Update an existing shipping zone (PUT / PATCH).
+   */
+  const updateShippingZone = async (
+    id: number | string, 
+    payload: UpdateShippingZonePayload, 
+    partial = false
+  ): Promise<ShippingZone | null> => {
+    isUpdating.value = true;
+    errorMsg.value = null;
+
+    try {
+      const method = partial ? 'PATCH' : 'PUT';
+      const data = await apiClient.request<ShippingZone>(`/api/v1/shipping/zones/${id}/`, {
+        method,
+        body: payload
+      });
+      isUpdating.value = false;
+      return data || null;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, `Failed to update shipping zone #${id}.`);
+      isUpdating.value = false;
+      throw err;
+    }
+  };
+
+  /**
+   * Delete a shipping zone.
+   */
+  const deleteShippingZone = async (id: number | string): Promise<boolean> => {
+    isDeleting.value = true;
+    errorMsg.value = null;
+
+    try {
+      await apiClient.request(`/api/v1/shipping/zones/${id}/`, {
+        method: 'DELETE'
+      });
+      isDeleting.value = false;
+      return true;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, `Failed to delete shipping zone #${id}.`);
+      isDeleting.value = false;
+      throw err;
+    }
+  };
+
   return {
     getShippingMethods,
     getShippingMethod,
     createShippingMethod,
     updateShippingMethod,
     deleteShippingMethod,
+    getShippingZones,
+    getShippingZone,
+    createShippingZone,
+    updateShippingZone,
+    deleteShippingZone,
     isLoading,
     isCreating,
     isUpdating,
