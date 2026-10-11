@@ -2,8 +2,13 @@
 <script setup lang="ts">
 import { navigateTo } from '#app';
 import { decodeHtmlEntities } from '@/utils';
-import { ChevronRight, CreditCard, ShieldCheck, Truck, PackageCheck, AlertCircle, Smartphone, Banknote } from 'lucide-vue-next';
+import { ChevronRight, CreditCard, ShieldCheck, Truck, PackageCheck, AlertCircle, Smartphone, Banknote, Plus, MapPin, Check, ChevronLeft } from 'lucide-vue-next';
 import { formatCurrency, cn } from '@/utils';
+import { useAuthStore } from '@/stores/auth';
+import { useCartStore } from '@/stores/cart';
+import { useCustomerAddressService } from '@/composables/useCustomerAddressService';
+import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
+import type { CustomerAddress } from '@/types';
 
 useSeoMeta({
   title: 'Checkout',
@@ -12,17 +17,114 @@ useSeoMeta({
 
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const addressService = useCustomerAddressService();
+
 const step = ref(1);
+
+const savedAddresses = ref<CustomerAddress[]>([]);
+const addressPagination = reactive({
+  page: 1,
+  pageSize: 5,
+  count: 0,
+  next: null as string | null,
+  previous: null as string | null
+});
+const isLoadingAddresses = ref(false);
+const showAddAddressForm = ref(false);
+
+const newAddressForm = reactive({
+  address_type: 'BILLING',
+  first_name: '',
+  last_name: '',
+  company: '',
+  address_1: '',
+  address_2: '',
+  city: '',
+  state: '',
+  postcode: '',
+  country: 'Bangladesh',
+  phone: ''
+});
+
+const fetchAddresses = async (page = 1) => {
+  if (!authStore.isLoggedIn) return;
+  isLoadingAddresses.value = true;
+  const res = await addressService.getCustomerAddresses({ page, page_size: addressPagination.pageSize });
+  savedAddresses.value = res.results;
+  addressPagination.count = res.count;
+  addressPagination.next = res.next;
+  addressPagination.previous = res.previous;
+  addressPagination.page = page;
+  isLoadingAddresses.value = false;
+};
 
 onMounted(async () => {
   if (authStore.isLoggedIn) {
     try {
-      await cartStore.fetchCart();
+      await Promise.all([
+        cartStore.fetchCart(),
+        fetchAddresses(1)
+      ]);
+      if (authStore.user?.email && !form.email) {
+        form.email = authStore.user.email;
+      }
+      if (authStore.user?.name && !form.firstName) {
+        const parts = authStore.user.name.split(' ');
+        form.firstName = parts[0] || '';
+        form.lastName = parts.slice(1).join(' ') || '';
+      }
     } catch (err) {
-      console.error('Failed to fetch cart on checkout load', err);
+      console.error('Failed to fetch checkout initialization data', err);
     }
   }
 });
+
+const handleSelectAddress = (addr: CustomerAddress) => {
+  form.firstName = addr.first_name || '';
+  form.lastName = addr.last_name || '';
+  form.city = addr.city || '';
+  if (addr.phone) form.phone = addr.phone;
+  if (addr.address_1) form.address = addr.address_1;
+  if (addr.state) form.state = addr.state;
+  if (addr.postcode) form.zip = addr.postcode;
+  toastSuccess('Saved address applied to shipping details');
+};
+
+const handleCreateAddress = async () => {
+  if (!newAddressForm.first_name || !newAddressForm.last_name || !newAddressForm.address_1 || !newAddressForm.city || !newAddressForm.country || !newAddressForm.phone) {
+    toastError('Please fill in all required address fields.');
+    return;
+  }
+
+  try {
+    await addressService.createCustomerAddress({
+      address_type: newAddressForm.address_type,
+      first_name: newAddressForm.first_name,
+      last_name: newAddressForm.last_name,
+      company: newAddressForm.company,
+      address_1: newAddressForm.address_1,
+      address_2: newAddressForm.address_2,
+      city: newAddressForm.city,
+      state: newAddressForm.state || 'N/A',
+      postcode: newAddressForm.postcode,
+      country: newAddressForm.country,
+      phone: newAddressForm.phone
+    });
+
+    toastSuccess('Address created successfully');
+    showAddAddressForm.value = false;
+    
+    newAddressForm.address_1 = '';
+    newAddressForm.address_2 = '';
+    newAddressForm.company = '';
+    newAddressForm.postcode = '';
+    newAddressForm.state = '';
+
+    await fetchAddresses(1);
+  } catch (err) {
+    handleApiError(err, 'Failed to create address.');
+  }
+};
 
 const form = reactive({
   email: '',
@@ -30,7 +132,9 @@ const form = reactive({
   lastName: '',
   address: '',
   city: '',
+  state: '',
   zip: '',
+  phone: '',
   paymentMethod: 'card', // 'card' | 'mfs' | 'cod'
   cardNumber: '',
   expiry: '',
@@ -44,6 +148,11 @@ const isProcessing = ref(false);
 const orderCompleted = ref(false);
 
 const handlePlaceOrder = () => {
+  if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.phone) {
+    toastError('Please fill in all required shipping fields.');
+    return;
+  }
+
   isProcessing.value = true;
   setTimeout(() => {
     isProcessing.value = false;
@@ -92,26 +201,150 @@ const handlePlaceOrder = () => {
               <Truck class="w-6 h-6 text-primary" />
               Shipping Information
             </h2>
+
+            <!-- Saved Addresses Section (Authenticated Users) -->
+            <div v-if="authStore.isLoggedIn" class="space-y-4 pt-2 pb-6 border-b">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                  <MapPin class="w-4 h-4 text-primary" />
+                  Saved Addresses
+                </h3>
+                <UiButton size="sm" variant="outline" @click="showAddAddressForm = !showAddAddressForm" class="rounded-xl text-xs gap-1.5">
+                  <Plus class="w-3.5 h-3.5" />
+                  {{ showAddAddressForm ? 'Cancel' : 'Add New Address' }}
+                </UiButton>
+              </div>
+
+              <!-- Add Address Form -->
+              <div v-if="showAddAddressForm" class="p-6 bg-muted/40 rounded-2xl border space-y-4 animate-in fade-in duration-300">
+                <h4 class="font-bold text-sm">Create New Address</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Address Type</label>
+                    <select v-model="newAddressForm.address_type" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20">
+                      <option value="BILLING">Billing</option>
+                      <option value="SHIPPING">Shipping</option>
+                    </select>
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Phone *</label>
+                    <input v-model="newAddressForm.phone" type="text" placeholder="01700000000" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">First Name *</label>
+                    <input v-model="newAddressForm.first_name" type="text" placeholder="John" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Last Name *</label>
+                    <input v-model="newAddressForm.last_name" type="text" placeholder="Doe" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div class="sm:col-span-2 space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Street Address 1 *</label>
+                    <input v-model="newAddressForm.address_1" type="text" placeholder="House 12, Road 5, Block C" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div class="sm:col-span-2 space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Street Address 2</label>
+                    <input v-model="newAddressForm.address_2" type="text" placeholder="Apartment, suite, unit (optional)" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">City *</label>
+                    <input v-model="newAddressForm.city" type="text" placeholder="Dhaka" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">State / Region</label>
+                    <input v-model="newAddressForm.state" type="text" placeholder="Dhaka Division" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Postal Code</label>
+                    <input v-model="newAddressForm.postcode" type="text" placeholder="1212" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Country *</label>
+                    <input v-model="newAddressForm.country" type="text" placeholder="Bangladesh" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div class="sm:col-span-2 pt-2">
+                    <UiButton @click="handleCreateAddress" :disabled="addressService.isCreating.value" class="w-full h-10 rounded-xl text-xs font-bold">
+                      {{ addressService.isCreating.value ? 'Saving Address...' : 'Save & Use Address' }}
+                    </UiButton>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Saved Addresses List / Loading / Empty -->
+              <div v-if="isLoadingAddresses" class="py-6 text-center text-xs text-muted-foreground">
+                Loading saved addresses...
+              </div>
+              <div v-else-if="savedAddresses.length === 0" class="py-4 text-xs text-muted-foreground italic">
+                No saved addresses found. You can add one above or fill in the shipping form below.
+              </div>
+              <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
+                <div 
+                  v-for="addr in savedAddresses" 
+                  :key="addr.id" 
+                  @click="handleSelectAddress(addr)"
+                  class="p-3.5 rounded-2xl border bg-card hover:border-primary/50 cursor-pointer transition-all flex flex-col justify-between space-y-2 group"
+                >
+                  <div class="flex items-start justify-between">
+                    <div>
+                      <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-primary/10 text-primary mb-1">
+                        {{ addr.address_type }}
+                      </span>
+                      <p class="font-bold text-xs group-hover:text-primary transition-colors">{{ addr.first_name }} {{ addr.last_name }}</p>
+                    </div>
+                    <span class="text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                      Use <Check class="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                  <div class="text-[11px] text-muted-foreground leading-relaxed">
+                    <p>{{ addr.city }}{{ addr.state ? `, ${addr.state}` : '' }} - {{ addr.country }}</p>
+                    <p v-if="addr.phone">Phone: {{ addr.phone }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pagination for Saved Addresses -->
+              <div v-if="addressPagination.next || addressPagination.previous" class="flex items-center justify-between pt-2 text-xs">
+                <button 
+                  @click="fetchAddresses(addressPagination.page - 1)" 
+                  :disabled="!addressPagination.previous || isLoadingAddresses"
+                  class="px-3 py-1 rounded-lg border bg-background hover:bg-muted disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span class="text-muted-foreground">Page {{ addressPagination.page }}</span>
+                <button 
+                  @click="fetchAddresses(addressPagination.page + 1)" 
+                  :disabled="!addressPagination.next || isLoadingAddresses"
+                  class="px-3 py-1 rounded-lg border bg-background hover:bg-muted disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">First Name</label>
+                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">First Name *</label>
                 <input v-model="form.firstName" type="text" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
               </div>
               <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Last Name</label>
+                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Last Name *</label>
                 <input v-model="form.lastName" type="text" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
               </div>
               <div class="md:col-span-2 space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address</label>
+                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address *</label>
                 <input v-model="form.email" type="email" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
               </div>
               <div class="md:col-span-2 space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Street Address</label>
+                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Phone Number *</label>
+                <input v-model="form.phone" type="text" placeholder="01700000000" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
+              </div>
+              <div class="md:col-span-2 space-y-2">
+                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Street Address *</label>
                 <input v-model="form.address" type="text" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
               </div>
               <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">City</label>
+                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">City *</label>
                 <input v-model="form.city" type="text" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
               </div>
               <div class="space-y-2">

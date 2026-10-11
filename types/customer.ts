@@ -44,3 +44,46 @@ export interface CustomerProfileEntity {
   status: 'active' | 'inactive' | 'blocked';
 }
 
+export type AddressType = 'BILLING' | 'SHIPPING' | string;
+
+export interface CustomerAddress {
+  id: number;
+  address_type: AddressType;
+  first_name: string;
+  last_name: string;
+  phone?: string | null;
+  city: string;
+  state?: string | null;
+  country: string;
+  created_at?: string;
+  company?: string | null;
+  address_1?: string | null;
+  address_2?: string | null;
+  postcode?: string | null;
+}
+
+export interface PaginatedCustomerAddresses {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: CustomerAddress[];
+}
+
+export interface CustomerAddressQueryParams {
+  page?: number;
+  page_size?: number;
+}
+
+export interface CreateCustomerAddressPayload {
+  address_type: string;
+  first_name: string;
+  last_name: string;
+  company?: string;
+  address_1: string;
+  address_2?: string;
+  city: string;
+  state: string;
+  postcode: string;
+  country: string;
+  phone: string;
+}
