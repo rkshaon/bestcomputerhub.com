@@ -2,7 +2,8 @@
 import type { Product } from './product';
 
 export interface CartItem {
-  productId: string;
+  id?: string | number;
+  productId?: string | number;
   quantity: number;
   product: Product;
 }

@@ -3,59 +3,184 @@ import { defineStore } from 'pinia';
 import type { Product, CartItem } from '@/types';
 import { useCartService } from '@/composables/useCartService';
 import { useToast } from '@/composables/useToast';
+import { useAuthStore } from '@/stores/auth';
+
+const GUEST_CART_STORAGE_KEY = 'techcore_guest_cart';
 
 export const useCartStore = defineStore('cart', {
-  state: () => ({
-    items: [] as CartItem[],
-    isLoading: false,
-  }),
+  state: () => {
+    let initialItems: CartItem[] = [];
+    if (typeof window !== 'undefined' || import.meta.client) {
+      try {
+        const authStore = useAuthStore();
+        if (!authStore.isLoggedIn) {
+          const raw = localStorage.getItem(GUEST_CART_STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              initialItems = parsed.filter((item: any) =>
+                item &&
+                item.product &&
+                item.product.id !== undefined &&
+                typeof item.product.price === 'number' &&
+                Number.isInteger(item.quantity) &&
+                item.quantity > 0
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load guest cart from localStorage during initialization', err);
+      }
+    }
+
+    return {
+      items: initialItems,
+      isLoading: false,
+    };
+  },
   getters: {
     totalItems: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
     totalPrice: (state) => state.items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
   },
   actions: {
+    _isLoggedIn() {
+      const authStore = useAuthStore();
+      return authStore.isLoggedIn;
+    },
+
+    _loadGuestCart() {
+      if (typeof window === 'undefined' && !import.meta.client) return;
+      try {
+        const raw = localStorage.getItem(GUEST_CART_STORAGE_KEY);
+        if (!raw) {
+          this.items = [];
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          this.items = parsed.filter((item: any) =>
+            item &&
+            item.product &&
+            item.product.id !== undefined &&
+            typeof item.product.price === 'number' &&
+            Number.isInteger(item.quantity) &&
+            item.quantity > 0
+          );
+        } else {
+          this.items = [];
+        }
+      } catch (err) {
+        console.error('Failed to parse guest cart from localStorage', err);
+        this.items = [];
+      }
+    },
+
+    _saveGuestCart() {
+      if (typeof window === 'undefined' && !import.meta.client) return;
+      try {
+        localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(this.items));
+      } catch (err) {
+        console.error('Failed to save guest cart to localStorage', err);
+      }
+    },
+
     async fetchCart() {
-      const cartService = useCartService();
-      try {
-        this.items = await cartService.getCartItems();
-      } catch (err) {
-        useToast().toastError('Failed to load cart items.');
+      if (this._isLoggedIn()) {
+        const cartService = useCartService();
+        try {
+          this.isLoading = true;
+          this.items = await cartService.getCartItems();
+        } catch (err) {
+          useToast().toastError('Failed to load cart items.');
+        } finally {
+          this.isLoading = false;
+        }
+      } else {
+        this._loadGuestCart();
       }
     },
+
     async addToCart(product: Product, quantity = 1) {
-      const cartService = useCartService();
-      try {
-        this.isLoading = true;
-        await cartService.addToCart(Number(product.id), quantity);
-        await this.fetchCart();
+      const qty = Math.max(1, Math.floor(Number(quantity) || 1));
+      if (this._isLoggedIn()) {
+        const cartService = useCartService();
+        try {
+          this.isLoading = true;
+          await cartService.addToCart(Number(product.id), qty);
+          await this.fetchCart();
+          useToast().toastSuccess('Item added to cart.');
+        } catch (err) {
+          useToast().toastError('Failed to add item to cart.');
+        } finally {
+          this.isLoading = false;
+        }
+      } else {
+        this._loadGuestCart();
+        const existingIndex = this.items.findIndex(i => String(i.product.id) === String(product.id) || String(i.productId) === String(product.id));
+        if (existingIndex > -1 && this.items[existingIndex]) {
+          this.items[existingIndex]!.quantity += qty;
+        } else {
+          this.items.push({ productId: String(product.id), product, quantity: qty });
+        }
+        this._saveGuestCart();
         useToast().toastSuccess('Item added to cart.');
-      } catch (err) {
-        useToast().toastError('Failed to add item to cart.');
-      } finally {
-        this.isLoading = false;
       }
     },
-    async removeFromCart(itemId: number) {
-      const cartService = useCartService();
-      try {
-        await cartService.removeFromCart(itemId);
-        await this.fetchCart();
+
+    async removeFromCart(itemId: number | string) {
+      if (this._isLoggedIn()) {
+        const cartService = useCartService();
+        try {
+          this.isLoading = true;
+          await cartService.removeFromCart(Number(itemId));
+          await this.fetchCart();
+          useToast().toastSuccess('Item removed from cart.');
+        } catch (err) {
+          useToast().toastError('Failed to remove item from cart.');
+        } finally {
+          this.isLoading = false;
+        }
+      } else {
+        this._loadGuestCart();
+        this.items = this.items.filter(i => String(i.product.id) !== String(itemId) && String(i.productId) !== String(itemId));
+        this._saveGuestCart();
         useToast().toastSuccess('Item removed from cart.');
-      } catch (err) {
-        useToast().toastError('Failed to remove item from cart.');
       }
     },
-    async updateQuantity(itemId: number, quantity: number) {
-      const cartService = useCartService();
-      try {
-        await cartService.updateCartItem(itemId, quantity);
-        await this.fetchCart();
-      } catch (err) {
-        useToast().toastError('Failed to update quantity.');
+
+    async updateQuantity(itemId: number | string, quantity: number) {
+      const qty = Math.max(1, Math.floor(Number(quantity) || 1));
+      if (this._isLoggedIn()) {
+        const cartService = useCartService();
+        try {
+          this.isLoading = true;
+          await cartService.updateCartItem(Number(itemId), qty);
+          await this.fetchCart();
+        } catch (err) {
+          useToast().toastError('Failed to update quantity.');
+        } finally {
+          this.isLoading = false;
+        }
+      } else {
+        this._loadGuestCart();
+        const item = this.items.find(i => String(i.product.id) === String(itemId) || String(i.productId) === String(itemId));
+        if (item) {
+          item.quantity = qty;
+          this._saveGuestCart();
+        }
       }
     },
+
     clearCart() {
       this.items = [];
+      if (!this._isLoggedIn()) {
+        if (typeof window !== 'undefined' || import.meta.client) {
+          try {
+            localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+          } catch {}
+        }
+      }
     }
   },
 });
