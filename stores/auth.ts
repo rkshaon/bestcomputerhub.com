@@ -192,9 +192,9 @@ export const useAuthStore = defineStore('auth', {
             await this.fetchUserProfile(token);
             try {
               const cartStore = useCartStore();
-              await cartStore.fetchCart();
+              await cartStore.mergeGuestCartToBackend();
             } catch (cartErr) {
-              console.error('Failed to fetch user cart after login', cartErr);
+              console.error('Failed to merge guest cart after login', cartErr);
             }
           } catch (profileErr: any) {
             // If fetching authoritative user profile fails, clear stored credentials to avoid partial/inconsistent state

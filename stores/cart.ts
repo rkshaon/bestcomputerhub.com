@@ -185,6 +185,93 @@ export const useCartStore = defineStore('cart', {
 
     clearAuthCart() {
       this.items = [];
+    },
+
+    async mergeGuestCartToBackend() {
+      if (!this._isLoggedIn()) return;
+      if (typeof window === 'undefined' && !import.meta.client) return;
+
+      try {
+        const raw = localStorage.getItem(GUEST_CART_STORAGE_KEY);
+        if (!raw) return;
+
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+          localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+          return;
+        }
+
+        const guestItems = parsed.filter((item: any) =>
+          item &&
+          item.product &&
+          item.product.id !== undefined &&
+          typeof item.product.price === 'number' &&
+          Number.isInteger(item.quantity) &&
+          item.quantity > 0
+        );
+
+        if (guestItems.length === 0) {
+          localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+          return;
+        }
+
+        const cartService = useCartService();
+        this.isLoading = true;
+
+        let backendItems: CartItem[] = [];
+        try {
+          backendItems = await cartService.getCartItems();
+        } catch (err) {
+          console.error('Failed to fetch backend cart items during merge', err);
+          this.isLoading = false;
+          return;
+        }
+
+        let hasError = false;
+
+        for (const guestItem of guestItems) {
+          const productId = Number(guestItem.product.id || guestItem.productId);
+          const guestQty = Number(guestItem.quantity);
+          if (!productId || isNaN(productId) || guestQty <= 0) continue;
+
+          const existingBackendItem = backendItems.find(
+            bi => bi && bi.product && String(bi.product.id) === String(productId)
+          );
+
+          try {
+            if (existingBackendItem && existingBackendItem.id !== undefined) {
+              const newQty = Number(existingBackendItem.quantity || 0) + guestQty;
+              await cartService.updateCartItem(Number(existingBackendItem.id), newQty);
+              existingBackendItem.quantity = newQty;
+            } else {
+              await cartService.addToCart(productId, guestQty);
+              backendItems.push({
+                id: Date.now(),
+                product: guestItem.product,
+                quantity: guestQty
+              });
+            }
+          } catch (itemErr) {
+            console.error(`Failed to merge product ${productId} to backend cart`, itemErr);
+            hasError = true;
+          }
+        }
+
+        await this.fetchCart();
+
+        if (!hasError) {
+          localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+          useToast().toastSuccess('Guest cart successfully merged to your account.');
+        } else {
+          useToast().toastWarning('Some guest cart items could not be fully merged. Guest cart retained.');
+        }
+      } catch (err) {
+        console.error('Error during guest cart merge', err);
+        useToast().toastError('Failed to synchronize guest cart.');
+      } finally {
+        this.isLoading = false;
+      }
     }
   },
 });
+
