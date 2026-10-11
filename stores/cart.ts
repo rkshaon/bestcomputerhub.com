@@ -181,6 +181,10 @@ export const useCartStore = defineStore('cart', {
           } catch {}
         }
       }
+    },
+
+    clearAuthCart() {
+      this.items = [];
     }
   },
 });

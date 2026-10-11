@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia';
 import { useCookie, navigateTo, callWithNuxt, useNuxtApp } from '#app';
 import { useApiClient } from '@/composables/useApiClient';
+import { useCartStore } from '@/stores/cart';
 import type { User, Customer, RegisterPayload, LoginPayload, LoginResponse, UserProfileResponse } from '@/types';
 
 function parseJwt(token: string) {
@@ -189,6 +190,12 @@ export const useAuthStore = defineStore('auth', {
           // Retrieve authoritative user profile via GET /api/v1/users/me/
           try {
             await this.fetchUserProfile(token);
+            try {
+              const cartStore = useCartStore();
+              await cartStore.fetchCart();
+            } catch (cartErr) {
+              console.error('Failed to fetch user cart after login', cartErr);
+            }
           } catch (profileErr: any) {
             // If fetching authoritative user profile fails, clear stored credentials to avoid partial/inconsistent state
             const accessTokenCookie = useCookie<string | null>('access_token', { path: '/' });
@@ -258,6 +265,12 @@ export const useAuthStore = defineStore('auth', {
           // Fall through so local session is cleared even if server-side checkout fails
           console.error('Logout request failed on server', err);
         } finally {
+          // Clear authenticated cart state immediately without destroying guest cart localStorage
+          try {
+            const cartStore = useCartStore();
+            cartStore.clearAuthCart();
+          } catch {}
+
           // Clear all local auth state and persistent cookies
           this.user = null;
           this.isLoggedIn = false;
