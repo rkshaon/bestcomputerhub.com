@@ -1,7 +1,7 @@
 <!-- File: /pages/reset-password.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { Lock, ArrowRight, Loader2, CheckCircle2, AlertTriangle } from 'lucide-vue-next';
+import { Lock, ArrowRight, Loader2, CheckCircle2, AlertTriangle, Eye, EyeOff } from 'lucide-vue-next';
 import { useApiClient } from '@/composables/useApiClient';
 import { useToast } from '@/composables/useToast';
 import type { PasswordResetConfirmPayload } from '@/types';
@@ -15,6 +15,8 @@ const uid = route.query.uid as string;
 const token = route.query.token as string;
 const password = ref('');
 const confirmPassword = ref('');
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 const isLoading = ref(false);
 const isSuccess = ref(false);
 const error = ref('');
@@ -100,12 +102,52 @@ const handleResetConfirm = async () => {
 
           <div class="space-y-2">
             <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">New Password</label>
-            <input v-model="password" type="password" class="w-full h-14 bg-muted/30 border border-border/50 rounded-2xl px-4 outline-none" required />
+            <div class="relative group">
+              <div class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                <Lock class="w-4 h-4" />
+              </div>
+              <input 
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="••••••••"
+                class="w-full h-14 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-12 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium"
+                required 
+              />
+              <button 
+                type="button"
+                @click="showPassword = !showPassword"
+                :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Eye v-if="!showPassword" class="w-4 h-4" />
+                <EyeOff v-else class="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div class="space-y-2">
             <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Confirm New Password</label>
-            <input v-model="confirmPassword" type="password" class="w-full h-14 bg-muted/30 border border-border/50 rounded-2xl px-4 outline-none" required />
+            <div class="relative group">
+              <div class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                <Lock class="w-4 h-4" />
+              </div>
+              <input 
+                v-model="confirmPassword"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                placeholder="••••••••"
+                class="w-full h-14 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-12 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium"
+                required 
+              />
+              <button 
+                type="button"
+                @click="showConfirmPassword = !showConfirmPassword"
+                :aria-label="showConfirmPassword ? 'Hide password' : 'Show password'"
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Eye v-if="!showConfirmPassword" class="w-4 h-4" />
+                <EyeOff v-else class="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <UiButton type="submit" class="w-full h-14 rounded-2xl font-bold" :disabled="isLoading">
