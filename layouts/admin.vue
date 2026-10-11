@@ -32,7 +32,8 @@ import {
   Terminal,
   Image as ImageIcon,
   ImagePlus,
-  FileText
+  FileText,
+  Truck
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
@@ -82,6 +83,7 @@ const navigation = [
   { name: 'Blog Posts', iconKey: 'FileText', href: '/admin/blog/posts' },
   { name: 'Inventory', iconKey: 'Boxes', href: '/admin/inventory' },
   { name: 'Orders', iconKey: 'ShoppingCart', href: '/admin/orders' },
+  { name: 'Shipping Methods', iconKey: 'Truck', href: '/admin/shipping/methods/' },
   { name: 'Customers', iconKey: 'Users', href: '/admin/customers' },
   { name: 'Users & Staff', iconKey: 'ShieldCheck', href: '/admin/users' },
   { name: 'Roles', iconKey: 'ShieldAlert', href: '/admin/roles' },
@@ -124,7 +126,8 @@ const iconMap = {
   UserIcon,
   Globe,
   Terminal,
-  FileText
+  FileText,
+  Truck
 };
 
 const toggleSidebar = () => {

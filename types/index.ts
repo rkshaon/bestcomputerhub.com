@@ -14,3 +14,4 @@ export * from './user';
 export * from './content-security';
 export * from './request-log';
 export * from './banner';
+export * from './shipping';

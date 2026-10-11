@@ -1,0 +1,188 @@
+// File: /composables/useShippingService.ts
+import { ref } from 'vue';
+import { useApiClient } from './useApiClient';
+import { extractErrorMessage } from './useToast';
+import type { 
+  ShippingMethod, 
+  CreateShippingMethodPayload, 
+  UpdateShippingMethodPayload, 
+  ShippingMethodQueryParams, 
+  PaginatedShippingMethods 
+} from '@/types';
+
+export const useShippingService = () => {
+  const apiClient = useApiClient();
+
+  const isLoading = ref(false);
+  const isCreating = ref(false);
+  const isUpdating = ref(false);
+  const isDeleting = ref(false);
+  const errorMsg = ref<string | null>(null);
+
+  /**
+   * List shipping methods with optional query parameters.
+   */
+  const getShippingMethods = async (params: ShippingMethodQueryParams = {}): Promise<PaginatedShippingMethods> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.page && params.page > 0) {
+        queryParams.append('page', params.page.toString());
+      }
+      if (params.page_size && params.page_size > 0) {
+        queryParams.append('page_size', params.page_size.toString());
+      }
+      if (params.search && params.search.trim()) {
+        queryParams.append('search', params.search.trim());
+      }
+      if (params.is_active !== undefined) {
+        queryParams.append('is_active', params.is_active.toString());
+      }
+
+      const queryString = queryParams.toString();
+      const endpoint = queryString ? `/api/v1/shipping/methods/?${queryString}` : '/api/v1/shipping/methods/';
+
+      const data = await apiClient.request<any>(endpoint, {
+        method: 'GET'
+      });
+
+      isLoading.value = false;
+
+      if (data && typeof data === 'object') {
+        if (Array.isArray(data.results)) {
+          return {
+            count: typeof data.count === 'number' ? data.count : data.results.length,
+            next: data.next || null,
+            previous: data.previous || null,
+            results: data.results
+          };
+        } else if (Array.isArray(data)) {
+          return {
+            count: data.length,
+            next: null,
+            previous: null,
+            results: data
+          };
+        }
+      }
+
+      return {
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      };
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve shipping methods.');
+      isLoading.value = false;
+      return {
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      };
+    }
+  };
+
+  /**
+   * Retrieve a specific shipping method by ID.
+   */
+  const getShippingMethod = async (id: number | string): Promise<ShippingMethod | null> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<ShippingMethod>(`/api/v1/shipping/methods/${id}/`, {
+        method: 'GET'
+      });
+      isLoading.value = false;
+      return data || null;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, `Failed to retrieve shipping method #${id}.`);
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  /**
+   * Create a new shipping method.
+   */
+  const createShippingMethod = async (payload: CreateShippingMethodPayload): Promise<ShippingMethod | null> => {
+    isCreating.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<ShippingMethod>('/api/v1/shipping/methods/', {
+        method: 'POST',
+        body: payload
+      });
+      isCreating.value = false;
+      return data || null;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to create shipping method.');
+      isCreating.value = false;
+      throw err;
+    }
+  };
+
+  /**
+   * Update an existing shipping method (PUT / PATCH).
+   */
+  const updateShippingMethod = async (
+    id: number | string, 
+    payload: UpdateShippingMethodPayload, 
+    partial = false
+  ): Promise<ShippingMethod | null> => {
+    isUpdating.value = true;
+    errorMsg.value = null;
+
+    try {
+      const method = partial ? 'PATCH' : 'PUT';
+      const data = await apiClient.request<ShippingMethod>(`/api/v1/shipping/methods/${id}/`, {
+        method,
+        body: payload
+      });
+      isUpdating.value = false;
+      return data || null;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, `Failed to update shipping method #${id}.`);
+      isUpdating.value = false;
+      throw err;
+    }
+  };
+
+  /**
+   * Delete a shipping method.
+   */
+  const deleteShippingMethod = async (id: number | string): Promise<boolean> => {
+    isDeleting.value = true;
+    errorMsg.value = null;
+
+    try {
+      await apiClient.request(`/api/v1/shipping/methods/${id}/`, {
+        method: 'DELETE'
+      });
+      isDeleting.value = false;
+      return true;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, `Failed to delete shipping method #${id}.`);
+      isDeleting.value = false;
+      throw err;
+    }
+  };
+
+  return {
+    getShippingMethods,
+    getShippingMethod,
+    createShippingMethod,
+    updateShippingMethod,
+    deleteShippingMethod,
+    isLoading,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    errorMsg
+  };
+};
