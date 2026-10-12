@@ -110,3 +110,13 @@ export interface PaginatedShippingRates {
   previous: string | null;
   results: ShippingRate[];
 }
+
+export interface ShippingOption {
+  id: number | string;
+  name: string;
+  description?: string | null;
+  shipping_charge: number | string;
+  estimated_delivery?: string | null;
+  method_id?: number | string;
+}
+

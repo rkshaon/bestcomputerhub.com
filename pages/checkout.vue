@@ -1,14 +1,16 @@
 <!-- File: /pages/checkout.vue -->
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
 import { navigateTo } from '#app';
 import { decodeHtmlEntities } from '@/utils';
-import { ChevronRight, CreditCard, ShieldCheck, Truck, PackageCheck, AlertCircle, Smartphone, Banknote, Plus, MapPin, Check, ChevronLeft } from 'lucide-vue-next';
+import { ChevronRight, CreditCard, ShieldCheck, Truck, PackageCheck, AlertCircle, Smartphone, Banknote, Plus, MapPin, Check, ChevronLeft, Loader2 } from 'lucide-vue-next';
 import { formatCurrency, cn } from '@/utils';
 import { useAuthStore } from '@/stores/auth';
 import { useCartStore } from '@/stores/cart';
 import { useCustomerAddressService } from '@/composables/useCustomerAddressService';
+import { useShippingService } from '@/composables/useShippingService';
 import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
-import type { CustomerAddress } from '@/types';
+import type { CustomerAddress, ShippingOption } from '@/types';
 
 useSeoMeta({
   title: 'Checkout',
@@ -18,6 +20,7 @@ useSeoMeta({
 const cartStore = useCartStore();
 const authStore = useAuthStore();
 const addressService = useCustomerAddressService();
+const shippingService = useShippingService();
 
 const step = ref(1);
 
@@ -31,6 +34,11 @@ const addressPagination = reactive({
 });
 const isLoadingAddresses = ref(false);
 const showAddAddressForm = ref(false);
+
+const shippingOptions = ref<ShippingOption[]>([]);
+const selectedShippingOption = ref<ShippingOption | null>(null);
+const isLoadingShippingOptions = ref(false);
+const selectedAddressId = ref<number | string | null>(null);
 
 const newAddressForm = reactive({
   address_type: 'BILLING',
@@ -56,6 +64,24 @@ const fetchAddresses = async (page = 1) => {
   addressPagination.previous = res.previous;
   addressPagination.page = page;
   isLoadingAddresses.value = false;
+};
+
+const fetchShippingOptions = async (addressId: number | string) => {
+  selectedAddressId.value = addressId;
+  selectedShippingOption.value = null;
+  isLoadingShippingOptions.value = true;
+  try {
+    const opts = await shippingService.getShippingOptions(addressId);
+    shippingOptions.value = opts;
+    if (opts.length > 0) {
+      selectedShippingOption.value = opts[0];
+    }
+  } catch (err) {
+    shippingOptions.value = [];
+    handleApiError(err, 'Failed to fetch shipping options.');
+  } finally {
+    isLoadingShippingOptions.value = false;
+  }
 };
 
 onMounted(async () => {
@@ -88,6 +114,9 @@ const handleSelectAddress = (addr: CustomerAddress) => {
   if (addr.state) form.state = addr.state;
   if (addr.postcode) form.zip = addr.postcode;
   toastSuccess('Saved address applied to shipping details');
+  if (addr.id) {
+    fetchShippingOptions(addr.id);
+  }
 };
 
 const handleCreateAddress = async () => {
@@ -97,7 +126,7 @@ const handleCreateAddress = async () => {
   }
 
   try {
-    await addressService.createCustomerAddress({
+    const created = await addressService.createCustomerAddress({
       address_type: newAddressForm.address_type,
       first_name: newAddressForm.first_name,
       last_name: newAddressForm.last_name,
@@ -121,6 +150,10 @@ const handleCreateAddress = async () => {
     newAddressForm.state = '';
 
     await fetchAddresses(1);
+
+    if (created && created.id) {
+      handleSelectAddress(created);
+    }
   } catch (err) {
     handleApiError(err, 'Failed to create address.');
   }
@@ -144,12 +177,27 @@ const form = reactive({
   mfsTransactionId: ''
 });
 
+const shippingChargeValue = computed(() => {
+  if (selectedShippingOption.value && selectedShippingOption.value.shipping_charge !== undefined) {
+    return Number(selectedShippingOption.value.shipping_charge) || 0;
+  }
+  return 0;
+});
+
+const totalDue = computed(() => {
+  return cartStore.totalPrice + shippingChargeValue.value;
+});
+
 const isProcessing = ref(false);
 const orderCompleted = ref(false);
 
 const handlePlaceOrder = () => {
   if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.phone) {
     toastError('Please fill in all required shipping fields.');
+    return;
+  }
+  if (selectedAddressId.value && shippingOptions.value.length > 0 && !selectedShippingOption.value) {
+    toastError('Please select a shipping option.');
     return;
   }
 
@@ -282,7 +330,10 @@ const handlePlaceOrder = () => {
                   v-for="addr in savedAddresses" 
                   :key="addr.id" 
                   @click="handleSelectAddress(addr)"
-                  class="p-3.5 rounded-2xl border bg-card hover:border-primary/50 cursor-pointer transition-all flex flex-col justify-between space-y-2 group"
+                  :class="cn(
+                    'p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-2 group',
+                    selectedAddressId === addr.id ? 'border-primary bg-primary/5 shadow-sm' : 'bg-card hover:border-primary/50'
+                  )"
                 >
                   <div class="flex items-start justify-between">
                     <div>
@@ -319,6 +370,46 @@ const handlePlaceOrder = () => {
                 >
                   Next
                 </button>
+              </div>
+            </div>
+
+            <!-- Shipping Options Selection Section -->
+            <div v-if="selectedAddressId" class="space-y-4 pt-2 pb-6 border-b">
+              <h3 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                <Truck class="w-4 h-4 text-primary" />
+                Available Shipping Options
+              </h3>
+
+              <div v-if="isLoadingShippingOptions" class="py-6 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                <Loader2 class="w-4 h-4 animate-spin text-primary" />
+                Loading shipping options...
+              </div>
+              <div v-else-if="shippingOptions.length === 0" class="py-4 text-xs text-muted-foreground italic">
+                No shipping options available for this delivery address.
+              </div>
+              <div v-else class="grid grid-cols-1 gap-3">
+                <div 
+                  v-for="opt in shippingOptions"
+                  :key="opt.id"
+                  @click="selectedShippingOption = opt"
+                  :class="cn(
+                    'p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between',
+                    selectedShippingOption?.id === opt.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/30 bg-card'
+                  )"
+                >
+                  <div class="space-y-1">
+                    <p class="font-bold text-xs flex items-center gap-2">
+                      {{ opt.name }}
+                      <span v-if="opt.estimated_delivery" class="text-[10px] font-normal text-muted-foreground">({{ opt.estimated_delivery }})</span>
+                    </p>
+                    <p v-if="opt.description" class="text-[11px] text-muted-foreground">{{ opt.description }}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-bold text-sm text-primary">
+                      {{ Number(opt.shipping_charge) === 0 ? 'FREE' : formatCurrency(Number(opt.shipping_charge)) }}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -453,7 +544,7 @@ const handlePlaceOrder = () => {
                   <div class="space-y-1">
                     <p class="font-bold">Cash payment upon delivery</p>
                     <p class="text-xs text-muted-foreground leading-relaxed">
-                      Please keep the exact amount ({{ formatCurrency(cartStore.totalPrice) }}) ready for our delivery partner.
+                      Please keep the exact amount ({{ formatCurrency(totalDue) }}) ready for our delivery partner.
                     </p>
                   </div>
                 </div>
@@ -462,7 +553,7 @@ const handlePlaceOrder = () => {
 
             <UiButton class="w-full h-14 rounded-2xl text-lg font-bold gap-2" @click="handlePlaceOrder" :disabled="isProcessing">
               <ShieldCheck class="w-5 h-5" v-if="!isProcessing" />
-              {{ isProcessing ? 'Authorizing Transaction...' : `Pay ${formatCurrency(cartStore.totalPrice)}` }}
+              {{ isProcessing ? 'Authorizing Transaction...' : `Pay ${formatCurrency(totalDue)}` }}
             </UiButton>
           </div>
         </div>
@@ -490,8 +581,10 @@ const handlePlaceOrder = () => {
                 <span>{{ formatCurrency(cartStore.totalPrice) }}</span>
               </div>
               <div class="flex justify-between text-sm">
-                <span class="text-muted-foreground">Shipping (Global Express)</span>
-                <span class="text-green-600 font-bold">FREE</span>
+                <span class="text-muted-foreground">Shipping ({{ selectedShippingOption?.name || 'Standard' }})</span>
+                <span :class="shippingChargeValue === 0 ? 'text-green-600 font-bold' : 'font-bold'">
+                  {{ shippingChargeValue === 0 ? 'FREE' : formatCurrency(shippingChargeValue) }}
+                </span>
               </div>
               <div class="flex justify-between text-sm">
                 <span class="text-muted-foreground">Estimated Tax</span>
@@ -499,14 +592,14 @@ const handlePlaceOrder = () => {
               </div>
               <div class="flex justify-between text-xl font-display font-bold pt-4 text-primary">
                 <span>Total Due</span>
-                <span>{{ formatCurrency(cartStore.totalPrice) }}</span>
+                <span>{{ formatCurrency(totalDue) }}</span>
               </div>
             </div>
 
             <div class="mt-8 p-4 bg-primary/5 rounded-2xl flex items-start gap-3">
               <PackageCheck class="w-5 h-5 text-primary mt-1" />
               <p class="text-xs text-primary/80 leading-relaxed font-medium">
-                Your order is eligible for **Priority Tech Handling**. Expected delivery within 72 hours via Global Express.
+                Your order is eligible for **Priority Tech Handling**. Expected delivery within 72 hours via {{ selectedShippingOption?.name || 'Global Express' }}.
               </p>
             </div>
           </div>

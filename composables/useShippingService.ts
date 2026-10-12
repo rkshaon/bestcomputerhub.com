@@ -17,7 +17,8 @@ import type {
   CreateShippingRatePayload,
   UpdateShippingRatePayload,
   ShippingRateQueryParams,
-  PaginatedShippingRates
+  PaginatedShippingRates,
+  ShippingOption
 } from '@/types';
 
 export const useShippingService = () => {
@@ -497,6 +498,37 @@ export const useShippingService = () => {
     }
   };
 
+  /**
+   * Get available shipping options for a given customer address ID.
+   * Endpoint: GET /api/v1/shipping/options/?address_id={address_id}
+   */
+  const getShippingOptions = async (addressId: number | string): Promise<ShippingOption[]> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<any>(`/api/v1/shipping/options/?address_id=${addressId}`, {
+        method: 'GET'
+      });
+      isLoading.value = false;
+
+      if (data && typeof data === 'object') {
+        if (Array.isArray(data.options)) {
+          return data.options;
+        } else if (Array.isArray(data.results)) {
+          return data.results;
+        } else if (Array.isArray(data)) {
+          return data;
+        }
+      }
+      return [];
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve shipping options.');
+      isLoading.value = false;
+      return [];
+    }
+  };
+
   return {
     getShippingMethods,
     getShippingMethod,
@@ -513,6 +545,7 @@ export const useShippingService = () => {
     createShippingRate,
     updateShippingRate,
     deleteShippingRate,
+    getShippingOptions,
     isLoading,
     isCreating,
     isUpdating,
