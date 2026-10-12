@@ -380,7 +380,7 @@ const tableColumns: UiTableColumn[] = [
             <div class="flex items-center justify-end gap-1.5">
               <button 
                 v-if="canEdit"
-                @click="modalState.openModal(item)" 
+                @click="modalState.openEdit(item.id)" 
                 class="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 title="Edit Method"
                 aria-label="Edit Method"
