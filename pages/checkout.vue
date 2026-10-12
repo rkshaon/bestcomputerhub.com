@@ -191,12 +191,63 @@ const totalDue = computed(() => {
 const isProcessing = ref(false);
 const orderCompleted = ref(false);
 
+const handleSaveFormAsAddress = async () => {
+  if (!form.firstName || !form.lastName || !form.address || !form.city || !form.phone) {
+    toastError('Please fill in all required shipping fields (Name, Address, City, Phone).');
+    return;
+  }
+
+  try {
+    const created = await addressService.createCustomerAddress({
+      address_type: 'SHIPPING',
+      first_name: form.firstName,
+      last_name: form.lastName,
+      address_1: form.address,
+      city: form.city,
+      state: form.state || 'N/A',
+      postcode: form.zip || '',
+      country: 'Bangladesh',
+      phone: form.phone
+    });
+
+    toastSuccess('Shipping address saved successfully');
+    await fetchAddresses(1);
+
+    if (created && created.id) {
+      selectedAddressId.value = created.id;
+      await fetchShippingOptions(created.id);
+    }
+  } catch (err) {
+    handleApiError(err, 'Failed to save address for shipping calculation.');
+  }
+};
+
+const proceedToPayment = () => {
+  if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.phone) {
+    toastError('Please fill in all required shipping fields.');
+    return;
+  }
+  if (!selectedAddressId.value) {
+    toastError('Please save your shipping address and select a delivery option first.');
+    return;
+  }
+  if (shippingOptions.value.length > 0 && !selectedShippingOption.value) {
+    toastError('Please select a shipping option.');
+    return;
+  }
+  step.value = 2;
+};
+
 const handlePlaceOrder = () => {
   if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.phone) {
     toastError('Please fill in all required shipping fields.');
     return;
   }
-  if (selectedAddressId.value && shippingOptions.value.length > 0 && !selectedShippingOption.value) {
+  if (!selectedAddressId.value) {
+    toastError('Please save your shipping address and select a delivery option.');
+    return;
+  }
+  if (shippingOptions.value.length > 0 && !selectedShippingOption.value) {
     toastError('Please select a shipping option.');
     return;
   }
@@ -444,7 +495,14 @@ const handlePlaceOrder = () => {
               </div>
             </div>
 
-            <UiButton class="w-full h-14 rounded-2xl text-lg font-bold" @click="step = 2">
+            <div v-if="authStore.isLoggedIn" class="pt-2">
+              <UiButton @click="handleSaveFormAsAddress" :disabled="addressService.isCreating.value" variant="outline" class="w-full h-12 rounded-2xl text-xs font-bold gap-2">
+                <MapPin class="w-4 h-4 text-primary" />
+                {{ addressService.isCreating.value ? 'Saving & Calculating...' : 'Save Address & Calculate Shipping Options' }}
+              </UiButton>
+            </div>
+
+            <UiButton class="w-full h-14 rounded-2xl text-lg font-bold" @click="proceedToPayment">
               Continue to Payment
             </UiButton>
           </div>
@@ -581,9 +639,9 @@ const handlePlaceOrder = () => {
                 <span>{{ formatCurrency(cartStore.totalPrice) }}</span>
               </div>
               <div class="flex justify-between text-sm">
-                <span class="text-muted-foreground">Shipping ({{ selectedShippingOption?.name || 'Standard' }})</span>
-                <span :class="shippingChargeValue === 0 ? 'text-green-600 font-bold' : 'font-bold'">
-                  {{ shippingChargeValue === 0 ? 'FREE' : formatCurrency(shippingChargeValue) }}
+                <span class="text-muted-foreground">Shipping ({{ selectedShippingOption?.name || 'Pending' }})</span>
+                <span :class="selectedShippingOption ? (shippingChargeValue === 0 ? 'text-green-600 font-bold' : 'font-bold') : 'text-muted-foreground font-normal text-xs'">
+                  {{ selectedShippingOption ? (shippingChargeValue === 0 ? 'FREE' : formatCurrency(shippingChargeValue)) : 'Select address & option' }}
                 </span>
               </div>
               <div class="flex justify-between text-sm">
@@ -596,10 +654,16 @@ const handlePlaceOrder = () => {
               </div>
             </div>
 
-            <div class="mt-8 p-4 bg-primary/5 rounded-2xl flex items-start gap-3">
+            <div v-if="selectedShippingOption" class="mt-8 p-4 bg-primary/5 rounded-2xl flex items-start gap-3">
               <PackageCheck class="w-5 h-5 text-primary mt-1" />
               <p class="text-xs text-primary/80 leading-relaxed font-medium">
-                Your order is eligible for **Priority Tech Handling**. Expected delivery within 72 hours via {{ selectedShippingOption?.name || 'Global Express' }}.
+                Your order will be shipped via **{{ selectedShippingOption.name }}** <span v-if="selectedShippingOption.estimated_delivery">({{ selectedShippingOption.estimated_delivery }})</span>.
+              </p>
+            </div>
+            <div v-else class="mt-8 p-4 bg-muted/50 rounded-2xl flex items-start gap-3">
+              <Truck class="w-5 h-5 text-muted-foreground mt-1" />
+              <p class="text-xs text-muted-foreground leading-relaxed font-medium">
+                Please save your delivery address and choose a shipping method to finalize delivery charges and terms.
               </p>
             </div>
           </div>
