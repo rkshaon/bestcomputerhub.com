@@ -484,86 +484,88 @@ const tableColumns: UiTableColumn[] = [
         :title="modalState.isEdit.value ? 'Edit Shipping Rate' : 'Add Shipping Rate'"
         @close="modalState.closeModal()"
       >
-        <form @submit.prevent="handleSaveRate" class="space-y-4">
-          <div v-if="formError" class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
-            <AlertCircle class="w-4 h-4 shrink-0" />
-            <span>{{ formError }}</span>
-          </div>
+        <form @submit.prevent="handleSaveRate">
+          <div class="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
+            <div v-if="formError" class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
+              <AlertCircle class="w-4 h-4 shrink-0" />
+              <span>{{ formError }}</span>
+            </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
-              Shipping Zone <span class="text-destructive">*</span>
-            </label>
-            <select 
-              v-model="formPayload.zone"
-              required
-              class="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="" disabled>Select shipping zone...</option>
-              <option v-for="z in zonesList" :key="z.id" :value="z.id">{{ z.name }}</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
-              Shipping Method <span class="text-destructive">*</span>
-            </label>
-            <select 
-              v-model="formPayload.method"
-              required
-              class="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="" disabled>Select shipping method...</option>
-              <option v-for="m in methodsList" :key="m.id" :value="m.id">{{ m.name }}</option>
-            </select>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
-                Base Charge ($) <span class="text-destructive">*</span>
+                Shipping Zone <span class="text-destructive">*</span>
               </label>
-              <input 
-                v-model="formPayload.base_charge"
-                type="number"
-                step="0.01"
-                min="0"
+              <select 
+                v-model="formPayload.zone"
                 required
-                placeholder="0.00"
-                class="w-full h-9 rounded-md border border-input bg-background px-3 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
+                class="w-full h-10 rounded-xl border border-input bg-background px-3.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="" disabled>Select shipping zone...</option>
+                <option v-for="z in zonesList" :key="z.id" :value="z.id">{{ z.name }}</option>
+              </select>
             </div>
+
             <div>
               <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
-                Free Shipping Threshold ($)
+                Shipping Method <span class="text-destructive">*</span>
               </label>
-              <input 
-                v-model="formPayload.free_shipping_threshold"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Optional (e.g. 100.00)"
-                class="w-full h-9 rounded-md border border-input bg-background px-3 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
+              <select 
+                v-model="formPayload.method"
+                required
+                class="w-full h-10 rounded-xl border border-input bg-background px-3.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="" disabled>Select shipping method...</option>
+                <option v-for="m in methodsList" :key="m.id" :value="m.id">{{ m.name }}</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
+                  Base Charge ($) <span class="text-destructive">*</span>
+                </label>
+                <input 
+                  v-model="formPayload.base_charge"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  placeholder="0.00"
+                  class="w-full h-10 rounded-xl border border-input bg-background px-3.5 text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
+                  Free Shipping Threshold ($)
+                </label>
+                <input 
+                  v-model="formPayload.free_shipping_threshold"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Optional (e.g. 100.00)"
+                  class="w-full h-10 rounded-xl border border-input bg-background px-3.5 text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input 
+                  v-model="formPayload.is_active"
+                  type="checkbox"
+                  class="rounded border-input text-primary focus:ring-ring w-4 h-4"
+                />
+                <span class="text-sm font-medium text-foreground">Active Rate</span>
+              </label>
             </div>
           </div>
 
-          <div class="pt-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input 
-                v-model="formPayload.is_active"
-                type="checkbox"
-                class="rounded border-input text-primary focus:ring-ring w-4 h-4"
-              />
-              <span class="text-sm font-medium text-foreground">Active Rate</span>
-            </label>
-          </div>
-
-          <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
-            <UiButton type="button" variant="outline" size="sm" @click="modalState.closeModal()" :disabled="isSubmitting">
+          <div class="p-6 border-t border-border bg-muted/20 flex items-center justify-end gap-3">
+            <UiButton type="button" variant="outline" size="sm" class="rounded-xl h-10 px-5 text-xs font-bold" @click="modalState.closeModal()" :disabled="isSubmitting">
               Cancel
             </UiButton>
-            <UiButton type="submit" variant="primary" size="sm" :disabled="isSubmitting">
+            <UiButton type="submit" variant="primary" size="sm" class="rounded-xl h-10 px-6 text-xs font-bold" :disabled="isSubmitting">
               <Loader2 v-if="isSubmitting" class="w-4 h-4 mr-2 animate-spin" />
               {{ modalState.isEdit.value ? 'Save Changes' : 'Create Rate' }}
             </UiButton>
@@ -576,18 +578,19 @@ const tableColumns: UiTableColumn[] = [
         :isOpen="!!rateToDelete"
         title="Delete Shipping Rate"
         @close="rateToDelete = null"
+        maxWidth="max-w-md"
       >
-        <div class="space-y-4">
-          <div class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-3">
+        <div class="p-6 space-y-6">
+          <div class="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-3">
             <AlertCircle class="w-5 h-5 shrink-0" />
             <span>Are you sure you want to delete this shipping rate for <strong>{{ getZoneName(rateToDelete?.zone || '') }}</strong> / <strong>{{ getMethodName(rateToDelete?.method || '') }}</strong>? This action cannot be undone.</span>
           </div>
 
-          <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
-            <UiButton variant="outline" size="sm" @click="rateToDelete = null" :disabled="isDeleting">
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <UiButton variant="outline" size="sm" class="rounded-xl h-10 px-5 text-xs font-bold" @click="rateToDelete = null" :disabled="isDeleting">
               Cancel
             </UiButton>
-            <UiButton variant="destructive" size="sm" @click="handleDeleteRate" :disabled="isDeleting">
+            <UiButton variant="destructive" size="sm" class="rounded-xl h-10 px-6 text-xs font-bold" @click="handleDeleteRate" :disabled="isDeleting">
               <Loader2 v-if="isDeleting" class="w-4 h-4 mr-2 animate-spin" />
               Delete Rate
             </UiButton>

@@ -420,84 +420,86 @@ const tableColumns: UiTableColumn[] = [
         :title="modalState.isEdit.value ? 'Edit Shipping Method' : 'Add Shipping Method'"
         @close="modalState.closeModal()"
       >
-        <form @submit.prevent="handleSaveMethod" class="space-y-4">
-          <div v-if="formError" class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
-            <AlertCircle class="w-4 h-4 shrink-0" />
-            <span>{{ formError }}</span>
-          </div>
+        <form @submit.prevent="handleSaveMethod">
+          <div class="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
+            <div v-if="formError" class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
+              <AlertCircle class="w-4 h-4 shrink-0" />
+              <span>{{ formError }}</span>
+            </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
-              Method Name <span class="text-destructive">*</span>
-            </label>
-            <input 
-              v-model="formPayload.name"
-              type="text"
-              required
-              maxlength="255"
-              placeholder="e.g. Express Air Freight"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
-              Method Code <span class="text-destructive">*</span>
-            </label>
-            <input 
-              v-model="formPayload.code"
-              type="text"
-              required
-              maxlength="255"
-              placeholder="e.g. express_air"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-            <p class="text-[11px] text-muted-foreground mt-1">
-              Must be unique and contain only letters, numbers, underscores, or hyphens.
-            </p>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
-              Description
-            </label>
-            <textarea 
-              v-model="formPayload.description"
-              rows="3"
-              placeholder="Brief details about transit times or carrier specifics..."
-              class="w-full rounded-md border border-input bg-background p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
-            ></textarea>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
-                Display Order
+                Method Name <span class="text-destructive">*</span>
               </label>
               <input 
-                v-model.number="formPayload.display_order"
-                type="number"
-                min="0"
-                class="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                v-model="formPayload.name"
+                type="text"
+                required
+                maxlength="255"
+                placeholder="e.g. Express Air Freight"
+                class="w-full h-10 rounded-xl border border-input bg-background px-3.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            <div class="flex items-center pt-6">
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input 
-                  v-model="formPayload.is_active"
-                  type="checkbox"
-                  class="rounded border-input text-primary focus:ring-ring w-4 h-4"
-                />
-                <span class="text-sm font-medium text-foreground">Active Method</span>
+
+            <div>
+              <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
+                Method Code <span class="text-destructive">*</span>
               </label>
+              <input 
+                v-model="formPayload.code"
+                type="text"
+                required
+                maxlength="255"
+                placeholder="e.g. express_air"
+                class="w-full h-10 rounded-xl border border-input bg-background px-3.5 text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <p class="text-[11px] text-muted-foreground mt-1">
+                Must be unique and contain only letters, numbers, underscores, or hyphens.
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
+                Description
+              </label>
+              <textarea 
+                v-model="formPayload.description"
+                rows="3"
+                placeholder="Brief details about transit times or carrier specifics..."
+                class="w-full rounded-xl border border-input bg-background p-3.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              ></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
+                  Display Order
+                </label>
+                <input 
+                  v-model.number="formPayload.display_order"
+                  type="number"
+                  min="0"
+                  class="w-full h-10 rounded-xl border border-input bg-background px-3.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div class="flex items-center pt-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    v-model="formPayload.is_active"
+                    type="checkbox"
+                    class="rounded border-input text-primary focus:ring-ring w-4 h-4"
+                  />
+                  <span class="text-sm font-medium text-foreground">Active Method</span>
+                </label>
+              </div>
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
-            <UiButton type="button" variant="outline" size="sm" @click="modalState.closeModal()" :disabled="isSubmitting">
+          <div class="p-6 border-t border-border bg-muted/20 flex items-center justify-end gap-3">
+            <UiButton type="button" variant="outline" size="sm" class="rounded-xl h-10 px-5 text-xs font-bold" @click="modalState.closeModal()" :disabled="isSubmitting">
               Cancel
             </UiButton>
-            <UiButton type="submit" variant="primary" size="sm" :disabled="isSubmitting">
+            <UiButton type="submit" variant="primary" size="sm" class="rounded-xl h-10 px-6 text-xs font-bold" :disabled="isSubmitting">
               <Loader2 v-if="isSubmitting" class="w-4 h-4 mr-2 animate-spin" />
               {{ modalState.isEdit.value ? 'Save Changes' : 'Create Method' }}
             </UiButton>
@@ -510,18 +512,19 @@ const tableColumns: UiTableColumn[] = [
         :isOpen="!!methodToDelete"
         title="Delete Shipping Method"
         @close="methodToDelete = null"
+        maxWidth="max-w-md"
       >
-        <div class="space-y-4">
-          <div class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-3">
+        <div class="p-6 space-y-6">
+          <div class="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-3">
             <AlertCircle class="w-5 h-5 shrink-0" />
             <span>Are you sure you want to delete shipping method <strong>{{ methodToDelete?.name }}</strong>? This action cannot be undone.</span>
           </div>
 
-          <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
-            <UiButton variant="outline" size="sm" @click="methodToDelete = null" :disabled="isDeleting">
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <UiButton variant="outline" size="sm" class="rounded-xl h-10 px-5 text-xs font-bold" @click="methodToDelete = null" :disabled="isDeleting">
               Cancel
             </UiButton>
-            <UiButton variant="destructive" size="sm" @click="handleDeleteMethod" :disabled="isDeleting">
+            <UiButton variant="destructive" size="sm" class="rounded-xl h-10 px-6 text-xs font-bold" @click="handleDeleteMethod" :disabled="isDeleting">
               <Loader2 v-if="isDeleting" class="w-4 h-4 mr-2 animate-spin" />
               Delete Method
             </UiButton>
