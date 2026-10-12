@@ -12,7 +12,12 @@ import type {
   CreateShippingZonePayload,
   UpdateShippingZonePayload,
   ShippingZoneQueryParams,
-  PaginatedShippingZones
+  PaginatedShippingZones,
+  ShippingRate,
+  CreateShippingRatePayload,
+  UpdateShippingRatePayload,
+  ShippingRateQueryParams,
+  PaginatedShippingRates
 } from '@/types';
 
 export const useShippingService = () => {
@@ -332,6 +337,166 @@ export const useShippingService = () => {
     }
   };
 
+  /**
+   * List shipping rates with optional query parameters.
+   */
+  const getShippingRates = async (params: ShippingRateQueryParams = {}): Promise<PaginatedShippingRates> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.page && params.page > 0) {
+        queryParams.append('page', params.page.toString());
+      }
+      if (params.page_size && params.page_size > 0) {
+        queryParams.append('page_size', params.page_size.toString());
+      }
+      if (params.search && params.search.trim()) {
+        queryParams.append('search', params.search.trim());
+      }
+      if (params.zone !== undefined && params.zone !== '') {
+        queryParams.append('zone', params.zone.toString());
+      }
+      if (params.method !== undefined && params.method !== '') {
+        queryParams.append('method', params.method.toString());
+      }
+      if (params.is_active !== undefined) {
+        queryParams.append('is_active', params.is_active.toString());
+      }
+
+      const queryString = queryParams.toString();
+      const endpoint = queryString ? `/api/v1/shipping/rates/?${queryString}` : '/api/v1/shipping/rates/';
+
+      const data = await apiClient.request<any>(endpoint, {
+        method: 'GET'
+      });
+
+      isLoading.value = false;
+
+      if (data && typeof data === 'object') {
+        if (Array.isArray(data.results)) {
+          return {
+            count: typeof data.count === 'number' ? data.count : data.results.length,
+            next: data.next || null,
+            previous: data.previous || null,
+            results: data.results
+          };
+        } else if (Array.isArray(data)) {
+          return {
+            count: data.length,
+            next: null,
+            previous: null,
+            results: data
+          };
+        }
+      }
+
+      return {
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      };
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve shipping rates.');
+      isLoading.value = false;
+      return {
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      };
+    }
+  };
+
+  /**
+   * Retrieve a specific shipping rate by ID.
+   */
+  const getShippingRate = async (id: number | string): Promise<ShippingRate | null> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<ShippingRate>(`/api/v1/shipping/rates/${id}/`, {
+        method: 'GET'
+      });
+      isLoading.value = false;
+      return data || null;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, `Failed to retrieve shipping rate #${id}.`);
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
+  /**
+   * Create a new shipping rate.
+   */
+  const createShippingRate = async (payload: CreateShippingRatePayload): Promise<ShippingRate | null> => {
+    isCreating.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<ShippingRate>('/api/v1/shipping/rates/', {
+        method: 'POST',
+        body: payload
+      });
+      isCreating.value = false;
+      return data || null;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to create shipping rate.');
+      isCreating.value = false;
+      throw err;
+    }
+  };
+
+  /**
+   * Update an existing shipping rate (PUT / PATCH).
+   */
+  const updateShippingRate = async (
+    id: number | string, 
+    payload: UpdateShippingRatePayload, 
+    partial = false
+  ): Promise<ShippingRate | null> => {
+    isUpdating.value = true;
+    errorMsg.value = null;
+
+    try {
+      const method = partial ? 'PATCH' : 'PUT';
+      const data = await apiClient.request<ShippingRate>(`/api/v1/shipping/rates/${id}/`, {
+        method,
+        body: payload
+      });
+      isUpdating.value = false;
+      return data || null;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, `Failed to update shipping rate #${id}.`);
+      isUpdating.value = false;
+      throw err;
+    }
+  };
+
+  /**
+   * Delete a shipping rate.
+   */
+  const deleteShippingRate = async (id: number | string): Promise<boolean> => {
+    isDeleting.value = true;
+    errorMsg.value = null;
+
+    try {
+      await apiClient.request(`/api/v1/shipping/rates/${id}/`, {
+        method: 'DELETE'
+      });
+      isDeleting.value = false;
+      return true;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, `Failed to delete shipping rate #${id}.`);
+      isDeleting.value = false;
+      throw err;
+    }
+  };
+
   return {
     getShippingMethods,
     getShippingMethod,
@@ -343,6 +508,11 @@ export const useShippingService = () => {
     createShippingZone,
     updateShippingZone,
     deleteShippingZone,
+    getShippingRates,
+    getShippingRate,
+    createShippingRate,
+    updateShippingRate,
+    deleteShippingRate,
     isLoading,
     isCreating,
     isUpdating,

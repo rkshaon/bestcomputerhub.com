@@ -78,6 +78,16 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     editPermission: ['shipping.change_shippingzone', 'shipping_api.change_shippingzone', 'change_shippingzone'],
     deletePermission: ['shipping.delete_shippingzone', 'shipping_api.delete_shippingzone', 'delete_shippingzone']
   },
+  shippingRates: {
+    key: 'shippingRates',
+    route: '/admin/shipping/rates',
+    name: 'Shipping Rates',
+    iconKey: 'Coins',
+    viewPermission: ['shipping.view_shippingrate', 'shipping_api.view_shippingrate', 'view_shippingrate'],
+    createPermission: ['shipping.add_shippingrate', 'shipping_api.add_shippingrate', 'add_shippingrate'],
+    editPermission: ['shipping.change_shippingrate', 'shipping_api.change_shippingrate', 'change_shippingrate'],
+    deletePermission: ['shipping.delete_shippingrate', 'shipping_api.delete_shippingrate', 'delete_shippingrate']
+  },
   blogTags: {
     key: 'blogTags',
     route: '/admin/blog/tags',
