@@ -79,6 +79,7 @@ const navigation = [
   { name: 'Categories', iconKey: 'Layers', href: '/admin/categories' },
   { name: 'Brands', iconKey: 'Tag', href: '/admin/brands' },
   { name: 'Banners', iconKey: 'ImagePlus', href: '/admin/banners' },
+  { name: 'Shipping Zones', iconKey: 'Globe', href: '/admin/shipping/zones' },
   { name: 'Blog Tags', iconKey: 'Tag', href: '/admin/blog/tags' },
   { name: 'Blog Posts', iconKey: 'FileText', href: '/admin/blog/posts' },
   { name: 'Inventory', iconKey: 'Boxes', href: '/admin/inventory' },

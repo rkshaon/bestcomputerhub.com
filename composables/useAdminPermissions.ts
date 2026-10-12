@@ -68,6 +68,16 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     editPermission: ['banner_api.change_banner', 'change_banner', 'banners.change_banner', 'banner.change_banner'],
     deletePermission: ['banner_api.delete_banner', 'delete_banner', 'banners.delete_banner', 'banner.delete_banner']
   },
+  shippingZones: {
+    key: 'shippingZones',
+    route: '/admin/shipping/zones',
+    name: 'Shipping Zones',
+    iconKey: 'Globe',
+    viewPermission: ['shipping.view_shippingzone', 'shipping_api.view_shippingzone', 'view_shippingzone'],
+    createPermission: ['shipping.add_shippingzone', 'shipping_api.add_shippingzone', 'add_shippingzone'],
+    editPermission: ['shipping.change_shippingzone', 'shipping_api.change_shippingzone', 'change_shippingzone'],
+    deletePermission: ['shipping.delete_shippingzone', 'shipping_api.delete_shippingzone', 'delete_shippingzone']
+  },
   blogTags: {
     key: 'blogTags',
     route: '/admin/blog/tags',
