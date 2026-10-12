@@ -74,7 +74,7 @@ const fetchShippingOptions = async (addressId: number | string) => {
     const opts = await shippingService.getShippingOptions(addressId);
     shippingOptions.value = opts;
     if (opts.length > 0) {
-      selectedShippingOption.value = opts[0];
+      selectedShippingOption.value = opts[0] ?? null;
     }
   } catch (err) {
     shippingOptions.value = [];
