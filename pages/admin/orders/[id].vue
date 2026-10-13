@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ChevronLeft, Printer } from 'lucide-vue-next';
-import { useAdminStore } from '@/stores/admin';
+import { ChevronLeft } from 'lucide-vue-next';
 import OrderDetailView from '@/components/commerce/OrderDetailView.vue';
-import type { Order } from '@/types';
+import AdminOrderActions from '@/components/admin/AdminOrderActions.vue';
+import { useSalesService } from '@/composables/useSalesService';
+import type { Order } from '@/types/order';
 
 definePageMeta({
   layout: 'admin'
@@ -10,12 +11,19 @@ definePageMeta({
 
 const route = useRoute();
 const orderId = route.params.id as string;
-const adminStore = useAdminStore();
-const order = ref<Order | null>(adminStore.recentOrders.find(o => o.id === orderId) || null);
+const salesService = useSalesService();
+const order = ref<Order | null>(null);
 
-if (!order.value) {
-  navigateTo('/admin/orders');
-}
+const fetchOrder = async () => {
+  try {
+    order.value = await salesService.getSaleDetails(orderId);
+  } catch (err) {
+    console.error('Failed to fetch order details:', err);
+    navigateTo('/admin/orders');
+  }
+};
+
+onMounted(fetchOrder);
 </script>
 
 <template>
@@ -26,6 +34,13 @@ if (!order.value) {
         </NuxtLink>
         <h1 class="text-3xl font-display font-extrabold">Order Details: {{ order.orderNumber }}</h1>
     </div>
-    <OrderDetailView :order="order" />
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="md:col-span-2">
+        <OrderDetailView :order="order" />
+      </div>
+      <div>
+        <AdminOrderActions :order="order" @updated="fetchOrder" />
+      </div>
+    </div>
   </div>
 </template>

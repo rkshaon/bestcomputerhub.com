@@ -1,6 +1,6 @@
 <!-- File: /pages/admin/orders/index.vue -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { refDebounced } from '@vueuse/core';
 import { 
   Search, 
@@ -15,12 +15,11 @@ import {
   Clock,
   XCircle,
   RefreshCcw,
-  ArrowUpDown,
   Package
 } from 'lucide-vue-next';
-import { useAdminStore } from '@/stores/admin';
+import { useSalesService } from '@/composables/useSalesService';
 import { formatCurrency, cn } from '@/utils';
-import type { Order } from '@/types';
+import type { Order } from '@/types/order';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 
@@ -38,13 +37,27 @@ const tableColumns: UiTableColumn<Order>[] = [
   { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-8', cellClass: 'px-8 py-5 text-right' },
 ];
 
-const adminStore = useAdminStore();
+const salesService = useSalesService();
+const orders = ref<Order[]>([]);
+const totalCount = ref(0);
 const searchQuery = ref('');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref('all');
 
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
+
+const fetchOrders = async () => {
+  const result = await salesService.getSales({
+    page: currentPage.value,
+    page_size: itemsPerPage.value
+  });
+  orders.value = result.results;
+  totalCount.value = result.count;
+};
+
+watch([currentPage, itemsPerPage, debouncedSearchQuery, statusFilter], fetchOrders);
+onMounted(fetchOrders);
 
 const statusConfig = {
   pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-100 dark:border-amber-900' },
@@ -55,26 +68,7 @@ const statusConfig = {
   refunded: { icon: RefreshCcw, color: 'text-slate-600', bg: 'bg-slate-50 dark:bg-slate-950/20', border: 'border-slate-100 dark:border-slate-900' },
 };
 
-const filteredOrders = computed(() => {
-  return adminStore.recentOrders.filter(o => {
-    const query = debouncedSearchQuery.value.toLowerCase().trim();
-    const matchesSearch = !query || o.orderNumber.toLowerCase().includes(query) || 
-                         o.customerName.toLowerCase().includes(query);
-    const matchesStatus = statusFilter.value === 'all' || o.status === statusFilter.value;
-    return matchesSearch && matchesStatus;
-  });
-});
-
-watch([debouncedSearchQuery, statusFilter], () => {
-  currentPage.value = 1;
-});
-
-const totalPages = computed(() => Math.ceil(filteredOrders.value.length / itemsPerPage.value) || 1);
-
-const paginatedOrders = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  return filteredOrders.value.slice(start, start + itemsPerPage.value);
-});
+const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
 </script>
 
 <template>
@@ -124,7 +118,7 @@ const paginatedOrders = computed(() => {
     <!-- Orders Table -->
     <UiTable
       :columns="tableColumns"
-      :data="paginatedOrders"
+      :data="orders"
       key-field="id"
     >
       <!-- Order Info -->
@@ -209,7 +203,7 @@ const paginatedOrders = computed(() => {
         <UiPagination
           v-model:current-page="currentPage"
           :total-pages="totalPages"
-          :total-count="filteredOrders.length"
+          :total-count="totalCount"
           :items-per-page="itemsPerPage"
           item-label="orders"
         />
