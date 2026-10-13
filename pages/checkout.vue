@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useCartStore } from '@/stores/cart';
 import { useCustomerAddressService } from '@/composables/useCustomerAddressService';
 import { useShippingService } from '@/composables/useShippingService';
+import { useCheckoutService } from '@/composables/useCheckoutService';
 import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
 import type { CustomerAddress, ShippingOption } from '@/types';
 
@@ -21,6 +22,36 @@ const cartStore = useCartStore();
 const authStore = useAuthStore();
 const addressService = useCustomerAddressService();
 const shippingService = useShippingService();
+const checkoutService = useCheckoutService();
+const validationData = ref<any>(null);
+const isValidating = ref(false);
+const validationErrorMsg = ref<string | null>(null);
+const createdOrderNumber = ref('#TC-8822-4910-XM');
+
+const runValidation = async () => {
+  if (!selectedAddressId.value || !selectedShippingOption.value) return;
+  isValidating.value = true;
+  validationErrorMsg.value = null;
+  try {
+    const res = await checkoutService.validateCheckout({
+      shipping_address_id: selectedAddressId.value,
+      shipping_method_id: selectedShippingOption.value.id
+    });
+    validationData.value = res;
+  } catch (err: any) {
+    validationErrorMsg.value = err?.data?.message || err?.message || 'Checkout validation failed.';
+    handleApiError(err, 'Checkout validation failed.');
+    validationData.value = null;
+  } finally {
+    isValidating.value = false;
+  }
+};
+
+watch([selectedAddressId, selectedShippingOption, () => cartStore.items.length], () => {
+  if (selectedAddressId.value && selectedShippingOption.value) {
+    runValidation();
+  }
+}, { deep: true });
 
 const step = ref(1);
 
@@ -177,16 +208,36 @@ const form = reactive({
   mfsTransactionId: ''
 });
 
+const subtotalValue = computed(() => {
+  return validationData.value?.subtotal !== undefined ? Number(validationData.value.subtotal) : cartStore.totalPrice;
+});
+
 const shippingChargeValue = computed(() => {
+  if (validationData.value?.shipping_charge !== undefined) {
+    return Number(validationData.value.shipping_charge) || 0;
+  }
   if (selectedShippingOption.value && selectedShippingOption.value.shipping_charge !== undefined) {
     return Number(selectedShippingOption.value.shipping_charge) || 0;
   }
   return 0;
 });
 
-const totalDue = computed(() => {
-  return cartStore.totalPrice + shippingChargeValue.value;
+const discountValue = computed(() => {
+  return validationData.value?.discount !== undefined ? Number(validationData.value.discount) : 0;
 });
+
+const taxValue = computed(() => {
+  return validationData.value?.tax !== undefined ? Number(validationData.value.tax) : 0;
+});
+
+const totalDue = computed(() => {
+  if (validationData.value?.grand_total !== undefined) {
+    return Number(validationData.value.grand_total);
+  }
+  return subtotalValue.value + shippingChargeValue.value - discountValue.value + taxValue.value;
+});
+
+
 
 const isProcessing = ref(false);
 const orderCompleted = ref(false);
@@ -686,7 +737,7 @@ const handlePlaceOrder = () => {
         <div class="bg-card p-6 rounded-3xl border flex flex-col md:flex-row items-center justify-between gap-6">
           <div class="text-left space-y-1">
             <p class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Order Number</p>
-            <p class="text-lg font-mono font-bold">#TC-8822-4910-XM</p>
+            <p class="text-lg font-mono font-bold">{{ createdOrderNumber }}</p>
           </div>
           <UiButton @click="navigateTo('/')" size="lg" class="rounded-full">Back to Marketplace</UiButton>
         </div>

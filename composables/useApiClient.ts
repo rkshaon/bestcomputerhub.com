@@ -542,6 +542,40 @@ export const useApiClient = () => {
       return undefined as unknown as T;
     }
 
+    if (url.includes('/api/v1/checkout/validate/')) {
+      const body = options.body || {};
+      if (!body.shipping_address_id) {
+        throwSimulatedError('Shipping address is required.');
+      }
+      if (!body.shipping_method_id) {
+        throwSimulatedError('Shipping method is required.');
+      }
+      isSuccess.value = true;
+      isLoading.value = false;
+      return {
+        valid: true,
+        subtotal: 1500,
+        shipping_charge: 100,
+        discount: 0,
+        tax: 0,
+        grand_total: 1600,
+        messages: ['Validation successful']
+      } as unknown as T;
+    }
+
+    if (url.includes('/api/v1/orders/')) {
+      isSuccess.value = true;
+      isLoading.value = false;
+      return {
+        id: 'ord_' + Math.floor(Math.random() * 100000),
+        orderNumber: '#TC-' + Math.floor(1000 + Math.random() * 9000) + '-' + Math.floor(1000 + Math.random() * 9000),
+        status: 'pending',
+        paymentStatus: 'paid',
+        totalAmount: 1600,
+        createdAt: new Date().toISOString()
+      } as unknown as T;
+    }
+
     // Default mock response for other routes
     isSuccess.value = true;
     isLoading.value = false;

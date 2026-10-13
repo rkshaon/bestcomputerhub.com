@@ -557,6 +557,7 @@ When selecting or implementing helper functions, agents must respect these struc
 | `useEmailVerification` | Email Verification | `/api/v1/auth/email-verification/status/`, `/api/v1/auth/email-verification/request/` | Email verification status checking, resend verification email request, reactive email verification status tracking. |
 | `useContentSecurityService` | CSP & Security Rules | `/api/v1/content-security/*` | Keyword, domain, hidden content, redirect, and HTML tag security rules management. |
 | `useCartService` | Shopping Cart | `/api/v1/cart/items/` | Add item, remove item, update item quantity, list cart items. |
+| `useCheckoutService` | Checkout & Orders | `/api/v1/checkout/validate/`, `/api/v1/orders/` | Checkout pre-flight address & shipping validation, totals calculation (subtotal, shipping, discount, tax, grand total), and order placement. |
 | `useShippingService` | Shipping Configuration | `/api/v1/shipping/methods/`, `/api/v1/shipping/zones/`, `/api/v1/shipping/rates/` | Shipping methods, zones, and rates listing, search, active/default filters, and full CRUD operations. |
 
 ---
