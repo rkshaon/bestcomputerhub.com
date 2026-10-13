@@ -1,11 +1,16 @@
 // File: /types/order.ts
 
 export interface OrderItem {
+  id: string;
   productId: string;
-  name: string;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    images: string[];
+  };
   quantity: number;
   price: number;
-  image: string;
 }
 
 export interface Order {
@@ -24,4 +29,8 @@ export interface Order {
     zipCode: string;
     country: string;
   };
+  shippingMethod: {
+    id: string;
+    name: string;
+  } | null;
 }

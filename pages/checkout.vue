@@ -12,6 +12,7 @@ import { useShippingService } from '@/composables/useShippingService';
 import { useCheckoutService } from '@/composables/useCheckoutService';
 import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
 import type { CustomerAddress, ShippingOption } from '@/types';
+import type { Order } from '@/types/order';
 
 useSeoMeta({
   title: 'Checkout',
@@ -27,7 +28,7 @@ const checkoutService = useCheckoutService();
 const validationData = ref<any>(null);
 const isValidating = ref(false);
 const validationErrorMsg = ref<string | null>(null);
-const orderDetails = ref<any>(null);
+const orderDetails = ref<Order | null>(null);
 const createdOrderNumber = ref('#TC-8822-4910-XM');
 const selectedShippingOption = ref<ShippingOption | null>(null);
 const selectedAddressId = ref<number | string | null>(null);
@@ -805,12 +806,12 @@ const handlePlaceOrder = async () => {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
             <div class="space-y-1">
               <p class="text-xs font-bold uppercase text-muted-foreground">Shipping Address</p>
-              <p class="text-foreground">{{ orderDetails.shipping_address?.address_1 }}</p>
-              <p class="text-foreground">{{ orderDetails.shipping_address?.city }}</p>
+              <p class="text-foreground">{{ orderDetails.shippingAddress.street }}</p>
+              <p class="text-foreground">{{ orderDetails.shippingAddress.city }}</p>
             </div>
             <div class="space-y-1">
               <p class="text-xs font-bold uppercase text-muted-foreground">Shipping Method</p>
-              <p class="text-foreground">{{ orderDetails.shipping_method?.name }}</p>
+              <p class="text-foreground">{{ orderDetails.shippingMethod?.name || 'Standard' }}</p>
             </div>
           </div>
 

@@ -44,6 +44,10 @@ export const useAdminStore = defineStore('admin', {
           city: 'San Francisco',
           zipCode: '94105',
           country: 'USA'
+        },
+        shippingMethod: {
+          id: 'sm_1',
+          name: 'Standard'
         }
       },
       {
@@ -61,6 +65,10 @@ export const useAdminStore = defineStore('admin', {
           city: 'Austin',
           zipCode: '78701',
           country: 'USA'
+        },
+        shippingMethod: {
+          id: 'sm_1',
+          name: 'Standard'
         }
       },
       {
@@ -78,6 +86,10 @@ export const useAdminStore = defineStore('admin', {
           city: 'Seattle',
           zipCode: '98101',
           country: 'USA'
+        },
+        shippingMethod: {
+          id: 'sm_1',
+          name: 'Standard'
         }
       }
     ] as Order[],

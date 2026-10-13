@@ -1,5 +1,5 @@
-// File: /composables/useCheckoutService.ts
 import { useApiClient } from './useApiClient';
+import type { Order } from '@/types/order';
 
 export interface CheckoutValidationPayload {
   shipping_address_id: number | string;
@@ -53,9 +53,9 @@ export const useCheckoutService = () => {
     }
   };
 
-  const getOrderDetails = async (orderId: string): Promise<any> => {
+  const getOrderDetails = async (orderId: string): Promise<Order> => {
     try {
-      const data = await apiClient.request<any>(`/api/v1/orders/${orderId}/`, {
+      const data = await apiClient.request<Order>(`/api/v1/orders/${orderId}/`, {
         method: 'GET'
       });
       return data;
