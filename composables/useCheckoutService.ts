@@ -38,11 +38,14 @@ export const useCheckoutService = () => {
     }
   };
 
-  const createOrder = async (payload: CreateOrderPayload): Promise<any> => {
+  const createOrder = async (payload: CreateOrderPayload, idempotencyKey: string): Promise<any> => {
     try {
-      const data = await apiClient.request<any>('/api/v1/orders/', {
+      const data = await apiClient.request<any>('/api/v1/checkout/confirm/', {
         method: 'POST',
-        body: payload
+        body: payload,
+        headers: {
+          'Idempotency-Key': idempotencyKey
+        }
       });
       return data;
     } catch (err: any) {
@@ -50,9 +53,18 @@ export const useCheckoutService = () => {
     }
   };
 
+  const generateIdempotencyKey = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  };
+
   return {
     validateCheckout,
     createOrder,
+    generateIdempotencyKey,
     isLoading: apiClient.isLoading,
     errorMsg: apiClient.errorMsg
   };

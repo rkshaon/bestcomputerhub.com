@@ -289,7 +289,9 @@ const proceedToPayment = () => {
   step.value = 2;
 };
 
-const handlePlaceOrder = () => {
+const currentIdempotencyKey = ref<string | null>(null);
+
+const handlePlaceOrder = async () => {
   if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.phone) {
     toastError('Please fill in all required shipping fields.');
     return;
@@ -303,12 +305,50 @@ const handlePlaceOrder = () => {
     return;
   }
 
+  // Generate new key for a new submission if not retrying
+  if (!currentIdempotencyKey.value) {
+    currentIdempotencyKey.value = checkoutService.generateIdempotencyKey();
+  }
+
   isProcessing.value = true;
-  setTimeout(() => {
-    isProcessing.value = false;
+  try {
+    if (selectedAddressId.value && selectedShippingOption.value) {
+      const valRes = await checkoutService.validateCheckout({
+        shipping_address_id: selectedAddressId.value,
+        shipping_method_id: selectedShippingOption.value.id
+      });
+      if (valRes && valRes.valid === false) {
+        toastError('Checkout validation failed. Please check your order details.');
+        isProcessing.value = false;
+        return;
+      }
+    }
+
+    const orderRes = await checkoutService.createOrder({
+      shipping_address_id: selectedAddressId.value,
+      shipping_method_id: selectedShippingOption.value?.id || '',
+      payment_method: form.paymentMethod,
+      payment_details: {
+        card_number: form.cardNumber ? form.cardNumber.slice(-4) : undefined,
+        mfs_type: form.mfsType,
+        mfs_number: form.mfsNumber,
+        transaction_id: form.mfsTransactionId
+      }
+    }, currentIdempotencyKey.value);
+
+    if (orderRes && orderRes.orderNumber) {
+      createdOrderNumber.value = orderRes.orderNumber;
+    }
+
+    toastSuccess('Order placed successfully!');
     orderCompleted.value = true;
     cartStore.clearCart();
-  }, 2000);
+    currentIdempotencyKey.value = null; // Clear key after success
+  } catch (err: any) {
+    handleApiError(err, 'Failed to place order. Please try again.');
+  } finally {
+    isProcessing.value = false;
+  }
 };
 </script>
 

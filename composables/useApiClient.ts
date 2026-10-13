@@ -563,7 +563,7 @@ export const useApiClient = () => {
       } as unknown as T;
     }
 
-    if (url.includes('/api/v1/orders/')) {
+    if (url.includes('/api/v1/checkout/confirm/')) {
       isSuccess.value = true;
       isLoading.value = false;
       return {
