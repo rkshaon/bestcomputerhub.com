@@ -16,6 +16,10 @@ const props = defineProps<{
   order: Order;
 }>();
 
+defineEmits<{
+  (e: 'cancel'): void;
+}>();
+
 const statusConfig = {
   pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', label: 'Awaiting Fulfillment' },
   processing: { icon: Package, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Processing' },
@@ -68,6 +72,12 @@ const statusConfig = {
         <p>{{ order.shippingAddress.country }}</p>
       </div>
       <p class="text-sm font-bold mt-4">Shipping Method: <span class="font-normal">{{ order.shippingMethod?.name || 'Standard' }}</span></p>
+      
+      <div v-if="order.status === 'pending'">
+        <UiButton @click="$emit('cancel')" variant="outline" class="w-full mt-4 text-rose-600 border-rose-200 hover:bg-rose-50">
+          Cancel Order
+        </UiButton>
+      </div>
     </div>
   </div>
 </template>

@@ -28,9 +28,21 @@ export const useOrderService = () => {
     }
   };
 
+  const cancelOrder = async (orderId: string): Promise<Order> => {
+    try {
+      const data = await apiClient.request<Order>(`/api/v1/orders/${orderId}/cancel/`, {
+        method: 'POST'
+      });
+      return data;
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   return {
     getOrders,
     getOrderDetails,
+    cancelOrder,
     isLoading: apiClient.isLoading,
     errorMsg: apiClient.errorMsg
   };

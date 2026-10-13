@@ -21,6 +21,16 @@ onMounted(async () => {
     isLoading.value = false;
   }
 });
+
+const handleCancelOrder = async () => {
+  if (!confirm('Are you sure you want to cancel this order?')) return;
+  
+  try {
+    order.value = await orderService.cancelOrder(orderId);
+  } catch (err) {
+    handleApiError(err, 'Failed to cancel order.');
+  }
+};
 </script>
 
 <template>
@@ -33,7 +43,7 @@ onMounted(async () => {
         </NuxtLink>
         <h1 class="text-3xl font-display font-extrabold">Order Details: {{ order.orderNumber }}</h1>
       </div>
-      <OrderDetailView :order="order" />
+      <OrderDetailView :order="order" @cancel="handleCancelOrder" />
     </div>
   </div>
 </template>
