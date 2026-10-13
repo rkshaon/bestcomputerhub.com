@@ -1,7 +1,7 @@
 <!-- File: /pages/checkout.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { navigateTo } from '#app';
+import { navigateTo, useRoute } from '#app';
 import { decodeHtmlEntities } from '@/utils';
 import { ChevronRight, CreditCard, ShieldCheck, Truck, PackageCheck, AlertCircle, Smartphone, Banknote, Plus, MapPin, Check, ChevronLeft, Loader2 } from 'lucide-vue-next';
 import { formatCurrency, cn } from '@/utils';
@@ -20,12 +20,14 @@ useSeoMeta({
 
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const route = useRoute();
 const addressService = useCustomerAddressService();
 const shippingService = useShippingService();
 const checkoutService = useCheckoutService();
 const validationData = ref<any>(null);
 const isValidating = ref(false);
 const validationErrorMsg = ref<string | null>(null);
+const orderDetails = ref<any>(null);
 const createdOrderNumber = ref('#TC-8822-4910-XM');
 const selectedShippingOption = ref<ShippingOption | null>(null);
 const selectedAddressId = ref<number | string | null>(null);
@@ -116,6 +118,20 @@ const fetchShippingOptions = async (addressId: number | string) => {
 };
 
 onMounted(async () => {
+  if (route.query.orderId) {
+    try {
+      const orderId = Array.isArray(route.query.orderId) ? route.query.orderId[0] : route.query.orderId;
+      if (orderId) {
+        orderDetails.value = await checkoutService.getOrderDetails(orderId);
+        orderCompleted.value = true;
+        createdOrderNumber.value = orderDetails.value.orderNumber;
+      }
+    } catch (err) {
+      handleApiError(err, 'Failed to load order details.');
+    }
+    return;
+  }
+  
   if (authStore.isLoggedIn) {
     try {
       await Promise.all([
@@ -338,11 +354,12 @@ const handlePlaceOrder = async () => {
 
     if (orderRes && orderRes.orderNumber) {
       createdOrderNumber.value = orderRes.orderNumber;
+      navigateTo(`/checkout/?orderId=${orderRes.id}`);
+    } else {
+      toastSuccess('Order placed successfully!');
+      orderCompleted.value = true;
+      cartStore.clearCart();
     }
-
-    toastSuccess('Order placed successfully!');
-    orderCompleted.value = true;
-    cartStore.clearCart();
     currentIdempotencyKey.value = null; // Clear key after success
   } catch (err: any) {
     handleApiError(err, 'Failed to place order. Please try again.');
@@ -764,21 +781,53 @@ const handlePlaceOrder = async () => {
 
     <!-- Success State -->
     <div v-else class="container mx-auto px-4">
-      <div class="max-w-2xl mx-auto py-20 text-center space-y-8 animate-fade-in">
-        <div class="w-32 h-32 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce">
-          <ShieldCheck class="w-16 h-16 text-green-600" />
-        </div>
-        <div class="space-y-4">
-          <h1 class="text-5xl font-display font-extrabold tracking-tight">Order Confirmed!</h1>
-          <p class="text-xl text-muted-foreground">
-            Thank you for your purchase. We've sent a detailed receipt and tracking link to **{{ form.email }}**.
-          </p>
-        </div>
-        <div class="bg-card p-6 rounded-3xl border flex flex-col md:flex-row items-center justify-between gap-6">
-          <div class="text-left space-y-1">
-            <p class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Order Number</p>
-            <p class="text-lg font-mono font-bold">{{ createdOrderNumber }}</p>
+      <div class="max-w-3xl mx-auto py-20 animate-fade-in space-y-8">
+        <div class="text-center space-y-4">
+          <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck class="w-10 h-10 text-green-600" />
           </div>
+          <h1 class="text-4xl font-display font-extrabold tracking-tight">Order Confirmed!</h1>
+          <p class="text-muted-foreground">Thank you for your purchase.</p>
+        </div>
+
+        <div v-if="orderDetails" class="bg-card p-8 rounded-3xl border shadow-sm space-y-6">
+          <div class="flex justify-between items-start border-b pb-6">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Order Number</p>
+              <p class="text-lg font-mono font-bold">{{ orderDetails.orderNumber }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</p>
+              <p class="text-lg font-bold capitalize">{{ orderDetails.status }}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+            <div class="space-y-1">
+              <p class="text-xs font-bold uppercase text-muted-foreground">Shipping Address</p>
+              <p class="text-foreground">{{ orderDetails.shipping_address?.address_1 }}</p>
+              <p class="text-foreground">{{ orderDetails.shipping_address?.city }}</p>
+            </div>
+            <div class="space-y-1">
+              <p class="text-xs font-bold uppercase text-muted-foreground">Shipping Method</p>
+              <p class="text-foreground">{{ orderDetails.shipping_method?.name }}</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-6 border-t">
+            <p class="text-xs font-bold uppercase text-muted-foreground">Items</p>
+            <div v-for="item in orderDetails.items" :key="item.id" class="flex justify-between text-sm">
+              <p>{{ decodeHtmlEntities(item.product?.name) }} x {{ item.quantity }}</p>
+              <p>{{ formatCurrency(item.price * item.quantity) }}</p>
+            </div>
+            <div class="flex justify-between font-bold pt-4 border-t">
+              <p>Total</p>
+              <p>{{ formatCurrency(orderDetails.totalAmount) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center">
           <UiButton @click="navigateTo('/')" size="lg" class="rounded-full">Back to Marketplace</UiButton>
         </div>
       </div>

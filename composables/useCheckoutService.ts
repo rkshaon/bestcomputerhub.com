@@ -53,6 +53,17 @@ export const useCheckoutService = () => {
     }
   };
 
+  const getOrderDetails = async (orderId: string): Promise<any> => {
+    try {
+      const data = await apiClient.request<any>(`/api/v1/orders/${orderId}/`, {
+        method: 'GET'
+      });
+      return data;
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   const generateIdempotencyKey = () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       const r = (Math.random() * 16) | 0;
@@ -64,6 +75,7 @@ export const useCheckoutService = () => {
   return {
     validateCheckout,
     createOrder,
+    getOrderDetails,
     generateIdempotencyKey,
     isLoading: apiClient.isLoading,
     errorMsg: apiClient.errorMsg
