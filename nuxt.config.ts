@@ -52,7 +52,7 @@ export default defineNuxtConfig({
     '@vueuse/nuxt'
   ],
   css: [
-    '/app/applet/assets/css/main.css'
+    'assets/css/main.css'
   ],
   typescript: {
     strict: true
