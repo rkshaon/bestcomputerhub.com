@@ -27,6 +27,8 @@ const validationData = ref<any>(null);
 const isValidating = ref(false);
 const validationErrorMsg = ref<string | null>(null);
 const createdOrderNumber = ref('#TC-8822-4910-XM');
+const selectedShippingOption = ref<ShippingOption | null>(null);
+const selectedAddressId = ref<number | string | null>(null);
 
 const runValidation = async () => {
   if (!selectedAddressId.value || !selectedShippingOption.value) return;
@@ -67,9 +69,7 @@ const isLoadingAddresses = ref(false);
 const showAddAddressForm = ref(false);
 
 const shippingOptions = ref<ShippingOption[]>([]);
-const selectedShippingOption = ref<ShippingOption | null>(null);
 const isLoadingShippingOptions = ref(false);
-const selectedAddressId = ref<number | string | null>(null);
 
 const newAddressForm = reactive({
   address_type: 'BILLING',
