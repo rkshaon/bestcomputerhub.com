@@ -23,7 +23,7 @@ const markPaid = async () => {
   isProcessing.value = true;
   try {
     await salesService.markPaid(props.order.id);
-    toast.show('Order marked as paid successfully');
+    toast.toastSuccess('Order marked as paid successfully');
     emit('updated');
   } catch (err: any) {
     toast.handleApiError(err);
@@ -36,7 +36,7 @@ const updateStatus = async (status: string) => {
   isProcessing.value = true;
   try {
     await salesService.updateStatus(props.order.id, status);
-    toast.show(`Order status updated to ${status}`);
+    toast.toastSuccess(`Order status updated to ${status}`);
     emit('updated');
   } catch (err: any) {
     toast.handleApiError(err);
@@ -47,7 +47,7 @@ const updateStatus = async (status: string) => {
 </script>
 
 <template>
-  <div v-if="permissions.canChangeOrder" class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
+  <div v-if="permissions.hasPermission('orders.change_order')" class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
     <h3 class="text-lg font-bold">Admin Actions</h3>
     
     <div class="flex flex-col gap-2">
