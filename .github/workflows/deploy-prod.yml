@@ -129,9 +129,9 @@ jobs:
 
           script: |
             # 1. Navigate to your project directory on the VPS
-            sudo mkdir -p /var/www/best-computers.rkshaon.info
-            sudo chown -R ${{ secrets.PROD_SSH_USER }}:${{ secrets.PROD_SSH_USER }} /var/www/best-computers.rkshaon.info || true
-            cd /var/www/best-computers.rkshaon.info
+            sudo mkdir -p /var/www/bestcomputerhub.com
+            sudo chown -R ${{ secrets.PROD_SSH_USER }}:${{ secrets.PROD_SSH_USER }} /var/www/bestcomputerhub.com || true
+            cd /var/www/bestcomputerhub.com
 
             # 2. Re-create or update docker-compose.yml on target machine if needed
             cat << 'EOF' > docker-compose.yml
