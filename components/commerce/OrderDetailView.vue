@@ -50,7 +50,7 @@ const statusConfig = {
       <h3 class="text-lg font-bold border-b pb-4">Order Items</h3>
       <div v-for="item in order.items" :key="item.id" class="flex gap-4">
         <div class="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
-          <img v-if="item.product.images.length > 0" :src="item.product.images[0]" :alt="decodeHtmlEntities(item.product.name)" class="w-full h-full object-cover" />
+          <img v-if="item.product?.images?.length > 0" :src="item.product.images[0]" :alt="decodeHtmlEntities(item.product.name)" class="w-full h-full object-cover" />
         </div>
         <div class="flex-grow">
           <p class="font-bold text-sm">{{ decodeHtmlEntities(item.product.name) }}</p>
