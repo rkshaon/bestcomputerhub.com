@@ -52,8 +52,8 @@ const fetchOrders = async () => {
     page: currentPage.value,
     page_size: itemsPerPage.value
   });
-  orders.value = result.results;
-  totalCount.value = result.count;
+  orders.value = result.results || [];
+  totalCount.value = result.count || 0;
 };
 
 watch([currentPage, itemsPerPage, debouncedSearchQuery, statusFilter], fetchOrders);
