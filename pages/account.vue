@@ -55,7 +55,7 @@ const fetchOrders = async () => {
   isLoadingOrders.value = true;
   try {
     const res = await orderService.getOrders();
-    orders.value = res.results;
+    orders.value = res.results || [];
   } catch (err) {
     handleApiError(err, 'Failed to load order history.');
   } finally {

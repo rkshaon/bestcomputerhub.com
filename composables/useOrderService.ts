@@ -7,11 +7,13 @@ export const useOrderService = () => {
 
   const getOrders = async (params: { page?: number; page_size?: number } = {}): Promise<{ results: Order[]; count: number }> => {
     try {
-      const data = await apiClient.request<{ results: Order[]; count: number }>('/api/v1/orders/', {
+      const data = await apiClient.request<any>('/api/v1/orders/', {
         method: 'GET',
         query: params
       });
-      return data || { results: [], count: 0 };
+      const results = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
+      const count = typeof data?.count === 'number' ? data.count : results.length;
+      return { results, count };
     } catch (err: any) {
       throw err;
     }
