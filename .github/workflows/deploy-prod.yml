@@ -145,7 +145,7 @@ jobs:
                   - NODE_ENV=production
                   - PORT=3000
                   - HOST=0.0.0.0
-                  - NUXT_PUBLIC_API_BASE=${{ secrets.DEV_NUXT_PUBLIC_API_BASE }}
+                  - NUXT_PUBLIC_API_BASE=${{ secrets.PROD_NUXT_PUBLIC_API_BASE }}
                 restart: unless-stopped
             EOF
 
