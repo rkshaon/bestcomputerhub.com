@@ -40,6 +40,10 @@ const categoryService = useCategoryService();
 const { toastInfo } = useToast();
 
 const isSuperAdmin = computed(() => authStore.isAdmin);
+const isAuthRoute = computed(() => {
+  const p = useRoute().path;
+  return p === '/login' || p === '/login/' || p === '/signup' || p === '/signup/';
+});
 
 // Mobile Category Drawer Accordion State
 const openMobileCategoryIds = ref<string[]>([]);
@@ -135,7 +139,7 @@ const hasChildren = (cat: Category): boolean => {
       </div>
 
       <!-- Navigation Menu Hierarchy -->
-      <div class="flex flex-col space-y-4">
+      <div v-if="!isAuthRoute" class="flex flex-col space-y-4">
         <div class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/50 pb-2">
           Technical Categories
         </div>

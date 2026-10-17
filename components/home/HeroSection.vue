@@ -1,7 +1,7 @@
 <!-- File: /components/home/HeroSection.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { ChevronLeft, ChevronRight, Pause, ArrowUpRight } from 'lucide-vue-next';
+import { ChevronRight, Pause } from 'lucide-vue-next';
 import { useIntervalFn, useSwipe, usePreferredReducedMotion } from '@vueuse/core';
 import { useBannerService } from '@/composables/useBannerService';
 import type { BannerStorefront } from '@/types';
@@ -227,7 +227,7 @@ const isExternalUrl = (url?: string) => {
   >
     <div
       ref="sliderRef"
-      class="relative group/slider rounded-3xl"
+      class="relative group/slider rounded-sm"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
       @focusin="handleMouseEnter"
@@ -239,7 +239,7 @@ const isExternalUrl = (url?: string) => {
         <!-- Primary Hero Area (homepage_hero) -->
         <div
           v-if="hasHeroBanners && currentHeroBanner"
-          class="relative aspect-[3/2] w-full rounded-3xl overflow-hidden bg-muted flex items-center p-6 sm:p-8 md:p-12 shadow-xl group/primary"
+          class="relative aspect-[3/2] w-full rounded-sm overflow-hidden bg-muted flex items-center p-6 sm:p-8 md:p-12 shadow-xl group/primary"
         >
           <!-- Banner Image with Responsive Picture Support -->
           <Transition :name="prefersReducedMotion === 'reduce' ? 'fade' : `slide-${direction}`">
@@ -292,29 +292,9 @@ const isExternalUrl = (url?: string) => {
 
           <!-- Carousel Controls (Only rendered when > 1 hero banner) -->
           <template v-if="heroBanners.length > 1">
-            <button
-              v-show="showControls"
-              @click="prevSlide"
-              :class="cn(
-                'absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-background/60 dark:bg-black/50 hover:bg-background/90 dark:hover:bg-black/80 backdrop-blur-md text-foreground border border-border/50 flex items-center justify-center transition-all duration-200 shadow-md opacity-80 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                !showControls && 'hidden'
-              )"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft class="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
 
-            <button
-              v-show="showControls"
-              @click="nextSlide"
-              :class="cn(
-                'absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-background/60 dark:bg-black/50 hover:bg-background/90 dark:hover:bg-black/80 backdrop-blur-md text-foreground border border-border/50 flex items-center justify-center transition-all duration-200 shadow-md opacity-80 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                !showControls && 'hidden'
-              )"
-              aria-label="Next slide"
-            >
-              <ChevronRight class="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+
+
 
             <!-- Bottom Indicators -->
             <div class="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
@@ -357,7 +337,7 @@ const isExternalUrl = (url?: string) => {
             :[isExternalUrl(currentRightTopBanner?.cta_url)?'href':'to']="currentRightTopBanner.cta_url || '/products/'"
             :target="isExternalUrl(currentRightTopBanner?.cta_url) ? '_blank' : undefined"
             :rel="isExternalUrl(currentRightTopBanner?.cta_url) ? 'noopener noreferrer' : undefined"
-            class="aspect-[3/2] w-full relative rounded-2xl overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
+            class="aspect-[3/2] w-full relative rounded-sm overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
           >
             <picture class="absolute inset-0 z-0">
               <source v-if="currentRightTopBanner.mobile_image" media="(max-width: 639px)" :srcset="currentRightTopBanner.mobile_image" />
@@ -370,9 +350,6 @@ const isExternalUrl = (url?: string) => {
             </picture>
 
             <div class="relative z-10 flex items-start justify-between">
-              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors ml-auto">
-                <ArrowUpRight class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
             </div>
 
             <div v-if="currentRightTopBanner.title || currentRightTopBanner.subtitle || currentRightTopBanner.cta_text" class="relative z-10 space-y-1 sm:space-y-1.5 pt-4">
@@ -396,7 +373,7 @@ const isExternalUrl = (url?: string) => {
             :[isExternalUrl(currentRightBottomBanner?.cta_url)?'href':'to']="currentRightBottomBanner.cta_url || '/products/'"
             :target="isExternalUrl(currentRightBottomBanner?.cta_url) ? '_blank' : undefined"
             :rel="isExternalUrl(currentRightBottomBanner?.cta_url) ? 'noopener noreferrer' : undefined"
-            class="aspect-[3/2] w-full relative rounded-2xl overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
+            class="aspect-[3/2] w-full relative rounded-sm overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
           >
             <picture class="absolute inset-0 z-0">
               <source v-if="currentRightBottomBanner.mobile_image" media="(max-width: 639px)" :srcset="currentRightBottomBanner.mobile_image" />
@@ -409,9 +386,6 @@ const isExternalUrl = (url?: string) => {
             </picture>
 
             <div class="relative z-10 flex items-start justify-between">
-              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors ml-auto">
-                <ArrowUpRight class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
             </div>
 
             <div v-if="currentRightBottomBanner.title || currentRightBottomBanner.subtitle || currentRightBottomBanner.cta_text" class="relative z-10 space-y-1 sm:space-y-1.5 pt-4">

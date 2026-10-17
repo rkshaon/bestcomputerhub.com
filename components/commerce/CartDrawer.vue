@@ -78,7 +78,15 @@ const handleCheckout = () => {
           </div>
           <div class="flex-grow min-w-0 space-y-1">
             <div class="flex justify-between items-start gap-2">
-              <h4 class="font-bold text-xs sm:text-sm line-clamp-2 break-words flex-1 min-w-0">{{ decodeHtmlEntities(item.product?.name || 'Product') }}</h4>
+              <h4 class="font-bold text-xs sm:text-sm line-clamp-2 break-words flex-1 min-w-0">
+                <NuxtLink 
+                  :to="`/product/${item.product?.slug || item.product?.id || item.productId}/`"
+                  @click="uiStore.isCartOpen = false"
+                  class="hover:text-primary focus-visible:text-primary focus:outline-none transition-colors"
+                >
+                  {{ decodeHtmlEntities(item.product?.name || 'Product') }}
+                </NuxtLink>
+              </h4>
               <button 
                 @click="cartStore.removeFromCart(Number(item.productId || item.id || item.product?.id))"
                 class="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0"

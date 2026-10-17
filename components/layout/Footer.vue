@@ -4,6 +4,12 @@
 import { Facebook, Twitter, Linkedin, Youtube /*, Mail, PackageSearch, ArrowRight */ } from 'lucide-vue-next';
 
 const currentYear = new Date().getFullYear();
+const route = useRoute();
+const isAuthRoute = computed(() => {
+  const p = route.path;
+  return p === '/login' || p === '/login/' || p === '/signup' || p === '/signup/';
+});
+
 
 const socialLinks = [
   { 
@@ -38,7 +44,7 @@ const socialLinks = [
 </script>
 
 <template>
-  <footer class="bg-card pt-10 sm:pt-16 md:pt-20 pb-8 sm:pb-10 border-t">
+  <footer v-if="!isAuthRoute" class="bg-card pt-10 sm:pt-16 md:pt-20 pb-8 sm:pb-10 border-t">
     <div class="container mx-auto px-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-12 mb-10 sm:mb-20">
         <!-- Brand -->

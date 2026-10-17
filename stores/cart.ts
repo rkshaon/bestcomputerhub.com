@@ -46,7 +46,11 @@ export const useCartStore = defineStore('cart', {
     },
     totalPrice: (state) => {
       const list = Array.isArray(state.items) ? state.items : [];
-      return list.reduce((sum, item) => sum + ((Number(item?.product?.price) || 0) * (Number(item?.quantity) || 0)), 0);
+      return list.reduce((sum, item) => {
+        const p = item?.product;
+        const price = Number(p?.current_selling_price ?? p?.price ?? 0);
+        return sum + (price * (Number(item?.quantity) || 0));
+      }, 0);
     },
   },
   actions: {
@@ -201,11 +205,15 @@ export const useCartStore = defineStore('cart', {
 
       try {
         const raw = localStorage.getItem(GUEST_CART_STORAGE_KEY);
-        if (!raw) return;
+        if (!raw) {
+          await this.fetchCart();
+          return;
+        }
 
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed) || parsed.length === 0) {
           localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+          await this.fetchCart();
           return;
         }
 

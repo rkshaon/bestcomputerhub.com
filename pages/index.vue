@@ -22,7 +22,7 @@ const {
   refresh: refreshBestSellers 
 } = await useAsyncData(
   'storefront-best-sellers',
-  () => productService.getProductsList({ page_size: 8 }),
+  () => productService.getProductsList({ page_size: 15 }),
   {
     lazy: false
   }
@@ -91,9 +91,12 @@ const homepageRichText = `
 </script>
 
 <template>
-  <div class="space-y-20 pb-20">
+  <div class="space-y-4 pb-20">
     <!-- Hero Section -->
     <HomeHeroSection />
+
+    <!-- Announcement Marquee -->
+    <HomeAnnouncementMarquee />
 
     <!-- Quick Links -->
     <HomeQuickLinks />

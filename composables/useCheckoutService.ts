@@ -21,6 +21,8 @@ export interface CreateOrderPayload {
   shipping_method_id: number | string;
   payment_method: string;
   payment_details?: any;
+  idempotency_key: string;
+  notes?: string;
 }
 
 export const useCheckoutService = () => {
@@ -40,9 +42,13 @@ export const useCheckoutService = () => {
 
   const createOrder = async (payload: CreateOrderPayload, idempotencyKey: string): Promise<any> => {
     try {
+      const body = {
+        ...payload,
+        idempotency_key: idempotencyKey
+      };
       const data = await apiClient.request<any>('/api/v1/checkout/confirm/', {
         method: 'POST',
-        body: payload,
+        body: body,
         headers: {
           'Idempotency-Key': idempotencyKey
         }
