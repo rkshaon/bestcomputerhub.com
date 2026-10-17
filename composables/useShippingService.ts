@@ -513,13 +513,22 @@ export const useShippingService = () => {
       isLoading.value = false;
 
       if (data && typeof data === 'object') {
+        let rawList: any[] = [];
         if (Array.isArray(data.options)) {
-          return data.options;
+          rawList = data.options;
         } else if (Array.isArray(data.results)) {
-          return data.results;
+          rawList = data.results;
         } else if (Array.isArray(data)) {
-          return data;
+          rawList = data;
         }
+        return rawList.map((opt: any) => {
+          const methodId = opt.method_id ?? opt.id ?? opt.shipping_method_id;
+          return {
+            ...opt,
+            id: opt.id ?? methodId,
+            method_id: methodId
+          };
+        });
       }
       return [];
     } catch (err: any) {

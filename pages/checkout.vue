@@ -34,13 +34,14 @@ const selectedShippingOption = ref<ShippingOption | null>(null);
 const selectedAddressId = ref<number | string | null>(null);
 
 const runValidation = async () => {
-  if (!selectedAddressId.value || !selectedShippingOption.value) return;
+  const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
+  if (!selectedAddressId.value || !methodId) return;
   isValidating.value = true;
   validationErrorMsg.value = null;
   try {
     const res = await checkoutService.validateCheckout({
       shipping_address_id: selectedAddressId.value,
-      shipping_method_id: selectedShippingOption.value.id
+      shipping_method_id: methodId
     });
     validationData.value = res;
   } catch (err: any) {
@@ -53,7 +54,8 @@ const runValidation = async () => {
 };
 
 watch([selectedAddressId, selectedShippingOption, () => cartStore.items.length], () => {
-  if (selectedAddressId.value && selectedShippingOption.value) {
+  const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
+  if (selectedAddressId.value && methodId) {
     runValidation();
   }
 }, { deep: true });
@@ -329,10 +331,11 @@ const handlePlaceOrder = async () => {
 
   isProcessing.value = true;
   try {
-    if (selectedAddressId.value && selectedShippingOption.value) {
+    const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
+    if (selectedAddressId.value && methodId) {
       const valRes = await checkoutService.validateCheckout({
         shipping_address_id: selectedAddressId.value,
-        shipping_method_id: selectedShippingOption.value.id
+        shipping_method_id: methodId
       });
       if (valRes && valRes.valid === false) {
         toastError('Checkout validation failed. Please check your order details.');
@@ -343,7 +346,7 @@ const handlePlaceOrder = async () => {
 
     const orderRes = await checkoutService.createOrder({
       shipping_address_id: selectedAddressId.value,
-      shipping_method_id: selectedShippingOption.value?.id || '',
+      shipping_method_id: methodId || '',
       payment_method: form.paymentMethod,
       payment_details: {
         card_number: form.cardNumber ? form.cardNumber.slice(-4) : undefined,
@@ -550,11 +553,11 @@ const handlePlaceOrder = async () => {
               <div v-else class="grid grid-cols-1 gap-3">
                 <div 
                   v-for="opt in shippingOptions"
-                  :key="opt.id"
+                  :key="opt.method_id || opt.id"
                   @click="selectedShippingOption = opt"
                   :class="cn(
                     'p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between',
-                    selectedShippingOption?.id === opt.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/30 bg-card'
+                    (selectedShippingOption?.method_id === opt.method_id || selectedShippingOption?.id === opt.id) ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/30 bg-card'
                   )"
                 >
                   <div class="space-y-1">
