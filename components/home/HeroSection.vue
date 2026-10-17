@@ -1,7 +1,7 @@
 <!-- File: /components/home/HeroSection.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { ChevronRight, Pause, ArrowUpRight } from 'lucide-vue-next';
+import { ChevronRight, Pause } from 'lucide-vue-next';
 import { useIntervalFn, useSwipe, usePreferredReducedMotion } from '@vueuse/core';
 import { useBannerService } from '@/composables/useBannerService';
 import type { BannerStorefront } from '@/types';
@@ -350,9 +350,6 @@ const isExternalUrl = (url?: string) => {
             </picture>
 
             <div class="relative z-10 flex items-start justify-between">
-              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors ml-auto">
-                <ArrowUpRight class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
             </div>
 
             <div v-if="currentRightTopBanner.title || currentRightTopBanner.subtitle || currentRightTopBanner.cta_text" class="relative z-10 space-y-1 sm:space-y-1.5 pt-4">
@@ -389,9 +386,6 @@ const isExternalUrl = (url?: string) => {
             </picture>
 
             <div class="relative z-10 flex items-start justify-between">
-              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors ml-auto">
-                <ArrowUpRight class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
             </div>
 
             <div v-if="currentRightBottomBanner.title || currentRightBottomBanner.subtitle || currentRightBottomBanner.cta_text" class="relative z-10 space-y-1 sm:space-y-1.5 pt-4">
