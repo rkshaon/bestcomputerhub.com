@@ -1,7 +1,7 @@
 <!-- File: /components/home/HeroSection.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { ChevronLeft, ChevronRight, Pause, ArrowUpRight } from 'lucide-vue-next';
+import { ChevronRight, Pause, ArrowUpRight } from 'lucide-vue-next';
 import { useIntervalFn, useSwipe, usePreferredReducedMotion } from '@vueuse/core';
 import { useBannerService } from '@/composables/useBannerService';
 import type { BannerStorefront } from '@/types';
@@ -292,29 +292,9 @@ const isExternalUrl = (url?: string) => {
 
           <!-- Carousel Controls (Only rendered when > 1 hero banner) -->
           <template v-if="heroBanners.length > 1">
-            <button
-              v-show="showControls"
-              @click="prevSlide"
-              :class="cn(
-                'absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-background/60 dark:bg-black/50 hover:bg-background/90 dark:hover:bg-black/80 backdrop-blur-md text-foreground border border-border/50 flex items-center justify-center transition-all duration-200 shadow-md opacity-80 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                !showControls && 'hidden'
-              )"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft class="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
 
-            <button
-              v-show="showControls"
-              @click="nextSlide"
-              :class="cn(
-                'absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-background/60 dark:bg-black/50 hover:bg-background/90 dark:hover:bg-black/80 backdrop-blur-md text-foreground border border-border/50 flex items-center justify-center transition-all duration-200 shadow-md opacity-80 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                !showControls && 'hidden'
-              )"
-              aria-label="Next slide"
-            >
-              <ChevronRight class="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+
+
 
             <!-- Bottom Indicators -->
             <div class="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
