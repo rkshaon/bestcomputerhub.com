@@ -227,7 +227,7 @@ const isExternalUrl = (url?: string) => {
   >
     <div
       ref="sliderRef"
-      class="relative group/slider rounded-3xl"
+      class="relative group/slider rounded-sm"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
       @focusin="handleMouseEnter"
@@ -239,7 +239,7 @@ const isExternalUrl = (url?: string) => {
         <!-- Primary Hero Area (homepage_hero) -->
         <div
           v-if="hasHeroBanners && currentHeroBanner"
-          class="relative aspect-[3/2] w-full rounded-3xl overflow-hidden bg-muted flex items-center p-6 sm:p-8 md:p-12 shadow-xl group/primary"
+          class="relative aspect-[3/2] w-full rounded-sm overflow-hidden bg-muted flex items-center p-6 sm:p-8 md:p-12 shadow-xl group/primary"
         >
           <!-- Banner Image with Responsive Picture Support -->
           <Transition :name="prefersReducedMotion === 'reduce' ? 'fade' : `slide-${direction}`">
@@ -337,7 +337,7 @@ const isExternalUrl = (url?: string) => {
             :[isExternalUrl(currentRightTopBanner?.cta_url)?'href':'to']="currentRightTopBanner.cta_url || '/products/'"
             :target="isExternalUrl(currentRightTopBanner?.cta_url) ? '_blank' : undefined"
             :rel="isExternalUrl(currentRightTopBanner?.cta_url) ? 'noopener noreferrer' : undefined"
-            class="aspect-[3/2] w-full relative rounded-2xl overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
+            class="aspect-[3/2] w-full relative rounded-sm overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
           >
             <picture class="absolute inset-0 z-0">
               <source v-if="currentRightTopBanner.mobile_image" media="(max-width: 639px)" :srcset="currentRightTopBanner.mobile_image" />
@@ -373,7 +373,7 @@ const isExternalUrl = (url?: string) => {
             :[isExternalUrl(currentRightBottomBanner?.cta_url)?'href':'to']="currentRightBottomBanner.cta_url || '/products/'"
             :target="isExternalUrl(currentRightBottomBanner?.cta_url) ? '_blank' : undefined"
             :rel="isExternalUrl(currentRightBottomBanner?.cta_url) ? 'noopener noreferrer' : undefined"
-            class="aspect-[3/2] w-full relative rounded-2xl overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
+            class="aspect-[3/2] w-full relative rounded-sm overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
           >
             <picture class="absolute inset-0 z-0">
               <source v-if="currentRightBottomBanner.mobile_image" media="(max-width: 639px)" :srcset="currentRightBottomBanner.mobile_image" />
