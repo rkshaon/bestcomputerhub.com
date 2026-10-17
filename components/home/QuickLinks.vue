@@ -12,7 +12,6 @@ interface QuickLinkItem {
   id: string;
   title: string;
   description: string;
-  route: string;
   icon: any;
   badge?: string;
   badgeVariant?: 'destructive' | 'primary' | 'amber';
@@ -23,35 +22,30 @@ const quickLinks: QuickLinkItem[] = [
     id: 'repair-hub',
     title: 'Repair Hub',
     description: 'Expert hardware repair & component diagnostics',
-    route: '/support/help-center/',
     icon: Wrench,
   },
   {
     id: 'tools',
     title: 'Tools',
     description: 'System utilities & diagnostic software',
-    route: '/products/',
     icon: Sliders,
   },
   {
     id: 'servicing-center',
     title: 'Servicing Center',
     description: 'Professional maintenance & cleaning',
-    route: '/support/help-center/',
     icon: Settings,
   },
   {
     id: 'help-center',
     title: 'Help Center',
     description: 'Customer service & technical support',
-    route: '/support/help-center/',
     icon: Headphones,
   },
   {
     id: 'ai-mode',
     title: 'AI Mode',
     description: 'Intelligent hardware recommendations',
-    route: '/products/',
     icon: Sparkles,
     badge: 'New',
     badgeVariant: 'amber',
@@ -62,11 +56,10 @@ const quickLinks: QuickLinkItem[] = [
 <template>
   <section class="container mx-auto px-4" aria-label="Quick Access Navigation">
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-      <NuxtLink
+      <div
         v-for="item in quickLinks"
         :key="item.id"
-        :to="item.route"
-        class="group relative flex flex-col justify-between p-4 rounded-2xl bg-card border border-border/60 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        class="group relative flex flex-col justify-between p-4 rounded-2xl bg-card border border-border/60 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 select-none"
       >
         <div>
           <div class="flex items-center justify-between mb-3">
@@ -94,7 +87,7 @@ const quickLinks: QuickLinkItem[] = [
             {{ item.description }}
           </p>
         </div>
-      </NuxtLink>
+      </div>
     </div>
   </section>
 </template>
