@@ -3,6 +3,8 @@
 import { onMounted } from 'vue';
 import { useUIStore } from '@/stores/ui';
 import { useCookieStore } from '@/stores/cookies';
+import { useAuthStore } from '@/stores/auth';
+import { useCartStore } from '@/stores/cart';
 import { Toaster } from 'vue-sonner';
 import 'vue-sonner/style.css';
 
@@ -29,6 +31,12 @@ useHead({
 onMounted(() => {
   uiStore.initTheme();
   cookieStore.loadFromStorage();
+  
+  const authStore = useAuthStore();
+  if (authStore.isLoggedIn) {
+    const cartStore = useCartStore();
+    cartStore.fetchCart();
+  }
 });
 </script>
 
