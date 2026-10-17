@@ -26,6 +26,10 @@ const productService = useProductService();
 const categoryService = useCategoryService();
 const { toastInfo } = useToast();
 const route = useRoute();
+const isAuthRoute = computed(() => {
+  const p = route.path;
+  return p === '/login' || p === '/login/' || p === '/signup' || p === '/signup/';
+});
 
 // Search State
 const searchQuery = ref('');
@@ -432,6 +436,7 @@ if (process.client) {
 
           <!-- Shopping Bag -->
           <button 
+            v-if="!isAuthRoute"
             @click="uiStore.toggleCart()" 
             class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground shrink-0"
             title="Shopping Bag"
@@ -622,6 +627,7 @@ if (process.client) {
 
           <!-- PC Builder -->
           <NuxtLink 
+            v-if="!isAuthRoute"
             to="/products/"
             class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
             title="PC Builder"
@@ -648,6 +654,7 @@ if (process.client) {
 
           <!-- Track Your Order -->
           <NuxtLink 
+            v-if="!isAuthRoute"
             to="/account/" 
             class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
             title="Track Your Order"
@@ -689,6 +696,7 @@ if (process.client) {
 
           <!-- Bag (Cart) -->
           <button 
+            v-if="!isAuthRoute"
             @click="uiStore.toggleCart()" 
             class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground shrink-0"
             title="Shopping Bag"
@@ -724,6 +732,7 @@ if (process.client) {
 
       <!-- Category Navigation Row -->
       <nav 
+        v-if="!isAuthRoute"
         ref="navRef"
         :class="cn(
           'hidden md:flex relative items-center justify-between w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50 transition-all duration-200',
