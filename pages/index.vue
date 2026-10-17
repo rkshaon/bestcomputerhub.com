@@ -95,6 +95,9 @@ const homepageRichText = `
     <!-- Hero Section -->
     <HomeHeroSection />
 
+    <!-- Announcement Marquee -->
+    <HomeAnnouncementMarquee />
+
     <!-- Quick Links -->
     <HomeQuickLinks />
 
