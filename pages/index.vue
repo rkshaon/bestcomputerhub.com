@@ -22,7 +22,7 @@ const {
   refresh: refreshBestSellers 
 } = await useAsyncData(
   'storefront-best-sellers',
-  () => productService.getProductsList({ page_size: 8 }),
+  () => productService.getProductsList({ page_size: 15 }),
   {
     lazy: false
   }
