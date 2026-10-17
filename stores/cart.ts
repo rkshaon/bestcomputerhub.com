@@ -201,11 +201,15 @@ export const useCartStore = defineStore('cart', {
 
       try {
         const raw = localStorage.getItem(GUEST_CART_STORAGE_KEY);
-        if (!raw) return;
+        if (!raw) {
+          await this.fetchCart();
+          return;
+        }
 
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed) || parsed.length === 0) {
           localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+          await this.fetchCart();
           return;
         }
 
