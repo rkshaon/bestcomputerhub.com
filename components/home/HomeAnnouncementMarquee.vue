@@ -3,8 +3,8 @@
 </script>
 
 <template>
-  <section class="container mx-auto px-4 py-3" aria-label="Store Announcement">
-    <div class="bg-primary/10 border-y border-primary/20 overflow-hidden rounded-lg flex items-center p-3">
+  <section class="container mx-auto px-4 py-1" aria-label="Store Announcement">
+    <div class="bg-primary/10 border-y border-primary/20 overflow-hidden rounded-lg flex items-center p-1">
       <div class="overflow-hidden relative w-full flex">
         <div class="animate-marquee whitespace-nowrap flex items-center gap-12 text-sm font-semibold text-foreground">
           <span>Welcome to Bangladeshi's Trusted Retail Store</span>
