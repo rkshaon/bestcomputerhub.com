@@ -292,20 +292,65 @@ const handleSaveFormAsAddress = async () => {
   }
 };
 
-const proceedToPayment = () => {
+const proceedToPayment = async () => {
   if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.phone) {
     toastError('Please fill in all required shipping fields.');
     return;
   }
-  if (!selectedAddressId.value) {
-    toastError('Please save your shipping address and select a delivery option first.');
-    return;
+
+  isProcessing.value = true;
+  try {
+    // 1. Save or Update Address
+    let addressId = selectedAddressId.value;
+    if (!addressId) {
+      const created = await addressService.createCustomerAddress({
+        address_type: 'SHIPPING',
+        first_name: form.firstName,
+        last_name: form.lastName,
+        address_1: form.address,
+        city: form.city,
+        state: form.state || 'N/A',
+        postcode: form.zip || '',
+        country: 'Bangladesh',
+        phone: form.phone
+      });
+      addressId = created!.id;
+      selectedAddressId.value = addressId;
+      await fetchAddresses(1);
+    }
+
+    // 2. Fetch/Re-fetch Shipping Options
+    await fetchShippingOptions(addressId);
+    if (shippingOptions.value.length === 0) {
+      throw new Error('No shipping options available for this address.');
+    }
+    const firstOption = shippingOptions.value[0];
+    if (firstOption) {
+      selectedShippingOption.value = firstOption;
+    } else {
+      selectedShippingOption.value = null;
+    }
+
+    // 3. Final Pre-flight Validation
+    const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
+    if (methodId) {
+      const valRes = await checkoutService.validateCheckout({
+        shipping_address_id: addressId,
+        shipping_method_id: methodId
+      });
+      if (valRes && valRes.valid === false) {
+        throw new Error('Checkout validation failed. Please check your order details.');
+      }
+    } else {
+      throw new Error('Please select a shipping method.');
+    }
+
+    step.value = 2;
+  } catch (err: any) {
+    handleApiError(err, 'Failed to proceed to payment.');
+  } finally {
+    isProcessing.value = false;
   }
-  if (shippingOptions.value.length > 0 && !selectedShippingOption.value) {
-    toastError('Please select a shipping option.');
-    return;
-  }
-  step.value = 2;
 };
 
 const currentIdempotencyKey = ref<string | null>(null);
@@ -607,15 +652,8 @@ const handlePlaceOrder = async () => {
               </div>
             </div>
 
-            <div v-if="authStore.isLoggedIn" class="pt-2">
-              <UiButton @click="handleSaveFormAsAddress" :disabled="addressService.isCreating.value" variant="outline" class="w-full h-12 rounded-2xl text-xs font-bold gap-2">
-                <MapPin class="w-4 h-4 text-primary" />
-                {{ addressService.isCreating.value ? 'Saving & Calculating...' : 'Save Address & Calculate Shipping Options' }}
-              </UiButton>
-            </div>
-
-            <UiButton class="w-full h-14 rounded-2xl text-lg font-bold" @click="proceedToPayment">
-              Continue to Payment
+            <UiButton class="w-full h-14 rounded-2xl text-lg font-bold" @click="proceedToPayment" :disabled="isProcessing">
+              {{ isProcessing ? 'Saving & Validating...' : 'Continue to Payment' }}
             </UiButton>
           </div>
 
