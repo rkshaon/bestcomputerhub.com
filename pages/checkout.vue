@@ -398,7 +398,8 @@ const handlePlaceOrder = async () => {
         mfs_type: form.mfsType,
         mfs_number: form.mfsNumber,
         transaction_id: form.mfsTransactionId
-      }
+      },
+      idempotency_key: currentIdempotencyKey.value!
     }, currentIdempotencyKey.value);
 
     if (orderRes && orderRes.orderNumber) {
