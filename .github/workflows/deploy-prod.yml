@@ -112,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
 
     environment:
-      name: development
+      name: production
 
     needs: [test, docker-release]
 
