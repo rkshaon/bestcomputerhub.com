@@ -8,12 +8,9 @@
       <div class="overflow-hidden relative w-full flex">
         <div class="animate-marquee whitespace-nowrap flex items-center gap-12 text-sm font-medium text-foreground py-1">
           <span>Welcome to Bangladeshi's Trusted Retail Store</span>
-          <span class="text-primary/40">•</span>
+          <span>We are open now!</span>
           <span>Welcome to Bangladeshi's Trusted Retail Store</span>
-          <span class="text-primary/40">•</span>
-          <span>Welcome to Bangladeshi's Trusted Retail Store</span>
-          <span class="text-primary/40">•</span>
-          <span>Welcome to Bangladeshi's Trusted Retail Store</span>
+          <span>We are open now!</span>
         </div>
       </div>
     </div>
