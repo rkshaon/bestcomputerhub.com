@@ -53,7 +53,7 @@ const socialLinks = [
 <template>
   <footer v-if="!isAuthRoute" class="bg-card pt-8 sm:pt-10 md:pt-12 pb-6 sm:pb-8 border-t">
     <div class="container mx-auto px-4">
-      <div class="w-full lg:w-4/5 mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 sm:mb-10">
+      <div class="w-full lg:w-9/10 mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 sm:mb-10">
         <!-- Brand -->
         <div class="space-y-4 sm:space-y-6 text-left">
           <div class="space-y-3 sm:space-y-4">
