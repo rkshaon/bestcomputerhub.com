@@ -64,28 +64,15 @@ const getCategoryIcon = (slug: string, name: string): Component => {
 
 <template>
   <section class="container mx-auto px-4" aria-labelledby="featured-categories-heading">
-    <!-- Header Row -->
-    <div class="flex items-end justify-between mb-6 pb-4 border-b border-border/40">
-      <div>
-        <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary mb-1">
-          <span>Explore Infrastructure</span>
-        </div>
+    <!-- Heading -->
+    <div class="mb-6">
         <h2 id="featured-categories-heading" class="text-2xl sm:text-3xl font-display font-bold tracking-tight text-foreground">
           Featured Categories
         </h2>
-      </div>
-
-      <NuxtLink 
-        to="/products/" 
-        class="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-primary hover:text-primary/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm group"
-      >
-        <span>View All Categories</span>
-        <ChevronRight class="w-4 h-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-      </NuxtLink>
     </div>
 
     <!-- Loading Skeleton State -->
-    <div v-if="status === 'pending'" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+    <div v-if="status === 'pending'" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4">
       <div
         v-for="i in 12"
         :key="'cat-skeleton-' + i"
@@ -130,7 +117,7 @@ const getCategoryIcon = (slug: string, name: string): Component => {
     </div>
 
     <!-- Category Grid - Real Featured Categories -->
-    <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+    <div v-else class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4">
       <NuxtLink
         v-for="cat in featuredCategories"
         :key="cat.id"
