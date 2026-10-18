@@ -105,7 +105,7 @@ const socialLinks = [
             { name: 'Repair Hub', url: null }
           ] },
           { title: 'Policy', links: [
-            { name: 'Disclaimer', url: null },
+            { name: 'Disclaimer', url: '/disclaimer/' },
             { name: 'Privacy Policy', url: null },
             { name: 'Warranty Policy', url: null },
             { name: 'Return, Refund & After-Sales Policy', url: null },
