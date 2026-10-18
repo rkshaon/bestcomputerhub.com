@@ -617,16 +617,16 @@ Components are classified using four standard metadata properties:
 - **Exact File Location**: `/components/home/BrandMarquee.vue`
 - **Component Type**: Domain / Home presentation
 - **Scope**: Storefront
-- **Purpose**: Continuous sliding brand logo marquee banner.
-- **Routes/Pages Used**: Homepage (`/`).
-- **Main Responsibilities**: Render infinite sliding horizontal track displaying top tech brand logos.
+- **Purpose**: Continuous sliding brand logo marquee banner displaying brand logos only.
+- **Routes/Pages Used**: Homepage (`/`), About Us (`/about-us/`), Delivery Policy (`/delivery-policy/`), Disclaimer (`/disclaimer/`), EMI Information (`/emi-information/`), Privacy Policy (`/privacy-policy/`), Return Policy (`/return-refund-after-sales-policy/`), Warranty Policy (`/warranty-policy/`), Digital Commerce Guidelines (`/digital-commerce-guidelines/`).
+- **Main Responsibilities**: Render infinite sliding horizontal track displaying top tech brand logos in centered, aspect-ratio-preserved cards without visible text names; supports pause-on-hover and reduced-motion accessibility.
 - **What It Explicitly Does Not Own**: Brand API query execution.
 - **State Owned**: None.
 - **Calls API**: No
-- **Related Composables/Services**: CSS keyframe animations.
-- **Responsive Responsibility**: Seamless full-width infinite marquee across screen sizes.
-- **Reusability Level**: Medium
-- **Important Behavior to Preserve**: Continuous CSS marquee animation.
+- **Related Composables/Services**: CSS keyframe animations, `decodeHtmlEntities`.
+- **Responsive Responsibility**: Responsive logo card containers (`w-32 sm:w-36 md:w-40 h-16 sm:h-20`), seamless full-width infinite marquee across screen sizes.
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Continuous CSS marquee animation, seamless duplicated track loop, pause-on-hover, brand links.
 - **Known Architectural Risks**: None.
 
 ---

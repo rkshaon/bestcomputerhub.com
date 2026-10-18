@@ -9,27 +9,25 @@ defineProps<{
 </script>
 
 <template>
-  <section class="container mx-auto px-4">
+  <section class="container mx-auto px-4" aria-label="Partner Brands">
     <div class="w-full bg-muted/20 border border-border/60 rounded-2xl py-6 overflow-hidden group shadow-xs">
       <div class="flex whitespace-nowrap animate-marquee">
         <!-- Double the content for seamless looping -->
-        <div v-for="i in 2" :key="i" class="flex items-center space-x-16 px-4 select-none">
+        <div v-for="i in 2" :key="i" class="flex items-center space-x-6 sm:space-x-8 px-3 sm:px-4 select-none shrink-0">
           <NuxtLink 
             v-for="brand in brands" 
             :key="brand.id + '-' + i" 
             :to="'/products/?brand=' + encodeURIComponent(brand.name)"
-            class="flex items-center gap-3.5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500 cursor-pointer py-1.5 group/brand"
+            :title="decodeHtmlEntities(brand.name)"
+            :aria-label="decodeHtmlEntities(brand.name)"
+            class="w-32 sm:w-36 md:w-40 h-16 sm:h-20 rounded-xl bg-card border border-border flex items-center justify-center p-3 sm:p-4 overflow-hidden group/brand hover:border-primary/40 hover:scale-105 transition-all duration-300 shadow-xs hover:shadow-md cursor-pointer shrink-0"
           >
-            <!-- Logo container -->
-            <div class="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center p-1.5 overflow-hidden group-hover/brand:scale-105 group-hover/brand:border-primary/20 transition-all duration-300 shadow-sm">
-              <img 
-                :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
-                :alt="decodeHtmlEntities(brand.name)" 
-                class="w-full h-full object-contain"
-              />
-            </div>
-            <!-- Brand name -->
-            <span class="text-xl font-display font-medium tracking-tight text-foreground group-hover/brand:text-primary transition-colors">{{ decodeHtmlEntities(brand.name) }}</span>
+            <img 
+              :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
+              :alt="decodeHtmlEntities(brand.name)" 
+              class="w-full h-full object-contain filter grayscale opacity-60 group-hover/brand:grayscale-0 group-hover/brand:opacity-100 transition-all duration-300"
+              loading="lazy"
+            />
           </NuxtLink>
         </div>
       </div>
@@ -47,5 +45,11 @@ defineProps<{
 }
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
 }
 </style>
