@@ -106,7 +106,7 @@ const socialLinks = [
           ] },
           { title: 'Policy', links: [
             { name: 'Disclaimer', url: '/disclaimer/' },
-            { name: 'Privacy Policy', url: null },
+            { name: 'Privacy Policy', url: '/privacy-policy/' },
             { name: 'Warranty Policy', url: null },
             { name: 'Return, Refund & After-Sales Policy', url: null },
             { name: 'Delivery Policy', url: null },
