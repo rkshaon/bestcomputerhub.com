@@ -159,15 +159,9 @@ const socialLinks = [
       -->
 
       <!-- Bottom Bar -->
-      <div class="pt-10 border-t flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="pt-10 border-t flex flex-col md:flex-row justify-center items-center gap-6">
         <div class="flex flex-wrap justify-center gap-6 text-xs font-medium text-muted-foreground">
-          <span>&copy; {{ currentYear }} Best Computer Hub Ltd.</span>
-          <NuxtLink to="/privacy/" class="hover:text-primary transition-colors">Privacy Policy</NuxtLink>
-          <NuxtLink to="/terms/" class="hover:text-primary transition-colors">Terms of Service</NuxtLink>
-          <NuxtLink to="/cookies/" class="hover:text-primary transition-colors">Cookie Settings</NuxtLink>
-        </div>
-        <div class="flex items-center gap-6 opacity-30 grayscale saturate-0">
-          <img v-for="i in 5" :key="i" :src="`https://placehold.co/40x24/png?text=Card${i}`" class="h-6" alt="" />
+          <span>&copy; {{ currentYear }}, Best Technology BD. All Rights Reserved.</span>
         </div>
       </div>
     </div>
