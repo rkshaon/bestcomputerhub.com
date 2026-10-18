@@ -388,7 +388,7 @@ Components are classified using four standard metadata properties:
 - **State Owned**: None.
 - **Calls API**: No
 - **Related Composables/Services**: None.
-- **Responsive Responsibility**: 4-column balanced responsive grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`) occupying 80% width centered horizontally on desktop (`w-full lg:w-4/5 mx-auto`) and full width on smaller screens.
+- **Responsive Responsibility**: 4-column balanced responsive grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`) occupying 90% width centered horizontally on desktop (`w-full lg:w-[90%] mx-auto`) with compact navigation columns and full width on smaller screens.
 - **Reusability Level**: High (Singleton layout component)
 - **Important Behavior to Preserve**: Trailing slash storefront URL targets on footer navigation links.
 - **Known Architectural Risks**: None.
