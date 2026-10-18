@@ -96,7 +96,7 @@ const socialLinks = [
         <!-- Links Grid -->
         <div v-for="section in [
           { title: 'Information', links: [
-            { name: 'About Us', url: null },
+            { name: 'About Us', url: '/about-us/' },
             { name: 'Contact Us', url: null },
             { name: 'Affiliation', url: null },
             { name: 'EMI Information', url: null },
