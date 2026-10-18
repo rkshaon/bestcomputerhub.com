@@ -51,37 +51,37 @@ const socialLinks = [
 </script>
 
 <template>
-  <footer v-if="!isAuthRoute" class="bg-card pt-10 sm:pt-16 md:pt-20 pb-8 sm:pb-10 border-t">
+  <footer v-if="!isAuthRoute" class="bg-card pt-8 sm:pt-10 md:pt-12 pb-6 sm:pb-8 border-t">
     <div class="container mx-auto px-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-12 mb-10 sm:mb-20">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 sm:mb-10">
         <!-- Brand -->
-        <div class="sm:col-span-2 space-y-8">
-          <div class="space-y-4">
-            <h4 class="font-bold text-sm uppercase tracking-widest text-foreground">We're Here to Help</h4>
-            <div class="flex flex-col gap-3 pl-4 text-muted-foreground text-sm">
-              <div class="flex items-center gap-4">
-                <Phone class="w-4 h-4 text-primary" />
+        <div class="space-y-4 sm:space-y-6">
+          <div class="space-y-3 sm:space-y-4">
+            <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground">We're Here to Help</h4>
+            <div class="flex flex-col gap-2.5 sm:gap-3 text-muted-foreground text-xs sm:text-sm">
+              <div class="flex items-center gap-3">
+                <Phone class="w-4 h-4 text-primary shrink-0" />
                 <a href="tel:+8801794062601" class="hover:text-primary transition-colors">(+880) 1794062601</a>
               </div>
-              <div class="flex items-center gap-4">
-                <Phone class="w-4 h-4 text-primary" />
+              <div class="flex items-center gap-3">
+                <Phone class="w-4 h-4 text-primary shrink-0" />
                 <a href="tel:+8801783553844" class="hover:text-primary transition-colors">(+880) 1783553844</a>
               </div>
-              <div class="flex items-center gap-4">
-                <Phone class="w-4 h-4 text-primary" />
+              <div class="flex items-center gap-3">
+                <Phone class="w-4 h-4 text-primary shrink-0" />
                 <a href="tel:+8801714111479" class="hover:text-primary transition-colors">(+880) 1714111479</a>
               </div>
-              <div class="flex items-center gap-4">
-                <Mail class="w-4 h-4 text-primary" />
+              <div class="flex items-center gap-3">
+                <Mail class="w-4 h-4 text-primary shrink-0" />
                 <a href="mailto:support@bestcomputerhub.com" class="hover:text-primary transition-colors">support@bestcomputerhub.com</a>
               </div>
-              <div class="flex items-center gap-4">
+              <div class="flex items-start gap-3">
                 <MapPin class="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <span>74/1 (1st Floor), Rajonigondha Bhaban, Science Laboratory Road, Dhanmondi, Dhaka 1205, Bangladesh</span>
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-3">
+          <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
             <a 
               v-for="social in socialLinks" 
               :key="social.label" 
@@ -159,7 +159,7 @@ const socialLinks = [
       -->
 
       <!-- Bottom Bar -->
-      <div class="pt-10 border-t flex flex-col md:flex-row justify-center items-center gap-6">
+      <div class="pt-6 sm:pt-8 border-t flex flex-col md:flex-row justify-center items-center gap-6">
         <div class="flex flex-wrap justify-center gap-6 text-xs font-medium text-muted-foreground">
           <span>&copy; {{ currentYear }}, Best Technology BD. All Rights Reserved.</span>
         </div>
