@@ -109,7 +109,7 @@ const socialLinks = [
             { name: 'Privacy Policy', url: '/privacy-policy/' },
             { name: 'Warranty Policy', url: '/warranty-policy/' },
             { name: 'Return, Refund & After-Sales Policy', url: '/return-refund-after-sales-policy/' },
-            { name: 'Delivery Policy', url: null },
+            { name: 'Delivery Policy', url: '/delivery-policy/' },
             { name: 'Terms & Conditions', url: null },
             { name: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: null }
           ] },
