@@ -95,24 +95,31 @@ const socialLinks = [
 
         <!-- Links Grid -->
         <div v-for="section in [
-          { title: 'Categories', links: [
-            { name: 'Graphics Cards', url: '/product-category/gpus/' },
-            { name: 'New Arrivals', url: '/new-arrivals/' },
-            { name: 'Special Offers', url: '/offers/' },
-            { name: 'Processors', url: '/product-category/processors/' }
+          { title: 'Information', links: [
+            { name: 'About Us', url: 'https://bestcomputerhub.com/about-us/' },
+            { name: 'Contact Us', url: 'https://bestcomputerhub.com/contact-us/' },
+            { name: 'Affiliation', url: 'https://bestcomputerhub.com/our-certifications/' },
+            { name: 'EMI Information', url: 'https://bestcomputerhub.com/emi-information/' },
+            { name: 'Shop Now', url: 'https://bestcomputerhub.com/shop-now/' },
+            { name: 'Blog', url: 'https://bestcomputerhub.com/blog/' },
+            { name: 'Repair Hub', url: 'https://bestcomputerhub.com/repair-hub/' }
           ] },
-          { title: 'Support', links: [
-            { name: 'Help Center', url: '/support/help-center/' },
-            { name: 'Shipping Info', url: '/support/shipping/' },
-            { name: 'Returns', url: '/support/returns/' },
-            { name: 'Warranty', url: '/support/warranty/' },
-            { name: 'Payments & Billing', url: '/support/payments/' }
+          { title: 'Policy', links: [
+            { name: 'Disclaimer', url: 'https://bestcomputerhub.com/disclaimer/' },
+            { name: 'Privacy Policy', url: 'https://bestcomputerhub.com/privacy-policy/' },
+            { name: 'Warranty Policy', url: 'https://bestcomputerhub.com/warranty-policy/' },
+            { name: 'Return, Refund & After-Sales Policy', url: 'https://bestcomputerhub.com/return-refund-policy/' },
+            { name: 'Delivery Policy', url: 'https://bestcomputerhub.com/delivery-policy/' },
+            { name: 'Terms & Conditions', url: 'https://bestcomputerhub.com/terms-conditions/' },
+            { name: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: 'https://bestcomputerhub.com/digital-ecom-2021/' }
           ] },
-          { title: 'Company', links: [
-            { name: 'About Us', url: '/about/' },
-            { name: 'Tech Blog', url: '/blog/' },
-            { name: 'Careers', url: '/careers/' },
-            { name: 'Sustainability', url: '/sustainability/' }
+          { title: 'Support Hub', links: [
+            { name: 'My account', url: 'https://bestcomputerhub.com/my-account/' },
+            { name: 'Cart', url: 'https://bestcomputerhub.com/cart/' },
+            { name: 'Compare', url: 'https://bestcomputerhub.com/compare/' },
+            { name: 'Wishlist', url: 'https://bestcomputerhub.com/wishlist-2/' },
+            { name: 'Checkout', url: 'https://bestcomputerhub.com/checkout/' },
+            { name: 'Track Your Order', url: 'https://bestcomputerhub.com/track-your-order/' }
           ] }
         ]" :key="section.title" class="space-y-4 sm:space-y-6">
           <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground">{{ section.title }}</h4>
