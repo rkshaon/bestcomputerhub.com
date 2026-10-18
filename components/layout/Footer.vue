@@ -101,7 +101,7 @@ const socialLinks = [
             { name: 'Affiliation', url: null },
             { name: 'EMI Information', url: '/emi-information/' },
             { name: 'Shop Now', url: '/shop-now/' },
-            { name: 'Blog', url: null },
+            { name: 'Blog', url: '/blog/' },
             { name: 'Repair Hub', url: null }
           ] },
           { title: 'Policy', links: [
