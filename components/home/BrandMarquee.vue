@@ -20,12 +20,12 @@ defineProps<{
             :to="'/products/?brand=' + encodeURIComponent(brand.name)"
             :title="decodeHtmlEntities(brand.name)"
             :aria-label="decodeHtmlEntities(brand.name)"
-            class="w-32 sm:w-36 md:w-40 h-16 sm:h-20 rounded-xl bg-card border border-border flex items-center justify-center p-3 sm:p-4 overflow-hidden group/brand hover:border-primary/40 hover:scale-105 transition-all duration-300 shadow-xs hover:shadow-md cursor-pointer shrink-0"
+            class="w-32 sm:w-36 md:w-40 h-16 sm:h-20 rounded-xl bg-card border border-border flex items-center justify-center p-2 sm:p-3 overflow-hidden group/brand hover:border-primary/40 hover:scale-105 transition-all duration-300 shadow-xs hover:shadow-md cursor-pointer shrink-0"
           >
             <img 
               :src="brand.logo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop&q=80'" 
               :alt="decodeHtmlEntities(brand.name)" 
-              class="w-full h-full object-contain filter grayscale opacity-60 group-hover/brand:grayscale-0 group-hover/brand:opacity-100 transition-all duration-300"
+              class="w-full h-full object-contain filter grayscale-0 opacity-100 group-hover/brand:grayscale group-hover/brand:opacity-60 transition-all duration-300"
               loading="lazy"
             />
           </NuxtLink>
