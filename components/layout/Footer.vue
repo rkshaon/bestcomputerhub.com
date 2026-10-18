@@ -100,7 +100,7 @@ const socialLinks = [
             { name: 'Contact Us', url: null },
             { name: 'Affiliation', url: null },
             { name: 'EMI Information', url: '/emi-information/' },
-            { name: 'Shop Now', url: null },
+            { name: 'Shop Now', url: '/shop-now/' },
             { name: 'Blog', url: null },
             { name: 'Repair Hub', url: null }
           ] },

@@ -108,7 +108,7 @@ const getCategoryIcon = (slug: string, name: string): Component => {
       <p class="text-sm font-semibold text-foreground mb-1">No featured categories available</p>
       <p class="text-xs text-muted-foreground mb-4">Check back soon for featured hardware & infrastructure components.</p>
       <NuxtLink
-        to="/products/"
+        to="/shop-now/"
         class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
       >
         <span>Browse all categories</span>
