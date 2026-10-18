@@ -76,9 +76,9 @@ const getCategoryIcon = (slug: string, name: string): Component => {
       <div
         v-for="i in 12"
         :key="'cat-skeleton-' + i"
-        class="flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl bg-card border border-border/40 animate-pulse"
+        class="flex flex-col items-center justify-center p-1.5 rounded-xl bg-card border border-border/40 animate-pulse"
       >
-        <div class="w-9 h-9 rounded-xl bg-muted/60 mb-1"></div>
+        <div class="w-11 h-11 rounded-xl bg-muted/60 mb-1"></div>
         <div class="w-20 h-3.5 bg-muted/60 rounded-sm"></div>
       </div>
     </div>
@@ -122,10 +122,10 @@ const getCategoryIcon = (slug: string, name: string): Component => {
         v-for="cat in featuredCategories"
         :key="cat.id"
         :to="'/product-category/' + cat.slug + '/'"
-        class="group relative flex flex-col items-center justify-center text-center py-1.5 px-0.5 rounded-xl bg-card border border-border/60 hover:border-primary/60 hover:bg-muted/30 shadow-xs hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        class="group relative flex flex-col items-center justify-center text-center p-1.5 rounded-xl bg-card border border-border/60 hover:border-primary/60 hover:bg-muted/30 shadow-xs hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <!-- Icon Container -->
-        <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200 shadow-xs overflow-hidden p-1.5">
+        <div class="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200 shadow-xs overflow-hidden p-1.5">
           <img
             v-if="cat.featured_icon && !imageErrors[cat.id]"
             :src="cat.featured_icon"
