@@ -55,7 +55,7 @@ const socialLinks = [
     <div class="container mx-auto px-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 sm:mb-10">
         <!-- Brand -->
-        <div class="space-y-4 sm:space-y-6">
+        <div class="space-y-4 sm:space-y-6 text-left">
           <div class="space-y-3 sm:space-y-4">
             <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground">We're Here to Help</h4>
             <div class="flex flex-col gap-2.5 sm:gap-3 text-muted-foreground text-xs sm:text-sm">
@@ -101,33 +101,45 @@ const socialLinks = [
 
         <!-- Links Grid -->
         <div v-for="section in [
-          { title: 'Information', links: [
-            { name: 'About Us', url: '/about-us/' },
-            { name: 'Contact Us', url: null },
-            { name: 'Affiliation', url: null },
-            { name: 'EMI Information', url: '/emi-information/' },
-            { name: 'Shop Now', url: '/shop-now/' },
-            { name: 'Blog', url: '/blog/' },
-            { name: 'Repair Hub', url: null }
-          ] },
-          { title: 'Policy', links: [
-            { name: 'Disclaimer', url: '/disclaimer/' },
-            { name: 'Privacy Policy', url: '/privacy-policy/' },
-            { name: 'Warranty Policy', url: '/warranty-policy/' },
-            { name: 'Return, Refund & After-Sales Policy', url: '/return-refund-after-sales-policy/' },
-            { name: 'Delivery Policy', url: '/delivery-policy/' },
-            { name: 'Terms & Conditions', url: null },
-            { name: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: '/digital-commerce-guidelines/' }
-          ] },
-          { title: 'Support Hub', links: [
-            { name: 'My account', url: '/my-account/' },
-            { name: 'Cart', url: null },
-            { name: 'Compare', url: null },
-            { name: 'Wishlist', url: null },
-            { name: 'Checkout', url: null },
-            { name: 'Track Your Order', url: null }
-          ] }
-        ]" :key="section.title" class="space-y-4 sm:space-y-6">
+          { 
+            title: 'Information', 
+            alignClass: 'text-center',
+            links: [
+              { name: 'About Us', url: '/about-us/' },
+              { name: 'Contact Us', url: null },
+              { name: 'Affiliation', url: null },
+              { name: 'EMI Information', url: '/emi-information/' },
+              { name: 'Shop Now', url: '/shop-now/' },
+              { name: 'Blog', url: '/blog/' },
+              { name: 'Repair Hub', url: null }
+            ] 
+          },
+          { 
+            title: 'Policy', 
+            alignClass: 'text-center',
+            links: [
+              { name: 'Disclaimer', url: '/disclaimer/' },
+              { name: 'Privacy Policy', url: '/privacy-policy/' },
+              { name: 'Warranty Policy', url: '/warranty-policy/' },
+              { name: 'Return, Refund & After-Sales Policy', url: '/return-refund-after-sales-policy/' },
+              { name: 'Delivery Policy', url: '/delivery-policy/' },
+              { name: 'Terms & Conditions', url: null },
+              { name: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: '/digital-commerce-guidelines/' }
+            ] 
+          },
+          { 
+            title: 'Support Hub', 
+            alignClass: 'text-right',
+            links: [
+              { name: 'My account', url: '/my-account/' },
+              { name: 'Cart', url: null },
+              { name: 'Compare', url: null },
+              { name: 'Wishlist', url: null },
+              { name: 'Checkout', url: null },
+              { name: 'Track Your Order', url: null }
+            ] 
+          }
+        ]" :key="section.title" :class="['space-y-4 sm:space-y-6', section.alignClass]">
           <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground">{{ section.title }}</h4>
           <ul class="space-y-2.5 sm:space-y-4">
             <li v-for="link in section.links" :key="link.name">
