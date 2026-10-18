@@ -223,7 +223,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>Admin Panel</span>
         </NuxtLink>
         <NuxtLink 
-          :to="authStore.isLoggedIn ? '/account/' : '/login/'" 
+          :to="authStore.isLoggedIn ? '/my-account/' : '/login/'" 
           class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
           @click="uiStore.closeMobileMenu()"
         >
@@ -231,7 +231,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
         </NuxtLink>
         <NuxtLink 
-          to="/account/" 
+          to="/my-account/" 
           class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
           @click="uiStore.closeMobileMenu()"
         >

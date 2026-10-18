@@ -655,7 +655,7 @@ if (process.client) {
           <!-- Track Your Order -->
           <NuxtLink 
             v-if="!isAuthRoute"
-            to="/account/" 
+            to="/my-account/" 
             class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
             title="Track Your Order"
             aria-label="Track Your Order"
@@ -713,7 +713,7 @@ if (process.client) {
 
           <!-- Relocated Login / Account Action -->
           <NuxtLink 
-            :to="authStore.isLoggedIn ? '/account/' : '/login/'" 
+            :to="authStore.isLoggedIn ? '/my-account/' : '/login/'" 
             class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
             :title="authStore.isLoggedIn ? 'Account Dashboard' : 'Login or Sign Up'"
             :aria-label="authStore.isLoggedIn ? 'Account Dashboard' : 'Login'"
