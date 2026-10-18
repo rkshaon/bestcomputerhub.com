@@ -58,7 +58,7 @@ const socialLinks = [
         <div class="sm:col-span-2 space-y-8">
           <div class="space-y-4">
             <h4 class="font-bold text-sm uppercase tracking-widest text-foreground">We're Here to Help</h4>
-            <div class="space-x-4 text-muted-foreground text-sm">
+            <div class="flex flex-col gap-3 text-muted-foreground text-sm">
               <div class="flex items-center gap-2.5">
                 <Phone class="w-4 h-4 text-primary" />
                 <a href="tel:+8801794062601" class="hover:text-primary transition-colors">(+880) 1794062601</a>
