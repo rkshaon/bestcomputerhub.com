@@ -56,6 +56,7 @@ const socialLinks = [
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-12 mb-10 sm:mb-20">
         <!-- Brand -->
         <div class="sm:col-span-2 space-y-8">
+        <!--
           <NuxtLink to="/" class="flex items-center gap-2.5 select-none shrink-0 group">
             <img 
               src="/round-logo.jpg" 
@@ -64,6 +65,7 @@ const socialLinks = [
               referrerPolicy="no-referrer"
             />
           </NuxtLink>
+          -->
           
           <div class="space-y-4">
             <h4 class="font-bold text-sm uppercase tracking-widest text-foreground">We're Here to Help</h4>
