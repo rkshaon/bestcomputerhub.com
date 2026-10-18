@@ -114,7 +114,7 @@ const socialLinks = [
             { name: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: '/digital-commerce-guidelines/' }
           ] },
           { title: 'Support Hub', links: [
-            { name: 'My account', url: null },
+            { name: 'My account', url: '/my-account/' },
             { name: 'Cart', url: null },
             { name: 'Compare', url: null },
             { name: 'Wishlist', url: null },
