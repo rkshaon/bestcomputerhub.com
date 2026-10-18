@@ -58,24 +58,24 @@ const socialLinks = [
         <div class="sm:col-span-2 space-y-8">
           <div class="space-y-4">
             <h4 class="font-bold text-sm uppercase tracking-widest text-foreground">We're Here to Help</h4>
-            <div class="space-y-2.5 text-muted-foreground text-sm">
-              <div class="flex items-center gap-2.5 py-0.5">
+            <div class="space-y-4 text-muted-foreground text-sm">
+              <div class="flex items-center gap-2.5">
                 <Phone class="w-4 h-4 text-primary" />
                 <a href="tel:+8801794062601" class="hover:text-primary transition-colors">(+880) 1794062601</a>
               </div>
-              <div class="flex items-center gap-2.5 py-0.5">
+              <div class="flex items-center gap-2.5">
                 <Phone class="w-4 h-4 text-primary" />
                 <a href="tel:+8801783553844" class="hover:text-primary transition-colors">(+880) 1783553844</a>
               </div>
-              <div class="flex items-center gap-2.5 py-0.5">
+              <div class="flex items-center gap-2.5">
                 <Phone class="w-4 h-4 text-primary" />
                 <a href="tel:+8801714111479" class="hover:text-primary transition-colors">(+880) 1714111479</a>
               </div>
-              <div class="flex items-center gap-2.5 py-0.5">
+              <div class="flex items-center gap-2.5">
                 <Mail class="w-4 h-4 text-primary" />
                 <a href="mailto:support@bestcomputerhub.com" class="hover:text-primary transition-colors">support@bestcomputerhub.com</a>
               </div>
-              <div class="flex items-start gap-2.5 py-0.5">
+              <div class="flex items-start gap-2.5">
                 <MapPin class="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <span>74/1 (1st Floor), Rajonigondha Bhaban, Science Laboratory Road, Dhanmondi, Dhaka 1205, Bangladesh</span>
               </div>
