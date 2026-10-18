@@ -108,7 +108,7 @@ const socialLinks = [
             { name: 'Disclaimer', url: '/disclaimer/' },
             { name: 'Privacy Policy', url: '/privacy-policy/' },
             { name: 'Warranty Policy', url: '/warranty-policy/' },
-            { name: 'Return, Refund & After-Sales Policy', url: null },
+            { name: 'Return, Refund & After-Sales Policy', url: '/return-refund-after-sales-policy/' },
             { name: 'Delivery Policy', url: null },
             { name: 'Terms & Conditions', url: null },
             { name: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: null }
