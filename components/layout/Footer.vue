@@ -96,36 +96,37 @@ const socialLinks = [
         <!-- Links Grid -->
         <div v-for="section in [
           { title: 'Information', links: [
-            { name: 'About Us', url: 'https://bestcomputerhub.com/about-us/' },
-            { name: 'Contact Us', url: 'https://bestcomputerhub.com/contact-us/' },
-            { name: 'Affiliation', url: 'https://bestcomputerhub.com/our-certifications/' },
-            { name: 'EMI Information', url: 'https://bestcomputerhub.com/emi-information/' },
-            { name: 'Shop Now', url: 'https://bestcomputerhub.com/shop-now/' },
-            { name: 'Blog', url: 'https://bestcomputerhub.com/blog/' },
-            { name: 'Repair Hub', url: 'https://bestcomputerhub.com/repair-hub/' }
+            { name: 'About Us', url: null },
+            { name: 'Contact Us', url: null },
+            { name: 'Affiliation', url: null },
+            { name: 'EMI Information', url: null },
+            { name: 'Shop Now', url: null },
+            { name: 'Blog', url: null },
+            { name: 'Repair Hub', url: null }
           ] },
           { title: 'Policy', links: [
-            { name: 'Disclaimer', url: 'https://bestcomputerhub.com/disclaimer/' },
-            { name: 'Privacy Policy', url: 'https://bestcomputerhub.com/privacy-policy/' },
-            { name: 'Warranty Policy', url: 'https://bestcomputerhub.com/warranty-policy/' },
-            { name: 'Return, Refund & After-Sales Policy', url: 'https://bestcomputerhub.com/return-refund-policy/' },
-            { name: 'Delivery Policy', url: 'https://bestcomputerhub.com/delivery-policy/' },
-            { name: 'Terms & Conditions', url: 'https://bestcomputerhub.com/terms-conditions/' },
-            { name: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: 'https://bestcomputerhub.com/digital-ecom-2021/' }
+            { name: 'Disclaimer', url: null },
+            { name: 'Privacy Policy', url: null },
+            { name: 'Warranty Policy', url: null },
+            { name: 'Return, Refund & After-Sales Policy', url: null },
+            { name: 'Delivery Policy', url: null },
+            { name: 'Terms & Conditions', url: null },
+            { name: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: null }
           ] },
           { title: 'Support Hub', links: [
-            { name: 'My account', url: 'https://bestcomputerhub.com/my-account/' },
-            { name: 'Cart', url: 'https://bestcomputerhub.com/cart/' },
-            { name: 'Compare', url: 'https://bestcomputerhub.com/compare/' },
-            { name: 'Wishlist', url: 'https://bestcomputerhub.com/wishlist-2/' },
-            { name: 'Checkout', url: 'https://bestcomputerhub.com/checkout/' },
-            { name: 'Track Your Order', url: 'https://bestcomputerhub.com/track-your-order/' }
+            { name: 'My account', url: null },
+            { name: 'Cart', url: null },
+            { name: 'Compare', url: null },
+            { name: 'Wishlist', url: null },
+            { name: 'Checkout', url: null },
+            { name: 'Track Your Order', url: null }
           ] }
         ]" :key="section.title" class="space-y-4 sm:space-y-6">
           <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground">{{ section.title }}</h4>
           <ul class="space-y-2.5 sm:space-y-4">
             <li v-for="link in section.links" :key="link.name">
-              <NuxtLink :to="link.url" class="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">{{ link.name }}</NuxtLink>
+              <NuxtLink v-if="link.url" :to="link.url" class="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">{{ link.name }}</NuxtLink>
+              <span v-else class="text-xs sm:text-sm text-muted-foreground">{{ link.name }}</span>
             </li>
           </ul>
         </div>
