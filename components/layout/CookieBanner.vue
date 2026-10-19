@@ -21,7 +21,7 @@ const showBanner = computed(() => {
     leave-from-class="translate-y-0 opacity-100"
     leave-to-class="translate-y-full opacity-0"
   >
-    <div v-if="showBanner" class="fixed bottom-3 left-3 right-3 sm:bottom-6 sm:left-6 sm:right-6 z-[100] md:left-auto md:max-w-md">
+    <div v-if="showBanner" class="fixed bottom-16 sm:bottom-6 left-3 right-3 sm:left-6 sm:right-6 z-[100] md:left-auto md:max-w-md pb-[env(safe-area-inset-bottom,0px)]">
       <div class="bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-3xl lg:rounded-[2.5rem] p-5 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-white space-y-4 sm:space-y-6">
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-center gap-3">
