@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useCartStore } from '@/stores/cart';
 import { toastInfo } from '@/composables/useToast';
 
+
 const route = useRoute();
 const uiStore = useUIStore();
 const authStore = useAuthStore();
