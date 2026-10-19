@@ -3,7 +3,7 @@
   <div class="flex flex-col min-h-screen">
     <LayoutHeader />
     
-    <main class="flex-grow pb-16 md:pb-0">
+    <main class="flex-grow pb-20 md:pb-0">
       <slot />
     </main>
 
