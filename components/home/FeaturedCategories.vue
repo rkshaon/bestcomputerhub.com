@@ -33,7 +33,7 @@ const { data: featuredCategories, status, error, refresh } = await useAsyncData<
     </div>
 
     <!-- Loading Skeleton State -->
-    <div v-if="status === 'pending'" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
+    <div v-if="status === 'pending'" class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
       <div
         v-for="i in 12"
         :key="'cat-skeleton-' + i"
@@ -78,7 +78,7 @@ const { data: featuredCategories, status, error, refresh } = await useAsyncData<
     </div>
 
     <!-- Category Grid - Real Featured Categories -->
-    <div v-else class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
+    <div v-else class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
       <FeaturedCategoryCard
         v-for="cat in featuredCategories"
         :key="cat.id"

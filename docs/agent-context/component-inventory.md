@@ -588,7 +588,7 @@ Components are classified using four standard metadata properties:
 - **State Owned**: None.
 - **Calls API**: No (or delegates to `useCategoryService`).
 - **Related Composables/Services**: `useCategoryService`.
-- **Responsive Responsibility**: Responsive CSS Grid (2 columns on mobile, 4 on small screens, 6 on medium, and 8 on desktop: `grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8`).
+- **Responsive Responsibility**: Responsive CSS Grid (4 columns on mobile, 4 on small screens, 6 on medium, and 8 on desktop: `grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8`).
 - **Reusability Level**: Medium
 - **Important Behavior to Preserve**: Trailing slash URL paths for category link targets.
 - **Known Architectural Risks**: None.
