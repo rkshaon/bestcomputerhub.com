@@ -139,9 +139,9 @@ const socialLinks = [
               { name: 'Track Your Order', url: null }
             ] 
           }
-        ]" :key="section.title" :class="['space-y-4 sm:space-y-6 px-0', section.alignClass]">
+        ]" :key="section.title" :class="[section.title === 'Information' ? 'space-y-3 sm:space-y-4' : 'space-y-4 sm:space-y-6', 'px-0', section.alignClass]">
           <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground px-0 mx-0">{{ section.title }}</h4>
-          <ul class="space-y-2.5 sm:space-y-4 px-0 mx-0 list-none">
+          <ul :class="['px-0 mx-0 list-none', section.title === 'Information' ? 'space-y-2.5 sm:space-y-3' : 'space-y-2.5 sm:space-y-4']">
             <li v-for="link in section.links" :key="link.name" class="px-0 mx-0">
               <NuxtLink v-if="link.url" :to="link.url" class="inline-block text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors px-0 mx-0">{{ link.name }}</NuxtLink>
               <span v-else class="inline-block text-xs sm:text-sm text-muted-foreground px-0 mx-0">{{ link.name }}</span>
