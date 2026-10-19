@@ -2,7 +2,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { ArrowUp } from 'lucide-vue-next';
-import { cn } from '@/utils';
 
 const route = useRoute();
 const isScrolled = ref(false);
@@ -15,7 +14,8 @@ const isVisible = computed(() => {
 });
 
 const checkScroll = () => {
-  isScrolled.value = window.scrollY > 400;
+  const threshold = window.innerWidth < 640 ? 200 : 400;
+  isScrolled.value = window.scrollY > threshold;
 };
 
 const scrollToTop = () => {
@@ -27,10 +27,13 @@ const scrollToTop = () => {
 
 onMounted(() => {
   window.addEventListener('scroll', checkScroll);
+  window.addEventListener('resize', checkScroll);
+  checkScroll();
 });
 
 onUnmounted(() => {
   window.removeEventListener('scroll', checkScroll);
+  window.removeEventListener('resize', checkScroll);
 });
 </script>
 
