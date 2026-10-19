@@ -91,7 +91,7 @@ const homepageRichText = `
 </script>
 
 <template>
-  <div class="space-y-4 pb-20">
+  <div class="space-y-4">
     <!-- Hero Section -->
     <HomeHeroSection />
 
