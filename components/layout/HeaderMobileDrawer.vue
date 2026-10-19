@@ -40,6 +40,10 @@ const categoryService = useCategoryService();
 const { toastInfo } = useToast();
 
 const isSuperAdmin = computed(() => authStore.isAdmin);
+const isAuthRoute = computed(() => {
+  const p = useRoute().path;
+  return p === '/login' || p === '/login/' || p === '/signup' || p === '/signup/';
+});
 
 // Mobile Category Drawer Accordion State
 const openMobileCategoryIds = ref<string[]>([]);
@@ -135,7 +139,7 @@ const hasChildren = (cat: Category): boolean => {
       </div>
 
       <!-- Navigation Menu Hierarchy -->
-      <div class="flex flex-col space-y-4">
+      <div v-if="!isAuthRoute" class="flex flex-col space-y-4">
         <div class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/50 pb-2">
           Technical Categories
         </div>
@@ -219,7 +223,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>Admin Panel</span>
         </NuxtLink>
         <NuxtLink 
-          :to="authStore.isLoggedIn ? '/account/' : '/login/'" 
+          :to="authStore.isLoggedIn ? '/my-account/' : '/login/'" 
           class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
           @click="uiStore.closeMobileMenu()"
         >
@@ -227,7 +231,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
         </NuxtLink>
         <NuxtLink 
-          to="/account/" 
+          to="/my-account/" 
           class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
           @click="uiStore.closeMobileMenu()"
         >

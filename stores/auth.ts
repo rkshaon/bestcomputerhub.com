@@ -339,6 +339,12 @@ export const useAuthStore = defineStore('auth', {
           try {
             const profile = await this.fetchUserProfile();
             this.isInitialized = true;
+            try {
+              const cartStore = useCartStore();
+              await cartStore.fetchCart();
+            } catch (cartErr) {
+              console.error('Failed to fetch cart during auth initialization', cartErr);
+            }
             return profile;
           } catch (e: any) {
             // Check if error is due to explicit 401 unauthenticated session rejection

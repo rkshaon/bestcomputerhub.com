@@ -108,5 +108,9 @@ export default defineNuxtConfig({
       }
     }
   },
-  compatibilityDate: '2025-11-01'
+  compatibilityDate: '2025-11-01',
+  routeRules: {
+    '/products/**': { redirect: '/shop-now/' },
+    '/account/**': { redirect: '/my-account/' }
+  }
 })

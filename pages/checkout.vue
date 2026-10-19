@@ -34,13 +34,14 @@ const selectedShippingOption = ref<ShippingOption | null>(null);
 const selectedAddressId = ref<number | string | null>(null);
 
 const runValidation = async () => {
-  if (!selectedAddressId.value || !selectedShippingOption.value) return;
+  const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
+  if (!selectedAddressId.value || !methodId) return;
   isValidating.value = true;
   validationErrorMsg.value = null;
   try {
     const res = await checkoutService.validateCheckout({
       shipping_address_id: selectedAddressId.value,
-      shipping_method_id: selectedShippingOption.value.id
+      shipping_method_id: methodId
     });
     validationData.value = res;
   } catch (err: any) {
@@ -53,7 +54,8 @@ const runValidation = async () => {
 };
 
 watch([selectedAddressId, selectedShippingOption, () => cartStore.items.length], () => {
-  if (selectedAddressId.value && selectedShippingOption.value) {
+  const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
+  if (selectedAddressId.value && methodId) {
     runValidation();
   }
 }, { deep: true });
@@ -290,20 +292,65 @@ const handleSaveFormAsAddress = async () => {
   }
 };
 
-const proceedToPayment = () => {
+const proceedToPayment = async () => {
   if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.phone) {
     toastError('Please fill in all required shipping fields.');
     return;
   }
-  if (!selectedAddressId.value) {
-    toastError('Please save your shipping address and select a delivery option first.');
-    return;
+
+  isProcessing.value = true;
+  try {
+    // 1. Save or Update Address
+    let addressId = selectedAddressId.value;
+    if (!addressId) {
+      const created = await addressService.createCustomerAddress({
+        address_type: 'SHIPPING',
+        first_name: form.firstName,
+        last_name: form.lastName,
+        address_1: form.address,
+        city: form.city,
+        state: form.state || 'N/A',
+        postcode: form.zip || '',
+        country: 'Bangladesh',
+        phone: form.phone
+      });
+      addressId = created!.id;
+      selectedAddressId.value = addressId;
+      await fetchAddresses(1);
+    }
+
+    // 2. Fetch/Re-fetch Shipping Options
+    await fetchShippingOptions(addressId);
+    if (shippingOptions.value.length === 0) {
+      throw new Error('No shipping options available for this address.');
+    }
+    const firstOption = shippingOptions.value[0];
+    if (firstOption) {
+      selectedShippingOption.value = firstOption;
+    } else {
+      selectedShippingOption.value = null;
+    }
+
+    // 3. Final Pre-flight Validation
+    const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
+    if (methodId) {
+      const valRes = await checkoutService.validateCheckout({
+        shipping_address_id: addressId,
+        shipping_method_id: methodId
+      });
+      if (valRes && valRes.valid === false) {
+        throw new Error('Checkout validation failed. Please check your order details.');
+      }
+    } else {
+      throw new Error('Please select a shipping method.');
+    }
+
+    step.value = 2;
+  } catch (err: any) {
+    handleApiError(err, 'Failed to proceed to payment.');
+  } finally {
+    isProcessing.value = false;
   }
-  if (shippingOptions.value.length > 0 && !selectedShippingOption.value) {
-    toastError('Please select a shipping option.');
-    return;
-  }
-  step.value = 2;
 };
 
 const currentIdempotencyKey = ref<string | null>(null);
@@ -329,10 +376,11 @@ const handlePlaceOrder = async () => {
 
   isProcessing.value = true;
   try {
-    if (selectedAddressId.value && selectedShippingOption.value) {
+    const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
+    if (selectedAddressId.value && methodId) {
       const valRes = await checkoutService.validateCheckout({
         shipping_address_id: selectedAddressId.value,
-        shipping_method_id: selectedShippingOption.value.id
+        shipping_method_id: methodId
       });
       if (valRes && valRes.valid === false) {
         toastError('Checkout validation failed. Please check your order details.');
@@ -343,14 +391,15 @@ const handlePlaceOrder = async () => {
 
     const orderRes = await checkoutService.createOrder({
       shipping_address_id: selectedAddressId.value,
-      shipping_method_id: selectedShippingOption.value?.id || '',
+      shipping_method_id: methodId || '',
       payment_method: form.paymentMethod,
       payment_details: {
         card_number: form.cardNumber ? form.cardNumber.slice(-4) : undefined,
         mfs_type: form.mfsType,
         mfs_number: form.mfsNumber,
         transaction_id: form.mfsTransactionId
-      }
+      },
+      idempotency_key: currentIdempotencyKey.value!
     }, currentIdempotencyKey.value);
 
     if (orderRes && orderRes.orderNumber) {
@@ -550,11 +599,11 @@ const handlePlaceOrder = async () => {
               <div v-else class="grid grid-cols-1 gap-3">
                 <div 
                   v-for="opt in shippingOptions"
-                  :key="opt.id"
+                  :key="opt.method_id || opt.id"
                   @click="selectedShippingOption = opt"
                   :class="cn(
                     'p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between',
-                    selectedShippingOption?.id === opt.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/30 bg-card'
+                    (selectedShippingOption?.method_id === opt.method_id || selectedShippingOption?.id === opt.id) ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/30 bg-card'
                   )"
                 >
                   <div class="space-y-1">
@@ -604,15 +653,8 @@ const handlePlaceOrder = async () => {
               </div>
             </div>
 
-            <div v-if="authStore.isLoggedIn" class="pt-2">
-              <UiButton @click="handleSaveFormAsAddress" :disabled="addressService.isCreating.value" variant="outline" class="w-full h-12 rounded-2xl text-xs font-bold gap-2">
-                <MapPin class="w-4 h-4 text-primary" />
-                {{ addressService.isCreating.value ? 'Saving & Calculating...' : 'Save Address & Calculate Shipping Options' }}
-              </UiButton>
-            </div>
-
-            <UiButton class="w-full h-14 rounded-2xl text-lg font-bold" @click="proceedToPayment">
-              Continue to Payment
+            <UiButton class="w-full h-14 rounded-2xl text-lg font-bold" @click="proceedToPayment" :disabled="isProcessing">
+              {{ isProcessing ? 'Saving & Validating...' : 'Continue to Payment' }}
             </UiButton>
           </div>
 

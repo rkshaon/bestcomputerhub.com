@@ -1,19 +1,17 @@
 <!-- File: /components/home/QuickLinks.vue -->
 <script setup lang="ts">
 import { 
-  Store, 
-  Tag, 
-  Sparkles, 
+  Wrench, 
+  Sliders, 
+  Settings, 
   Headphones, 
-  ShieldCheck, 
-  Truck 
+  Sparkles 
 } from 'lucide-vue-next';
 
 interface QuickLinkItem {
   id: string;
   title: string;
   description: string;
-  route: string;
   icon: any;
   badge?: string;
   badgeVariant?: 'destructive' | 'primary' | 'amber';
@@ -21,62 +19,47 @@ interface QuickLinkItem {
 
 const quickLinks: QuickLinkItem[] = [
   {
-    id: 'catalog',
-    title: 'Explore Catalog',
-    description: 'Browse all hardware & components',
-    route: '/products/',
-    icon: Store,
+    id: 'repair-hub',
+    title: 'Repair Hub',
+    description: 'Expert hardware repair & component diagnostics',
+    icon: Wrench,
   },
   {
-    id: 'offers',
-    title: 'Special Offers',
-    description: 'Exclusive deals & enterprise discounts',
-    route: '/offers/',
-    icon: Tag,
-    badge: 'Hot',
-    badgeVariant: 'destructive',
+    id: 'tools',
+    title: 'Tools',
+    description: 'System utilities & diagnostic software',
+    icon: Sliders,
   },
   {
-    id: 'new-arrivals',
-    title: 'New Arrivals',
-    description: 'Latest next-gen tech gear',
-    route: '/new-arrivals/',
-    icon: Sparkles,
-    badge: 'New',
-    badgeVariant: 'amber',
+    id: 'servicing-center',
+    title: 'Servicing Center',
+    description: 'Professional maintenance & cleaning',
+    icon: Settings,
   },
   {
     id: 'help-center',
     title: 'Help Center',
     description: 'Customer service & technical support',
-    route: '/support/help-center/',
     icon: Headphones,
   },
   {
-    id: 'warranty',
-    title: 'Warranty & Claims',
-    description: 'Quality guarantee & coverage info',
-    route: '/support/warranty/',
-    icon: ShieldCheck,
-  },
-  {
-    id: 'shipping',
-    title: 'Global Delivery',
-    description: 'Express dispatch & shipping policies',
-    route: '/support/shipping/',
-    icon: Truck,
+    id: 'ai-mode',
+    title: 'AI Mode',
+    description: 'Intelligent hardware recommendations',
+    icon: Sparkles,
+    badge: 'New',
+    badgeVariant: 'amber',
   },
 ];
 </script>
 
 <template>
   <section class="container mx-auto px-4" aria-label="Quick Access Navigation">
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-      <NuxtLink
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div
         v-for="item in quickLinks"
         :key="item.id"
-        :to="item.route"
-        class="group relative flex flex-col justify-between p-4 rounded-2xl bg-card border border-border/60 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        class="group relative flex flex-col justify-between p-4 rounded-2xl bg-card border border-border/60 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 select-none"
       >
         <div>
           <div class="flex items-center justify-between mb-3">
@@ -104,7 +87,7 @@ const quickLinks: QuickLinkItem[] = [
             {{ item.description }}
           </p>
         </div>
-      </NuxtLink>
+      </div>
     </div>
   </section>
 </template>

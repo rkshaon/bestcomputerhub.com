@@ -1,9 +1,15 @@
 <!-- File: /components/layout/Footer.vue -->
 <script setup lang="ts">
 // TEMPORARILY DISABLED: Newsletter Icons (Mail, ArrowRight)
-import { Facebook, Twitter, Linkedin, Youtube /*, Mail, PackageSearch, ArrowRight */ } from 'lucide-vue-next';
+import { Facebook, Twitter, Linkedin, Youtube, Instagram, Phone, Mail, MapPin } from 'lucide-vue-next';
 
 const currentYear = new Date().getFullYear();
+const route = useRoute();
+const isAuthRoute = computed(() => {
+  const p = route.path;
+  return p === '/login' || p === '/login/' || p === '/signup' || p === '/signup/';
+});
+
 
 const socialLinks = [
   { 
@@ -17,8 +23,8 @@ const socialLinks = [
     label: 'X / Twitter', 
     icon: Twitter, 
     href: 'https://x.com/bestcomhubltd',
-    brandBg: 'bg-[#1DA1F2]',
-    brandBorder: 'border-[#1DA1F2]'
+    brandBg: 'bg-[#000000]',
+    brandBorder: 'border-[#000000]'
   },
   { 
     label: 'LinkedIn', 
@@ -26,6 +32,13 @@ const socialLinks = [
     href: 'https://www.linkedin.com/company/best-computer-hub-ltd/home/',
     brandBg: 'bg-[#0A66C2]',
     brandBorder: 'border-[#0A66C2]'
+  },
+  { 
+    label: 'Instagram', 
+    icon: Instagram, 
+    href: 'https://www.instagram.com/bestcomputerhubltd',
+    brandBg: 'bg-[#E4405F]',
+    brandBorder: 'border-[#E4405F]'
   },
   { 
     label: 'YouTube', 
@@ -38,28 +51,37 @@ const socialLinks = [
 </script>
 
 <template>
-  <footer class="bg-card pt-10 sm:pt-16 md:pt-20 pb-8 sm:pb-10 border-t">
+  <footer v-if="!isAuthRoute" class="bg-card pt-8 sm:pt-10 md:pt-12 pb-6 sm:pb-8 border-t">
     <div class="container mx-auto px-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-12 mb-10 sm:mb-20">
+      <div class="w-full lg:w-[90%] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 sm:mb-10">
         <!-- Brand -->
-        <div class="sm:col-span-2 space-y-6">
-          <!--
-          <NuxtLink to="/" class="flex items-center gap-2.5 select-none shrink-0 group">
-            <img 
-              src="/round-logo.jpg" 
-              alt="Best Computer Hub Logo" 
-              class="object-contain transition-transform duration-300 group-hover:scale-105 shrink-0 w-11 h-11 rounded-full"
-              referrerPolicy="no-referrer"
-            />
-            <span class="font-display font-black tracking-tight text-foreground transition-all duration-300 text-xl sm:text-2xl">
-              Best Computer <span class="text-primary">Hub</span>
-            </span>
-          </NuxtLink>
-          -->
-          <p class="text-muted-foreground text-xs sm:text-sm max-w-sm leading-relaxed">
-            Premier e-commerce platform dedicated to professional hardware and cutting-edge computing components. Trusted by thousands of tech enthusiasts and engineers.
-          </p>
-          <div class="flex items-center gap-3.5">
+        <div class="space-y-4 sm:space-y-6 text-left">
+          <div class="space-y-3 sm:space-y-4">
+            <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground">We're Here to Help</h4>
+            <div class="flex flex-col gap-2.5 sm:gap-3 text-muted-foreground text-xs sm:text-sm">
+              <div class="flex items-center gap-3">
+                <Phone class="w-4 h-4 text-primary shrink-0" />
+                <a href="tel:+8801794062601" class="hover:text-primary transition-colors">(+880) 1794062601</a>
+              </div>
+              <div class="flex items-center gap-3">
+                <Phone class="w-4 h-4 text-primary shrink-0" />
+                <a href="tel:+8801783553844" class="hover:text-primary transition-colors">(+880) 1783553844</a>
+              </div>
+              <div class="flex items-center gap-3">
+                <Phone class="w-4 h-4 text-primary shrink-0" />
+                <a href="tel:+8801714111479" class="hover:text-primary transition-colors">(+880) 1714111479</a>
+              </div>
+              <div class="flex items-center gap-3">
+                <Mail class="w-4 h-4 text-primary shrink-0" />
+                <a href="mailto:support@bestcomputerhub.com" class="hover:text-primary transition-colors">support@bestcomputerhub.com</a>
+              </div>
+              <div class="flex items-start gap-3">
+                <MapPin class="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <span>74/1 (1st Floor), Rajonigondha Bhaban, Science Laboratory Road, Dhanmondi, Dhaka 1205, Bangladesh</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
             <a 
               v-for="social in socialLinks" 
               :key="social.label" 
@@ -67,21 +89,11 @@ const socialLinks = [
               :aria-label="social.label"
               target="_blank"
               rel="noopener noreferrer"
-              :class="[
-                'relative overflow-hidden w-9 h-9 sm:w-10 sm:h-10 border rounded-full flex items-center justify-center transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:border-primary group shadow-xs hover:shadow-md',
-                social.brandBorder
-              ]"
+              class="w-10 h-10 border border-border hover:border-primary rounded-full flex items-center justify-center transition-all duration-300 hover:bg-primary hover:text-white group shadow-sm"
             >
-              <!-- Official Brand Background (fades smoothly on hover) -->
-              <span 
-                class="absolute inset-0 transition-opacity duration-300 group-hover:opacity-0 rounded-full"
-                :class="social.brandBg"
-              />
-              
-              <!-- Icon -->
               <component 
                 :is="social.icon" 
-                class="relative z-10 w-4 h-4 sm:w-5 sm:h-5 text-white group-hover:text-primary-foreground transition-colors duration-300" 
+                class="w-5 h-5 text-muted-foreground group-hover:text-white transition-colors duration-300" 
               />
             </a>
           </div>
@@ -89,30 +101,50 @@ const socialLinks = [
 
         <!-- Links Grid -->
         <div v-for="section in [
-          { title: 'Categories', links: [
-            { name: 'Graphics Cards', url: '/product-category/gpus/' },
-            { name: 'New Arrivals', url: '/new-arrivals/' },
-            { name: 'Special Offers', url: '/offers/' },
-            { name: 'Processors', url: '/product-category/processors/' }
-          ] },
-          { title: 'Support', links: [
-            { name: 'Help Center', url: '/support/help-center/' },
-            { name: 'Shipping Info', url: '/support/shipping/' },
-            { name: 'Returns', url: '/support/returns/' },
-            { name: 'Warranty', url: '/support/warranty/' },
-            { name: 'Payments & Billing', url: '/support/payments/' }
-          ] },
-          { title: 'Company', links: [
-            { name: 'About Us', url: '/about/' },
-            { name: 'Tech Blog', url: '/blog/' },
-            { name: 'Careers', url: '/careers/' },
-            { name: 'Sustainability', url: '/sustainability/' }
-          ] }
-        ]" :key="section.title" class="space-y-4 sm:space-y-6">
-          <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground">{{ section.title }}</h4>
-          <ul class="space-y-2.5 sm:space-y-4">
-            <li v-for="link in section.links" :key="link.name">
-              <NuxtLink :to="link.url" class="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">{{ link.name }}</NuxtLink>
+          { 
+            title: 'Information', 
+            alignClass: 'text-center',
+            links: [
+              { name: 'About Us', url: '/about-us/' },
+              { name: 'Contact Us', url: null },
+              { name: 'Affiliation', url: null },
+              { name: 'EMI Information', url: '/emi-information/' },
+              { name: 'Shop Now', url: '/shop-now/' },
+              { name: 'Blog', url: '/blog/' },
+              { name: 'Repair Hub', url: null }
+            ] 
+          },
+          { 
+            title: 'Policy', 
+            alignClass: 'text-center',
+            links: [
+              { name: 'Disclaimer', url: '/disclaimer/' },
+              { name: 'Privacy Policy', url: '/privacy-policy/' },
+              { name: 'Warranty Policy', url: '/warranty-policy/' },
+              { name: 'Return, Refund & After-Sales Policy', url: '/return-refund-after-sales-policy/' },
+              { name: 'Delivery Policy', url: '/delivery-policy/' },
+              { name: 'Terms & Conditions', url: null },
+              { name: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: '/digital-commerce-guidelines/' }
+            ] 
+          },
+          { 
+            title: 'Support Hub', 
+            alignClass: 'text-right',
+            links: [
+              { name: 'My account', url: '/my-account/' },
+              { name: 'Cart', url: null },
+              { name: 'Compare', url: null },
+              { name: 'Wishlist', url: null },
+              { name: 'Checkout', url: null },
+              { name: 'Track Your Order', url: null }
+            ] 
+          }
+        ]" :key="section.title" :class="['space-y-3 sm:space-y-4 px-0', section.alignClass]">
+          <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground px-0 mx-0">{{ section.title }}</h4>
+          <ul class="space-y-2.5 sm:space-y-3 px-0 mx-0 list-none">
+            <li v-for="link in section.links" :key="link.name" class="px-0 mx-0">
+              <NuxtLink v-if="link.url" :to="link.url" class="inline-block text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors px-0 mx-0">{{ link.name }}</NuxtLink>
+              <span v-else class="inline-block text-xs sm:text-sm text-muted-foreground px-0 mx-0">{{ link.name }}</span>
             </li>
           </ul>
         </div>
@@ -139,15 +171,9 @@ const socialLinks = [
       -->
 
       <!-- Bottom Bar -->
-      <div class="pt-10 border-t flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="pt-6 sm:pt-8 border-t flex flex-col md:flex-row justify-center items-center gap-6">
         <div class="flex flex-wrap justify-center gap-6 text-xs font-medium text-muted-foreground">
-          <span>&copy; {{ currentYear }} Best Computer Hub Ltd.</span>
-          <NuxtLink to="/privacy/" class="hover:text-primary transition-colors">Privacy Policy</NuxtLink>
-          <NuxtLink to="/terms/" class="hover:text-primary transition-colors">Terms of Service</NuxtLink>
-          <NuxtLink to="/cookies/" class="hover:text-primary transition-colors">Cookie Settings</NuxtLink>
-        </div>
-        <div class="flex items-center gap-6 opacity-30 grayscale saturate-0">
-          <img v-for="i in 5" :key="i" :src="`https://placehold.co/40x24/png?text=Card${i}`" class="h-6" alt="" />
+          <span>&copy; {{ currentYear }}, Best Technology BD. All Rights Reserved.</span>
         </div>
       </div>
     </div>

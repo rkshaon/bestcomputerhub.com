@@ -64,34 +64,21 @@ const getCategoryIcon = (slug: string, name: string): Component => {
 
 <template>
   <section class="container mx-auto px-4" aria-labelledby="featured-categories-heading">
-    <!-- Header Row -->
-    <div class="flex items-end justify-between mb-6 pb-4 border-b border-border/40">
-      <div>
-        <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary mb-1">
-          <span>Explore Infrastructure</span>
-        </div>
+    <!-- Heading -->
+    <div class="mb-6">
         <h2 id="featured-categories-heading" class="text-2xl sm:text-3xl font-display font-bold tracking-tight text-foreground">
           Featured Categories
         </h2>
-      </div>
-
-      <NuxtLink 
-        to="/products/" 
-        class="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-primary hover:text-primary/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm group"
-      >
-        <span>View All Categories</span>
-        <ChevronRight class="w-4 h-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-      </NuxtLink>
     </div>
 
     <!-- Loading Skeleton State -->
-    <div v-if="status === 'pending'" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+    <div v-if="status === 'pending'" class="flex flex-wrap justify-center gap-2 sm:gap-3">
       <div
         v-for="i in 12"
         :key="'cat-skeleton-' + i"
-        class="flex flex-col items-center justify-center p-4 rounded-xl bg-card border border-border/40 h-32 sm:h-36 animate-pulse"
+        class="flex flex-col items-center justify-center p-1.5 rounded-xl bg-card border border-border/40 animate-pulse w-[calc(33.33%-0.33rem)] sm:w-[calc(16.66%-0.625rem)] md:w-[calc(11.11%-0.66rem)] lg:w-[calc(8.33%-0.68rem)]"
       >
-        <div class="w-12 h-12 rounded-xl bg-muted/60 mb-3"></div>
+        <div class="w-[52px] h-[52px] rounded-xl bg-muted/60 mb-1"></div>
         <div class="w-20 h-3.5 bg-muted/60 rounded-sm"></div>
       </div>
     </div>
@@ -121,7 +108,7 @@ const getCategoryIcon = (slug: string, name: string): Component => {
       <p class="text-sm font-semibold text-foreground mb-1">No featured categories available</p>
       <p class="text-xs text-muted-foreground mb-4">Check back soon for featured hardware & infrastructure components.</p>
       <NuxtLink
-        to="/products/"
+        to="/shop-now/"
         class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
       >
         <span>Browse all categories</span>
@@ -130,15 +117,15 @@ const getCategoryIcon = (slug: string, name: string): Component => {
     </div>
 
     <!-- Category Grid - Real Featured Categories -->
-    <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+    <div v-else class="flex flex-wrap justify-center gap-2 sm:gap-3">
       <NuxtLink
         v-for="cat in featuredCategories"
         :key="cat.id"
         :to="'/product-category/' + cat.slug + '/'"
-        class="group relative flex flex-col items-center justify-center text-center p-4 rounded-xl bg-card border border-border/60 hover:border-primary/60 hover:bg-muted/30 shadow-xs hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary h-32 sm:h-36"
+        class="group relative flex flex-col items-center justify-center text-center p-1.5 rounded-xl bg-card border border-border/60 hover:border-primary/60 hover:bg-muted/30 shadow-xs hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary w-[calc(33.33%-0.33rem)] sm:w-[calc(16.66%-0.625rem)] md:w-[calc(11.11%-0.66rem)] lg:w-[calc(8.33%-0.68rem)]"
       >
         <!-- Icon Container -->
-        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200 shadow-xs overflow-hidden p-1.5">
+        <div class="w-[52px] h-[52px] rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200 shadow-xs overflow-hidden p-1.5">
           <img
             v-if="cat.featured_icon && !imageErrors[cat.id]"
             :src="cat.featured_icon"

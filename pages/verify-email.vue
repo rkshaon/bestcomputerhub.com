@@ -28,7 +28,7 @@ onMounted(async () => {
     toastSuccess(response.message || 'Email verified successfully.');
     
     // Redirect to account
-    navigateTo('/account/');
+    navigateTo('/my-account/');
   } catch (err: any) {
     handleApiError(err, 'Failed to verify email. Please try again or request a new verification link.');
     isLoading.value = false;
