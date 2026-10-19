@@ -595,6 +595,24 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<FeaturedCategoryCard>`
+- **Exact File Location**: `/components/home/FeaturedCategoryCard.vue`
+- **Component Type**: Domain / Data-display component
+- **Scope**: Storefront
+- **Purpose**: Renders an individual featured category card with image/icon fallback, title truncation, and trailing-slash navigation link.
+- **Routes/Pages Used**: Homepage (`/`) via `<FeaturedCategories>`.
+- **Main Responsibilities**: Render individual category tile, fallback to Lucide category icons on image error, decode HTML entities, and handle hover effects/focus states.
+- **What It Explicitly Does Not Own**: Category list fetching or state management.
+- **State Owned**: `imageError` boolean state for graceful icon fallback.
+- **Calls API**: No.
+- **Related Composables/Services**: `decodeHtmlEntities`, `getCategoryIcon`.
+- **Responsive Responsibility**: Flexible inline grid item width (`w-[calc(33.33%-0.33rem)] sm:w-[calc(16.66%-0.625rem)] ...`).
+- **Reusability Level**: High.
+- **Important Behavior to Preserve**: Graceful image error fallback and trailing-slash routing.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<ProductSection>`
 - **Exact File Location**: `/components/home/ProductSection.vue`
 - **Component Type**: Domain / Home section

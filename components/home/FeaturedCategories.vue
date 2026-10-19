@@ -1,27 +1,14 @@
 <!-- File: /components/home/FeaturedCategories.vue -->
 <script setup lang="ts">
-import { ref } from 'vue';
-import { decodeHtmlEntities } from '@/utils';
 import { useCategoryService } from '@/composables/useCategoryService';
 import type { FeaturedCategory } from '@/types';
 import { 
   ChevronRight, 
-  Cpu, 
-  Server, 
-  HardDrive, 
-  Layers, 
-  CircuitBoard, 
-  Database, 
-  Monitor, 
-  ShieldCheck, 
-  Zap,
-  Box,
-  Terminal,
   AlertCircle,
   RefreshCw,
   FolderTree
 } from 'lucide-vue-next';
-import type { Component } from 'vue';
+import FeaturedCategoryCard from './FeaturedCategoryCard.vue';
 
 const categoryService = useCategoryService();
 
@@ -34,32 +21,6 @@ const { data: featuredCategories, status, error, refresh } = await useAsyncData<
     default: () => []
   }
 );
-
-// Map of failed icon URLs to fall back gracefully to default category icons
-const imageErrors = ref<Record<string | number, boolean>>({});
-
-const handleImageError = (id: string | number) => {
-  imageErrors.value[id] = true;
-};
-
-// Centralized icon mapping resolver based on category slug or name (used as fallback)
-const getCategoryIcon = (slug: string, name: string): Component => {
-  const s = (slug || '').toLowerCase();
-  const n = (name || '').toLowerCase();
-
-  if (s.includes('gpu') || n.includes('graphic')) return Monitor;
-  if (s.includes('processor') || s.includes('cpu') || n.includes('processor')) return Cpu;
-  if (s.includes('server') || n.includes('server')) return Server;
-  if (s.includes('memory') || s.includes('ram')) return Layers;
-  if (s.includes('storage') || s.includes('ssd') || s.includes('drive')) return HardDrive;
-  if (s.includes('motherboard') || s.includes('chassis')) return CircuitBoard;
-  if (s.includes('datacenter') || s.includes('accelerator')) return Database;
-  if (s.includes('cooling') || s.includes('fan')) return Zap;
-  if (s.includes('power') || s.includes('psu')) return ShieldCheck;
-  if (s.includes('network') || s.includes('switch')) return Terminal;
-
-  return Box; // Fallback icon
-};
 </script>
 
 <template>
@@ -118,36 +79,11 @@ const getCategoryIcon = (slug: string, name: string): Component => {
 
     <!-- Category Grid - Real Featured Categories -->
     <div v-else class="flex flex-wrap justify-center gap-2 sm:gap-3">
-      <NuxtLink
+      <FeaturedCategoryCard
         v-for="cat in featuredCategories"
         :key="cat.id"
-        :to="'/product-category/' + cat.slug + '/'"
-        class="group relative flex flex-col items-center justify-center text-center p-1.5 rounded-xl bg-card border border-border/60 hover:border-primary/60 hover:bg-muted/30 shadow-xs hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary w-[calc(33.33%-0.33rem)] sm:w-[calc(16.66%-0.625rem)] md:w-[calc(11.11%-0.66rem)] lg:w-[calc(8.33%-0.68rem)]"
-      >
-        <!-- Icon Container -->
-        <div class="w-[52px] h-[52px] rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200 shadow-xs overflow-hidden p-1.5">
-          <img
-            v-if="cat.featured_icon && !imageErrors[cat.id]"
-            :src="cat.featured_icon"
-            :alt="decodeHtmlEntities(cat.name)"
-            class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-            @error="handleImageError(cat.id)"
-          />
-          <component
-            v-else
-            :is="getCategoryIcon(cat.slug, cat.name)"
-            class="w-6 h-6"
-            aria-hidden="true"
-          />
-        </div>
-
-        <!-- Category Name -->
-        <h3 class="text-xs sm:text-[13px] font-semibold text-foreground/90 group-hover:text-primary transition-colors line-clamp-2 leading-tight px-1">
-          {{ decodeHtmlEntities(cat.name) }}
-        </h3>
-      </NuxtLink>
+        :category="cat"
+      />
     </div>
   </section>
 </template>
-
-
