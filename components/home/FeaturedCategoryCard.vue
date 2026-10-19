@@ -18,7 +18,7 @@ const handleImageError = () => {
 <template>
   <NuxtLink
     :to="'/product-category/' + category.slug + '/'"
-    class="group relative flex flex-col items-center justify-center text-center p-1.5 rounded-xl bg-card border border-border/60 hover:border-primary/60 hover:bg-muted/30 shadow-xs hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary w-[calc(33.33%-0.33rem)] sm:w-[calc(16.66%-0.625rem)] md:w-[calc(11.11%-0.66rem)] lg:w-[calc(8.33%-0.68rem)]"
+    class="group relative flex flex-col items-center justify-center text-center p-1.5 rounded-xl bg-card border border-border/60 hover:border-primary/60 hover:bg-muted/30 shadow-xs hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary w-full"
   >
     <!-- Icon Container -->
     <div class="w-[52px] h-[52px] rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200 shadow-xs overflow-hidden p-1.5">
