@@ -431,6 +431,24 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<BottomNav>`
+- **Exact File Location**: `/components/layout/BottomNav.vue`
+- **Component Type**: Layout navigation component
+- **Scope**: Storefront
+- **Purpose**: Mobile-only bottom fixed navigation bar featuring seven core action items (Home, PC Builder [disabled], Account/Login, Cart Drawer toggle with item count badge, Menu mobile drawer toggle, Tools coming-soon toast, and Track Order via My Account).
+- **Routes/Pages Used**: Storefront default layout (`/layouts/default.vue`).
+- **Main Responsibilities**: Render 7 compact navigation items with active-route states, cart badge, drawer toggles, and safe-area inset support on mobile viewports (< 768px).
+- **What It Explicitly Does Not Own**: Drawer content rendering, desktop header navigation.
+- **State Owned**: None (delegates to `useUIStore`, `useAuthStore`, and `useCartStore`).
+- **Calls API**: No.
+- **Related Composables/Services**: `useUIStore`, `useAuthStore`, `useCartStore`, `useToast`.
+- **Responsive Responsibility**: Fixed viewport bottom bar on mobile (`fixed bottom-0 left-0 right-0 z-40 md:hidden`), hidden on tablet/desktop.
+- **Reusability Level**: High (Layout singleton).
+- **Important Behavior to Preserve**: Disabled non-interactive state for PC Builder until page exists; mobile drawer toggle for Menu; cart badge count.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<FloatingActions>`
 - **Exact File Location**: `/components/layout/FloatingActions.vue`
 - **Component Type**: Layout UI helper

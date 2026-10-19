@@ -49,7 +49,7 @@ onUnmounted(() => {
     <button
       v-if="isVisible"
       @click="scrollToTop"
-      class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 group flex items-center gap-2 sm:gap-3 bg-card/95 backdrop-blur-xl border border-border/80 text-card-foreground p-2.5 sm:px-5 sm:py-3 rounded-full shadow-xl hover:bg-primary hover:text-primary-foreground hover:border-primary active:bg-primary/90 transition-all duration-300 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      class="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 group flex items-center gap-2 sm:gap-3 bg-card/95 backdrop-blur-xl border border-border/80 text-card-foreground p-2.5 sm:px-5 sm:py-3 rounded-full shadow-xl hover:bg-primary hover:text-primary-foreground hover:border-primary active:bg-primary/90 transition-all duration-300 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       aria-label="Back to Top"
     >
       <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary-foreground/20 transition-colors shrink-0">
