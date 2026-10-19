@@ -40,11 +40,11 @@ onUnmounted(() => {
 <template>
   <transition
     enter-active-class="transform transition ease-out duration-500"
-    enter-from-class="translate-x-full opacity-0 scale-90"
-    enter-to-class="translate-x-0 opacity-100 scale-100"
+    enter-from-class="translate-y-4 opacity-0 scale-90"
+    enter-to-class="translate-y-0 opacity-100 scale-100"
     leave-active-class="transform transition ease-in duration-300"
-    leave-from-class="translate-x-0 opacity-100 scale-100"
-    leave-to-class="translate-x-full opacity-0 scale-90"
+    leave-from-class="translate-y-0 opacity-100 scale-100"
+    leave-to-class="translate-y-4 opacity-0 scale-90"
   >
     <button
       v-if="isVisible"
