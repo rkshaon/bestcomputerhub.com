@@ -128,7 +128,7 @@ const homepageRichText = `
     -->
 
     <!-- Storefront Overview & SEO Rich Text -->
-    <section class="container mx-auto px-4" aria-label="Best Computer Hub Overview">
+    <section class="w-full px-4" aria-label="Best Computer Hub Overview">
       <div class="bg-card border border-border/80 rounded-2xl p-6 sm:p-8 lg:p-10 shadow-2xs space-y-6">
         <h2 class="text-[26px] font-display font-black tracking-tight text-foreground transition-all text-center">
           Best Computer Hub - Trusted Retail Store in Bangladesh
