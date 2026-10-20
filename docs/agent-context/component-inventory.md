@@ -431,6 +431,24 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<BottomNav>`
+- **Exact File Location**: `/components/layout/BottomNav.vue`
+- **Component Type**: Layout navigation component
+- **Scope**: Storefront
+- **Purpose**: Mobile-only bottom fixed navigation bar featuring seven core action items (Home, PC Builder [disabled], Account/Login, Cart Drawer toggle with item count badge, Menu mobile drawer toggle, Tools coming-soon toast, and Track Order via My Account).
+- **Routes/Pages Used**: Storefront default layout (`/layouts/default.vue`).
+- **Main Responsibilities**: Render 7 compact navigation items with active-route states, cart badge, drawer toggles, and safe-area inset support on mobile viewports (< 768px).
+- **What It Explicitly Does Not Own**: Drawer content rendering, desktop header navigation.
+- **State Owned**: None (delegates to `useUIStore`, `useAuthStore`, and `useCartStore`).
+- **Calls API**: No.
+- **Related Composables/Services**: `useUIStore`, `useAuthStore`, `useCartStore`, `useToast`.
+- **Responsive Responsibility**: Fixed viewport bottom bar on mobile (`fixed bottom-0 left-0 right-0 z-40 md:hidden`), hidden on tablet/desktop.
+- **Reusability Level**: High (Layout singleton).
+- **Important Behavior to Preserve**: Disabled non-interactive state for PC Builder until page exists; mobile drawer toggle for Menu; cart badge count.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<FloatingActions>`
 - **Exact File Location**: `/components/layout/FloatingActions.vue`
 - **Component Type**: Layout UI helper
@@ -588,9 +606,27 @@ Components are classified using four standard metadata properties:
 - **State Owned**: None.
 - **Calls API**: No (or delegates to `useCategoryService`).
 - **Related Composables/Services**: `useCategoryService`.
-- **Responsive Responsibility**: 2 to 6 column responsive grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-6`).
+- **Responsive Responsibility**: Responsive CSS Grid (4 columns on mobile, 4 on small screens, 6 on medium, and 8 on desktop: `grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8`).
 - **Reusability Level**: Medium
 - **Important Behavior to Preserve**: Trailing slash URL paths for category link targets.
+- **Known Architectural Risks**: None.
+
+---
+
+### `<FeaturedCategoryCard>`
+- **Exact File Location**: `/components/home/FeaturedCategoryCard.vue`
+- **Component Type**: Domain / Data-display component
+- **Scope**: Storefront
+- **Purpose**: Renders an individual featured category card with image/icon fallback, title truncation, and trailing-slash navigation link.
+- **Routes/Pages Used**: Homepage (`/`) via `<FeaturedCategories>`.
+- **Main Responsibilities**: Render individual category tile, fallback to Lucide category icons on image error, decode HTML entities, and handle hover effects/focus states.
+- **What It Explicitly Does Not Own**: Category list fetching or state management.
+- **State Owned**: `imageError` boolean state for graceful icon fallback.
+- **Calls API**: No.
+- **Related Composables/Services**: `decodeHtmlEntities`, `getCategoryIcon`.
+- **Responsive Responsibility**: Fills parent CSS Grid cell (`w-full`).
+- **Reusability Level**: High.
+- **Important Behavior to Preserve**: Graceful image error fallback and trailing-slash routing.
 - **Known Architectural Risks**: None.
 
 ---

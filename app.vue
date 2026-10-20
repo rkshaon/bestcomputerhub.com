@@ -2,14 +2,12 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useUIStore } from '@/stores/ui';
-import { useCookieStore } from '@/stores/cookies';
 import { useAuthStore } from '@/stores/auth';
 import { useCartStore } from '@/stores/cart';
 import { Toaster } from 'vue-sonner';
 import 'vue-sonner/style.css';
 
 const uiStore = useUIStore();
-const cookieStore = useCookieStore();
 
 // Configure dynamic page title template and default site title
 useHead({
@@ -30,7 +28,6 @@ useHead({
 // Handle logic
 onMounted(() => {
   uiStore.initTheme();
-  cookieStore.loadFromStorage();
   
   const authStore = useAuthStore();
   if (authStore.isLoggedIn) {

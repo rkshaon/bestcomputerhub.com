@@ -1,9 +1,41 @@
 // File: /utils/index.ts
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { Component } from 'vue';
+import { 
+  Cpu, 
+  Server, 
+  HardDrive, 
+  Layers, 
+  CircuitBoard, 
+  Database, 
+  Monitor, 
+  ShieldCheck, 
+  Zap,
+  Box,
+  Terminal
+} from 'lucide-vue-next';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function getCategoryIcon(slug: string, name: string): Component {
+  const s = (slug || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+
+  if (s.includes('gpu') || n.includes('graphic')) return Monitor;
+  if (s.includes('processor') || s.includes('cpu') || n.includes('processor')) return Cpu;
+  if (s.includes('server') || n.includes('server')) return Server;
+  if (s.includes('memory') || n.includes('ram')) return Layers;
+  if (s.includes('storage') || s.includes('ssd') || n.includes('drive')) return HardDrive;
+  if (s.includes('motherboard') || s.includes('chassis')) return CircuitBoard;
+  if (s.includes('datacenter') || s.includes('accelerator')) return Database;
+  if (s.includes('cooling') || s.includes('fan')) return Zap;
+  if (s.includes('power') || s.includes('psu')) return ShieldCheck;
+  if (s.includes('network') || s.includes('switch')) return Terminal;
+
+  return Box; // Fallback icon
 }
 
 export function formatCurrency(value: number): string {

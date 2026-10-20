@@ -14,7 +14,7 @@ const showActions = computed(() => {
 <template>
   <div 
     v-if="showActions"
-    class="fixed bottom-20 right-4 sm:bottom-24 sm:right-6 z-40 flex flex-col gap-3 items-end"
+    class="fixed hidden sm:flex sm:bottom-24 sm:right-6 z-50 flex-col gap-3 items-end"
     aria-label="Quick contact and utility actions"
   >
     <!-- 1. Call Button -->

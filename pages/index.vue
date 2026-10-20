@@ -91,7 +91,7 @@ const homepageRichText = `
 </script>
 
 <template>
-  <div class="space-y-4 pb-20">
+  <div class="space-y-4">
     <!-- Hero Section -->
     <HomeHeroSection />
 
@@ -128,11 +128,11 @@ const homepageRichText = `
     -->
 
     <!-- Storefront Overview & SEO Rich Text -->
-    <section class="container mx-auto px-4" aria-label="Best Computer Hub Overview">
-      <h2 class="text-2xl sm:text-3xl font-display font-bold tracking-tight text-foreground mb-6">
-        Best Computer Hub - Trusted Retail Store in Bangladesh
-      </h2>
-      <div class="bg-card border border-border/80 rounded-2xl p-6 sm:p-8 lg:p-10 shadow-2xs">
+    <section class="w-full px-4" aria-label="Best Computer Hub Overview">
+      <div class="bg-card border border-border/80 rounded-2xl p-6 sm:p-8 lg:p-10 shadow-2xs space-y-6">
+        <h2 class="text-[26px] font-display font-black tracking-tight text-foreground transition-all text-center">
+          Best Computer Hub - Trusted Retail Store in Bangladesh
+        </h2>
         <div
           class="text-xs sm:text-sm text-muted-foreground leading-relaxed space-y-4 [&_strong]:text-foreground [&_strong]:font-semibold [&_h4]:font-display [&_h4]:font-bold [&_h4]:text-foreground [&_h4]:text-base sm:[&_h4]:text-lg [&_h4]:tracking-tight [&_h4]:pt-5 [&_h4]:border-t [&_h4]:border-border/60 first:[&_h4]:border-0 first:[&_h4]:pt-0 [&_h4]:mt-6 [&_h4]:mb-2.5 [&_a]:text-primary [&_a]:font-medium [&_a]:underline underline-offset-2 hover:[&_a]:text-primary-hover hover:[&_a]:underline [&_a]:transition-colors [&_p]:leading-relaxed [&_p]:mb-3"
           v-html="homepageRichText"

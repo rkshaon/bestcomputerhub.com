@@ -2,7 +2,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { ArrowUp } from 'lucide-vue-next';
-import { cn } from '@/utils';
 
 const route = useRoute();
 const isScrolled = ref(false);
@@ -15,7 +14,8 @@ const isVisible = computed(() => {
 });
 
 const checkScroll = () => {
-  isScrolled.value = window.scrollY > 400;
+  const threshold = window.innerWidth < 640 ? 200 : 400;
+  isScrolled.value = window.scrollY > threshold;
 };
 
 const scrollToTop = () => {
@@ -27,26 +27,29 @@ const scrollToTop = () => {
 
 onMounted(() => {
   window.addEventListener('scroll', checkScroll);
+  window.addEventListener('resize', checkScroll);
+  checkScroll();
 });
 
 onUnmounted(() => {
   window.removeEventListener('scroll', checkScroll);
+  window.removeEventListener('resize', checkScroll);
 });
 </script>
 
 <template>
   <transition
     enter-active-class="transform transition ease-out duration-500"
-    enter-from-class="translate-x-full opacity-0 scale-90"
-    enter-to-class="translate-x-0 opacity-100 scale-100"
+    enter-from-class="translate-y-4 opacity-0 scale-90"
+    enter-to-class="translate-y-0 opacity-100 scale-100"
     leave-active-class="transform transition ease-in duration-300"
-    leave-from-class="translate-x-0 opacity-100 scale-100"
-    leave-to-class="translate-x-full opacity-0 scale-90"
+    leave-from-class="translate-y-0 opacity-100 scale-100"
+    leave-to-class="translate-y-4 opacity-0 scale-90"
   >
     <button
       v-if="isVisible"
       @click="scrollToTop"
-      class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 group flex items-center gap-2 sm:gap-3 bg-card/95 backdrop-blur-xl border border-border/80 text-card-foreground p-2.5 sm:px-5 sm:py-3 rounded-full shadow-xl hover:bg-primary hover:text-primary-foreground hover:border-primary active:bg-primary/90 transition-all duration-300 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      class="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 group flex items-center gap-2 sm:gap-3 bg-card/95 backdrop-blur-xl border border-border/80 text-card-foreground p-2.5 sm:px-5 sm:py-3 rounded-full shadow-xl hover:bg-primary hover:text-primary-foreground hover:border-primary active:bg-primary/90 transition-all duration-300 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       aria-label="Back to Top"
     >
       <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary-foreground/20 transition-colors shrink-0">
