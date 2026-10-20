@@ -7,8 +7,8 @@
       <slot />
     </main>
 
-    <LayoutFooter />
+    <LayoutFooter class="hidden md:block" />
     <CommerceCartDrawer />
-    <LayoutBottomNav />
+    <LayoutBottomNav class="md:hidden" />
   </div>
 </template>
