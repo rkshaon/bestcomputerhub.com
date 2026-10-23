@@ -120,7 +120,14 @@ const fetchShippingOptions = async (addressId: number | string) => {
   }
 };
 
+const isMobile = ref(false);
+
 onMounted(async () => {
+  isMobile.value = typeof window !== 'undefined' && window.innerWidth < 768;
+  if (isMobile.value) {
+    form.paymentMethod = 'cod';
+  }
+
   if (route.query.orderId) {
     try {
       const orderId = Array.isArray(route.query.orderId) ? route.query.orderId[0] : route.query.orderId;
@@ -677,10 +684,12 @@ const handlePlaceOrder = async () => {
                     { id: 'cod', name: 'Cash on Delivery', icon: Banknote, subtitle: 'Pay when you receive' }
                   ]" 
                   :key="method.id"
-                  @click="form.paymentMethod = method.id"
+                  @click="isMobile && (method.id === 'card' || method.id === 'mfs') ? null : form.paymentMethod = method.id"
+                  :disabled="isMobile && (method.id === 'card' || method.id === 'mfs')"
                   :class="cn(
                     'p-4 rounded-2xl flex items-center justify-between border-2 transition-all text-left w-full',
-                    form.paymentMethod === method.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/20 bg-background'
+                    form.paymentMethod === method.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/20 bg-background',
+                    isMobile && (method.id === 'card' || method.id === 'mfs') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                   )"
                 >
                   <div class="flex items-center gap-4">
