@@ -670,8 +670,8 @@ if (process.client) {
           <NuxtLink 
             to="/blog/" 
             class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
-            title="Tech Insights"
-            aria-label="Tech Insights"
+            title="Blogs"
+            aria-label="Blogs"
           >
             <BookOpen class="w-3.5 h-3.5 text-primary shrink-0" />
             <span>Insights</span>
