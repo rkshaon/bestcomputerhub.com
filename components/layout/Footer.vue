@@ -51,7 +51,7 @@ const socialLinks = [
 </script>
 
 <template>
-  <footer v-if="!isAuthRoute" class="hidden md:block bg-card pt-8 sm:pt-10 md:pt-12 pb-8 border-t">
+  <footer v-if="!isAuthRoute" class="bg-card pt-8 sm:pt-10 md:pt-12 pb-20 md:pb-8 border-t">
     <div class="container mx-auto px-4">
       <div class="w-full lg:w-[90%] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 sm:mb-10">
         <!-- Brand -->
