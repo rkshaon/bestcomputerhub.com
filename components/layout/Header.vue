@@ -383,7 +383,7 @@ if (process.client) {
 
 <template>
   <header 
-    class="sticky top-0 z-50 w-full border-b py-0 sm:py-1 bg-background border-border/50 shadow-sm"
+    class="fixed top-0 z-50 w-full md:sticky md:top-0 border-b py-0 sm:py-1 bg-background border-border/50 shadow-sm"
   >
     <!-- TEMPORARILY DISABLED: Storefront Top Utility Bar -->
     <!-- Restore when the utility bar is required again. -->
@@ -455,24 +455,10 @@ if (process.client) {
 
       <!-- Mobile Row 2 (< md): Real Mobile Search Input Bar -->
       <div class="w-full relative md:hidden pb-1">
-        <input 
-          v-model="searchQuery"
-          type="text" 
-          placeholder="Search products, brands or models..." 
-          aria-label="Search items"
-          class="w-full bg-muted/60 border border-input focus:border-primary/50 rounded-full outline-none h-10 text-xs px-10 transition-all focus:bg-background focus:ring-2 focus:ring-primary/20 font-medium"
-          @keyup.enter="handleSearchSubmit"
+        <HeaderSearchOverlay
+          v-model:search-query="searchQuery"
+          @submit="handleSearchSubmit"
         />
-        <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <button 
-          v-if="searchQuery" 
-          type="button" 
-          @click="searchQuery = ''"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 rounded-full hover:bg-muted cursor-pointer"
-          aria-label="Clear search text"
-        >
-          <X class="w-3.5 h-3.5" />
-        </button>
       </div>
 
       <!-- Desktop Main Row (md: and up): [ Brand Logo ] [ Search Bar ] [ Actions ] -->
@@ -573,8 +559,8 @@ if (process.client) {
           <!-- Promotional Actions (Offers, New Arrivals, Flash Sale, Happy Hours) -->
           <div class="hidden lg:flex items-center gap-1.5 shrink-0">
             <!-- Offers -->
-            <!--
             <NuxtLink 
+              v-if="false"
               to="/offers/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-destructive/40 hover:bg-destructive/10 text-muted-foreground hover:text-destructive text-xs font-semibold transition-all shrink-0 group"
               title="Offers"
@@ -583,11 +569,10 @@ if (process.client) {
               <Tag class="w-3.5 h-3.5 text-destructive shrink-0 transition-transform group-hover:rotate-12" />
               <span>Offers</span>
             </NuxtLink>
-            -->
 
             <!-- New Arrivals -->
-            <!--
             <NuxtLink 
+              v-if="false"
               to="/new-arrivals/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-amber-500/40 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-500 text-xs font-semibold transition-all shrink-0"
               title="New Arrivals"
@@ -596,11 +581,10 @@ if (process.client) {
               <Sparkles class="w-3.5 h-3.5 text-amber-500 shrink-0" />
               <span>New Arrivals</span>
             </NuxtLink>
-            -->
 
             <!-- Flash Sale -->
-            <!--
             <NuxtLink 
+              v-if="false"
               to="/offers/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-primary/10 text-muted-foreground hover:text-primary text-xs font-semibold transition-all shrink-0"
               title="Flash Sale"
@@ -609,11 +593,10 @@ if (process.client) {
               <Zap class="w-3.5 h-3.5 text-primary shrink-0" />
               <span>Flash Sale</span>
             </NuxtLink>
-            -->
 
             <!-- Happy Hours -->
-            <!--
             <NuxtLink 
+              v-if="false"
               to="/offers/" 
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-sky-500/40 hover:bg-sky-500/10 text-muted-foreground hover:text-sky-500 text-xs font-semibold transition-all shrink-0"
               title="Happy Hours"
@@ -622,7 +605,6 @@ if (process.client) {
               <Clock class="w-3.5 h-3.5 text-sky-500 shrink-0" />
               <span>Happy Hours</span>
             </NuxtLink>
-            -->
           </div>
 
           <!-- PC Builder -->
@@ -639,8 +621,8 @@ if (process.client) {
 
           <!-- TEMPORARILY HIDDEN: Compare Header Action -->
           <!-- Restore when compare functionality in the top header is required again. -->
-          <!--
           <button 
+            v-if="false"
             @click="handleCompareClick"
             type="button"
             class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0 cursor-pointer"
@@ -650,7 +632,6 @@ if (process.client) {
             <ArrowLeftRight class="w-4 h-4 text-primary shrink-0" />
             <span>Compare</span>
           </button>
-          -->
 
           <!-- Track Your Order -->
           <NuxtLink 
@@ -666,22 +647,21 @@ if (process.client) {
 
           <!-- TEMPORARILY HIDDEN: Tech Insights Header Action -->
           <!-- Restore when blog insights link in the top header is required again. -->
-          <!--
           <NuxtLink 
+            v-if="false"
             to="/blog/" 
             class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
-            title="Tech Insights"
-            aria-label="Tech Insights"
+            title="Blogs"
+            aria-label="Blogs"
           >
             <BookOpen class="w-3.5 h-3.5 text-primary shrink-0" />
             <span>Insights</span>
           </NuxtLink>
-          -->
 
           <!-- TEMPORARILY HIDDEN: Store Location Header Action -->
           <!-- Restore when store location link in the top header is required again. -->
-          <!--
           <a 
+            v-if="false"
             href="https://www.google.com/maps/place/G.M+Plaza/@23.7388697,90.386565,17z/data=!3m1!5s0x3755b8c81091d773:0x601a730b2bf4e399!4m16!1m9!3m8!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!2sG.M+Plaza!8m2!3d23.7388697!4d90.386565!9m1!1b1!16s%2Fg%2F11c2p4g0df!3m5!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!8m2!3d23.7388697!4d90.386565!16s%2Fg%2F11c2p4g0df?hl=en-US&entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D" 
             target="_blank" 
             rel="noopener noreferrer" 
@@ -692,7 +672,6 @@ if (process.client) {
             <MapPin class="w-3.5 h-3.5 text-primary shrink-0" />
             <span>Store</span>
           </a>
-          -->
 
           <!-- Bag (Cart) -->
           <button 

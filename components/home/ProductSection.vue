@@ -173,9 +173,10 @@ const handleRetry = () => {
       class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 lg:gap-8"
     >
       <CommerceProductCard 
-        v-for="product in products" 
+        v-for="(product, index) in products" 
         :key="product.id" 
-        :product="product" 
+        :product="product"
+        :class="index >= 6 ? 'hidden sm:block' : ''"
       />
     </div>
   </section>

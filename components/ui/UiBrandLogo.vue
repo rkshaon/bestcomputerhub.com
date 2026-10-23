@@ -37,7 +37,7 @@ const sizeClasses = computed(() => {
 <template>
   <div :class="cn('flex items-center gap-2.5 select-none shrink-0 group', props.class)">
     <img 
-      src="/logo.svg" 
+      src="/logo.png" 
       alt="Best Computer Hub" 
       :class="cn('object-contain transition-transform duration-300 group-hover:scale-105 shrink-0', sizeClasses.img, props.imgClass)"
     />

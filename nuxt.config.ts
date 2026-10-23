@@ -29,13 +29,13 @@ export default defineNuxtConfig({
         { property: 'og:type', content: 'website' },
         { property: 'og:title', content: 'Best Computer Hub | Gaming PC, Laptop & Computer Accessories in Bangladesh' },
         { property: 'og:description', content: 'Best Computer Hub is your trusted destination for authentic computer hardware, gaming components, laptops, networking equipment, and accessories.' },
-        { property: 'og:image', content: '/logo.svg' },
+        { property: 'og:image', content: '/logo.png' },
 
         // Twitter Card Metadata
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:title', content: 'Best Computer Hub' },
         { name: 'twitter:description', content: 'Gaming PCs, Laptops, Components & Accessories.' },
-        { name: 'twitter:image', content: '/logo.svg' }
+        { name: 'twitter:image', content: '/logo.png' }
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },

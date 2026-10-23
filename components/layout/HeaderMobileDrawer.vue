@@ -3,7 +3,6 @@
 import { navigateTo } from '#app';
 import { ref, computed } from 'vue';
 import { 
-  Search, 
   Grid2X2, 
   ChevronRight, 
   ShieldCheck, 
@@ -130,19 +129,10 @@ const hasChildren = (cat: Category): boolean => {
       v-if="uiStore.isMobileMenuOpen" 
       class="md:hidden absolute top-full left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border flex flex-col p-6 space-y-6 max-h-[80vh] overflow-y-auto shadow-2xl"
     >
-      <!-- Mobile Search -->
-      <div class="relative group">
-        <input 
-          type="text" 
-          placeholder="Search items..." 
-          class="w-full bg-muted/50 border border-input rounded-full h-10 text-xs px-10 outline-none focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all duration-300"
-          @keyup.enter="navigateTo(`/products?q=${($event.target as HTMLInputElement).value}`); uiStore.closeMobileMenu()"
-        />
-        <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-      </div>
 
       <!-- Navigation Menu Hierarchy -->
       <div v-if="!isAuthRoute" class="flex flex-col space-y-4">
+        <!--
         <div class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/50 pb-2">
           Technical Categories
         </div>
@@ -155,6 +145,7 @@ const hasChildren = (cat: Category): boolean => {
           <Grid2X2 class="w-4 h-4 text-primary" />
           Full Catalog
         </NuxtLink>
+        -->
 
         <!-- Dynamic Loader -->
         <div v-if="isMenuLoading" class="py-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -216,29 +207,7 @@ const hasChildren = (cat: Category): boolean => {
 
       <!-- Secondary Support / Corporate Links -->
       <div class="space-y-3 pt-4 border-t border-border/50">
-        <!-- Direct Quick Contact (Call & WhatsApp) -->
-        <div class="grid grid-cols-2 gap-2 pb-1">
-          <a 
-            :href="`tel:${STORE_CONTACT.telPhone}`"
-            class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs uppercase tracking-wider transition-colors"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <Phone class="w-4 h-4 text-primary" />
-            <span>Call</span>
-          </a>
-          <a 
-            :href="STORE_CONTACT.whatsappLink"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] font-bold text-xs uppercase tracking-wider transition-colors"
-            @click="uiStore.closeMobileMenu()"
-          >
-            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.99c-.002 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c-.001 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-            </svg>
-            <span>WhatsApp</span>
-          </a>
-        </div>
+
 
         <NuxtLink 
           v-if="isSuperAdmin"
@@ -266,6 +235,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>Track Your Order</span>
         </NuxtLink>
         <a 
+          v-if="false"
           href="https://www.google.com/maps/place/G.M+Plaza/@23.7388697,90.386565,17z/data=!3m1!5s0x3755b8c81091d773:0x601a730b2bf4e399!4m16!1m9!3m8!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!2sG.M+Plaza!8m2!3d23.7388697!4d90.386565!9m1!1b1!16s%2Fg%2F11c2p4g0df!3m5!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!8m2!3d23.7388697!4d90.386565!16s%2Fg%2F11c2p4g0df?hl=en-US&entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D" 
           target="_blank"
           rel="noopener noreferrer"
@@ -284,6 +254,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>PC Builder</span>
         </NuxtLink>
         <button 
+          v-if="false"
           @click="handleCompareClick(); uiStore.closeMobileMenu()" 
           type="button"
           class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors w-full text-left cursor-pointer"
@@ -292,6 +263,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>Compare</span>
         </button>
         <NuxtLink 
+          v-if="false"
           to="/offers/" 
           class="font-bold text-xs uppercase tracking-widest text-destructive flex items-center gap-2 hover:translate-x-1 transition-transform"
           @click="uiStore.closeMobileMenu()"
@@ -300,6 +272,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>Offers</span>
         </NuxtLink>
         <NuxtLink 
+          v-if="false"
           to="/new-arrivals/" 
           class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-amber-500 transition-colors"
           @click="uiStore.closeMobileMenu()"
@@ -308,6 +281,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>New Arrivals</span>
         </NuxtLink>
         <NuxtLink 
+          v-if="false"
           to="/offers/" 
           class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
           @click="uiStore.closeMobileMenu()"
@@ -316,6 +290,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>Flash Sale</span>
         </NuxtLink>
         <NuxtLink 
+          v-if="false"
           to="/offers/" 
           class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-sky-500 transition-colors"
           @click="uiStore.closeMobileMenu()"
@@ -324,6 +299,7 @@ const hasChildren = (cat: Category): boolean => {
           <span>Happy Hours</span>
         </NuxtLink>
         <NuxtLink 
+          v-if="false"
           to="/blog/" 
           class="font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:text-primary transition-colors text-foreground"
           @click="uiStore.closeMobileMenu()"
