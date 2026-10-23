@@ -58,10 +58,10 @@ const handleMenuClick = () => {
 <template>
   <nav
     v-if="isVisible"
-    class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-[#0f172a]/95 backdrop-blur-md border-t border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.3)] md:hidden pb-[env(safe-area-inset-bottom,0px)]"
+    class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-background/95 backdrop-blur-md border-t border-border shadow-lg md:hidden pb-[env(safe-area-inset-bottom,0px)]"
     aria-label="Mobile Bottom Navigation"
   >
-    <div class="grid grid-cols-7 items-center h-14 max-w-lg mx-auto w-full px-1 text-slate-300">
+    <div class="grid grid-cols-7 items-center h-14 max-w-lg mx-auto w-full px-1 text-muted-foreground">
       <!-- 1. Home -->
       <NuxtLink
         to="/"
