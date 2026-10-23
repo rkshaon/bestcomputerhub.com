@@ -328,7 +328,7 @@ const isExternalUrl = (url?: string) => {
         <!-- Right Stacked Secondary Banners (homepage_right_top & homepage_right_bottom) -->
         <div
           v-if="hasRightBanners"
-          class="flex flex-col sm:flex-row lg:flex-col gap-4 w-full"
+          class="flex flex-row md:flex-col gap-4 w-full"
         >
           <!-- Right Top Banner -->
           <component
@@ -337,7 +337,7 @@ const isExternalUrl = (url?: string) => {
             :[isExternalUrl(currentRightTopBanner?.cta_url)?'href':'to']="currentRightTopBanner.cta_url || '/products/'"
             :target="isExternalUrl(currentRightTopBanner?.cta_url) ? '_blank' : undefined"
             :rel="isExternalUrl(currentRightTopBanner?.cta_url) ? 'noopener noreferrer' : undefined"
-            class="aspect-[3/2] w-full relative rounded-sm overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
+            class="aspect-[3/2] flex-1 relative rounded-sm overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
           >
             <picture class="absolute inset-0 z-0">
               <source v-if="currentRightTopBanner.mobile_image" media="(max-width: 639px)" :srcset="currentRightTopBanner.mobile_image" />
@@ -373,7 +373,7 @@ const isExternalUrl = (url?: string) => {
             :[isExternalUrl(currentRightBottomBanner?.cta_url)?'href':'to']="currentRightBottomBanner.cta_url || '/products/'"
             :target="isExternalUrl(currentRightBottomBanner?.cta_url) ? '_blank' : undefined"
             :rel="isExternalUrl(currentRightBottomBanner?.cta_url) ? 'noopener noreferrer' : undefined"
-            class="aspect-[3/2] w-full relative rounded-sm overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
+            class="aspect-[3/2] flex-1 relative rounded-sm overflow-hidden bg-card border border-border/60 p-4 sm:p-5 lg:p-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all duration-300"
           >
             <picture class="absolute inset-0 z-0">
               <source v-if="currentRightBottomBanner.mobile_image" media="(max-width: 639px)" :srcset="currentRightBottomBanner.mobile_image" />
