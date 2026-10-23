@@ -178,14 +178,14 @@ defineExpose({
 <template>
   <div ref="containerRef" class="flex-1 min-w-0 flex items-center gap-3 relative">
     <!-- Desktop Search Input Bar -->
-    <div class="hidden md:flex relative group flex-1 min-w-0 transition-all duration-300 ease-in-out">
+    <div class="flex relative group flex-1 min-w-0 transition-all duration-300 ease-in-out">
       <input 
         ref="searchInputRef"
         v-model="searchQueryModel"
         type="text" 
         placeholder="Search products, brands or models..." 
         aria-label="Search items"
-        class="w-full bg-muted/50 border border-input rounded-full outline-none h-11 text-sm px-12 transition-all duration-200 focus:bg-background focus:ring-2 focus:ring-primary/20"
+        class="w-full bg-muted/50 border border-input rounded-full outline-none h-10 md:h-11 text-sm px-12 transition-all duration-200 focus:bg-background focus:ring-2 focus:ring-primary/20"
         @focus="handleInputFocus"
         @keyup.enter="handleSearchSubmit"
       />

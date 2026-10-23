@@ -3,7 +3,6 @@
 import { navigateTo } from '#app';
 import { ref, computed } from 'vue';
 import { 
-  Search, 
   Grid2X2, 
   ChevronRight, 
   ShieldCheck, 
@@ -130,16 +129,6 @@ const hasChildren = (cat: Category): boolean => {
       v-if="uiStore.isMobileMenuOpen" 
       class="md:hidden absolute top-full left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border flex flex-col p-6 space-y-6 max-h-[80vh] overflow-y-auto shadow-2xl"
     >
-      <!-- Mobile Search -->
-      <div class="relative group">
-        <input 
-          type="text" 
-          placeholder="Search items..." 
-          class="w-full bg-muted/50 border border-input rounded-full h-10 text-xs px-10 outline-none focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all duration-300"
-          @keyup.enter="navigateTo(`/products?q=${($event.target as HTMLInputElement).value}`); uiStore.closeMobileMenu()"
-        />
-        <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-      </div>
 
       <!-- Navigation Menu Hierarchy -->
       <div v-if="!isAuthRoute" class="flex flex-col space-y-4">

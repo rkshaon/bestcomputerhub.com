@@ -455,24 +455,10 @@ if (process.client) {
 
       <!-- Mobile Row 2 (< md): Real Mobile Search Input Bar -->
       <div class="w-full relative md:hidden pb-1">
-        <input 
-          v-model="searchQuery"
-          type="text" 
-          placeholder="Search products, brands or models..." 
-          aria-label="Search items"
-          class="w-full bg-muted/60 border border-input focus:border-primary/50 rounded-full outline-none h-10 text-xs px-10 transition-all focus:bg-background focus:ring-2 focus:ring-primary/20 font-medium"
-          @keyup.enter="handleSearchSubmit"
+        <HeaderSearchOverlay
+          v-model:search-query="searchQuery"
+          @submit="handleSearchSubmit"
         />
-        <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <button 
-          v-if="searchQuery" 
-          type="button" 
-          @click="searchQuery = ''"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 rounded-full hover:bg-muted cursor-pointer"
-          aria-label="Clear search text"
-        >
-          <X class="w-3.5 h-3.5" />
-        </button>
       </div>
 
       <!-- Desktop Main Row (md: and up): [ Brand Logo ] [ Search Bar ] [ Actions ] -->
