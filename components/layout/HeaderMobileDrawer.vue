@@ -143,6 +143,7 @@ const hasChildren = (cat: Category): boolean => {
 
       <!-- Navigation Menu Hierarchy -->
       <div v-if="!isAuthRoute" class="flex flex-col space-y-4">
+        <!--
         <div class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/50 pb-2">
           Technical Categories
         </div>
@@ -155,6 +156,7 @@ const hasChildren = (cat: Category): boolean => {
           <Grid2X2 class="w-4 h-4 text-primary" />
           Full Catalog
         </NuxtLink>
+        -->
 
         <!-- Dynamic Loader -->
         <div v-if="isMenuLoading" class="py-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
