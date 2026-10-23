@@ -131,7 +131,7 @@ useSeoMeta({
   description: seoDescription,
   ogTitle: seoTitle,
   ogDescription: seoDescription,
-  ogImage: () => post.value?.featured_image || '/logo.svg',
+  ogImage: () => post.value?.featured_image || '/logo.png',
   robots: robotsContent
 });
 
@@ -903,7 +903,7 @@ onUnmounted(() => {
                     class="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-muted border block relative"
                   >
                     <img 
-                      :src="item.featured_image || '/logo.svg'" 
+                      :src="item.featured_image || '/logo.png'" 
                       :alt="item.featured_image_alt_text || item.title"
                       :class="[
                         'w-full h-full group-hover:scale-105 transition-transform duration-500',
@@ -1013,7 +1013,7 @@ onUnmounted(() => {
             >
               <NuxtLink :to="`/blog/${item.slug}/`" class="block aspect-[16/10] overflow-hidden rounded-2xl bg-muted relative">
                 <img 
-                  :src="item.featured_image || '/logo.svg'" 
+                  :src="item.featured_image || '/logo.png'" 
                   :alt="item.featured_image_alt_text || item.title"
                   :class="[
                     'w-full h-full group-hover:scale-105 transition-transform duration-500',

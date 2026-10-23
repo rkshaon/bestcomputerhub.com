@@ -12,7 +12,7 @@ useSeoMeta({
   description: 'Read the latest PC hardware reviews, gaming benchmarks, buying guides, and tech news at Best Computer Hub.',
   ogTitle: 'Blog & Tech Insights | Best Computer Hub',
   ogDescription: 'Read the latest PC hardware reviews, gaming benchmarks, buying guides, and tech news at Best Computer Hub.',
-  ogImage: '/logo.svg'
+  ogImage: '/logo.png'
 });
 
 const blogService = useBlogService();
@@ -172,7 +172,7 @@ onMounted(() => {
           <!-- Thumbnail & Categories -->
           <NuxtLink :to="`/blog/${post.slug}/`" class="block aspect-[16/10] overflow-hidden rounded-2xl bg-muted relative">
             <img 
-              :src="post.featured_image || '/logo.svg'" 
+              :src="post.featured_image || '/logo.png'" 
               :alt="post.featured_image_alt_text || post.title"
               :class="[
                 'w-full h-full group-hover:scale-105 transition-transform duration-500',

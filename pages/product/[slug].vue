@@ -221,7 +221,7 @@ useSeoMeta({
   description: () => product.value?.short_description || product.value?.description || 'Authentic hardware and computing components at Best Computer Hub. Official warranty and express fulfillment.',
   ogTitle: () => decodeHtmlEntities(product.value?.name) || 'Product Details',
   ogDescription: () => product.value?.short_description || product.value?.description || 'Shop authentic computer components with official warranty at Best Computer Hub.',
-  ogImage: () => selectedImage.value || '/logo.svg'
+  ogImage: () => selectedImage.value || '/logo.png'
 });
 
 // Category and Origin resolution
