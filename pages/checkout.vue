@@ -170,6 +170,7 @@ const handleSelectAddress = (addr: CustomerAddress) => {
   if (addr.address_1) form.address = addr.address_1;
   if (addr.state) form.state = addr.state;
   if (addr.postcode) form.zip = addr.postcode;
+  if (!form.email && authStore.user?.email) form.email = authStore.user.email;
   toastSuccess('Saved address applied to shipping details');
   if (addr.id) {
     fetchShippingOptions(addr.id);
