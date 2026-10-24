@@ -629,7 +629,7 @@ onMounted(() => {
             v-if="isLoading" 
             :class="cn(
               'grid gap-6',
-              viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'grid-cols-1'
+              viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
             )"
           >
             <div v-for="i in 10" :key="i" class="bg-card rounded-2xl border p-6 space-y-4 animate-pulse">
@@ -665,7 +665,7 @@ onMounted(() => {
             <div 
               :class="cn(
                 'grid gap-6',
-                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'grid-cols-1'
+                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
               )"
             >
               <CommerceProductCard 
@@ -707,7 +707,7 @@ onMounted(() => {
       <!-- Bottom Rich Brand Details Section -->
       <div 
         v-if="canEditBrandFromStorefront || (brandDetail?.description && (brandDetail.description.includes('<') || brandDetail.description.length > 200))" 
-        class="mt-16 bg-card border border-border/80 rounded-[2rem] p-8 md:p-12 space-y-6 shadow-sm"
+        class="bg-card border border-border/80 rounded-2xl p-6 space-y-4 shadow-2xs"
       >
         <div class="flex items-center justify-between border-b pb-4">
           <h2 class="text-2xl font-display font-black tracking-tight text-foreground">
