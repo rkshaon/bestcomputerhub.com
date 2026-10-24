@@ -528,7 +528,10 @@ export const useShippingService = () => {
             id: opt.id ?? methodId,
             method_id: methodId,
             name: opt.shipping_method_name || opt.name,
-            shipping_charge: Number(opt.shipping_charge) || 0
+            shipping_charge: Number(opt.shipping_charge) || 0,
+            base_charge: Number(opt.base_charge) || 0,
+            is_free_shipping: !!opt.is_free_shipping,
+            free_shipping_threshold: opt.free_shipping_threshold
           };
         });
       }

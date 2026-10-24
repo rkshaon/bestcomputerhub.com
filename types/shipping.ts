@@ -116,6 +116,9 @@ export interface ShippingOption {
   name: string;
   description?: string | null;
   shipping_charge: number | string;
+  base_charge?: number | string;
+  is_free_shipping?: boolean;
+  free_shipping_threshold?: number | string | null;
   estimated_delivery?: string | null;
   method_id?: number | string;
 }

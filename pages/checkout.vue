@@ -616,13 +616,18 @@ const handlePlaceOrder = async () => {
                   <div class="space-y-1">
                     <p class="font-bold text-xs flex items-center gap-2">
                       {{ opt.name }}
-                      <span v-if="opt.estimated_delivery" class="text-[10px] font-normal text-muted-foreground">({{ opt.estimated_delivery }})</span>
+                    </p>
+                    <p v-if="opt.is_free_shipping && opt.free_shipping_threshold" class="text-[10px] text-muted-foreground italic">
+                      Free on orders over {{ formatCurrency(Number(opt.free_shipping_threshold)) }}
                     </p>
                     <p v-if="opt.description" class="text-[11px] text-muted-foreground">{{ opt.description }}</p>
                   </div>
-                  <div class="text-right">
+                  <div class="text-right space-y-0.5">
                     <p class="font-bold text-sm text-primary">
-                      {{ Number(opt.shipping_charge) === 0 ? 'FREE' : formatCurrency(Number(opt.shipping_charge)) }}
+                      {{ opt.is_free_shipping ? 'FREE' : formatCurrency(Number(opt.shipping_charge)) }}
+                    </p>
+                    <p v-if="Number(opt.base_charge) > 0 && Number(opt.base_charge) !== Number(opt.shipping_charge)" class="text-[10px] text-muted-foreground line-through">
+                      {{ formatCurrency(Number(opt.base_charge)) }}
                     </p>
                   </div>
                 </div>
