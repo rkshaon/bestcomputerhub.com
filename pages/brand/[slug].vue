@@ -371,7 +371,7 @@ watch(
 );
 
 watch(
-  [debouncedSearchQuery, () => filters.category, () => filters.minPrice, () => filters.maxPrice, () => filters.sort],
+  [debouncedSearchQuery, () => filters.category, () => filters.minPrice, () => filters.maxPrice, () => filters.sort, pageSize],
   () => {
     currentPage.value = 1;
     fetchBrandProducts();
@@ -578,7 +578,22 @@ onMounted(() => {
               Displaying <span class="text-foreground font-extrabold">{{ totalCount }}</span> optimal results
             </span>
             
-            <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+             <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+              <!-- Page Size Selector -->
+              <div class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <span class="hidden sm:inline">Show:</span>
+                <select 
+                  v-model="pageSize"
+                  class="h-11 bg-background border border-border/85 rounded-xl px-3 text-xs font-bold uppercase tracking-wider outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 shrink-0"
+                  aria-label="Show items per page"
+                >
+                  <option :value="16">16 / page</option>
+                  <option :value="24">24 / page</option>
+                  <option :value="48">48 / page</option>
+                  <option :value="96">96 / page</option>
+                </select>
+              </div>
+
               <div class="flex items-center border rounded-lg overflow-hidden">
                 <button 
                   @click="viewMode = 'grid'"
