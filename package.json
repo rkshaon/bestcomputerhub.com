@@ -33,7 +33,7 @@
     "lucide-react": "^0.546.0",
     "lucide-vue-next": "^1.0.0",
     "motion": "^12.39.0",
-    "nuxt": "^4.4.7",
+    "nuxt": "^4.6.2",
     "pinia": "^3.0.4",
     "postcss": "^8.5.26",
     "react": "^19.0.1",
