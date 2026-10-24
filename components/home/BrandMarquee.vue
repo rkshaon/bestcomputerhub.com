@@ -17,7 +17,7 @@ defineProps<{
           <NuxtLink 
             v-for="brand in brands" 
             :key="brand.id + '-' + i" 
-            :to="'/products/?brand=' + encodeURIComponent(brand.name)"
+            :to="`/brand/${brand.slug || brand.name.toLowerCase().replace(/\s+/g, '-')}/`"
             :title="decodeHtmlEntities(brand.name)"
             :aria-label="decodeHtmlEntities(brand.name)"
             class="w-32 sm:w-36 md:w-40 h-16 sm:h-20 rounded-xl bg-card border border-border flex items-center justify-center p-2 sm:p-3 overflow-hidden group/brand hover:border-primary/40 hover:scale-105 transition-all duration-300 shadow-xs hover:shadow-md cursor-pointer shrink-0"
