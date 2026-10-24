@@ -526,7 +526,9 @@ export const useShippingService = () => {
           return {
             ...opt,
             id: opt.id ?? methodId,
-            method_id: methodId
+            method_id: methodId,
+            name: opt.shipping_method_name || opt.name,
+            shipping_charge: Number(opt.shipping_charge) || 0
           };
         });
       }
