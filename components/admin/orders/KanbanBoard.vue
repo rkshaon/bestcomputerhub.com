@@ -3,7 +3,12 @@ import type { Order, OrderStatusOption } from '@/types/order';
 import KanbanCard from './KanbanCard.vue';
 import { computed } from 'vue';
 
-const props = defineProps<{ orders: Order[], statuses: OrderStatusOption[], updateStatus: (id: string, status: string) => Promise<any> }>();
+const props = defineProps<{ 
+  orders: Order[], 
+  statuses: OrderStatusOption[], 
+  transitions: Record<string, string[]>,
+  updateStatus: (id: string, status: string) => Promise<any> 
+}>();
 const emit = defineEmits(['status-updated']);
 
 const columns = computed(() => {
@@ -27,6 +32,7 @@ const columns = computed(() => {
           :key="order.id" 
           :order="order" 
           :statuses="statuses" 
+          :transitions="transitions[order.status] || []"
           :update-status="updateStatus"
           @status-updated="emit('status-updated')"
         />

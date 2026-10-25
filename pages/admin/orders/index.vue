@@ -45,6 +45,7 @@ const searchQuery = ref('');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref('all');
 const statuses = ref<OrderStatusOption[]>([]);
+const transitions = ref<Record<string, string[]>>({});
 const viewMode = ref<'table' | 'kanban'>('table');
 
 const currentPage = ref(1);
@@ -63,6 +64,7 @@ const fetchStatuses = async () => {
   try {
     const data = await salesService.getStatuses();
     statuses.value = data.statuses;
+    transitions.value = data.transitions;
   } catch (err) {
     console.error('Failed to fetch order statuses', err);
   }
@@ -237,6 +239,7 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
       v-else 
       :orders="orders" 
       :statuses="statuses" 
+      :transitions="transitions"
       :update-status="salesService.updateStatus"
       @status-updated="fetchOrders"
     />

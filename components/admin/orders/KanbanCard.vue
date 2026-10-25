@@ -2,13 +2,22 @@
 import type { Order, OrderStatusOption } from '@/types/order';
 import { formatCurrency } from '@/utils';
 import { Package } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useToast } from '@/composables/useToast';
 
-const props = defineProps<{ order: Order, statuses: OrderStatusOption[], updateStatus: (id: string, status: string) => Promise<any> }>();
+const props = defineProps<{ 
+  order: Order, 
+  statuses: OrderStatusOption[], 
+  transitions: string[],
+  updateStatus: (id: string, status: string) => Promise<any> 
+}>();
 const emit = defineEmits(['status-updated']);
 const isLoading = ref(false);
 const { toastError } = useToast();
+
+const filteredStatuses = computed(() => {
+  return props.statuses.filter(s => s.value === props.order.status || props.transitions.includes(s.value));
+});
 
 async function handleStatusChange(event: Event) {
   const newStatus = (event.target as HTMLSelectElement).value;
@@ -47,7 +56,7 @@ async function handleStatusChange(event: Event) {
         @change="handleStatusChange"
         class="w-full h-8 text-xs font-bold uppercase tracking-widest bg-muted/50 border border-border rounded-lg outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
       >
-        <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
+        <option v-for="s in filteredStatuses" :key="s.value" :value="s.value">{{ s.label }}</option>
       </select>
     </div>
   </div>
