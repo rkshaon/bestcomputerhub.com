@@ -139,7 +139,7 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
       <template #cell-customer="{ item: order }">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-[10px] font-bold">
-            {{ order.customerName.split(' ').map(n => n[0]).join('') }}
+            {{ (order.customerName || 'NA').split(' ').filter(Boolean).map(n => n[0]).join('') }}
           </div>
           <div class="flex flex-col">
             <span class="text-sm font-bold">{{ order.customerName }}</span>

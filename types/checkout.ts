@@ -87,6 +87,7 @@ export interface BackendOrderSummary {
   total_amount: ApiMoney;
   item_count: number;
   created_at: string;
+  customer: { user: { username: string } } | null;
 }
 
 export interface BackendOrderItemVariant {

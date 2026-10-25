@@ -97,8 +97,14 @@ export function mapOrderSummary(raw: BackendOrderSummary): Order {
   return {
     id: String(raw.id),
     orderNumber: raw.invoice_number || `#${raw.id}`,
+    createdAt: raw.created_at,
+    updatedAt: raw.created_at,
+    notes: '',
+    shippingAddress: null,
+    shippingMethod: null,
+    allowedNextStatuses: [],
     customerId: '',
-    customerName: '',
+    customerName: raw.customer?.user?.username ?? 'NA',
     items: [],
     itemCount: Number(raw.item_count) || 0,
     subtotal: 0,
@@ -107,12 +113,6 @@ export function mapOrderSummary(raw: BackendOrderSummary): Order {
     taxTotal: 0,
     totalAmount: toMoney(raw.total_amount),
     status: normalizeOrderStatus(raw.status),
-    paymentStatus: normalizePaymentStatus(raw.payment_status),
-    createdAt: raw.created_at,
-    updatedAt: raw.created_at,
-    notes: '',
-    shippingAddress: null,
-    shippingMethod: null,
-    allowedNextStatuses: []
+    paymentStatus: normalizePaymentStatus(raw.payment_status)
   };
 }

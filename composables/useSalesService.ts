@@ -1,6 +1,7 @@
 // File: /composables/useSalesService.ts
 import { useApiClient } from './useApiClient';
 import type { Order } from '@/types/order';
+import { mapOrderSummary } from '@/utils/order';
 
 export const useSalesService = () => {
   const apiClient = useApiClient();
@@ -11,7 +12,7 @@ export const useSalesService = () => {
         method: 'GET',
         query: params
       });
-      const results = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
+      const results = Array.isArray(data?.results) ? data.results.map(mapOrderSummary) : (Array.isArray(data) ? data.map(mapOrderSummary) : []);
       const count = typeof data?.count === 'number' ? data.count : results.length;
       return { results, count };
     } catch (err: any) {
