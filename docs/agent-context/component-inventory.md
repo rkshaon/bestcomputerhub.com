@@ -703,6 +703,82 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<CheckoutDeliveryAreaStep>`
+- **Exact File Location**: `/components/commerce/checkout/CheckoutDeliveryAreaStep.vue`
+- **Component Type**: Domain component / Form component
+- **Scope**: Storefront
+- **Purpose**: Step 1 of checkout — radio-card picker for the delivery area (`ShippingZone`, e.g. Inside Dhaka / Outside Dhaka).
+- **Routes/Pages Used**: `/checkout/`.
+- **Main Responsibilities**: Render active zones from `GET /api/v1/shipping/zones/available/` as an accessible radio group (`<fieldset>`, `sr-only` inputs, `has-[:focus-visible]` rings); loading, error-with-retry and "not configured" empty states.
+- **What It Explicitly Does Not Own**: Zone fetching (receives `zones`, `isLoading`, `error` as props; emits `retry`).
+- **State Owned**: None (`v-model` = selected zone id).
+- **Calls API**: No
+- **Related Composables/Services**: `cn`; data comes from `useShippingService.getAvailableZones()` in the page.
+- **Responsive Responsibility**: 1-column on mobile, 2-column from `sm:`.
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: Never fabricates a zone; shows a "contact support" empty state when the backend returns none.
+- **Known Architectural Risks**: None.
+
+---
+
+### `<CheckoutAddressStep>`
+- **Exact File Location**: `/components/commerce/checkout/CheckoutAddressStep.vue`
+- **Component Type**: Domain component / Form component
+- **Scope**: Storefront
+- **Purpose**: Step 2 of checkout — pick a saved `SHIPPING` address for the chosen delivery area or create a new one.
+- **Routes/Pages Used**: `/checkout/`.
+- **Main Responsibilities**:
+  - Stream saved addresses with `useInfinitePagination` + `<UiInfiniteScroll>` (`GET /api/v1/customer-addresses/`, 10 per page).
+  - Show only `SHIPPING` addresses tagged with the chosen `zone.id` or not tagged yet; count and mention hidden addresses from other zones.
+  - On picking an untagged address, `PATCH` its `shipping_zone` via `useCustomerAddressService.updateCustomerAddress()` before emitting it.
+  - New-address `<form>` (semantic submit, labelled inputs, autocomplete attributes) posting `address_type: 'SHIPPING'` + `shipping_zone`; opens automatically when nothing reusable exists; prefills names from props.
+- **What It Explicitly Does Not Own**: Zone selection, shipping options, totals.
+- **State Owned**: `mode` (`list` | `new`), paginated `addresses`, `taggingAddressId`, `newAddress` form model.
+- **Calls API**: Yes (`useCustomerAddressService`).
+- **Related Composables/Services**: `useCustomerAddressService`, `useInfinitePagination`, `useToast`, `<UiInfiniteScroll>`, `<UiButton>`.
+- **Responsive Responsibility**: 1/2-column address grid, scrollable list (`max-h-[22rem]`), stacked form fields on mobile.
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: `v-model` emits only a zone-tagged address; `:key="zone.id"` on the parent remounts it when the area changes; `state` is sent as entered (no `'N/A'` filler).
+- **Known Architectural Risks**: None.
+
+---
+
+### `<CheckoutShippingOptions>`
+- **Exact File Location**: `/components/commerce/checkout/CheckoutShippingOptions.vue`
+- **Component Type**: Domain component / Form component
+- **Scope**: Storefront
+- **Purpose**: Step 3 of checkout — radio-card list of backend-priced delivery methods for the selected address.
+- **Routes/Pages Used**: `/checkout/`.
+- **Main Responsibilities**: Render `ShippingOption[]` from `GET /api/v1/shipping/options/?address_id=` with method name, charge (`Free` when the backend charge is 0 / `is_free_shipping`), struck-through base charge and free-shipping threshold hint; loading, error-with-retry and empty states.
+- **What It Explicitly Does Not Own**: Option fetching or any charge calculation (all values are backend-provided).
+- **State Owned**: None (`v-model` = `shipping_method_id`).
+- **Calls API**: No
+- **Related Composables/Services**: `cn`, `formatCurrency`.
+- **Responsive Responsibility**: Single-column cards with wrapping price column.
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: Displays only backend `shipping_charge` / `base_charge` / `free_shipping_threshold`.
+- **Known Architectural Risks**: None.
+
+---
+
+### `<CheckoutOrderSummary>`
+- **Exact File Location**: `/components/commerce/checkout/CheckoutOrderSummary.vue`
+- **Component Type**: Domain component / Data-display
+- **Scope**: Storefront
+- **Purpose**: Sticky checkout sidebar listing cart lines and the backend-calculated totals.
+- **Routes/Pages Used**: `/checkout/`.
+- **Main Responsibilities**: Render cart items (thumbnails/names from `useCartStore`, line totals from `validation.cart.items`), subtotal / delivery / discount / tax / grand total strictly from `CheckoutValidateResponse.pricing`, validation error list when `is_valid` is false, "calculating" state and a delivery note for the chosen option.
+- **What It Explicitly Does Not Own**: Any price arithmetic — before validation it shows `—` and a hint instead of client-side sums.
+- **State Owned**: None (computed views over props).
+- **Calls API**: No
+- **Related Composables/Services**: `formatCurrency`, `decodeHtmlEntities`, `toMoney` (`/utils/order.ts`).
+- **Responsive Responsibility**: Sticky only from `lg:` (`lg:sticky lg:top-28`), scrollable item list.
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: Totals come only from `/checkout/validate/` (backend authority).
+- **Known Architectural Risks**: None.
+
+---
+
 ## 4. Admin Management & CRUD Components (`/components/admin/` & `/features/admin/`)
 
 ### `<CategoryTreeAdmin>`

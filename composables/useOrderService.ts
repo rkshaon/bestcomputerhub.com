@@ -1,44 +1,55 @@
 // File: /composables/useOrderService.ts
 import { useApiClient } from './useApiClient';
+import { mapOrderDetail, mapOrderSummary } from '@/utils/order';
 import type { Order } from '@/types/order';
+import type {
+  BackendOrderCancelResponse,
+  BackendOrderDetail,
+  BackendOrderSummary
+} from '@/types/checkout';
 
+/**
+ * Customer-facing storefront orders.
+ * Contract: ZayrahLife-Backend/docs/checkout-api.md (sections 3–5)
+ */
 export const useOrderService = () => {
   const apiClient = useApiClient();
 
-  const getOrders = async (params: { page?: number; page_size?: number } = {}): Promise<{ results: Order[]; count: number }> => {
-    try {
-      const data = await apiClient.request<any>('/api/v1/orders/', {
-        method: 'GET',
-        query: params
-      });
-      const results = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
-      const count = typeof data?.count === 'number' ? data.count : results.length;
-      return { results, count };
-    } catch (err: any) {
-      throw err;
-    }
+  /**
+   * GET /api/v1/orders/ — the customer's own orders, newest first.
+   * The backend returns a plain, unpaginated array.
+   */
+  const getOrders = async (): Promise<{ results: Order[]; count: number }> => {
+    const data = await apiClient.request<BackendOrderSummary[] | { results: BackendOrderSummary[]; count?: number }>(
+      '/api/v1/orders/',
+      { method: 'GET' }
+    );
+    const rows: BackendOrderSummary[] = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.results)
+        ? data.results
+        : [];
+    const results = rows.map(mapOrderSummary);
+    return { results, count: results.length };
   };
 
-  const getOrderDetails = async (orderId: string): Promise<Order> => {
-    try {
-      const data = await apiClient.request<Order>(`/api/v1/orders/${orderId}/`, {
-        method: 'GET'
-      });
-      return data;
-    } catch (err: any) {
-      throw err;
-    }
+  /** GET /api/v1/orders/{id}/ */
+  const getOrderDetails = async (orderId: string | number): Promise<Order> => {
+    const data = await apiClient.request<BackendOrderDetail>(`/api/v1/orders/${orderId}/`, {
+      method: 'GET'
+    });
+    return mapOrderDetail(data);
   };
 
-  const cancelOrder = async (orderId: string): Promise<Order> => {
-    try {
-      const data = await apiClient.request<Order>(`/api/v1/orders/${orderId}/cancel/`, {
-        method: 'POST'
-      });
-      return data;
-    } catch (err: any) {
-      throw err;
-    }
+  /**
+   * POST /api/v1/orders/{id}/cancel/
+   * Only PENDING orders can be cancelled. Returns the backend's short
+   * `{ id, status, message }` response; refetch the order for its full state.
+   */
+  const cancelOrder = async (orderId: string | number): Promise<BackendOrderCancelResponse> => {
+    return apiClient.request<BackendOrderCancelResponse>(`/api/v1/orders/${orderId}/cancel/`, {
+      method: 'POST'
+    });
   };
 
   return {

@@ -195,7 +195,7 @@ const handleLogout = async () => {
                     </div>
 
                     <div class="flex items-center justify-between pt-4 border-t">
-                      <p class="text-sm text-muted-foreground">{{ order.items?.length || 0 }} items in this package</p>
+                      <p class="text-sm text-muted-foreground">{{ order.itemCount ?? order.items?.length ?? 0 }} items in this package</p>
                       <div class="flex items-center gap-2">
                         <NuxtLink :to="`/my-account/orders/${order.id}`" class="inline-flex items-center justify-center rounded-full text-xs font-bold gap-1.5 px-4 py-2 hover:bg-muted transition-colors">
                            View Details <ArrowRight class="w-3 h-3" />

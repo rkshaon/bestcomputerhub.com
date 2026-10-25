@@ -18,7 +18,8 @@ import type {
   UpdateShippingRatePayload,
   ShippingRateQueryParams,
   PaginatedShippingRates,
-  ShippingOption
+  ShippingOptionsResponse,
+  AvailableShippingZone
 } from '@/types';
 
 export const useShippingService = () => {
@@ -499,47 +500,53 @@ export const useShippingService = () => {
   };
 
   /**
-   * Get available shipping options for a given customer address ID.
-   * Endpoint: GET /api/v1/shipping/options/?address_id={address_id}
+   * Storefront delivery areas a customer can choose at checkout.
+   * Endpoint: GET /api/v1/shipping/zones/available/ (active zones, unpaginated)
    */
-  const getShippingOptions = async (addressId: number | string): Promise<ShippingOption[]> => {
+  const getAvailableZones = async (): Promise<AvailableShippingZone[]> => {
     isLoading.value = true;
     errorMsg.value = null;
 
     try {
-      const data = await apiClient.request<any>(`/api/v1/shipping/options/?address_id=${addressId}`, {
+      const data = await apiClient.request<AvailableShippingZone[]>('/api/v1/shipping/zones/available/', {
         method: 'GET'
       });
       isLoading.value = false;
+      return Array.isArray(data) ? data : [];
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to retrieve delivery areas.');
+      isLoading.value = false;
+      throw err;
+    }
+  };
 
-      if (data && typeof data === 'object') {
-        let rawList: any[] = [];
-        if (Array.isArray(data.options)) {
-          rawList = data.options;
-        } else if (Array.isArray(data.results)) {
-          rawList = data.results;
-        } else if (Array.isArray(data)) {
-          rawList = data;
-        }
-        return rawList.map((opt: any) => {
-          const methodId = opt.method_id ?? opt.id ?? opt.shipping_method_id;
-          return {
-            ...opt,
-            id: opt.id ?? methodId,
-            method_id: methodId,
-            name: opt.shipping_method_name || opt.name,
-            shipping_charge: Number(opt.shipping_charge) || 0,
-            base_charge: Number(opt.base_charge) || 0,
-            is_free_shipping: !!opt.is_free_shipping,
-            free_shipping_threshold: opt.free_shipping_threshold
-          };
-        });
-      }
-      return [];
+  /**
+   * Priced shipping methods for a customer's shipping address.
+   * Endpoint: GET /api/v1/shipping/options/?address_id={address_id}
+   * The backend resolves the zone (address zone → postcode → city → default)
+   * and computes every charge; nothing is calculated here.
+   * Throws on 400 (no zone / no methods / foreign address) so the caller can
+   * show the backend message.
+   */
+  const getShippingOptions = async (addressId: number): Promise<ShippingOptionsResponse> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<ShippingOptionsResponse>(
+        `/api/v1/shipping/options/?address_id=${encodeURIComponent(String(addressId))}`,
+        { method: 'GET' }
+      );
+      isLoading.value = false;
+      return {
+        zone: data.zone,
+        cart_subtotal: data.cart_subtotal,
+        options: Array.isArray(data?.options) ? data.options : []
+      };
     } catch (err: any) {
       errorMsg.value = extractErrorMessage(err, 'Failed to retrieve shipping options.');
       isLoading.value = false;
-      return [];
+      throw err;
     }
   };
 
@@ -559,6 +566,7 @@ export const useShippingService = () => {
     createShippingRate,
     updateShippingRate,
     deleteShippingRate,
+    getAvailableZones,
     getShippingOptions,
     isLoading,
     isCreating,

@@ -68,6 +68,10 @@ const statusConfig = {
   refunded: { icon: RefreshCcw, color: 'text-slate-600', bg: 'bg-slate-50 dark:bg-slate-950/20', border: 'border-slate-100 dark:border-slate-900' },
 };
 
+/** Resolves a badge style for any `OrderStatus`, falling back to pending for statuses without a dedicated style. */
+const getStatusConfig = (status: Order['status']) =>
+  statusConfig[status as keyof typeof statusConfig] ?? statusConfig.pending;
+
 const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
 </script>
 
@@ -148,11 +152,11 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
       <template #cell-status="{ item: order }">
         <div :class="cn(
           'inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors',
-          statusConfig[order.status].bg,
-          statusConfig[order.status].color,
-          statusConfig[order.status].border
+          getStatusConfig(order.status).bg,
+          getStatusConfig(order.status).color,
+          getStatusConfig(order.status).border
         )">
-          <component :is="statusConfig[order.status].icon" class="w-3 h-3" />
+          <component :is="getStatusConfig(order.status).icon" class="w-3 h-3" />
           {{ order.status }}
         </div>
       </template>
