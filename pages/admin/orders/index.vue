@@ -20,6 +20,7 @@ import {
 import { useSalesService } from '@/composables/useSalesService';
 import { formatCurrency, cn } from '@/utils';
 import type { Order, OrderStatusOption } from '@/types/order';
+import KanbanBoard from '@/components/admin/orders/KanbanBoard.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 
@@ -44,6 +45,7 @@ const searchQuery = ref('');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref('all');
 const statuses = ref<OrderStatusOption[]>([]);
+const viewMode = ref<'table' | 'kanban'>('table');
 
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
@@ -97,6 +99,10 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
         <p class="text-slate-500 dark:text-slate-400 mt-1">Track and manage global enterprise transactions.</p>
       </div>
       <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+          <button @click="viewMode = 'table'" :class="cn('px-3 py-1.5 rounded-lg text-xs font-bold transition-all', viewMode === 'table' ? 'bg-white dark:bg-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-900')">Table</button>
+          <button @click="viewMode = 'kanban'" :class="cn('px-3 py-1.5 rounded-lg text-xs font-bold transition-all', viewMode === 'kanban' ? 'bg-white dark:bg-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-900')">Kanban</button>
+        </div>
         <button class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
           <Download class="w-4 h-4" /> Bulk Export
         </button>
@@ -132,8 +138,9 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
       </div>
     </div>
 
-    <!-- Orders Table -->
+    <!-- Orders View -->
     <UiTable
+      v-if="viewMode === 'table'"
       :columns="tableColumns"
       :data="orders"
       key-field="id"
@@ -143,7 +150,7 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
         <div class="flex flex-col">
           <span class="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 tracking-tighter">{{ order.orderNumber }}</span>
           <span class="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
-            <Package class="w-2.5 h-2.5" /> {{ Math.floor(Math.random() * 5) + 1 }} Items
+            <Package class="w-2.5 h-2.5" /> {{ order.itemCount }} Items
           </span>
         </div>
       </template>
@@ -226,5 +233,6 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
         />
       </template>
     </UiTable>
+    <KanbanBoard v-else :orders="orders" :statuses="statuses" />
   </div>
 </template>
