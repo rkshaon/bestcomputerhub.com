@@ -233,6 +233,13 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
         />
       </template>
     </UiTable>
-    <KanbanBoard v-else :orders="orders" :statuses="statuses" />
+    <KanbanBoard 
+      v-else 
+      :orders="orders" 
+      :statuses="statuses" 
+      :update-status="salesService.updateStatus"
+      @status-updated="fetchOrders"
+    />
+
   </div>
 </template>

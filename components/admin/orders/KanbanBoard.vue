@@ -3,7 +3,8 @@ import type { Order, OrderStatusOption } from '@/types/order';
 import KanbanCard from './KanbanCard.vue';
 import { computed } from 'vue';
 
-const props = defineProps<{ orders: Order[], statuses: OrderStatusOption[] }>();
+const props = defineProps<{ orders: Order[], statuses: OrderStatusOption[], updateStatus: (id: string, status: string) => Promise<any> }>();
+const emit = defineEmits(['status-updated']);
 
 const columns = computed(() => {
   return props.statuses.map(status => ({
@@ -21,7 +22,14 @@ const columns = computed(() => {
         <span class="text-xs font-bold bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{{ col.orders.length }}</span>
       </div>
       <div class="flex flex-col gap-3 min-h-[100px]">
-        <KanbanCard v-for="order in col.orders" :key="order.id" :order="order" />
+        <KanbanCard 
+          v-for="order in col.orders" 
+          :key="order.id" 
+          :order="order" 
+          :statuses="statuses" 
+          :update-status="updateStatus"
+          @status-updated="emit('status-updated')"
+        />
         <div v-if="col.orders.length === 0" class="text-xs text-muted-foreground italic p-4 text-center border border-dashed border-border rounded-xl">No orders</div>
       </div>
     </div>

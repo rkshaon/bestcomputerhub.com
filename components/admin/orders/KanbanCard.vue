@@ -1,26 +1,54 @@
 <script setup lang="ts">
-import type { Order } from '@/types/order';
+import type { Order, OrderStatusOption } from '@/types/order';
 import { formatCurrency } from '@/utils';
 import { Package } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { useToast } from '@/composables/useToast';
 
-defineProps<{ order: Order }>();
+const props = defineProps<{ order: Order, statuses: OrderStatusOption[], updateStatus: (id: string, status: string) => Promise<any> }>();
+const emit = defineEmits(['status-updated']);
+const isLoading = ref(false);
+const { toastError } = useToast();
+
+async function handleStatusChange(event: Event) {
+  const newStatus = (event.target as HTMLSelectElement).value;
+  if (newStatus === props.order.status) return;
+  isLoading.value = true;
+  try {
+    await props.updateStatus(props.order.id, newStatus);
+    emit('status-updated');
+  } catch (e: any) {
+    toastError('Failed to update status', { description: e.message });
+  } finally {
+    isLoading.value = false;
+  }
+}
 </script>
 
 <template>
-  <NuxtLink 
-    :to="`/admin/orders/${order.id}`" 
-    class="block bg-card border border-border/80 rounded-xl p-4 shadow-2xs hover:border-primary/40 transition-all group"
-  >
-    <div class="flex justify-between items-start mb-2">
-      <span class="font-mono text-xs font-bold text-foreground tracking-tighter">{{ order.orderNumber }}</span>
-    </div>
-    <p class="text-sm font-bold text-foreground mb-1">{{ order.customerName }}</p>
-    <div class="flex justify-between items-center text-xs text-muted-foreground mt-3">
-      <span>{{ formatCurrency(order.totalAmount) }}</span>
-      <div class="flex items-center gap-1">
-        <Package class="w-3 h-3" />
-        {{ order.itemCount }} Items
+  <div class="block bg-card border border-border/80 rounded-xl p-4 shadow-2xs group">
+    <NuxtLink :to="`/admin/orders/${order.id}`" class="block">
+      <div class="flex justify-between items-start mb-2">
+        <span class="font-mono text-xs font-bold text-foreground tracking-tighter">{{ order.orderNumber }}</span>
       </div>
+      <p class="text-sm font-bold text-foreground mb-1">{{ order.customerName }}</p>
+      <div class="flex justify-between items-center text-xs text-muted-foreground mt-3">
+        <span>{{ formatCurrency(order.totalAmount) }}</span>
+        <div class="flex items-center gap-1">
+          <Package class="w-3 h-3" />
+          {{ order.itemCount }} Items
+        </div>
+      </div>
+    </NuxtLink>
+    <div class="mt-4 pt-4 border-t border-border/60">
+      <select 
+        :value="order.status" 
+        :disabled="isLoading"
+        @change="handleStatusChange"
+        class="w-full h-8 text-xs font-bold uppercase tracking-widest bg-muted/50 border border-border rounded-lg outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
+      >
+        <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
+      </select>
     </div>
-  </NuxtLink>
+  </div>
 </template>
