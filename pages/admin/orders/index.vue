@@ -19,7 +19,7 @@ import {
 } from 'lucide-vue-next';
 import { useSalesService } from '@/composables/useSalesService';
 import { formatCurrency, cn } from '@/utils';
-import type { Order } from '@/types/order';
+import type { Order, OrderStatusOption } from '@/types/order';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 
@@ -43,6 +43,7 @@ const totalCount = ref(0);
 const searchQuery = ref('');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref('all');
+const statuses = ref<OrderStatusOption[]>([]);
 
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
@@ -56,8 +57,20 @@ const fetchOrders = async () => {
   totalCount.value = result.count || 0;
 };
 
+const fetchStatuses = async () => {
+  try {
+    const data = await salesService.getStatuses();
+    statuses.value = data.statuses;
+  } catch (err) {
+    console.error('Failed to fetch order statuses', err);
+  }
+};
+
 watch([currentPage, itemsPerPage, debouncedSearchQuery, statusFilter], fetchOrders);
-onMounted(fetchOrders);
+onMounted(() => {
+  fetchOrders();
+  fetchStatuses();
+});
 
 const statusConfig = {
   pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-100 dark:border-amber-900' },
@@ -108,8 +121,8 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
           class="h-12 px-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 text-xs font-bold uppercase tracking-widest cursor-pointer appearance-none min-w-[160px]"
         >
           <option value="all">All Statuses</option>
-          <option v-for="(config, status) in statusConfig" :key="status" :value="status">
-            {{ status.charAt(0).toUpperCase() + status.slice(1) }}
+          <option v-for="status in statuses" :key="status.value" :value="status.value">
+            {{ status.label }}
           </option>
         </select>
 

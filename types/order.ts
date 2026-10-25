@@ -50,6 +50,12 @@ export interface OrderStatusOption {
   label: string;
 }
 
+export interface OrderStatusResponse {
+  default: string;
+  statuses: OrderStatusOption[];
+  transitions: Record<OrderStatus, OrderStatus[]>;
+}
+
 export interface Order {
   id: string;
   /** Backend `invoice_number` (e.g. `SALE-20261013-000041`). */
