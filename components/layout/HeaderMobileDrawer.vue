@@ -245,14 +245,12 @@ const hasChildren = (cat: Category): boolean => {
           <MapPin class="w-4 h-4 text-primary" />
           <span>Store Location</span>
         </a>
-        <NuxtLink 
-          to="/products/" 
-          class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
-          @click="uiStore.closeMobileMenu()"
+        <div 
+          class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 cursor-default"
         >
           <Cpu class="w-4 h-4 text-primary" />
           <span>PC Builder</span>
-        </NuxtLink>
+        </div>
         <button 
           v-if="false"
           @click="handleCompareClick(); uiStore.closeMobileMenu()" 
