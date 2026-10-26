@@ -36,7 +36,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
   }
 
-  if (to.path.startsWith('/account')) {
+  if (to.path.startsWith('/my-account') || to.path.startsWith('/account')) {
     if (!authStore.isLoggedIn) {
       return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`);
     }

@@ -26,7 +26,9 @@ const handleCancelOrder = async () => {
   if (!confirm('Are you sure you want to cancel this order?')) return;
   
   try {
-    order.value = await orderService.cancelOrder(orderId);
+    await orderService.cancelOrder(orderId);
+    // The cancel endpoint returns only { id, status, message }; reload the full order.
+    order.value = await orderService.getOrderDetails(orderId);
   } catch (err) {
     handleApiError(err, 'Failed to cancel order.');
   }

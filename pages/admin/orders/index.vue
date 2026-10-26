@@ -19,7 +19,8 @@ import {
 } from 'lucide-vue-next';
 import { useSalesService } from '@/composables/useSalesService';
 import { formatCurrency, cn } from '@/utils';
-import type { Order } from '@/types/order';
+import type { Order, OrderStatusOption } from '@/types/order';
+import KanbanBoard from '@/components/admin/orders/KanbanBoard.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 
@@ -43,6 +44,9 @@ const totalCount = ref(0);
 const searchQuery = ref('');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref('all');
+const statuses = ref<OrderStatusOption[]>([]);
+const transitions = ref<Record<string, string[]>>({});
+const viewMode = ref<'table' | 'kanban'>('table');
 
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
@@ -56,8 +60,21 @@ const fetchOrders = async () => {
   totalCount.value = result.count || 0;
 };
 
+const fetchStatuses = async () => {
+  try {
+    const data = await salesService.getStatuses();
+    statuses.value = data.statuses;
+    transitions.value = data.transitions;
+  } catch (err) {
+    console.error('Failed to fetch order statuses', err);
+  }
+};
+
 watch([currentPage, itemsPerPage, debouncedSearchQuery, statusFilter], fetchOrders);
-onMounted(fetchOrders);
+onMounted(() => {
+  fetchOrders();
+  fetchStatuses();
+});
 
 const statusConfig = {
   pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-100 dark:border-amber-900' },
@@ -67,6 +84,10 @@ const statusConfig = {
   cancelled: { icon: XCircle, color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-950/20', border: 'border-rose-100 dark:border-rose-900' },
   refunded: { icon: RefreshCcw, color: 'text-slate-600', bg: 'bg-slate-50 dark:bg-slate-950/20', border: 'border-slate-100 dark:border-slate-900' },
 };
+
+/** Resolves a badge style for any `OrderStatus`, falling back to pending for statuses without a dedicated style. */
+const getStatusConfig = (status: Order['status']) =>
+  statusConfig[status as keyof typeof statusConfig] ?? statusConfig.pending;
 
 const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
 </script>
@@ -80,6 +101,10 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
         <p class="text-slate-500 dark:text-slate-400 mt-1">Track and manage global enterprise transactions.</p>
       </div>
       <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+          <button @click="viewMode = 'table'" :class="cn('px-3 py-1.5 rounded-lg text-xs font-bold transition-all', viewMode === 'table' ? 'bg-white dark:bg-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-900')">Table</button>
+          <button @click="viewMode = 'kanban'" :class="cn('px-3 py-1.5 rounded-lg text-xs font-bold transition-all', viewMode === 'kanban' ? 'bg-white dark:bg-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-900')">Kanban</button>
+        </div>
         <button class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
           <Download class="w-4 h-4" /> Bulk Export
         </button>
@@ -104,8 +129,8 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
           class="h-12 px-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 text-xs font-bold uppercase tracking-widest cursor-pointer appearance-none min-w-[160px]"
         >
           <option value="all">All Statuses</option>
-          <option v-for="(config, status) in statusConfig" :key="status" :value="status">
-            {{ status.charAt(0).toUpperCase() + status.slice(1) }}
+          <option v-for="status in statuses" :key="status.value" :value="status.value">
+            {{ status.label }}
           </option>
         </select>
 
@@ -115,8 +140,9 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
       </div>
     </div>
 
-    <!-- Orders Table -->
+    <!-- Orders View -->
     <UiTable
+      v-if="viewMode === 'table'"
       :columns="tableColumns"
       :data="orders"
       key-field="id"
@@ -126,7 +152,7 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
         <div class="flex flex-col">
           <span class="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 tracking-tighter">{{ order.orderNumber }}</span>
           <span class="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
-            <Package class="w-2.5 h-2.5" /> {{ Math.floor(Math.random() * 5) + 1 }} Items
+            <Package class="w-2.5 h-2.5" /> {{ order.itemCount }} Items
           </span>
         </div>
       </template>
@@ -135,7 +161,7 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
       <template #cell-customer="{ item: order }">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-[10px] font-bold">
-            {{ order.customerName.split(' ').map(n => n[0]).join('') }}
+            {{ (order.customerName || 'NA').split(' ').filter(Boolean).map(n => n[0]).join('') }}
           </div>
           <div class="flex flex-col">
             <span class="text-sm font-bold">{{ order.customerName }}</span>
@@ -148,11 +174,11 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
       <template #cell-status="{ item: order }">
         <div :class="cn(
           'inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors',
-          statusConfig[order.status].bg,
-          statusConfig[order.status].color,
-          statusConfig[order.status].border
+          getStatusConfig(order.status).bg,
+          getStatusConfig(order.status).color,
+          getStatusConfig(order.status).border
         )">
-          <component :is="statusConfig[order.status].icon" class="w-3 h-3" />
+          <component :is="getStatusConfig(order.status).icon" class="w-3 h-3" />
           {{ order.status }}
         </div>
       </template>
@@ -209,5 +235,14 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
         />
       </template>
     </UiTable>
+    <KanbanBoard 
+      v-else 
+      :orders="orders" 
+      :statuses="statuses" 
+      :transitions="transitions || {}"
+      :update-status="salesService.updateStatus"
+      @status-updated="fetchOrders"
+    />
+
   </div>
 </template>

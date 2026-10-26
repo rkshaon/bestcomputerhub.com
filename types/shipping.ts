@@ -111,12 +111,42 @@ export interface PaginatedShippingRates {
   results: ShippingRate[];
 }
 
+/**
+ * One priced shipping method for a customer address.
+ * Contract: GET /api/v1/shipping/options/?address_id= (`options[]`).
+ */
 export interface ShippingOption {
-  id: number | string;
-  name: string;
-  description?: string | null;
+  shipping_method_id: number;
+  shipping_method_name: string;
+  shipping_method_code: string;
+  base_charge: number | string;
   shipping_charge: number | string;
-  estimated_delivery?: string | null;
-  method_id?: number | string;
+  is_free_shipping: boolean;
+  free_shipping_threshold: number | string | null;
+  zone_name: string;
+  zone_code: string;
+}
+
+export interface ShippingOptionsZone {
+  id: number;
+  name: string;
+  code: string;
+}
+
+/** Full response of GET /api/v1/shipping/options/?address_id= */
+export interface ShippingOptionsResponse {
+  zone: ShippingOptionsZone;
+  cart_subtotal: number | string;
+  options: ShippingOption[];
+}
+
+/** Row of GET /api/v1/shipping/zones/available/ (storefront delivery areas). */
+export interface AvailableShippingZone {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  is_default: boolean;
+  display_order: number;
 }
 

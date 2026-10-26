@@ -1,29 +1,20 @@
-<!-- File: /pages/account.vue -->
 <script setup lang="ts">
 import { 
   User, 
   Package, 
-  MapPin, 
-  CreditCard, 
   Settings, 
   LogOut, 
   ChevronRight, 
-  ExternalLink,
   ShieldCheck,
-  Bell,
   Clock,
-  ArrowRight,
-  AlertTriangle
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useEmailVerification } from '@/composables/useEmailVerification';
-import { useOrderService } from '@/composables/useOrderService';
-import { formatCurrency, cn, decodeHtmlEntities } from '@/utils';
-import type { Order } from '@/types/order';
+import { cn } from '@/utils';
 
 useSeoMeta({
   title: 'My Account',
-  description: 'Manage your profile, track orders, view saved addresses, and update security settings at Best Computer Hub.'
+  description: 'Manage your profile, track orders, and update security settings at Best Computer Hub.'
 });
 
 const authStore = useAuthStore();
@@ -31,47 +22,9 @@ const { emailVerified, loadingResend, fetchStatus, resendEmail } = useEmailVerif
 
 onMounted(fetchStatus);
 
-// Redirect to login if not logged in
-if (process.client && !authStore.isLoggedIn) {
-  navigateTo('/login');
-}
-
-const activeTab = ref('orders');
-
-const tabs = [
-  { id: 'orders', label: 'Order History', icon: Package },
-  { id: 'profile', label: 'Profile Settings', icon: User },
-  { id: 'addresses', label: 'Saved Addresses', icon: MapPin },
-  { id: 'payment', label: 'Payment Methods', icon: CreditCard },
-  { id: 'security', label: 'Security', icon: ShieldCheck },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-];
-
-const orderService = useOrderService();
-const orders = ref<Order[]>([]);
-const isLoadingOrders = ref(false);
-
-const fetchOrders = async () => {
-  isLoadingOrders.value = true;
-  try {
-    const res = await orderService.getOrders();
-    orders.value = res.results || [];
-  } catch (err) {
-    handleApiError(err, 'Failed to load order history.');
-  } finally {
-    isLoadingOrders.value = false;
-  }
-};
-
-onMounted(() => {
-  fetchStatus();
-  fetchOrders();
-});
-
 const handleLogout = async () => {
   const route = useRoute();
   await authStore.logout(route.fullPath);
-  toastSuccess('Secure session terminated successfully.');
 };
 </script>
 
@@ -95,7 +48,7 @@ const handleLogout = async () => {
             <h1 class="text-4xl md:text-5xl font-display font-bold">{{ authStore.user?.name }}</h1>
             <div class="flex flex-wrap items-center justify-center md:justify-start gap-4">
               <span class="text-muted-foreground text-sm font-medium flex items-center gap-1.5">
-                <Clock class="w-4 h-4" /> Member since Nov 2023
+                <Clock class="w-4 h-4" /> Member since {{ authStore.user?.joinedAt ? new Date(authStore.user.joinedAt).getFullYear() : '2023' }}
               </span>
               <span class="px-3 py-1 bg-muted rounded-full text-[10px] font-bold uppercase tracking-widest text-primary border border-border">
                 Enterprise Member
@@ -126,145 +79,34 @@ const handleLogout = async () => {
         <aside class="lg:w-80 shrink-0">
           <div class="bg-card border rounded-[2.5rem] overflow-hidden p-3 sticky top-24 shadow-sm">
             <nav class="space-y-1">
-              <button 
-                v-for="tab in tabs" 
-                :key="tab.id"
-                @click="activeTab = tab.id"
-                :class="cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all group',
-                  activeTab === tab.id 
-                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                )"
+              <NuxtLink 
+                to="/my-account/orders/"
+                active-class="bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all group text-muted-foreground hover:bg-accent hover:text-foreground"
               >
-                <component :is="tab.icon" class="w-4 h-4" :class="activeTab === tab.id ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'" />
-                {{ tab.label }}
-                <ChevronRight class="w-4 h-4 ml-auto opacity-40" />
-              </button>
+                <Package class="w-4 h-4" /> Order History <ChevronRight class="w-4 h-4 ml-auto opacity-40" />
+              </NuxtLink>
+              <NuxtLink 
+                to="/my-account/"
+                exact-active-class="bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all group text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                <User class="w-4 h-4" /> Profile Settings <ChevronRight class="w-4 h-4 ml-auto opacity-40" />
+              </NuxtLink>
+              <NuxtLink 
+                to="/my-account/security/"
+                active-class="bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all group text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                <ShieldCheck class="w-4 h-4" /> Security <ChevronRight class="w-4 h-4 ml-auto opacity-40" />
+              </NuxtLink>
             </nav>
           </div>
         </aside>
 
         <!-- Main Content -->
         <main class="flex-grow">
-          <!-- Order History Tab -->
-          <div v-if="activeTab === 'orders'" class="space-y-6">
-            <div class="flex items-center justify-between">
-              <h2 class="text-2xl font-display font-bold">Recent Orders</h2>
-              <UiButton variant="ghost" size="sm" class="rounded-full font-bold">Filter By <ChevronRight class="w-4 h-4 rotate-90 ml-1" /></UiButton>
-            </div>
-
-            <div v-if="isLoadingOrders" class="py-12 text-center text-muted-foreground text-sm">
-              Loading your order history...
-            </div>
-            <div v-else-if="orders.length === 0" class="py-12 text-center text-muted-foreground text-sm bg-card border rounded-[2rem]">
-              You haven't placed any orders yet.
-            </div>
-            <div v-else class="grid grid-cols-1 gap-4">
-              <div 
-                v-for="order in orders" 
-                :key="order.id"
-                class="bg-card border rounded-[2rem] p-6 hover:border-primary/40 transition-colors group"
-              >
-                <div class="flex flex-col md:flex-row gap-6">
-                  <div class="w-full md:w-24 h-24 bg-muted rounded-2xl overflow-hidden shrink-0">
-                    <img v-if="order.items?.length > 0 && order.items[0]?.product" :src="order.items[0].product.images?.[0]" :alt="order.items[0].product?.name || 'Product'" class="w-full h-full object-cover" />
-                  </div>
-                  
-                  <div class="flex-grow space-y-4">
-                    <div class="flex flex-wrap items-center justify-between gap-4">
-                      <div class="space-y-1">
-                        <p class="text-xs font-bold text-muted-foreground uppercase tracking-widest">{{ order.orderNumber }}</p>
-                        <p class="font-bold">Ordered on {{ new Date(order.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) }}</p>
-                      </div>
-                      
-                      <div class="flex items-center gap-6">
-                        <div class="text-right">
-                          <p class="text-xs text-muted-foreground font-bold uppercase tracking-tight">Total Value</p>
-                          <p class="text-lg font-bold">{{ formatCurrency(order.totalAmount) }}</p>
-                        </div>
-                        <span :class="cn(
-                          'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border',
-                          order.status === 'delivered' ? 'bg-green-500/10 text-green-600 border-green-500/20' : 
-                          order.status === 'shipped' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 
-                          'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                        )">
-                          {{ order.status }}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div class="flex items-center justify-between pt-4 border-t">
-                      <p class="text-sm text-muted-foreground">{{ order.items?.length || 0 }} items in this package</p>
-                      <div class="flex items-center gap-2">
-                        <NuxtLink :to="`/my-account/orders/${order.id}`" class="inline-flex items-center justify-center rounded-full text-xs font-bold gap-1.5 px-4 py-2 hover:bg-muted transition-colors">
-                           View Details <ArrowRight class="w-3 h-3" />
-                        </NuxtLink>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Profile Settings Tab -->
-          <div v-if="activeTab === 'profile'" class="space-y-8 animate-in fade-in duration-500">
-            <h2 class="text-2xl font-display font-bold">Profile Details</h2>
-            
-            <div class="bg-card border rounded-[2.5rem] p-8 md:p-10 space-y-10">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="space-y-2">
-                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Full Name</label>
-                  <input type="text" :value="authStore.user?.name" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 font-medium" />
-                </div>
-                <div class="space-y-2">
-                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address</label>
-                  <input type="email" :value="authStore.user?.email" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 font-medium" />
-                </div>
-                <div class="space-y-2">
-                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Phone Number</label>
-                  <input type="tel" value="+1 (555) 000-0000" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 font-medium" />
-                </div>
-                <div class="space-y-2">
-                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company</label>
-                  <input type="text" value="Enterprise Systems Inc." class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 font-medium" />
-                </div>
-              </div>
-
-              <div class="pt-6 border-t flex flex-col md:flex-row items-center justify-between gap-6">
-                <div class="flex items-center gap-3 text-muted-foreground">
-                  <ShieldCheck class="w-5 h-5 text-primary" />
-                  <p class="text-xs font-medium">Your data is secured by enterprise-grade encryption.</p>
-                </div>
-                <UiButton class="rounded-full px-8 h-12 font-bold shadow-lg shadow-primary/20">
-                  Save Changes
-                </UiButton>
-              </div>
-            </div>
-          </div>
-
-          <!-- Security Tab -->
-          <div v-if="activeTab === 'security'" class="space-y-8 animate-in fade-in duration-500">
-            <h2 class="text-2xl font-display font-bold">Security Settings</h2>
-            
-            <div class="bg-card border rounded-[2.5rem] p-8 md:p-10">
-              <ChangePasswordForm />
-            </div>
-          </div>
-
-          <!-- Other tabs placeholders -->
-          <div v-if="['addresses', 'payment', 'notifications'].includes(activeTab)" class="h-96 flex flex-col items-center justify-center bg-card border border-dashed rounded-[2.5rem] text-center p-12">
-            <div class="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mb-6">
-              <component :is="tabs.find(t => t.id === activeTab)?.icon" class="w-10 h-10 text-muted-foreground opacity-40" />
-            </div>
-            <h3 class="text-xl font-bold mb-2">{{ tabs.find(t => t.id === activeTab)?.label }}</h3>
-            <p class="text-muted-foreground text-sm max-w-xs mx-auto">This section is currently being updated to enhance your enterprise experience. Please check back shortly.</p>
-            <UiButton variant="outline" class="rounded-full mt-8 gap-2 font-bold" @click="activeTab = 'orders'">
-               Back to Orders <ArrowRight class="w-4 h-4" />
-            </UiButton>
-          </div>
-
+          <NuxtPage />
         </main>
       </div>
     </div>

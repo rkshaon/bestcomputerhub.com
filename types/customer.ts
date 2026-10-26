@@ -60,6 +60,10 @@ export interface CustomerAddress {
   address_1?: string | null;
   address_2?: string | null;
   postcode?: string | null;
+  /** Delivery area (ShippingZone id) chosen for this address; null for legacy rows. */
+  shipping_zone?: number | null;
+  shipping_zone_name?: string | null;
+  shipping_zone_code?: string | null;
 }
 
 export interface PaginatedCustomerAddresses {
@@ -86,4 +90,9 @@ export interface CreateCustomerAddressPayload {
   postcode: string;
   country: string;
   phone: string;
+  /** Active ShippingZone id; only accepted when the zone is active. */
+  shipping_zone?: number | null;
 }
+
+/** PATCH /api/v1/customer-addresses/{id}/ accepts any subset of the create payload. */
+export type UpdateCustomerAddressPayload = Partial<CreateCustomerAddressPayload>;

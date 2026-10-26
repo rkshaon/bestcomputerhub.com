@@ -119,9 +119,9 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     route: '/admin/orders',
     name: 'Orders',
     iconKey: 'ShoppingCart',
-    viewPermission: ['store.view_order', 'view_order', 'orders.view_order'],
+    viewPermission: ['sale_api.view_sale', 'store.view_order', 'view_order', 'orders.view_order'],
     createPermission: ['store.add_order', 'add_order', 'orders.add_order'],
-    editPermission: ['store.change_order', 'change_order', 'orders.change_order'],
+    editPermission: ['sale_api.change_sale', 'store.change_order', 'change_order', 'orders.change_order'],
     deletePermission: ['store.delete_order', 'delete_order', 'orders.delete_order']
   },
   customers: {

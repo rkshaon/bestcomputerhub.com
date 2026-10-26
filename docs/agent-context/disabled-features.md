@@ -130,5 +130,20 @@ This registry tracks application features that have been temporarily commented o
   3. Remove the HTML comment wrapper around `<HomePromoBanner />`.
 
 ---
-*Date Registered*: September 20, 2026
+
+## 7. Feature: Checkout Bank Card & MFS Payment Options
+
+- **Status**: Temporarily Disabled (Storefront Checkout)
+- **Reason**: The backend order endpoint (`POST /api/v1/checkout/confirm/`) supports Cash on Delivery only and accepts no payment fields. The former Card (Visa/Mastercard/Amex) and MFS (bKash/Nagad/Rocket) forms collected data that was never sent anywhere, so they were removed from the live checkout to avoid misleading customers.
+- **Scope**: Storefront checkout review step (`/pages/checkout.vue`, step 4).
+- **Active Surface**: Cash on Delivery is shown as the single, pre-selected payment method.
+- **Preservation**: The original payment-method selector buttons, card form (`cardNumber`, `expiry`, `cvv`) and MFS form (`mfsType`, `mfsNumber`, `mfsTransactionId`) markup are kept inside an HTML comment block marked `TEMPORARILY DISABLED: Bank Card and MFS` in the review step. The reactive `form.paymentMethod` / card / MFS fields they referenced were removed from the script and must be re-added on restore.
+- **Backend Support**: None today. Restoring requires a backend payment contract (payment method choice, MFS transaction reference, card gateway) and a matching `CheckoutConfirmPayload` extension in `/types/checkout.ts`.
+- **Restoration Steps**:
+  1. Confirm the backend contract for non-COD payments and extend `CheckoutConfirmPayload` plus `useCheckoutService.createOrder`.
+  2. Open `/pages/checkout.vue`, locate `<!-- TEMPORARILY DISABLED: Bank Card and MFS -->` in step 4 and remove the comment wrapper.
+  3. Re-add the `form.paymentMethod`, card and MFS reactive fields, and import `CreditCard` / `Smartphone` from `lucide-vue-next`.
+
+---
+*Date Registered*: October 25, 2026
 

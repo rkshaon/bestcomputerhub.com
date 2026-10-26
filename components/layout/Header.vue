@@ -608,16 +608,15 @@ if (process.client) {
           </div>
 
           <!-- PC Builder -->
-          <NuxtLink 
+          <div 
             v-if="!isAuthRoute"
-            to="/products/"
-            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 text-muted-foreground text-xs font-semibold shrink-0 cursor-default"
             title="PC Builder"
             aria-label="PC Builder"
           >
             <Cpu class="w-4 h-4 text-primary shrink-0" />
             <span>PC Builder</span>
-          </NuxtLink>
+          </div>
 
           <!-- TEMPORARILY HIDDEN: Compare Header Action -->
           <!-- Restore when compare functionality in the top header is required again. -->

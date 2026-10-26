@@ -21,9 +21,12 @@ defineEmits<{
 }>();
 
 const statusConfig = {
-  pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', label: 'Awaiting Fulfillment' },
+  pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', label: 'Awaiting Confirmation' },
+  confirmed: { icon: CheckCircle2, color: 'text-sky-600', bg: 'bg-sky-50', label: 'Confirmed' },
   processing: { icon: Package, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Processing' },
+  packaged: { icon: Package, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Packaged' },
   shipped: { icon: Truck, color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'In Transit' },
+  out_of_delivery: { icon: Truck, color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'Out for Delivery' },
   delivered: { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Delivered' },
   cancelled: { icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50', label: 'Cancelled' },
   refunded: { icon: CreditCard, color: 'text-slate-600', bg: 'bg-slate-50', label: 'Refunded' },

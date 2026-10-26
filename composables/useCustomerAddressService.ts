@@ -2,13 +2,20 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { CustomerAddress, CustomerAddressQueryParams, PaginatedCustomerAddresses, CreateCustomerAddressPayload } from '@/types';
+import type {
+  CustomerAddress,
+  CustomerAddressQueryParams,
+  PaginatedCustomerAddresses,
+  CreateCustomerAddressPayload,
+  UpdateCustomerAddressPayload
+} from '@/types';
 
 export const useCustomerAddressService = () => {
   const apiClient = useApiClient();
 
   const isLoading = ref(false);
   const isCreating = ref(false);
+  const isUpdating = ref(false);
   const errorMsg = ref<string | null>(null);
 
   /**
@@ -87,11 +94,39 @@ export const useCustomerAddressService = () => {
     }
   };
 
+  /**
+   * Partially updates an address via PATCH /api/v1/customer-addresses/{id}/
+   * (e.g. tagging a saved address with a delivery zone). Returns the detail
+   * representation.
+   */
+  const updateCustomerAddress = async (
+    id: number,
+    payload: UpdateCustomerAddressPayload
+  ): Promise<CustomerAddress> => {
+    isUpdating.value = true;
+    errorMsg.value = null;
+
+    try {
+      const data = await apiClient.request<CustomerAddress>(`/api/v1/customer-addresses/${id}/`, {
+        method: 'PATCH',
+        body: payload
+      });
+      isUpdating.value = false;
+      return data;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to update address.');
+      isUpdating.value = false;
+      throw err;
+    }
+  };
+
   return {
     getCustomerAddresses,
     createCustomerAddress,
+    updateCustomerAddress,
     isLoading,
     isCreating,
+    isUpdating,
     errorMsg
   };
 };

@@ -1,76 +1,71 @@
+// File: /composables/useCheckoutService.ts
 import { useApiClient } from './useApiClient';
+import { mapOrderDetail } from '@/utils/order';
 import type { Order } from '@/types/order';
+import type {
+  BackendOrderDetail,
+  CheckoutConfirmPayload,
+  CheckoutValidatePayload,
+  CheckoutValidateResponse
+} from '@/types/checkout';
 
-export interface CheckoutValidationPayload {
-  shipping_address_id: number | string;
-  shipping_method_id: number | string;
-}
-
-export interface CheckoutValidationResponse {
-  valid: boolean;
-  subtotal: number;
-  shipping_charge: number;
-  discount: number;
-  tax: number;
-  grand_total: number;
-  messages?: string[];
-}
-
-export interface CreateOrderPayload {
-  shipping_address_id: number | string;
-  shipping_method_id: number | string;
-  payment_method: string;
-  payment_details?: any;
-  idempotency_key: string;
-  notes?: string;
-}
-
+/**
+ * Storefront checkout operations.
+ * Contract: ZayrahLife-Backend/docs/checkout-api.md
+ */
 export const useCheckoutService = () => {
   const apiClient = useApiClient();
 
-  const validateCheckout = async (payload: CheckoutValidationPayload): Promise<CheckoutValidationResponse> => {
-    try {
-      const data = await apiClient.request<CheckoutValidationResponse>('/api/v1/checkout/validate/', {
-        method: 'POST',
-        body: payload
-      });
-      return data || { valid: true, subtotal: 0, shipping_charge: 0, discount: 0, tax: 0, grand_total: 0 };
-    } catch (err: any) {
-      throw err;
-    }
+  /**
+   * POST /api/v1/checkout/validate/
+   * Prices the active cart for an address and shipping method.
+   * Creates nothing. Returns 200 even when `is_valid` is false.
+   */
+  const validateCheckout = async (payload: CheckoutValidatePayload): Promise<CheckoutValidateResponse> => {
+    const data = await apiClient.request<CheckoutValidateResponse>('/api/v1/checkout/validate/', {
+      method: 'POST',
+      body: payload
+    });
+    return {
+      is_valid: !!data?.is_valid,
+      cart: data?.cart ?? null,
+      pricing: data?.pricing ?? null,
+      shipping: data?.shipping ?? null,
+      errors: Array.isArray(data?.errors) ? data.errors : []
+    };
   };
 
-  const createOrder = async (payload: CreateOrderPayload, idempotencyKey: string): Promise<any> => {
-    try {
-      const body = {
-        ...payload,
-        idempotency_key: idempotencyKey
-      };
-      const data = await apiClient.request<any>('/api/v1/checkout/confirm/', {
-        method: 'POST',
-        body: body,
-        headers: {
-          'Idempotency-Key': idempotencyKey
-        }
-      });
-      return data;
-    } catch (err: any) {
-      throw err;
-    }
+  /**
+   * POST /api/v1/checkout/confirm/
+   * Places the order (Cash on Delivery) from the active cart.
+   * The same `idempotency_key` must be reused for retries of one attempt.
+   * Returns the created (or replayed) order; inspect `status`, since a
+   * replay may return an already cancelled order.
+   */
+  const createOrder = async (payload: CheckoutConfirmPayload): Promise<Order> => {
+    const data = await apiClient.request<BackendOrderDetail>('/api/v1/checkout/confirm/', {
+      method: 'POST',
+      body: payload,
+      headers: {
+        'Idempotency-Key': payload.idempotency_key
+      }
+    });
+    return mapOrderDetail(data);
   };
 
-  const getOrderDetails = async (orderId: string): Promise<Order> => {
-    try {
-      const data = await apiClient.request<Order>(`/api/v1/orders/${orderId}/`, {
-        method: 'GET'
-      });
-      return data;
-    } catch (err: any) {
-      throw err;
-    }
+  /** GET /api/v1/orders/{id}/ */
+  const getOrderDetails = async (orderId: string | number): Promise<Order> => {
+    const data = await apiClient.request<BackendOrderDetail>(`/api/v1/orders/${orderId}/`, {
+      method: 'GET'
+    });
+    return mapOrderDetail(data);
   };
 
-  const generateIdempotencyKey = () => {
+  /** One UUID per checkout attempt. */
+  const generateIdempotencyKey = (): string => {
+    if (typeof globalThis.crypto?.randomUUID === 'function') {
+      return globalThis.crypto.randomUUID();
+    }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       const r = (Math.random() * 16) | 0;
       const v = c === 'x' ? r : (r & 0x3) | 0x8;

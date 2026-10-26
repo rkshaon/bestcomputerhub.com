@@ -207,6 +207,33 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `mapOrderDetail`, `mapOrderSummary`, `toMoney`, `normalizeOrderStatus` & `normalizePaymentStatus`
+- **File Location**: `/utils/order.ts`
+- **Category**: Normalizer / Mapper
+- **Scope**: Storefront orders (Checkout success screen, `/my-account/` order history, `/my-account/orders/[id]/`)
+- **Purpose**: Converts the backend storefront order contract (`BackendOrderDetail`, `BackendOrderSummary` in `/types/checkout.ts`, documented in `ZayrahLife-Backend/docs/checkout-api.md`) into the frontend `Order` model: `invoice_number` → `orderNumber`, backend `pricing.*` → `subtotal` / `shippingCharge` / `totalAmount`, address and method snapshots, and upper-case statuses (`OUT_OF_DELIVERY`) → lower-case `OrderStatus` (`out_of_delivery`).
+- **Parameters & Return Value**:
+  - `mapOrderDetail(raw: BackendOrderDetail): Order` — full order with items, address snapshot, pricing and `allowedNextStatuses`.
+  - `mapOrderSummary(raw: BackendOrderSummary): Order` — list row; `items` is empty and `itemCount` carries `item_count`.
+  - `toMoney(value: number | string | null | undefined): number` — parses DRF decimal strings or JSON numbers, `0` when absent.
+  - `normalizeOrderStatus(status)`, `normalizePaymentStatus(status)` — lower-case the backend enums.
+- **Example Usage**:
+  ```ts
+  import { mapOrderDetail } from '@/utils/order';
+
+  const data = await apiClient.request<BackendOrderDetail>(`/api/v1/orders/${id}/`);
+  const order = mapOrderDetail(data);
+  ```
+- **Files or Features Currently Using It**: `useCheckoutService`, `useOrderService`.
+- **Side Effects**: None (Pure functions).
+- **Accesses Browser State**: No.
+- **Performs Network Work**: No.
+- **Related Utilities**: `formatCurrency` (display), `useCheckoutService`, `useOrderService`.
+- **What It Explicitly Does Not Do**: Does not calculate or re-derive any total, discount or charge; every number is copied from the backend. Does not fabricate product images (items carry an empty `images` array since the order contract has none).
+- **Reusability Level**: High within the storefront order domain. Admin sales (`useSalesService`, `/api/v1/sales/`) use a different contract and do not use this mapper.
+
+---
+
 ## 2. Central HTTP Transport & Network Helpers
 
 ### `useApiClient`
@@ -557,8 +584,10 @@ When selecting or implementing helper functions, agents must respect these struc
 | `useEmailVerification` | Email Verification | `/api/v1/auth/email-verification/status/`, `/api/v1/auth/email-verification/request/` | Email verification status checking, resend verification email request, reactive email verification status tracking. |
 | `useContentSecurityService` | CSP & Security Rules | `/api/v1/content-security/*` | Keyword, domain, hidden content, redirect, and HTML tag security rules management. |
 | `useCartService` | Shopping Cart | `/api/v1/cart/items/` | Add item, remove item, update item quantity, list cart items. |
-| `useCheckoutService` | Checkout & Orders | `/api/v1/checkout/validate/`, `/api/v1/orders/` | Checkout pre-flight address & shipping validation, totals calculation (subtotal, shipping, discount, tax, grand total), and order placement. |
-| `useShippingService` | Shipping Configuration | `/api/v1/shipping/methods/`, `/api/v1/shipping/zones/`, `/api/v1/shipping/rates/` | Shipping methods, zones, and rates listing, search, active/default filters, and full CRUD operations. |
+| `useCustomerAddressService` | Customer Addresses | `/api/v1/customer-addresses/` | Paginated saved-address list, create (`createCustomerAddress`) and partial update (`updateCustomerAddress`, PATCH — used to tag a saved address with its delivery zone `shipping_zone`). Typed by `CustomerAddress` / `CreateCustomerAddressPayload` / `UpdateCustomerAddressPayload`. |
+| `useCheckoutService` | Checkout | `/api/v1/checkout/validate/`, `/api/v1/checkout/confirm/`, `/api/v1/orders/{id}/` | `validateCheckout` returns the backend `CheckoutValidateResponse` (`is_valid`, `cart`, `pricing`, `shipping`, `errors`) — the only source of checkout totals; `createOrder` posts `CheckoutConfirmPayload` (address, method, `idempotency_key`, optional `notes`; COD only, key also sent as `Idempotency-Key` header) and returns the mapped `Order`; `generateIdempotencyKey` (one UUID per attempt). Contracts in `/types/checkout.ts`, mapping via `/utils/order.ts`. |
+| `useOrderService` | Customer Orders | `/api/v1/orders/`, `/api/v1/orders/{id}/`, `/api/v1/orders/{id}/cancel/` | Unpaginated own-order list (`mapOrderSummary`), order detail (`mapOrderDetail`), cancel (returns `{ id, status, message }`; callers refetch the order). |
+| `useShippingService` | Shipping Configuration & Storefront Options | `/api/v1/shipping/methods/`, `/api/v1/shipping/zones/`, `/api/v1/shipping/zones/available/`, `/api/v1/shipping/rates/`, `/api/v1/shipping/options/` | Admin CRUD for methods, zones and rates; storefront `getAvailableZones()` (active delivery areas, unpaginated `AvailableShippingZone[]`) and `getShippingOptions(addressId)` (typed `ShippingOptionsResponse`: resolved `zone`, `cart_subtotal`, priced `options[]` — all charges computed by the backend; throws on 400 so the backend message can be shown). |
 
 ---
 

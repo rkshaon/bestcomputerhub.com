@@ -1,898 +1,641 @@
 <!-- File: /pages/checkout.vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { navigateTo, useRoute } from '#app';
-import { decodeHtmlEntities } from '@/utils';
-import { ChevronRight, CreditCard, ShieldCheck, Truck, PackageCheck, AlertCircle, Smartphone, Banknote, Plus, MapPin, Check, ChevronLeft, Loader2 } from 'lucide-vue-next';
-import { formatCurrency, cn } from '@/utils';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from '#app';
+import {
+  ChevronRight,
+  ChevronLeft,
+  ShieldCheck,
+  Truck,
+  MapPin,
+  Home,
+  Banknote,
+  Check,
+  Loader2,
+  AlertCircle,
+  ShoppingCart,
+  PackageCheck
+} from 'lucide-vue-next';
+import { cn, formatCurrency, decodeHtmlEntities } from '@/utils';
 import { useAuthStore } from '@/stores/auth';
 import { useCartStore } from '@/stores/cart';
-import { useCustomerAddressService } from '@/composables/useCustomerAddressService';
 import { useShippingService } from '@/composables/useShippingService';
 import { useCheckoutService } from '@/composables/useCheckoutService';
-import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
-import type { CustomerAddress, ShippingOption } from '@/types';
+import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
+import UiButton from '@/components/ui/Button.vue';
+import UiBrandLogo from '@/components/ui/UiBrandLogo.vue';
+import CheckoutDeliveryAreaStep from '@/components/commerce/checkout/CheckoutDeliveryAreaStep.vue';
+import CheckoutAddressStep from '@/components/commerce/checkout/CheckoutAddressStep.vue';
+import CheckoutShippingOptions from '@/components/commerce/checkout/CheckoutShippingOptions.vue';
+import CheckoutOrderSummary from '@/components/commerce/checkout/CheckoutOrderSummary.vue';
+import type { AvailableShippingZone, CustomerAddress, ShippingOption, ShippingOptionsResponse } from '@/types';
+import type { CheckoutValidateResponse } from '@/types/checkout';
 import type { Order } from '@/types/order';
 
 useSeoMeta({
   title: 'Checkout',
-  description: 'Complete your purchase securely at Best Computer Hub. Multiple payment options with fast, nationwide delivery in Bangladesh.'
+  description: 'Complete your purchase securely at Best Computer Hub with cash on delivery and nationwide delivery in Bangladesh.',
+  robots: 'noindex, nofollow'
 });
 
-const cartStore = useCartStore();
-const authStore = useAuthStore();
 const route = useRoute();
-const addressService = useCustomerAddressService();
+const router = useRouter();
+const authStore = useAuthStore();
+const cartStore = useCartStore();
 const shippingService = useShippingService();
 const checkoutService = useCheckoutService();
-const validationData = ref<any>(null);
-const isValidating = ref(false);
-const validationErrorMsg = ref<string | null>(null);
-const orderDetails = ref<Order | null>(null);
-const createdOrderNumber = ref('#TC-8822-4910-XM');
-const selectedShippingOption = ref<ShippingOption | null>(null);
-const selectedAddressId = ref<number | string | null>(null);
 
-const runValidation = async () => {
-  const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
-  if (!selectedAddressId.value || !methodId) return;
-  isValidating.value = true;
-  validationErrorMsg.value = null;
+// ── Steps ────────────────────────────────────────────────────────
+
+const STEPS = [
+  { id: 1, label: 'Delivery area', icon: MapPin },
+  { id: 2, label: 'Address', icon: Home },
+  { id: 3, label: 'Delivery', icon: Truck },
+  { id: 4, label: 'Review', icon: ShieldCheck }
+] as const;
+
+const step = ref<1 | 2 | 3 | 4>(1);
+
+// ── Step 1: delivery area ────────────────────────────────────────
+
+const zones = ref<AvailableShippingZone[]>([]);
+const isLoadingZones = ref(false);
+const zonesError = ref<string | null>(null);
+const selectedZoneId = ref<number | null>(null);
+const selectedZone = computed(() => zones.value.find((zone) => zone.id === selectedZoneId.value) ?? null);
+
+const loadZones = async () => {
+  isLoadingZones.value = true;
+  zonesError.value = null;
   try {
-    const res = await checkoutService.validateCheckout({
-      shipping_address_id: selectedAddressId.value,
-      shipping_method_id: methodId
+    zones.value = await shippingService.getAvailableZones();
+  } catch (err) {
+    zonesError.value = extractErrorMessage(err, 'Delivery areas could not be loaded.');
+  } finally {
+    isLoadingZones.value = false;
+  }
+};
+
+// ── Step 2: address ──────────────────────────────────────────────
+
+const selectedAddress = ref<CustomerAddress | null>(null);
+
+// ── Step 3: delivery option ──────────────────────────────────────
+
+const shippingResponse = ref<ShippingOptionsResponse | null>(null);
+const isLoadingOptions = ref(false);
+const optionsError = ref<string | null>(null);
+const selectedMethodId = ref<number | null>(null);
+const shippingOptions = computed<ShippingOption[]>(() => shippingResponse.value?.options ?? []);
+const selectedOption = computed(
+  () => shippingOptions.value.find((option) => option.shipping_method_id === selectedMethodId.value) ?? null
+);
+
+const loadShippingOptions = async () => {
+  if (!selectedAddress.value) return;
+  isLoadingOptions.value = true;
+  optionsError.value = null;
+  shippingResponse.value = null;
+  selectedMethodId.value = null;
+  try {
+    const response = await shippingService.getShippingOptions(selectedAddress.value.id);
+    shippingResponse.value = response;
+    if (response.options.length === 1 && response.options[0]) {
+      selectedMethodId.value = response.options[0].shipping_method_id;
+    }
+  } catch (err) {
+    optionsError.value = extractErrorMessage(err, 'Delivery options could not be loaded for this address.');
+  } finally {
+    isLoadingOptions.value = false;
+  }
+};
+
+// ── Step 4: review and place order ───────────────────────────────
+
+const validation = ref<CheckoutValidateResponse | null>(null);
+const isValidating = ref(false);
+const notes = ref('');
+const idempotencyKey = ref<string | null>(null);
+const isPlacing = ref(false);
+const placedOrder = ref<Order | null>(null);
+const isLoadingOrder = ref(false);
+
+const runValidation = async (): Promise<boolean> => {
+  if (!selectedAddress.value || selectedMethodId.value === null) return false;
+  isValidating.value = true;
+  try {
+    validation.value = await checkoutService.validateCheckout({
+      shipping_address_id: selectedAddress.value.id,
+      shipping_method_id: selectedMethodId.value
     });
-    validationData.value = res;
-  } catch (err: any) {
-    validationErrorMsg.value = err?.data?.message || err?.message || 'Checkout validation failed.';
-    handleApiError(err, 'Checkout validation failed.');
-    validationData.value = null;
+    return validation.value.is_valid;
+  } catch (err) {
+    validation.value = null;
+    handleApiError(err, 'Your order could not be verified.');
+    return false;
   } finally {
     isValidating.value = false;
   }
 };
 
-watch([selectedAddressId, selectedShippingOption, () => cartStore.items.length], () => {
-  const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
-  if (selectedAddressId.value && methodId) {
-    runValidation();
+// A new idempotency key is required whenever the order inputs change.
+watch([() => selectedAddress.value?.id, selectedMethodId, notes], () => {
+  idempotencyKey.value = null;
+});
+
+// Keep the active step in view: a tall step (address form) can leave the
+// window scrolled past the much shorter step that replaces it.
+watch(step, () => {
+  if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+const grandTotal = computed(() => (validation.value?.is_valid ? Number(validation.value.pricing?.grand_total ?? 0) : null));
+
+const placeOrder = async () => {
+  if (!selectedAddress.value || selectedMethodId.value === null) {
+    toastError('Please choose a delivery address and option first.');
+    return;
   }
-}, { deep: true });
+  if (!validation.value?.is_valid) {
+    toastError('Please resolve the issues in your order before placing it.');
+    return;
+  }
 
-const step = ref(1);
+  if (!idempotencyKey.value) {
+    idempotencyKey.value = checkoutService.generateIdempotencyKey();
+  }
 
-const savedAddresses = ref<CustomerAddress[]>([]);
-const addressPagination = reactive({
-  page: 1,
-  pageSize: 5,
-  count: 0,
-  next: null as string | null,
-  previous: null as string | null
-});
-const isLoadingAddresses = ref(false);
-const showAddAddressForm = ref(false);
-
-const shippingOptions = ref<ShippingOption[]>([]);
-const isLoadingShippingOptions = ref(false);
-
-const newAddressForm = reactive({
-  address_type: 'BILLING',
-  first_name: '',
-  last_name: '',
-  company: '',
-  address_1: '',
-  address_2: '',
-  city: '',
-  state: '',
-  postcode: '',
-  country: 'Bangladesh',
-  phone: ''
-});
-
-const fetchAddresses = async (page = 1) => {
-  if (!authStore.isLoggedIn) return;
-  isLoadingAddresses.value = true;
-  const res = await addressService.getCustomerAddresses({ page, page_size: addressPagination.pageSize });
-  savedAddresses.value = res.results;
-  addressPagination.count = res.count;
-  addressPagination.next = res.next;
-  addressPagination.previous = res.previous;
-  addressPagination.page = page;
-  isLoadingAddresses.value = false;
-};
-
-const fetchShippingOptions = async (addressId: number | string) => {
-  selectedAddressId.value = addressId;
-  selectedShippingOption.value = null;
-  isLoadingShippingOptions.value = true;
+  isPlacing.value = true;
   try {
-    const opts = await shippingService.getShippingOptions(addressId);
-    shippingOptions.value = opts;
-    if (opts.length > 0) {
-      selectedShippingOption.value = opts[0] ?? null;
+    const order = await checkoutService.createOrder({
+      shipping_address_id: selectedAddress.value.id,
+      shipping_method_id: selectedMethodId.value,
+      idempotency_key: idempotencyKey.value,
+      notes: notes.value.trim()
+    });
+
+    placedOrder.value = order;
+    idempotencyKey.value = null;
+    cartStore.clearCart();
+
+    if (order.status === 'cancelled') {
+      toastError('This order was already cancelled. Please place a new order.');
+    } else {
+      toastSuccess('Order placed successfully.');
     }
+
+    await router.replace({ path: '/checkout/', query: { orderId: order.id } });
   } catch (err) {
-    shippingOptions.value = [];
-    handleApiError(err, 'Failed to fetch shipping options.');
+    handleApiError(err, 'Your order could not be placed. Please try again.');
   } finally {
-    isLoadingShippingOptions.value = false;
+    isPlacing.value = false;
   }
 };
 
-const isMobile = ref(false);
+// ── Navigation between steps ─────────────────────────────────────
+
+const goToStep = (target: 1 | 2 | 3 | 4) => {
+  if (target < 4) validation.value = null;
+  if (target < 3) {
+    shippingResponse.value = null;
+    selectedMethodId.value = null;
+    optionsError.value = null;
+  }
+  if (target < 2) selectedAddress.value = null;
+  step.value = target;
+};
+
+const continueToAddress = () => {
+  if (selectedZoneId.value === null) {
+    toastError('Please choose a delivery area.');
+    return;
+  }
+  goToStep(2);
+};
+
+const handleAddressSelected = async (address: CustomerAddress) => {
+  selectedAddress.value = address;
+  step.value = 3;
+  await loadShippingOptions();
+};
+
+const continueToReview = async () => {
+  if (selectedMethodId.value === null) {
+    toastError('Please choose a delivery option.');
+    return;
+  }
+  const isValid = await runValidation();
+  step.value = 4;
+  if (!isValid && validation.value) {
+    toastError(validation.value.errors[0] ?? 'Your order could not be verified.');
+  }
+};
+
+watch(selectedZoneId, (zoneId, previous) => {
+  if (previous !== undefined && previous !== null && zoneId !== previous && step.value > 1) {
+    goToStep(1);
+  }
+});
+
+// ── Derived display helpers ──────────────────────────────────────
+
+const profileFirstName = computed(() => (authStore.user?.name || '').split(' ')[0] || '');
+const profileLastName = computed(() => (authStore.user?.name || '').split(' ').slice(1).join(' '));
+
+const isCartEmpty = computed(() => !cartStore.isLoading && cartStore.items.length === 0);
+
+const orderStatusLabel = (status: string) => status.replace(/_/g, ' ');
+
+// ── Init ─────────────────────────────────────────────────────────
 
 onMounted(async () => {
-  isMobile.value = typeof window !== 'undefined' && window.innerWidth < 768;
-  if (isMobile.value) {
-    form.paymentMethod = 'cod';
-  }
-
-  if (route.query.orderId) {
+  const orderIdParam = Array.isArray(route.query.orderId) ? route.query.orderId[0] : route.query.orderId;
+  if (orderIdParam) {
+    isLoadingOrder.value = true;
     try {
-      const orderId = Array.isArray(route.query.orderId) ? route.query.orderId[0] : route.query.orderId;
-      if (orderId) {
-        orderDetails.value = await checkoutService.getOrderDetails(orderId);
-        orderCompleted.value = true;
-        createdOrderNumber.value = orderDetails.value.orderNumber;
-      }
+      placedOrder.value = await checkoutService.getOrderDetails(orderIdParam);
     } catch (err) {
-      handleApiError(err, 'Failed to load order details.');
+      handleApiError(err, 'The order could not be loaded.');
+    } finally {
+      isLoadingOrder.value = false;
     }
     return;
   }
-  
-  if (authStore.isLoggedIn) {
-    try {
-      await Promise.all([
-        cartStore.fetchCart(),
-        fetchAddresses(1)
-      ]);
-      if (authStore.user?.email && !form.email) {
-        form.email = authStore.user.email;
-      }
-      if (authStore.user?.name && !form.firstName) {
-        const parts = authStore.user.name.split(' ');
-        form.firstName = parts[0] || '';
-        form.lastName = parts.slice(1).join(' ') || '';
-      }
-    } catch (err) {
-      console.error('Failed to fetch checkout initialization data', err);
-    }
-  }
+
+  if (!authStore.isLoggedIn) return;
+  await Promise.all([cartStore.fetchCart(), loadZones()]);
 });
-
-const handleSelectAddress = (addr: CustomerAddress) => {
-  form.firstName = addr.first_name || '';
-  form.lastName = addr.last_name || '';
-  form.city = addr.city || '';
-  if (addr.phone) form.phone = addr.phone;
-  if (addr.address_1) form.address = addr.address_1;
-  if (addr.state) form.state = addr.state;
-  if (addr.postcode) form.zip = addr.postcode;
-  toastSuccess('Saved address applied to shipping details');
-  if (addr.id) {
-    fetchShippingOptions(addr.id);
-  }
-};
-
-const handleCreateAddress = async () => {
-  if (!newAddressForm.first_name || !newAddressForm.last_name || !newAddressForm.address_1 || !newAddressForm.city || !newAddressForm.country || !newAddressForm.phone) {
-    toastError('Please fill in all required address fields.');
-    return;
-  }
-
-  try {
-    const created = await addressService.createCustomerAddress({
-      address_type: newAddressForm.address_type,
-      first_name: newAddressForm.first_name,
-      last_name: newAddressForm.last_name,
-      company: newAddressForm.company,
-      address_1: newAddressForm.address_1,
-      address_2: newAddressForm.address_2,
-      city: newAddressForm.city,
-      state: newAddressForm.state || 'N/A',
-      postcode: newAddressForm.postcode,
-      country: newAddressForm.country,
-      phone: newAddressForm.phone
-    });
-
-    toastSuccess('Address created successfully');
-    showAddAddressForm.value = false;
-    
-    newAddressForm.address_1 = '';
-    newAddressForm.address_2 = '';
-    newAddressForm.company = '';
-    newAddressForm.postcode = '';
-    newAddressForm.state = '';
-
-    await fetchAddresses(1);
-
-    if (created && created.id) {
-      handleSelectAddress(created);
-    }
-  } catch (err) {
-    handleApiError(err, 'Failed to create address.');
-  }
-};
-
-const form = reactive({
-  email: '',
-  firstName: '',
-  lastName: '',
-  address: '',
-  city: '',
-  state: '',
-  zip: '',
-  phone: '',
-  paymentMethod: 'card', // 'card' | 'mfs' | 'cod'
-  cardNumber: '',
-  expiry: '',
-  cvv: '',
-  mfsType: 'bkash', // 'bkash' | 'nagad' | 'rocket'
-  mfsNumber: '',
-  mfsTransactionId: ''
-});
-
-const subtotalValue = computed(() => {
-  return validationData.value?.subtotal !== undefined ? Number(validationData.value.subtotal) : cartStore.totalPrice;
-});
-
-const shippingChargeValue = computed(() => {
-  if (validationData.value?.shipping_charge !== undefined) {
-    return Number(validationData.value.shipping_charge) || 0;
-  }
-  if (selectedShippingOption.value && selectedShippingOption.value.shipping_charge !== undefined) {
-    return Number(selectedShippingOption.value.shipping_charge) || 0;
-  }
-  return 0;
-});
-
-const discountValue = computed(() => {
-  return validationData.value?.discount !== undefined ? Number(validationData.value.discount) : 0;
-});
-
-const taxValue = computed(() => {
-  return validationData.value?.tax !== undefined ? Number(validationData.value.tax) : 0;
-});
-
-const totalDue = computed(() => {
-  if (validationData.value?.grand_total !== undefined) {
-    return Number(validationData.value.grand_total);
-  }
-  return subtotalValue.value + shippingChargeValue.value - discountValue.value + taxValue.value;
-});
-
-
-
-const isProcessing = ref(false);
-const orderCompleted = ref(false);
-
-const handleSaveFormAsAddress = async () => {
-  if (!form.firstName || !form.lastName || !form.address || !form.city || !form.phone) {
-    toastError('Please fill in all required shipping fields (Name, Address, City, Phone).');
-    return;
-  }
-
-  try {
-    const created = await addressService.createCustomerAddress({
-      address_type: 'SHIPPING',
-      first_name: form.firstName,
-      last_name: form.lastName,
-      address_1: form.address,
-      city: form.city,
-      state: form.state || 'N/A',
-      postcode: form.zip || '',
-      country: 'Bangladesh',
-      phone: form.phone
-    });
-
-    toastSuccess('Shipping address saved successfully');
-    await fetchAddresses(1);
-
-    if (created && created.id) {
-      selectedAddressId.value = created.id;
-      await fetchShippingOptions(created.id);
-    }
-  } catch (err) {
-    handleApiError(err, 'Failed to save address for shipping calculation.');
-  }
-};
-
-const proceedToPayment = async () => {
-  if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.phone) {
-    toastError('Please fill in all required shipping fields.');
-    return;
-  }
-
-  isProcessing.value = true;
-  try {
-    // 1. Save or Update Address
-    let addressId = selectedAddressId.value;
-    if (!addressId) {
-      const created = await addressService.createCustomerAddress({
-        address_type: 'SHIPPING',
-        first_name: form.firstName,
-        last_name: form.lastName,
-        address_1: form.address,
-        city: form.city,
-        state: form.state || 'N/A',
-        postcode: form.zip || '',
-        country: 'Bangladesh',
-        phone: form.phone
-      });
-      addressId = created!.id;
-      selectedAddressId.value = addressId;
-      await fetchAddresses(1);
-    }
-
-    // 2. Fetch/Re-fetch Shipping Options
-    await fetchShippingOptions(addressId);
-    if (shippingOptions.value.length === 0) {
-      throw new Error('No shipping options available for this address.');
-    }
-    const firstOption = shippingOptions.value[0];
-    if (firstOption) {
-      selectedShippingOption.value = firstOption;
-    } else {
-      selectedShippingOption.value = null;
-    }
-
-    // 3. Final Pre-flight Validation
-    const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
-    if (methodId) {
-      const valRes = await checkoutService.validateCheckout({
-        shipping_address_id: addressId,
-        shipping_method_id: methodId
-      });
-      if (valRes && valRes.valid === false) {
-        throw new Error('Checkout validation failed. Please check your order details.');
-      }
-    } else {
-      throw new Error('Please select a shipping method.');
-    }
-
-    step.value = 2;
-  } catch (err: any) {
-    handleApiError(err, 'Failed to proceed to payment.');
-  } finally {
-    isProcessing.value = false;
-  }
-};
-
-const currentIdempotencyKey = ref<string | null>(null);
-
-const handlePlaceOrder = async () => {
-  if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.phone) {
-    toastError('Please fill in all required shipping fields.');
-    return;
-  }
-  if (!selectedAddressId.value) {
-    toastError('Please save your shipping address and select a delivery option.');
-    return;
-  }
-  if (shippingOptions.value.length > 0 && !selectedShippingOption.value) {
-    toastError('Please select a shipping option.');
-    return;
-  }
-
-  // Generate new key for a new submission if not retrying
-  if (!currentIdempotencyKey.value) {
-    currentIdempotencyKey.value = checkoutService.generateIdempotencyKey();
-  }
-
-  isProcessing.value = true;
-  try {
-    const methodId = selectedShippingOption.value?.method_id ?? selectedShippingOption.value?.id;
-    if (selectedAddressId.value && methodId) {
-      const valRes = await checkoutService.validateCheckout({
-        shipping_address_id: selectedAddressId.value,
-        shipping_method_id: methodId
-      });
-      if (valRes && valRes.valid === false) {
-        toastError('Checkout validation failed. Please check your order details.');
-        isProcessing.value = false;
-        return;
-      }
-    }
-
-    const orderRes = await checkoutService.createOrder({
-      shipping_address_id: selectedAddressId.value,
-      shipping_method_id: methodId || '',
-      payment_method: form.paymentMethod,
-      payment_details: {
-        card_number: form.cardNumber ? form.cardNumber.slice(-4) : undefined,
-        mfs_type: form.mfsType,
-        mfs_number: form.mfsNumber,
-        transaction_id: form.mfsTransactionId
-      },
-      idempotency_key: currentIdempotencyKey.value!
-    }, currentIdempotencyKey.value);
-
-    if (orderRes && orderRes.orderNumber) {
-      createdOrderNumber.value = orderRes.orderNumber;
-      navigateTo(`/checkout/?orderId=${orderRes.id}`);
-    } else {
-      toastSuccess('Order placed successfully!');
-      orderCompleted.value = true;
-      cartStore.clearCart();
-    }
-    currentIdempotencyKey.value = null; // Clear key after success
-  } catch (err: any) {
-    handleApiError(err, 'Failed to place order. Please try again.');
-  } finally {
-    isProcessing.value = false;
-  }
-};
 </script>
 
 <template>
   <div class="min-h-screen bg-muted/20 pb-20">
-    <!-- Header Minimal -->
-    <div class="bg-background border-b py-6 mb-12">
-      <div class="container mx-auto px-4 flex items-center justify-between gap-2">
-        <NuxtLink to="/" class="shrink-0">
+    <!-- Minimal header with progress -->
+    <header class="bg-background border-b border-border py-5 mb-8 sm:mb-12">
+      <div class="container mx-auto px-4 flex items-center justify-between gap-3">
+        <NuxtLink to="/" class="shrink-0" aria-label="Best Computer Hub home">
           <UiBrandLogo size="md" />
         </NuxtLink>
 
-        <!-- Desktop Steps -->
-        <div class="hidden md:flex items-center gap-4 lg:gap-8 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          <span :class="{ 'text-primary': step >= 1 }">Shipping</span>
-          <ChevronRight class="w-4 h-4" />
-          <span :class="{ 'text-primary': step >= 2 }">Payment</span>
-          <ChevronRight class="w-4 h-4" />
-          <span>Success</span>
-        </div>
+        <ol v-if="!placedOrder" class="hidden md:flex items-center gap-3 lg:gap-5 text-[11px] font-bold uppercase tracking-widest" aria-label="Checkout progress">
+          <template v-for="(item, index) in STEPS" :key="item.id">
+            <li
+              :class="cn('flex items-center gap-1.5', step >= item.id ? 'text-primary' : 'text-muted-foreground')"
+              :aria-current="step === item.id ? 'step' : undefined"
+            >
+              <span
+                :class="cn(
+                  'w-5 h-5 rounded-full border flex items-center justify-center text-[10px]',
+                  step > item.id ? 'bg-primary border-primary text-primary-foreground' : step === item.id ? 'border-primary' : 'border-muted-foreground/40'
+                )"
+                aria-hidden="true"
+              >
+                <Check v-if="step > item.id" class="w-3 h-3" />
+                <template v-else>{{ item.id }}</template>
+              </span>
+              {{ item.label }}
+            </li>
+            <ChevronRight v-if="index < STEPS.length - 1" class="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          </template>
+        </ol>
 
-        <!-- Mobile Step Counter Badge -->
-        <div class="md:hidden text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full">
-          Step {{ step }} of 2
+        <div v-if="!placedOrder" class="md:hidden text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full">
+          Step {{ step }} of {{ STEPS.length }}
         </div>
 
         <div class="hidden sm:flex items-center gap-2 text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full shrink-0">
-          <ShieldCheck class="w-4 h-4" />
-          Secure Checkout
+          <ShieldCheck class="w-4 h-4" aria-hidden="true" />
+          Secure checkout
         </div>
       </div>
+    </header>
+
+    <!-- Loading an existing order (?orderId=) -->
+    <div v-if="isLoadingOrder" class="container mx-auto px-4 py-20 flex items-center justify-center gap-2 text-sm text-muted-foreground" role="status">
+      <Loader2 class="w-5 h-5 animate-spin text-primary" aria-hidden="true" />
+      Loading your order...
     </div>
 
-    <div v-if="!orderCompleted" class="container mx-auto px-4">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 max-w-6xl mx-auto">
-        <!-- Forms -->
-        <div class="lg:col-span-7 space-y-8">
-          <div v-if="step === 1" class="bg-background rounded-3xl p-8 border shadow-sm space-y-8">
-            <h2 class="text-2xl font-display font-bold flex items-center gap-3">
-              <Truck class="w-6 h-6 text-primary" />
-              Shipping Information
-            </h2>
-
-            <!-- Saved Addresses Section (Authenticated Users) -->
-            <div v-if="authStore.isLoggedIn" class="space-y-4 pt-2 pb-6 border-b">
-              <div class="flex items-center justify-between">
-                <h3 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                  <MapPin class="w-4 h-4 text-primary" />
-                  Saved Addresses
-                </h3>
-                <UiButton size="sm" variant="outline" @click="showAddAddressForm = !showAddAddressForm" class="rounded-xl text-xs gap-1.5">
-                  <Plus class="w-3.5 h-3.5" />
-                  {{ showAddAddressForm ? 'Cancel' : 'Add New Address' }}
-                </UiButton>
-              </div>
-
-              <!-- Add Address Form -->
-              <div v-if="showAddAddressForm" class="p-6 bg-muted/40 rounded-2xl border space-y-4 animate-in fade-in duration-300">
-                <h4 class="font-bold text-sm">Create New Address</h4>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div class="space-y-1">
-                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Address Type</label>
-                    <select v-model="newAddressForm.address_type" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20">
-                      <option value="BILLING">Billing</option>
-                      <option value="SHIPPING">Shipping</option>
-                    </select>
-                  </div>
-                  <div class="space-y-1">
-                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Phone *</label>
-                    <input v-model="newAddressForm.phone" type="text" placeholder="01700000000" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                  <div class="space-y-1">
-                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">First Name *</label>
-                    <input v-model="newAddressForm.first_name" type="text" placeholder="John" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                  <div class="space-y-1">
-                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Last Name *</label>
-                    <input v-model="newAddressForm.last_name" type="text" placeholder="Doe" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                  <div class="sm:col-span-2 space-y-1">
-                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Street Address 1 *</label>
-                    <input v-model="newAddressForm.address_1" type="text" placeholder="House 12, Road 5, Block C" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                  <div class="sm:col-span-2 space-y-1">
-                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Street Address 2</label>
-                    <input v-model="newAddressForm.address_2" type="text" placeholder="Apartment, suite, unit (optional)" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                  <div class="space-y-1">
-                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">City *</label>
-                    <input v-model="newAddressForm.city" type="text" placeholder="Dhaka" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                  <div class="space-y-1">
-                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">State / Region</label>
-                    <input v-model="newAddressForm.state" type="text" placeholder="Dhaka Division" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                  <div class="space-y-1">
-                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Postal Code</label>
-                    <input v-model="newAddressForm.postcode" type="text" placeholder="1212" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                  <div class="space-y-1">
-                    <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Country *</label>
-                    <input v-model="newAddressForm.country" type="text" placeholder="Bangladesh" class="w-full h-10 bg-background border rounded-xl px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                  <div class="sm:col-span-2 pt-2">
-                    <UiButton @click="handleCreateAddress" :disabled="addressService.isCreating.value" class="w-full h-10 rounded-xl text-xs font-bold">
-                      {{ addressService.isCreating.value ? 'Saving Address...' : 'Save & Use Address' }}
-                    </UiButton>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Saved Addresses List / Loading / Empty -->
-              <div v-if="isLoadingAddresses" class="py-6 text-center text-xs text-muted-foreground">
-                Loading saved addresses...
-              </div>
-              <div v-else-if="savedAddresses.length === 0" class="py-4 text-xs text-muted-foreground italic">
-                No saved addresses found. You can add one above or fill in the shipping form below.
-              </div>
-              <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
-                <div 
-                  v-for="addr in savedAddresses" 
-                  :key="addr.id" 
-                  @click="handleSelectAddress(addr)"
-                  :class="cn(
-                    'p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-2 group',
-                    selectedAddressId === addr.id ? 'border-primary bg-primary/5 shadow-sm' : 'bg-card hover:border-primary/50'
-                  )"
-                >
-                  <div class="flex items-start justify-between">
-                    <div>
-                      <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-primary/10 text-primary mb-1">
-                        {{ addr.address_type }}
-                      </span>
-                      <p class="font-bold text-xs group-hover:text-primary transition-colors">{{ addr.first_name }} {{ addr.last_name }}</p>
-                    </div>
-                    <span class="text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                      Use <Check class="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                  <div class="text-[11px] text-muted-foreground leading-relaxed">
-                    <p>{{ addr.city }}{{ addr.state ? `, ${addr.state}` : '' }} - {{ addr.country }}</p>
-                    <p v-if="addr.phone">Phone: {{ addr.phone }}</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Pagination for Saved Addresses -->
-              <div v-if="addressPagination.next || addressPagination.previous" class="flex items-center justify-between pt-2 text-xs">
-                <button 
-                  @click="fetchAddresses(addressPagination.page - 1)" 
-                  :disabled="!addressPagination.previous || isLoadingAddresses"
-                  class="px-3 py-1 rounded-lg border bg-background hover:bg-muted disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span class="text-muted-foreground">Page {{ addressPagination.page }}</span>
-                <button 
-                  @click="fetchAddresses(addressPagination.page + 1)" 
-                  :disabled="!addressPagination.next || isLoadingAddresses"
-                  class="px-3 py-1 rounded-lg border bg-background hover:bg-muted disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-
-            <!-- Shipping Options Selection Section -->
-            <div v-if="selectedAddressId" class="space-y-4 pt-2 pb-6 border-b">
-              <h3 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                <Truck class="w-4 h-4 text-primary" />
-                Available Shipping Options
-              </h3>
-
-              <div v-if="isLoadingShippingOptions" class="py-6 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-                <Loader2 class="w-4 h-4 animate-spin text-primary" />
-                Loading shipping options...
-              </div>
-              <div v-else-if="shippingOptions.length === 0" class="py-4 text-xs text-muted-foreground italic">
-                No shipping options available for this delivery address.
-              </div>
-              <div v-else class="grid grid-cols-1 gap-3">
-                <div 
-                  v-for="opt in shippingOptions"
-                  :key="opt.method_id || opt.id"
-                  @click="selectedShippingOption = opt"
-                  :class="cn(
-                    'p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between',
-                    (selectedShippingOption?.method_id === opt.method_id || selectedShippingOption?.id === opt.id) ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/30 bg-card'
-                  )"
-                >
-                  <div class="space-y-1">
-                    <p class="font-bold text-xs flex items-center gap-2">
-                      {{ opt.name }}
-                      <span v-if="opt.estimated_delivery" class="text-[10px] font-normal text-muted-foreground">({{ opt.estimated_delivery }})</span>
-                    </p>
-                    <p v-if="opt.description" class="text-[11px] text-muted-foreground">{{ opt.description }}</p>
-                  </div>
-                  <div class="text-right">
-                    <p class="font-bold text-sm text-primary">
-                      {{ Number(opt.shipping_charge) === 0 ? 'FREE' : formatCurrency(Number(opt.shipping_charge)) }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">First Name *</label>
-                <input v-model="form.firstName" type="text" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
-              </div>
-              <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Last Name *</label>
-                <input v-model="form.lastName" type="text" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
-              </div>
-              <div class="md:col-span-2 space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address *</label>
-                <input v-model="form.email" type="email" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
-              </div>
-              <div class="md:col-span-2 space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Phone Number *</label>
-                <input v-model="form.phone" type="text" placeholder="01700000000" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
-              </div>
-              <div class="md:col-span-2 space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Street Address *</label>
-                <input v-model="form.address" type="text" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
-              </div>
-              <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">City *</label>
-                <input v-model="form.city" type="text" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
-              </div>
-              <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">ZIP / Postal Code</label>
-                <input v-model="form.zip" type="text" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium" />
-              </div>
-            </div>
-
-            <UiButton class="w-full h-14 rounded-2xl text-lg font-bold" @click="proceedToPayment" :disabled="isProcessing">
-              {{ isProcessing ? 'Saving & Validating...' : 'Continue to Payment' }}
-            </UiButton>
+    <!-- Success -->
+    <div v-else-if="placedOrder" class="container mx-auto px-4">
+      <div class="max-w-3xl mx-auto py-10 sm:py-16 space-y-8">
+        <div class="text-center space-y-3">
+          <div
+            :class="cn(
+              'w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4',
+              placedOrder.status === 'cancelled' ? 'bg-destructive/10 text-destructive' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            )"
+            aria-hidden="true"
+          >
+            <AlertCircle v-if="placedOrder.status === 'cancelled'" class="w-10 h-10" />
+            <PackageCheck v-else class="w-10 h-10" />
           </div>
-
-          <div v-if="step === 2" class="bg-background rounded-3xl p-8 border shadow-sm space-y-8 animate-fade-in">
-            <button @click="step = 1" class="text-xs font-bold text-muted-foreground hover:text-primary flex items-center gap-1 uppercase tracking-widest">
-              &larr; Back to Shipping
-            </button>
-            <h2 class="text-2xl font-display font-bold flex items-center gap-3">
-              <CreditCard class="w-6 h-6 text-primary" />
-              Secure Payment
-            </h2>
-
-            <div class="space-y-6">
-              <!-- Payment Method Selection -->
-              <div class="grid grid-cols-1 gap-4">
-                <button 
-                  v-for="method in [
-                    { id: 'card', name: 'Bank Card', icon: CreditCard, subtitle: 'Visa, Mastercard, Amex' },
-                    { id: 'mfs', name: 'MFS', icon: Smartphone, subtitle: 'bKash, Nagad, Rocket' },
-                    { id: 'cod', name: 'Cash on Delivery', icon: Banknote, subtitle: 'Pay when you receive' }
-                  ]" 
-                  :key="method.id"
-                  @click="isMobile && (method.id === 'card' || method.id === 'mfs') ? null : form.paymentMethod = method.id"
-                  :disabled="isMobile && (method.id === 'card' || method.id === 'mfs')"
-                  :class="cn(
-                    'p-4 rounded-2xl flex items-center justify-between border-2 transition-all text-left w-full',
-                    form.paymentMethod === method.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/20 bg-background',
-                    isMobile && (method.id === 'card' || method.id === 'mfs') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                  )"
-                >
-                  <div class="flex items-center gap-4">
-                    <div :class="cn('w-12 h-12 rounded-xl flex items-center justify-center', form.paymentMethod === method.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground')">
-                      <component :is="method.icon" class="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p class="font-bold text-sm">{{ method.name }}</p>
-                      <p class="text-xs text-muted-foreground">{{ method.subtitle }}</p>
-                    </div>
-                  </div>
-                  <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center" :class="form.paymentMethod === method.id ? 'border-primary' : 'border-muted-foreground/30'">
-                    <div v-if="form.paymentMethod === method.id" class="w-2.5 h-2.5 bg-primary rounded-full"></div>
-                  </div>
-                </button>
-              </div>
-
-              <!-- Card Payment Form -->
-              <div v-if="form.paymentMethod === 'card'" class="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div class="space-y-2">
-                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Card Number</label>
-                  <input v-model="form.cardNumber" type="text" placeholder="0000 0000 0000 0000" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div class="grid grid-cols-2 gap-6">
-                  <div class="space-y-2">
-                    <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Expiry Date</label>
-                    <input v-model="form.expiry" type="text" placeholder="MM / YY" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                  <div class="space-y-2">
-                    <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">CVC / CVV</label>
-                    <input v-model="form.cvv" type="text" placeholder="123" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- MFS Payment Form -->
-              <div v-if="form.paymentMethod === 'mfs'" class="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div class="grid grid-cols-3 gap-2">
-                  <button 
-                    v-for="mfs in ['bkash', 'nagad', 'rocket']" 
-                    :key="mfs"
-                    @click="form.mfsType = mfs"
-                    :class="cn(
-                      'py-2 px-4 rounded-xl border text-xs font-extrabold uppercase transition-all',
-                      form.mfsType === mfs ? 'bg-primary text-white border-primary' : 'bg-background hover:bg-muted border-muted'
-                    )"
-                  >
-                    {{ mfs }}
-                  </button>
-                </div>
-                <div class="space-y-2">
-                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Account Number</label>
-                  <input v-model="form.mfsNumber" type="text" placeholder="01XXX-XXXXXX" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div class="space-y-2">
-                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Transaction ID (After Payment)</label>
-                  <input v-model="form.mfsTransactionId" type="text" placeholder="TRX-XXXXXXX" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div class="p-3 bg-blue-50 text-blue-700 rounded-xl text-[10px] font-medium leading-relaxed">
-                  Please complete the payment to our merchant number first, then provide the Transaction ID above.
-                </div>
-              </div>
-
-              <!-- COD Info -->
-              <div v-if="form.paymentMethod === 'cod'" class="pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div class="p-6 bg-muted rounded-2xl space-y-3">
-                  <div class="w-12 h-12 bg-background rounded-full flex items-center justify-center text-primary">
-                    <Truck class="w-6 h-6" />
-                  </div>
-                  <div class="space-y-1">
-                    <p class="font-bold">Cash payment upon delivery</p>
-                    <p class="text-xs text-muted-foreground leading-relaxed">
-                      Please keep the exact amount ({{ formatCurrency(totalDue) }}) ready for our delivery partner.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <UiButton class="w-full h-14 rounded-2xl text-lg font-bold gap-2" @click="handlePlaceOrder" :disabled="isProcessing">
-              <ShieldCheck class="w-5 h-5" v-if="!isProcessing" />
-              {{ isProcessing ? 'Authorizing Transaction...' : `Pay ${formatCurrency(totalDue)}` }}
-            </UiButton>
-          </div>
+          <h1 class="text-[26px] font-display font-extrabold tracking-tight">
+            {{ placedOrder.status === 'cancelled' ? 'Order cancelled' : 'Order placed' }}
+          </h1>
+          <p class="text-muted-foreground text-sm">
+            <template v-if="placedOrder.status === 'cancelled'">This order is no longer active. Please place a new order.</template>
+            <template v-else>Thank you. We will confirm your order shortly and collect payment in cash on delivery.</template>
+          </p>
         </div>
 
-        <!-- Summary -->
-        <div class="lg:col-span-5 space-y-6">
-          <div class="bg-background rounded-3xl p-8 border shadow-sm sticky top-32">
-            <h3 class="text-xl font-display font-bold mb-6">Order Summary</h3>
-            <div class="space-y-4 max-h-60 overflow-y-auto mb-6 pr-2">
-              <div v-for="item in cartStore.items" :key="item.productId || item.id || item.product?.id" class="flex gap-4">
-                <div class="w-16 h-16 rounded-lg overflow-hidden border shrink-0 bg-muted">
-                  <img :src="item.product?.images?.[0] || 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80'" :alt="decodeHtmlEntities(item.product?.name || 'Product')" class="w-full h-full object-cover" />
-                </div>
-                <div class="flex-grow">
-                  <p class="font-bold text-sm line-clamp-1">{{ decodeHtmlEntities(item.product?.name || 'Product') }}</p>
-                  <p class="text-xs text-muted-foreground">Qty: {{ item.quantity }}</p>
-                </div>
-                <span class="font-bold text-sm">{{ formatCurrency((item.product?.price || 0) * item.quantity) }}</span>
-              </div>
-            </div>
-
-            <div class="space-y-3 pt-6 border-t font-medium">
-              <div class="flex justify-between text-sm">
-                <span class="text-muted-foreground">Subtotal</span>
-                <span>{{ formatCurrency(cartStore.totalPrice) }}</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-muted-foreground">Shipping ({{ selectedShippingOption?.name || 'Pending' }})</span>
-                <span :class="selectedShippingOption ? (shippingChargeValue === 0 ? 'text-green-600 font-bold' : 'font-bold') : 'text-muted-foreground font-normal text-xs'">
-                  {{ selectedShippingOption ? (shippingChargeValue === 0 ? 'FREE' : formatCurrency(shippingChargeValue)) : 'Select address & option' }}
-                </span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-muted-foreground">Estimated Tax</span>
-                <span>{{ formatCurrency(0) }}</span>
-              </div>
-              <div class="flex justify-between text-xl font-display font-bold pt-4 text-primary">
-                <span>Total Due</span>
-                <span>{{ formatCurrency(totalDue) }}</span>
-              </div>
-            </div>
-
-            <div v-if="selectedShippingOption" class="mt-8 p-4 bg-primary/5 rounded-2xl flex items-start gap-3">
-              <PackageCheck class="w-5 h-5 text-primary mt-1" />
-              <p class="text-xs text-primary/80 leading-relaxed font-medium">
-                Your order will be shipped via **{{ selectedShippingOption.name }}** <span v-if="selectedShippingOption.estimated_delivery">({{ selectedShippingOption.estimated_delivery }})</span>.
-              </p>
-            </div>
-            <div v-else class="mt-8 p-4 bg-muted/50 rounded-2xl flex items-start gap-3">
-              <Truck class="w-5 h-5 text-muted-foreground mt-1" />
-              <p class="text-xs text-muted-foreground leading-relaxed font-medium">
-                Please save your delivery address and choose a shipping method to finalize delivery charges and terms.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Success State -->
-    <div v-else class="container mx-auto px-4">
-      <div class="max-w-3xl mx-auto py-20 animate-fade-in space-y-8">
-        <div class="text-center space-y-4">
-          <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShieldCheck class="w-10 h-10 text-green-600" />
-          </div>
-          <h1 class="text-4xl font-display font-extrabold tracking-tight">Order Confirmed!</h1>
-          <p class="text-muted-foreground">Thank you for your purchase.</p>
-        </div>
-
-        <div v-if="orderDetails" class="bg-card p-8 rounded-3xl border shadow-sm space-y-6">
-          <div class="flex justify-between items-start border-b pb-6">
+        <section class="bg-card text-card-foreground p-6 sm:p-8 rounded-3xl border border-border shadow-sm space-y-6" aria-labelledby="order-receipt-heading">
+          <h2 id="order-receipt-heading" class="sr-only">Order receipt</h2>
+          <div class="flex flex-wrap justify-between gap-4 border-b border-border pb-6">
             <div>
-              <p class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Order Number</p>
-              <p class="text-lg font-mono font-bold">{{ orderDetails.orderNumber }}</p>
+              <p class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Order number</p>
+              <p class="text-lg font-mono font-bold">{{ placedOrder.orderNumber }}</p>
             </div>
             <div class="text-right">
               <p class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</p>
-              <p class="text-lg font-bold capitalize">{{ orderDetails.status }}</p>
+              <p class="text-lg font-bold capitalize">{{ orderStatusLabel(placedOrder.status) }}</p>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
             <div class="space-y-1">
-              <p class="text-xs font-bold uppercase text-muted-foreground">Shipping Address</p>
-              <p class="text-foreground">{{ orderDetails.shippingAddress.street }}</p>
-              <p class="text-foreground">{{ orderDetails.shippingAddress.city }}</p>
+              <p class="text-xs font-bold uppercase text-muted-foreground">Shipping address</p>
+              <template v-if="placedOrder.shippingAddress">
+                <p>{{ placedOrder.shippingAddress.firstName }} {{ placedOrder.shippingAddress.lastName }}</p>
+                <p>{{ placedOrder.shippingAddress.street }}</p>
+                <p v-if="placedOrder.shippingAddress.street2">{{ placedOrder.shippingAddress.street2 }}</p>
+                <p>
+                  {{ placedOrder.shippingAddress.city }}<template v-if="placedOrder.shippingAddress.state">, {{ placedOrder.shippingAddress.state }}</template>
+                  {{ placedOrder.shippingAddress.zipCode }}
+                </p>
+                <p>{{ placedOrder.shippingAddress.country }}</p>
+                <p v-if="placedOrder.shippingAddress.phone" class="text-muted-foreground">{{ placedOrder.shippingAddress.phone }}</p>
+              </template>
+              <p v-else class="text-muted-foreground">Not available</p>
             </div>
-            <div class="space-y-1">
-              <p class="text-xs font-bold uppercase text-muted-foreground">Shipping Method</p>
-              <p class="text-foreground">{{ orderDetails.shippingMethod?.name || 'Standard' }}</p>
+            <div class="space-y-4">
+              <div class="space-y-1">
+                <p class="text-xs font-bold uppercase text-muted-foreground">Delivery</p>
+                <p>{{ placedOrder.shippingMethod?.name || 'Not available' }}</p>
+              </div>
+              <div class="space-y-1">
+                <p class="text-xs font-bold uppercase text-muted-foreground">Payment</p>
+                <p class="capitalize">Cash on delivery · {{ placedOrder.paymentStatus }}</p>
+              </div>
             </div>
           </div>
 
-          <div class="space-y-3 pt-6 border-t">
+          <div class="space-y-3 pt-6 border-t border-border">
             <p class="text-xs font-bold uppercase text-muted-foreground">Items</p>
-            <div v-for="item in orderDetails.items" :key="item.id" class="flex justify-between text-sm">
-              <p>{{ decodeHtmlEntities(item.product?.name) }} x {{ item.quantity }}</p>
-              <p>{{ formatCurrency(item.price * item.quantity) }}</p>
+            <div v-for="item in placedOrder.items" :key="item.id" class="flex justify-between gap-4 text-sm">
+              <p>{{ decodeHtmlEntities(item.product.name) }} <span class="text-muted-foreground">× {{ item.quantity }}</span></p>
+              <p class="shrink-0">{{ formatCurrency(item.lineTotal ?? item.price * item.quantity) }}</p>
             </div>
-            <div class="flex justify-between font-bold pt-4 border-t">
-              <p>Total</p>
-              <p>{{ formatCurrency(orderDetails.totalAmount) }}</p>
+            <div class="space-y-2 pt-4 border-t border-border text-sm">
+              <div class="flex justify-between"><span class="text-muted-foreground">Subtotal</span><span>{{ formatCurrency(placedOrder.subtotal ?? 0) }}</span></div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Delivery</span>
+                <span>{{ (placedOrder.shippingCharge ?? 0) === 0 ? 'Free' : formatCurrency(placedOrder.shippingCharge ?? 0) }}</span>
+              </div>
+              <div class="flex justify-between font-bold text-[18px] pt-2"><span>Total</span><span>{{ formatCurrency(placedOrder.totalAmount) }}</span></div>
             </div>
           </div>
+        </section>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <UiButton :to="`/my-account/orders/${placedOrder.id}/`" size="lg" class="rounded-full w-full sm:w-auto">View order</UiButton>
+          <UiButton to="/" size="lg" variant="outline" class="rounded-full w-full sm:w-auto">Continue shopping</UiButton>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty cart -->
+    <div v-else-if="isCartEmpty" class="container mx-auto px-4">
+      <div class="max-w-xl mx-auto py-16 text-center space-y-4">
+        <div class="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto" aria-hidden="true">
+          <ShoppingCart class="w-8 h-8 text-muted-foreground" />
+        </div>
+        <h1 class="text-[26px] font-display font-extrabold">Your cart is empty</h1>
+        <p class="text-sm text-muted-foreground">Add some products before checking out.</p>
+        <UiButton to="/" size="lg" class="rounded-full">Browse products</UiButton>
+      </div>
+    </div>
+
+    <!-- Checkout flow -->
+    <div v-else class="container mx-auto px-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 max-w-6xl mx-auto">
+        <div class="lg:col-span-7 space-y-6">
+          <!-- Completed step recaps -->
+          <section v-if="step > 1 && selectedZone" class="bg-background rounded-2xl px-5 py-4 border border-border flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <MapPin class="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
+              <p class="text-sm truncate"><span class="text-muted-foreground">Delivery area:</span> <span class="font-bold">{{ selectedZone.name }}</span></p>
+            </div>
+            <button type="button" class="text-xs font-bold text-primary hover:underline shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded" @click="goToStep(1)">Change</button>
+          </section>
+
+          <section v-if="step > 2 && selectedAddress" class="bg-background rounded-2xl px-5 py-4 border border-border flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <Home class="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
+              <p class="text-sm truncate">
+                <span class="text-muted-foreground">Address:</span>
+                <span class="font-bold">{{ selectedAddress.first_name }} {{ selectedAddress.last_name }}</span>,
+                {{ selectedAddress.address_1 }}, {{ selectedAddress.city }}
+              </p>
+            </div>
+            <button type="button" class="text-xs font-bold text-primary hover:underline shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded" @click="goToStep(2)">Change</button>
+          </section>
+
+          <section v-if="step > 3 && selectedOption" class="bg-background rounded-2xl px-5 py-4 border border-border flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <Truck class="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
+              <p class="text-sm truncate">
+                <span class="text-muted-foreground">Delivery:</span>
+                <span class="font-bold">{{ selectedOption.shipping_method_name }}</span>
+                · {{ Number(selectedOption.shipping_charge) === 0 ? 'Free' : formatCurrency(Number(selectedOption.shipping_charge)) }}
+              </p>
+            </div>
+            <button type="button" class="text-xs font-bold text-primary hover:underline shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded" @click="goToStep(3)">Change</button>
+          </section>
+
+          <!-- Active step card -->
+          <section class="bg-background rounded-3xl p-6 sm:p-8 border border-border shadow-sm space-y-6" :aria-labelledby="`checkout-step-${step}-heading`">
+            <h2 :id="`checkout-step-${step}-heading`" class="text-[24px] font-display font-bold flex items-center gap-3">
+              <component :is="STEPS[step - 1]?.icon ?? MapPin" class="w-6 h-6 text-primary" aria-hidden="true" />
+              <template v-if="step === 1">Where are we delivering?</template>
+              <template v-else-if="step === 2">Shipping address</template>
+              <template v-else-if="step === 3">Delivery option</template>
+              <template v-else>Review and place order</template>
+            </h2>
+
+            <!-- Step 1 -->
+            <div v-if="step === 1" key="step-1" class="space-y-6">
+              <CheckoutDeliveryAreaStep
+                v-model="selectedZoneId"
+                :zones="zones"
+                :is-loading="isLoadingZones"
+                :error="zonesError"
+                @retry="loadZones"
+              />
+              <UiButton class="w-full h-12 rounded-2xl font-bold" :disabled="selectedZoneId === null || isLoadingZones" @click="continueToAddress">
+                Continue to address
+              </UiButton>
+            </div>
+
+            <!-- Step 2 -->
+            <div v-else-if="step === 2 && selectedZone" key="step-2" class="space-y-6">
+              <CheckoutAddressStep
+                :key="selectedZone.id"
+                :zone="selectedZone"
+                :model-value="selectedAddress"
+                :default-first-name="profileFirstName"
+                :default-last-name="profileLastName"
+                @update:model-value="handleAddressSelected"
+              />
+            </div>
+
+            <!-- Step 3 -->
+            <div v-else-if="step === 3" key="step-3" class="space-y-6">
+              <CheckoutShippingOptions
+                v-model="selectedMethodId"
+                :options="shippingOptions"
+                :zone-name="shippingResponse?.zone.name ?? selectedZone?.name ?? null"
+                :is-loading="isLoadingOptions"
+                :error="optionsError"
+                @retry="loadShippingOptions"
+              />
+              <UiButton
+                class="w-full h-12 rounded-2xl font-bold gap-2"
+                :disabled="selectedMethodId === null || isLoadingOptions || isValidating"
+                @click="continueToReview"
+              >
+                <Loader2 v-if="isValidating" class="w-4 h-4 animate-spin" aria-hidden="true" />
+                {{ isValidating ? 'Checking your order...' : 'Continue to review' }}
+              </UiButton>
+            </div>
+
+            <!-- Step 4 -->
+            <div v-else-if="step === 4" key="step-4" class="space-y-6">
+              <div class="space-y-5">
+                <div>
+                  <h3 class="text-[18px] font-bold mb-3">Payment method</h3>
+                  <div class="p-4 rounded-2xl border-2 border-primary bg-primary/5 flex items-center gap-4" role="radio" aria-checked="true">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-primary text-primary-foreground shrink-0" aria-hidden="true">
+                      <Banknote class="w-6 h-6" />
+                    </div>
+                    <div class="flex-grow">
+                      <p class="font-bold text-sm">Cash on Delivery</p>
+                      <p class="text-xs text-muted-foreground">Pay our delivery partner when your order arrives.</p>
+                    </div>
+                    <div class="w-5 h-5 rounded-full border-2 border-primary bg-primary text-primary-foreground flex items-center justify-center shrink-0" aria-hidden="true">
+                      <Check class="w-3 h-3" />
+                    </div>
+                  </div>
+                  <!--
+                    TEMPORARILY DISABLED: Bank Card and MFS (bKash / Nagad / Rocket) payment options.
+                    The backend accepts Cash on Delivery only (POST /api/v1/checkout/confirm/ has no payment
+                    fields). Restore guidance lives in /docs/agent-context/disabled-features.md (section 7).
+
+                    <button
+                      v-for="method in [
+                        { id: 'card', name: 'Bank Card', icon: CreditCard, subtitle: 'Visa, Mastercard, Amex' },
+                        { id: 'mfs', name: 'MFS', icon: Smartphone, subtitle: 'bKash, Nagad, Rocket' },
+                        { id: 'cod', name: 'Cash on Delivery', icon: Banknote, subtitle: 'Pay when you receive' }
+                      ]"
+                      :key="method.id"
+                      @click="form.paymentMethod = method.id"
+                      :class="cn(
+                        'p-4 rounded-2xl flex items-center justify-between border-2 transition-all text-left w-full',
+                        form.paymentMethod === method.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted hover:border-primary/20 bg-background'
+                      )"
+                    >
+                      <div class="flex items-center gap-4">
+                        <div :class="cn('w-12 h-12 rounded-xl flex items-center justify-center', form.paymentMethod === method.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground')">
+                          <component :is="method.icon" class="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p class="font-bold text-sm">{{ method.name }}</p>
+                          <p class="text-xs text-muted-foreground">{{ method.subtitle }}</p>
+                        </div>
+                      </div>
+                    </button>
+
+                    <div v-if="form.paymentMethod === 'card'" class="space-y-4 pt-4">
+                      <input v-model="form.cardNumber" type="text" placeholder="0000 0000 0000 0000" />
+                      <input v-model="form.expiry" type="text" placeholder="MM / YY" />
+                      <input v-model="form.cvv" type="text" placeholder="123" />
+                    </div>
+
+                    <div v-if="form.paymentMethod === 'mfs'" class="space-y-4 pt-4">
+                      <button v-for="mfs in ['bkash', 'nagad', 'rocket']" :key="mfs" @click="form.mfsType = mfs">{{ mfs }}</button>
+                      <input v-model="form.mfsNumber" type="text" placeholder="01XXX-XXXXXX" />
+                      <input v-model="form.mfsTransactionId" type="text" placeholder="TRX-XXXXXXX" />
+                      <p>Please complete the payment to our merchant number first, then provide the Transaction ID above.</p>
+                    </div>
+                  -->
+                </div>
+
+                <div class="p-5 bg-muted rounded-2xl flex items-start gap-4">
+                  <div class="w-10 h-10 bg-background rounded-full flex items-center justify-center text-primary shrink-0" aria-hidden="true">
+                    <Truck class="w-5 h-5" />
+                  </div>
+                  <div class="space-y-1 text-sm">
+                    <p class="font-bold">Cash payment upon delivery</p>
+                    <p class="text-xs text-muted-foreground leading-relaxed">
+                      <template v-if="grandTotal !== null">Please keep {{ formatCurrency(grandTotal) }} ready for our delivery partner.</template>
+                      <template v-else>The amount due will be shown once your order has been verified.</template>
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="checkout-notes" class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Order notes (optional)</label>
+                  <textarea
+                    id="checkout-notes"
+                    v-model="notes"
+                    rows="3"
+                    maxlength="500"
+                    placeholder="Delivery instructions, preferred time, landmark..."
+                    class="w-full bg-background border border-input rounded-xl px-3.5 py-2.5 text-sm text-foreground outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring resize-y"
+                  />
+                </div>
+
+                <div v-if="validation && !validation.is_valid" class="p-4 rounded-2xl border border-destructive/30 bg-destructive/5 flex items-start gap-3" role="alert">
+                  <AlertCircle class="w-5 h-5 text-destructive shrink-0 mt-0.5" aria-hidden="true" />
+                  <div class="text-sm space-y-2">
+                    <ul class="space-y-1">
+                      <li v-for="(message, index) in validation.errors" :key="index">{{ message }}</li>
+                    </ul>
+                    <button type="button" class="text-xs font-bold text-primary hover:underline" @click="runValidation">Re-check order</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-col sm:flex-row gap-3">
+                <UiButton type="button" variant="outline" class="h-12 rounded-2xl font-bold gap-1.5 sm:w-auto" @click="goToStep(3)">
+                  <ChevronLeft class="w-4 h-4" aria-hidden="true" />
+                  Back
+                </UiButton>
+                <UiButton
+                  class="flex-grow h-12 rounded-2xl font-bold gap-2"
+                  :disabled="isPlacing || isValidating || !validation?.is_valid"
+                  @click="placeOrder"
+                >
+                  <Loader2 v-if="isPlacing" class="w-5 h-5 animate-spin" aria-hidden="true" />
+                  <ShieldCheck v-else class="w-5 h-5" aria-hidden="true" />
+                  <template v-if="isPlacing">Placing your order...</template>
+                  <template v-else-if="grandTotal !== null">Place order · {{ formatCurrency(grandTotal) }}</template>
+                  <template v-else>Place order</template>
+                </UiButton>
+              </div>
+            </div>
+          </section>
         </div>
 
-        <div class="text-center">
-          <UiButton @click="navigateTo('/')" size="lg" class="rounded-full">Back to Marketplace</UiButton>
+        <!-- Summary -->
+        <div class="lg:col-span-5">
+          <CheckoutOrderSummary
+            :items="cartStore.items"
+            :validation="validation"
+            :is-validating="isValidating"
+            :selected-option="selectedOption"
+          />
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-  animation: fade-in 0.6s ease-out forwards;
-}
-</style>

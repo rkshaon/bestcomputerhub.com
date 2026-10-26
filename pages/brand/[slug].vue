@@ -29,6 +29,7 @@ import { cn, decodeHtmlEntities } from '@/utils';
 import type { Product, Brand, Category } from '@/types';
 import CommerceProductCard from '@/components/commerce/ProductCard.vue';
 import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
+import UiPagination from '@/components/ui/UiPagination.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 
 const route = useRoute();
@@ -370,7 +371,7 @@ watch(
 );
 
 watch(
-  [debouncedSearchQuery, () => filters.category, () => filters.minPrice, () => filters.maxPrice, () => filters.sort],
+  [debouncedSearchQuery, () => filters.category, () => filters.minPrice, () => filters.maxPrice, () => filters.sort, pageSize],
   () => {
     currentPage.value = 1;
     fetchBrandProducts();
@@ -577,7 +578,22 @@ onMounted(() => {
               Displaying <span class="text-foreground font-extrabold">{{ totalCount }}</span> optimal results
             </span>
             
-            <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+             <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+              <!-- Page Size Selector -->
+              <div class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <span class="hidden sm:inline">Show:</span>
+                <select 
+                  v-model="pageSize"
+                  class="h-11 bg-background border border-border/85 rounded-xl px-3 text-xs font-bold uppercase tracking-wider outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 shrink-0"
+                  aria-label="Show items per page"
+                >
+                  <option :value="16">16 / page</option>
+                  <option :value="24">24 / page</option>
+                  <option :value="48">48 / page</option>
+                  <option :value="96">96 / page</option>
+                </select>
+              </div>
+
               <div class="flex items-center border rounded-lg overflow-hidden">
                 <button 
                   @click="viewMode = 'grid'"
@@ -613,7 +629,7 @@ onMounted(() => {
             v-if="isLoading" 
             :class="cn(
               'grid gap-6',
-              viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'grid-cols-1'
+              viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
             )"
           >
             <div v-for="i in 10" :key="i" class="bg-card rounded-2xl border p-6 space-y-4 animate-pulse">
@@ -649,7 +665,7 @@ onMounted(() => {
             <div 
               :class="cn(
                 'grid gap-6',
-                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'grid-cols-1'
+                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
               )"
             >
               <CommerceProductCard 
@@ -659,32 +675,17 @@ onMounted(() => {
               />
             </div>
 
-            <!-- Modern Paginated Controls -->
-            <div v-if="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-8">
-              <span class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Page <span class="text-foreground font-black">{{ currentPage }}</span> of <span class="text-foreground font-black">{{ totalPages }}</span>
-              </span>
-              <div class="flex items-center gap-3">
-                <UiButton 
-                  variant="outline" 
-                  size="sm" 
-                  :disabled="currentPage === 1" 
-                  @click="handlePageChange(currentPage - 1)"
-                  class="rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
-                >
-                  Previous
-                </UiButton>
-                <UiButton 
-                  variant="outline" 
-                  size="sm" 
-                  :disabled="currentPage === totalPages" 
-                  @click="handlePageChange(currentPage + 1)"
-                  class="rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
-                >
-                  Next
-                </UiButton>
-              </div>
-            </div>
+            <!-- Modern Paginated Controls using UiPagination -->
+            <UiPagination 
+              v-if="totalPages > 1"
+              :current-page="currentPage"
+              @update:current-page="handlePageChange"
+              :total-pages="totalPages"
+              :total-count="totalCount"
+              :items-per-page="pageSize"
+              variant="card"
+              class="mt-8 py-3 sm:py-4 px-5 sm:px-6"
+            />
           </div>
 
           <!-- Empty State -->
@@ -706,7 +707,7 @@ onMounted(() => {
       <!-- Bottom Rich Brand Details Section -->
       <div 
         v-if="canEditBrandFromStorefront || (brandDetail?.description && (brandDetail.description.includes('<') || brandDetail.description.length > 200))" 
-        class="mt-16 bg-card border border-border/80 rounded-[2rem] p-8 md:p-12 space-y-6 shadow-sm"
+        class="bg-card border border-border/80 rounded-2xl p-6 space-y-4 shadow-2xs"
       >
         <div class="flex items-center justify-between border-b pb-4">
           <h2 class="text-2xl font-display font-black tracking-tight text-foreground">
