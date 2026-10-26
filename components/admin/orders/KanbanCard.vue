@@ -38,10 +38,23 @@ async function handleStatusChange(event: Event) {
     isLoading.value = false;
   }
 }
+
+function handleDragStart(event: DragEvent) {
+  if (isLoading.value) {
+    event.preventDefault();
+    return;
+  }
+  event.dataTransfer?.setData('text/plain', props.order.id);
+  event.dataTransfer!.effectAllowed = 'move';
+}
 </script>
 
 <template>
-  <div class="block bg-card border border-border/80 rounded-xl p-3 shadow-2xs group">
+  <div 
+    class="block bg-card border border-border/80 rounded-xl p-3 shadow-2xs group"
+    draggable="true"
+    @dragstart="handleDragStart"
+  >
     <NuxtLink :to="`/admin/orders/${order.id}`" class="block">
       <div class="flex justify-between items-start mb-2">
         <span class="font-mono text-xs font-bold text-foreground tracking-tighter">{{ order.orderNumber }}</span>
