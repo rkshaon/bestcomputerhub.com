@@ -35,7 +35,7 @@ async function handleStatusChange(event: Event) {
 </script>
 
 <template>
-  <div class="block bg-card border border-border/80 rounded-xl p-4 shadow-2xs group">
+  <div class="block bg-card border border-border/80 rounded-xl p-3 shadow-2xs group">
     <NuxtLink :to="`/admin/orders/${order.id}`" class="block">
       <div class="flex justify-between items-start mb-2">
         <span class="font-mono text-xs font-bold text-foreground tracking-tighter">{{ order.orderNumber }}</span>

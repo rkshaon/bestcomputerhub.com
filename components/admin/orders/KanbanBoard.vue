@@ -20,8 +20,8 @@ const columns = computed(() => {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-    <div v-for="col in columns" :key="col.value" class="flex flex-col gap-3">
+  <div class="flex flex-nowrap overflow-x-auto pb-4 gap-4">
+    <div v-for="col in columns" :key="col.value" class="flex-shrink-0 w-[240px] flex flex-col gap-2">
       <div class="flex items-center justify-between py-2 border-b border-border/60">
         <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground">{{ col.label }}</h3>
         <span class="text-xs font-bold bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{{ col.orders.length }}</span>
