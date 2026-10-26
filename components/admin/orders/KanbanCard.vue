@@ -16,7 +16,13 @@ const isLoading = ref(false);
 const { toastError } = useToast();
 
 const filteredStatuses = computed(() => {
-  return props.statuses.filter(s => s.value === props.order.status || props.transitions.includes(s.value));
+  const currentStatusLower = props.order.status.toLowerCase();
+  const transitionsLower = props.transitions.map(t => t.toLowerCase());
+  
+  return props.statuses.filter(s => {
+    const statusValueLower = s.value.toLowerCase();
+    return statusValueLower === currentStatusLower || transitionsLower.includes(statusValueLower);
+  });
 });
 
 async function handleStatusChange(event: Event) {
