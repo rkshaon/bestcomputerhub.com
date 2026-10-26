@@ -80,18 +80,18 @@ const handleLogout = async () => {
           <div class="bg-card border rounded-[2.5rem] overflow-hidden p-3 sticky top-24 shadow-sm">
             <nav class="space-y-1">
               <NuxtLink 
-                to="/my-account/"
-                exact-active-class="bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all group text-muted-foreground hover:bg-accent hover:text-foreground"
-              >
-                <User class="w-4 h-4" /> Profile Settings <ChevronRight class="w-4 h-4 ml-auto opacity-40" />
-              </NuxtLink>
-              <NuxtLink 
                 to="/my-account/orders/"
                 active-class="bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                 class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all group text-muted-foreground hover:bg-accent hover:text-foreground"
               >
                 <Package class="w-4 h-4" /> Order History <ChevronRight class="w-4 h-4 ml-auto opacity-40" />
+              </NuxtLink>
+              <NuxtLink 
+                to="/my-account/"
+                exact-active-class="bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all group text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                <User class="w-4 h-4" /> Profile Settings <ChevronRight class="w-4 h-4 ml-auto opacity-40" />
               </NuxtLink>
               <NuxtLink 
                 to="/my-account/security/"
