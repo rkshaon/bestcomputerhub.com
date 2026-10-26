@@ -5,6 +5,8 @@ import { Package } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import { useToast } from '@/composables/useToast';
 
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
+
 const props = defineProps<{ 
   order: Order, 
   statuses: OrderStatusOption[], 
@@ -14,6 +16,8 @@ const props = defineProps<{
 const emit = defineEmits(['status-updated']);
 const isLoading = ref(false);
 const { toastError } = useToast();
+const { canEditInModule } = useAdminPermissions();
+const canEdit = computed(() => canEditInModule('orders'));
 
 const filteredStatuses = computed(() => {
   const currentStatusLower = props.order.status.toLowerCase();
@@ -26,6 +30,7 @@ const filteredStatuses = computed(() => {
 });
 
 async function handleStatusChange(event: Event) {
+  if (!canEdit.value) return;
   const newStatus = (event.target as HTMLSelectElement).value;
   if (newStatus === props.order.status) return;
   isLoading.value = true;
@@ -40,7 +45,7 @@ async function handleStatusChange(event: Event) {
 }
 
 function handleDragStart(event: DragEvent) {
-  if (isLoading.value) {
+  if (!canEdit.value || isLoading.value) {
     event.preventDefault();
     return;
   }
@@ -52,7 +57,7 @@ function handleDragStart(event: DragEvent) {
 <template>
   <div 
     class="block bg-card border border-border/80 rounded-xl p-3 shadow-2xs group"
-    draggable="true"
+    :draggable="canEdit"
     @dragstart="handleDragStart"
   >
     <NuxtLink :to="`/admin/orders/${order.id}`" class="block">
@@ -71,9 +76,9 @@ function handleDragStart(event: DragEvent) {
     <div class="mt-4 pt-4 border-t border-border/60">
       <select 
         :value="order.status.toUpperCase()" 
-        :disabled="isLoading"
+        :disabled="!canEdit || isLoading"
         @change="handleStatusChange"
-        class="w-full h-8 text-xs font-bold uppercase tracking-widest bg-muted/50 border border-border rounded-lg outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
+        class="w-full h-8 text-xs font-bold uppercase tracking-widest bg-muted/50 border border-border rounded-lg outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
       >
         <option v-for="s in filteredStatuses" :key="s.value" :value="s.value">{{ s.label }}</option>
       </select>

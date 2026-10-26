@@ -3,6 +3,7 @@ import type { Order, OrderStatusOption } from '@/types/order';
 import KanbanCard from './KanbanCard.vue';
 import { computed, ref } from 'vue';
 import { useToast } from '@/composables/useToast';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 
 const props = defineProps<{ 
   orders: Order[], 
@@ -12,9 +13,12 @@ const props = defineProps<{
 }>();
 const emit = defineEmits(['status-updated']);
 const { toastError } = useToast();
+const { canEditInModule } = useAdminPermissions();
+const canEdit = computed(() => canEditInModule('orders'));
 const draggingOverColumn = ref<string | null>(null);
 
 function handleDragOver(statusValue: string) {
+  if (!canEdit.value) return;
   draggingOverColumn.value = statusValue;
 }
 
@@ -24,6 +28,10 @@ function handleDragLeave() {
 
 async function handleDrop(event: DragEvent, targetStatus: string) {
   draggingOverColumn.value = null;
+  if (!canEdit.value) {
+    toastError('Unauthorized to update order status');
+    return;
+  }
   const orderId = event.dataTransfer?.getData('text/plain');
   if (!orderId) return;
 

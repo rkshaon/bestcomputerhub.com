@@ -47,7 +47,7 @@ const updateStatus = async (status: string) => {
 </script>
 
 <template>
-  <div v-if="permissions.hasPermission('orders.change_order')" class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
+  <div v-if="permissions.canEditInModule('orders')" class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
     <h3 class="text-lg font-bold">Admin Actions</h3>
     
     <div class="flex flex-col gap-2">
