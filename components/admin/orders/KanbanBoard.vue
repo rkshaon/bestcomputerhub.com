@@ -14,7 +14,7 @@ const emit = defineEmits(['status-updated']);
 const columns = computed(() => {
   return props.statuses.map(status => ({
     ...status,
-    orders: props.orders.filter(o => o.status === status.value)
+    orders: props.orders.filter(o => o.status === status.value.toLowerCase())
   }));
 });
 </script>
