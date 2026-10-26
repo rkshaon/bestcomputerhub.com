@@ -57,7 +57,7 @@ async function handleStatusChange(event: Event) {
     </NuxtLink>
     <div class="mt-4 pt-4 border-t border-border/60">
       <select 
-        :value="order.status" 
+        :value="order.status.toUpperCase()" 
         :disabled="isLoading"
         @change="handleStatusChange"
         class="w-full h-8 text-xs font-bold uppercase tracking-widest bg-muted/50 border border-border rounded-lg outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
