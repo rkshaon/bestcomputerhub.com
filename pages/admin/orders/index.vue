@@ -239,7 +239,7 @@ const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.valu
       v-else 
       :orders="orders" 
       :statuses="statuses" 
-      :transitions="transitions"
+      :transitions="transitions || {}"
       :update-status="salesService.updateStatus"
       @status-updated="fetchOrders"
     />

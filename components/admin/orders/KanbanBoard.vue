@@ -17,6 +17,12 @@ const columns = computed(() => {
     orders: props.orders.filter(o => o.status === status.value.toLowerCase())
   }));
 });
+
+const getTransitionsForOrder = (status: string): string[] => {
+  if (!props.transitions) return [];
+  const key = Object.keys(props.transitions).find(k => k.toLowerCase() === status.toLowerCase());
+  return (key ? props.transitions[key] : []) || [];
+};
 </script>
 
 <template>
@@ -32,7 +38,7 @@ const columns = computed(() => {
           :key="order.id" 
           :order="order" 
           :statuses="statuses" 
-          :transitions="transitions[order.status] || []"
+          :transitions="getTransitionsForOrder(order.status)"
           :update-status="updateStatus"
           @status-updated="emit('status-updated')"
         />
