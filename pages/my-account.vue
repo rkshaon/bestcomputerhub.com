@@ -41,10 +41,7 @@ const activeTab = ref('orders');
 const tabs = [
   { id: 'orders', label: 'Order History', icon: Package },
   { id: 'profile', label: 'Profile Settings', icon: User },
-  { id: 'addresses', label: 'Saved Addresses', icon: MapPin },
-  { id: 'payment', label: 'Payment Methods', icon: CreditCard },
   { id: 'security', label: 'Security', icon: ShieldCheck },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
 ];
 
 const orderService = useOrderService();
@@ -216,28 +213,28 @@ const handleLogout = async () => {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="space-y-2">
                   <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Full Name</label>
-                  <input type="text" :value="authStore.user?.name" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 font-medium" />
+                  <input type="text" :value="authStore.user?.name" disabled class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none font-medium" />
                 </div>
                 <div class="space-y-2">
                   <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address</label>
-                  <input type="email" :value="authStore.user?.email" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 font-medium" />
+                  <input type="email" :value="authStore.user?.email" disabled class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none font-medium" />
                 </div>
                 <div class="space-y-2">
                   <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Phone Number</label>
-                  <input type="tel" value="+1 (555) 000-0000" class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 font-medium" />
+                  <input type="tel" :value="authStore.user?.phone || 'Not provided'" disabled class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none font-medium" />
                 </div>
                 <div class="space-y-2">
-                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company</label>
-                  <input type="text" value="Enterprise Systems Inc." class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none focus:ring-2 focus:ring-primary/20 font-medium" />
+                  <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Registration Date</label>
+                  <input type="text" :value="authStore.user?.joinedAt ? new Date(authStore.user.joinedAt).toLocaleDateString() : 'N/A'" disabled class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none font-medium" />
                 </div>
               </div>
 
               <div class="pt-6 border-t flex flex-col md:flex-row items-center justify-between gap-6">
                 <div class="flex items-center gap-3 text-muted-foreground">
                   <ShieldCheck class="w-5 h-5 text-primary" />
-                  <p class="text-xs font-medium">Your data is secured by enterprise-grade encryption.</p>
+                  <p class="text-xs font-medium">Profile editing is currently unavailable.</p>
                 </div>
-                <UiButton class="rounded-full px-8 h-12 font-bold shadow-lg shadow-primary/20">
+                <UiButton class="rounded-full px-8 h-12 font-bold" disabled>
                   Save Changes
                 </UiButton>
               </div>
@@ -253,17 +250,6 @@ const handleLogout = async () => {
             </div>
           </div>
 
-          <!-- Other tabs placeholders -->
-          <div v-if="['addresses', 'payment', 'notifications'].includes(activeTab)" class="h-96 flex flex-col items-center justify-center bg-card border border-dashed rounded-[2.5rem] text-center p-12">
-            <div class="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mb-6">
-              <component :is="tabs.find(t => t.id === activeTab)?.icon" class="w-10 h-10 text-muted-foreground opacity-40" />
-            </div>
-            <h3 class="text-xl font-bold mb-2">{{ tabs.find(t => t.id === activeTab)?.label }}</h3>
-            <p class="text-muted-foreground text-sm max-w-xs mx-auto">This section is currently being updated to enhance your enterprise experience. Please check back shortly.</p>
-            <UiButton variant="outline" class="rounded-full mt-8 gap-2 font-bold" @click="activeTab = 'orders'">
-               Back to Orders <ArrowRight class="w-4 h-4" />
-            </UiButton>
-          </div>
 
         </main>
       </div>
