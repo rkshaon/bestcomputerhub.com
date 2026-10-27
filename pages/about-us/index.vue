@@ -21,16 +21,16 @@ onMounted(async () => {
 
 <template>
   <div class="container mx-auto px-4 py-12 space-y-8">
-    <h1 class="text-3xl font-display font-bold">About BCHL (Best Computer Hub Ltd.)</h1>
+    <h1 class="text-3xl font-display font-bold">About BCHL (Best Computer Hub)</h1>
     
     <section>
-      <h2 class="text-2xl font-display font-bold mb-2">Trade License (Best Computer Hub Ltd)</h2>
+      <h2 class="text-2xl font-display font-bold mb-2">Trade License (Best Computer Hub)</h2>
       <p>Trade License Number: <strong>TRAD/DSCC/034174/2023</strong></p>
     </section>
 
     <section>
       <h2 class="text-2xl font-display font-bold mb-4">Our Services</h2>
-      <p class="mb-4">Best Computer Hub Ltd is a premier e-commerce retailer providing professional hardware and cutting-edge computing components in Bangladesh. We offer a comprehensive range of products including:</p>
+      <p class="mb-4">Best Computer Hub is a premier e-commerce retailer providing professional hardware and cutting-edge computing components in Bangladesh. We offer a comprehensive range of products including:</p>
       <ul class="list-disc pl-6 mb-4 space-y-1">
         <li>Desktop PCs</li>
         <li>Laptops</li>
@@ -73,7 +73,7 @@ onMounted(async () => {
 
     <section>
       <h2 class="text-2xl font-display font-bold mb-4">Customer Satisfaction</h2>
-      <p class="mb-4">At Best Computer Hub Ltd, customer satisfaction is our top priority. We listen closely to our customers' needs to provide the right products and solutions.</p>
+      <p class="mb-4">At Best Computer Hub, customer satisfaction is our top priority. We listen closely to our customers' needs to provide the right products and solutions.</p>
       <p class="mb-4">We believe in building long-term relationships through exceptional after-sales service and support. Our goal is to make every interaction seamless, professional, and reliable.</p>
       <p>Our commitment to our customers extends beyond the initial purchase. We are here to support you at every step, ensuring you receive the best value and support for your technology investment.</p>
     </section>
