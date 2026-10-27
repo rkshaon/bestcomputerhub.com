@@ -226,14 +226,6 @@ const hasChildren = (cat: Category): boolean => {
           <User class="w-4 h-4 text-primary" />
           <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
         </NuxtLink>
-        <NuxtLink 
-          to="/my-account/" 
-          class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
-          @click="uiStore.closeMobileMenu()"
-        >
-          <PackageSearch class="w-4 h-4 text-primary" />
-          <span>Track Your Order</span>
-        </NuxtLink>
         <a 
           v-if="false"
           href="https://www.google.com/maps/place/G.M+Plaza/@23.7388697,90.386565,17z/data=!3m1!5s0x3755b8c81091d773:0x601a730b2bf4e399!4m16!1m9!3m8!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!2sG.M+Plaza!8m2!3d23.7388697!4d90.386565!9m1!1b1!16s%2Fg%2F11c2p4g0df!3m5!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!8m2!3d23.7388697!4d90.386565!16s%2Fg%2F11c2p4g0df?hl=en-US&entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D" 
@@ -245,12 +237,6 @@ const hasChildren = (cat: Category): boolean => {
           <MapPin class="w-4 h-4 text-primary" />
           <span>Store Location</span>
         </a>
-        <div 
-          class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 cursor-default"
-        >
-          <Cpu class="w-4 h-4 text-primary" />
-          <span>PC Builder</span>
-        </div>
         <button 
           v-if="false"
           @click="handleCompareClick(); uiStore.closeMobileMenu()" 
