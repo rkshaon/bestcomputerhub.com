@@ -85,6 +85,8 @@ export default defineNuxtConfig({
     public: {
       appUrl: '',
       apiBase: '',
+      // Google Tag Manager container ID (NUXT_PUBLIC_GTM_ID). Empty disables tracking.
+      gtmId: '',
       appVersion,
       buildTime
     }

@@ -3,6 +3,7 @@
 import { ref, computed } from 'vue';
 import { User, Lock, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
+import { useAnalytics } from '@/composables/useAnalytics';
 import { cn } from '@/utils';
 
 useSeoMeta({
@@ -37,6 +38,7 @@ const handleLogin = async () => {
 
   try {
     await authStore.login({ credential: credential.value.trim(), password: password.value });
+    useAnalytics().trackLogin('password');
     toastSuccess('Log in successful. Secure session established.');
     navigateTo(redirectTarget.value);
   } catch (err: any) {

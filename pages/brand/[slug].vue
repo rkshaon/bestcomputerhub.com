@@ -25,6 +25,7 @@ import { useCategoryService } from '@/composables/useCategoryService';
 import { useAuthStore } from '@/stores/auth';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
+import { useAnalytics } from '@/composables/useAnalytics';
 import { cn, decodeHtmlEntities } from '@/utils';
 import type { Product, Brand, Category } from '@/types';
 import CommerceProductCard from '@/components/commerce/ProductCard.vue';
@@ -233,6 +234,10 @@ const breadcrumbs = computed(() => {
 // State for Products
 const products = ref<Product[]>([]);
 const isLoading = ref(true);
+
+const { trackViewItemList } = useAnalytics();
+const listId = computed(() => `brand:${brandSlug.value}`);
+watch(products, (list) => trackViewItemList(listId.value, brandTitle.value, list), { immediate: true });
 const isError = ref(false);
 const errorMessage = ref('');
 const currentPage = ref(1);
@@ -668,10 +673,13 @@ onMounted(() => {
                 viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
               )"
             >
-              <CommerceProductCard 
-                v-for="product in products" 
-                :key="product.id" 
-                :product="product" 
+              <CommerceProductCard
+                v-for="(product, index) in products"
+                :key="product.id"
+                :product="product"
+                :list-id="listId"
+                :list-name="brandTitle"
+                :list-index="index"
               />
             </div>
 

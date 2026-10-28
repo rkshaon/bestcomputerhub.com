@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useProductService } from '@/composables/useProductService';
 import { useCategoryService } from '@/composables/useCategoryService';
 import { useToast } from '@/composables/useToast';
+import { useAnalytics } from '@/composables/useAnalytics';
 import type { Category, Product } from '@/types';
 import HeaderMegaMenu from '@/components/layout/HeaderMegaMenu.vue';
 import HeaderSearchOverlay from '@/components/layout/HeaderSearchOverlay.vue';
@@ -34,10 +35,9 @@ const isAuthRoute = computed(() => {
 // Search State
 const searchQuery = ref('');
 
+// HeaderSearchOverlay navigates to the results page; the header only records the search.
 const handleSearchSubmit = () => {
-  if (searchQuery.value.trim()) {
-    navigateTo(`/products?q=${encodeURIComponent(searchQuery.value.trim())}`);
-  }
+  useAnalytics().trackSearch(searchQuery.value);
 };
 
 const handleCompareClick = () => {

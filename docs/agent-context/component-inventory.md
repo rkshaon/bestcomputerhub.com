@@ -395,21 +395,8 @@ Components are classified using four standard metadata properties:
 
 ---
 
-### `<CookieBanner>`
-- **Exact File Location**: `/components/layout/CookieBanner.vue`
-- **Component Type**: Layout / Feature component
-- **Scope**: Storefront
-- **Purpose**: GDPR / Privacy cookie consent banner dialog.
-- **Routes/Pages Used**: Storefront default layout (`/layouts/default.vue`).
-- **Main Responsibilities**: Display privacy choices, persist consent selection ("Accept All" / "Essential Only") in localStorage.
-- **What It Explicitly Does Not Own**: Server-side tracking logs.
-- **State Owned**: `isVisible` consent state.
-- **Calls API**: No
-- **Related Composables/Services**: LocalStorage client state.
-- **Responsive Responsibility**: Fixed bottom banner scaling on narrow mobile screens.
-- **Reusability Level**: Medium
-- **Important Behavior to Preserve**: LocalStorage consent key checks before rendering.
-- **Known Architectural Risks**: None.
+### `<CookieBanner>` (not implemented)
+- **Status**: No cookie consent banner exists in the codebase (`/components/layout/CookieBanner.vue` is absent). Analytics (Google Tag Manager / GA4) runs without a consent prompt by business decision, as the storefront targets Bangladesh. If EU/UK traffic becomes relevant, add a banner wired to Google Consent Mode v2 before GTM loads (`/plugins/tag-manager.ts`).
 
 ---
 
@@ -520,6 +507,7 @@ Components are classified using four standard metadata properties:
   - Render brand name, formatted title with `decodeHtmlEntities`, rating badge, regular price and sale price comparison via `formatCurrency`.
   - Render stock availability badge.
   - Provide "Add to Cart" quick action button.
+  - Optional analytics list context (`listId`, `listName`, `listIndex` props): when `listId` is set, clicking the product link sends GA4 `select_item` via `useAnalytics`.
 - **What It Explicitly Does Not Own**: Global cart persistence logic (delegates to `useCartStore`).
 - **State Owned**: Active image index on hover, adding-to-cart spinner state.
 - **Calls API**: No direct API call (delegates to stores).

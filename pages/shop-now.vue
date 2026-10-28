@@ -12,10 +12,12 @@ import {
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useProductService } from '@/composables/useProductService';
+import { useAnalytics } from '@/composables/useAnalytics';
 import { cn, decodeHtmlEntities } from '@/utils';
 import type { Product } from '@/types';
 
 const productService = useProductService();
+const { trackViewItemList } = useAnalytics();
 const route = useRoute();
 const router = useRouter();
 
@@ -104,6 +106,18 @@ const fetchProducts = async () => {
 };
 
 const products = computed(() => loadedProducts.value);
+
+const LIST_ID = 'shop';
+watch(loadedProducts, (list) => trackViewItemList(LIST_ID, dynamicTitle.value, list), { immediate: true });
+
+// The header search navigates here with ?q=; keep the filter in sync when already on this page.
+watch(
+  () => route.query.q,
+  (q) => {
+    const term = typeof q === 'string' ? q : '';
+    if (term !== filters.value.query) filters.value.query = term;
+  }
+);
 
 const allCategories = computed(() => productService.getCategories().filter(c => !c.parentCategoryId));
 const allBrands = Array.from(new Set(productService.getProducts().map(p => typeof p.brand === 'object' && p.brand !== null ? (p.brand.name || '') : String(p.brand || '')))).filter(Boolean);
@@ -268,10 +282,13 @@ const activeFiltersCount = computed(() => {
           'grid gap-8',
           viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'grid-cols-1'
         )">
-          <CommerceProductCard 
-            v-for="product in products" 
-            :key="product.id" 
-            :product="product" 
+          <CommerceProductCard
+            v-for="(product, index) in products"
+            :key="product.id"
+            :product="product"
+            :list-id="LIST_ID"
+            :list-name="dynamicTitle"
+            :list-index="index"
           />
         </div>
 

@@ -11,6 +11,7 @@ import { useBrandService } from '@/composables/useBrandService';
 import { useAuthStore } from '@/stores/auth';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useToast } from '@/composables/useToast';
+import { useAnalytics } from '@/composables/useAnalytics';
 import { cn } from '@/utils';
 import type { Category, Product, Brand, CategoryPathItem } from '@/types';
 import UiPagination from '@/components/ui/UiPagination.vue';
@@ -974,6 +975,10 @@ const handlePageChange = (newPage: number) => {
 
 const products = computed(() => loadedProducts.value);
 
+const { trackViewItemList } = useAnalytics();
+const listId = computed(() => `category:${categorySlug.value}`);
+watch(loadedProducts, (list) => trackViewItemList(listId.value, pageTitle.value, list), { immediate: true });
+
 // Reset filters helper
 const resetFilters = () => {
   filters.brand = '';
@@ -1300,11 +1305,14 @@ const resetFilters = () => {
 
           <div v-else-if="products.length > 0">
             <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              <CommerceProductCard 
-                v-for="product in products" 
-                :key="product.id" 
+              <CommerceProductCard
+                v-for="(product, index) in products"
+                :key="product.id"
                 :product="product"
-                :show-description="true" 
+                :show-description="true"
+                :list-id="listId"
+                :list-name="pageTitle"
+                :list-index="index"
               />
             </div>
 

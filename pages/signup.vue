@@ -3,6 +3,7 @@
 import { ref } from 'vue';
 import { User, Mail, Lock, Phone, ArrowRight, ShieldCheck, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
+import { useAnalytics } from '@/composables/useAnalytics';
 
 useSeoMeta({
   title: 'Create Account',
@@ -57,6 +58,7 @@ const handleSignUp = async () => {
       phone: phone.value
     });
     isSuccess.value = true;
+    useAnalytics().trackSignUp('email');
     toastSuccess('Enterprise credentials registered successfully.');
     
     setTimeout(async () => {

@@ -414,6 +414,18 @@ The repository maintains a dedicated component inventory document at `/docs/agen
 
 ---
 
+## 16a. Analytics (Google Tag Manager & GA4)
+
+* `/plugins/tag-manager.ts` loads Google Tag Manager only when `NUXT_PUBLIC_GTM_ID` (`runtimeConfig.public.gtmId`) is a valid `GTM-…` ID, and sends a `page_view` for the landing page and every client-side navigation.
+* GA4 is configured inside the GTM container (`/docs/analytics/gtm-container.json`), never in code; this prevents double-counting.
+* Pages, components and stores send GA4 events only through `useAnalytics()`; never push to `window.dataLayer` directly.
+* `/admin/*` routes are never tracked. No personal data (names, emails, phones, addresses) is sent.
+* Event `value` fields come only from backend totals; the frontend never computes cart or order totals for analytics.
+
+Full setup and event reference: `/docs/analytics/google-tag-manager.md`.
+
+---
+
 ## 16. Frontend Utility & Helper Inventory Guidelines
 
 The repository maintains a dedicated inventory of utilities, helpers, composables, and service boundaries at `/docs/agent-context/utility-inventory.md`.

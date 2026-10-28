@@ -130,7 +130,7 @@ const handleInputFocus = () => {
 
 const handleSearchSubmit = () => {
   if (searchQueryModel.value.trim()) {
-    navigateTo(`/products?q=${encodeURIComponent(searchQueryModel.value.trim())}`);
+    navigateTo({ path: '/shop-now/', query: { q: searchQueryModel.value.trim() } });
     closeDropdown();
     emit('submit');
   }

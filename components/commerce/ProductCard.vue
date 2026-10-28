@@ -4,18 +4,31 @@ import { Star, ShoppingCart, Package } from 'lucide-vue-next';
 import type { Product } from '@/types';
 import { formatCurrency, decodeHtmlEntities } from '@/utils';
 import { useCartStore } from '@/stores/cart';
+import { useAnalytics } from '@/composables/useAnalytics';
 
 const props = withDefaults(
   defineProps<{
     product: Product;
     showDescription?: boolean;
+    /** Analytics list context; when set, opening the product sends `select_item`. */
+    listId?: string;
+    listName?: string;
+    listIndex?: number;
   }>(),
   {
-    showDescription: false
+    showDescription: false,
+    listId: '',
+    listName: '',
+    listIndex: undefined
   }
 );
 
 const cartStore = useCartStore();
+const { trackSelectItem } = useAnalytics();
+
+const handleSelect = () => {
+  if (props.listId) trackSelectItem(props.listId, props.listName || props.listId, props.product, props.listIndex);
+};
 </script>
 
 <template>
@@ -51,7 +64,7 @@ const cartStore = useCartStore();
         </div>
       </div>
 
-      <NuxtLink :to="`/product/${product.slug}/`" class="block group/link">
+      <NuxtLink :to="`/product/${product.slug}/`" class="block group/link" @click="handleSelect">
         <h3 class="font-bold text-xs sm:text-sm line-clamp-2 min-h-[32px] sm:min-h-[36px] group-hover/link:text-primary transition-colors mb-2 sm:mb-3 leading-snug">
           {{ decodeHtmlEntities(product.name) }}
         </h3>

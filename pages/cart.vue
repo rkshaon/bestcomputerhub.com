@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ShoppingBag, ArrowRight, Trash2, Plus, Minus, ArrowLeft, ShieldCheck, Truck } from 'lucide-vue-next';
 import { useCartStore } from '@/stores/cart';
+import { useAnalytics } from '@/composables/useAnalytics';
 import { formatCurrency, decodeHtmlEntities } from '@/utils';
 
 useSeoMeta({
@@ -11,6 +12,20 @@ useSeoMeta({
 
 const cartStore = useCartStore();
 const productService = useProductService();
+
+// Sent once per visit, as soon as the (possibly still loading) cart has items.
+let hasTrackedViewCart = false;
+onMounted(() => {
+  watch(
+    () => cartStore.items,
+    (items) => {
+      if (hasTrackedViewCart || items.length === 0) return;
+      hasTrackedViewCart = true;
+      useAnalytics().trackViewCart(items);
+    },
+    { immediate: true }
+  );
+});
 
 const updateQty = (id: string, delta: number) => {
   const item = cartStore.items.find(i => i.product.id === id);
