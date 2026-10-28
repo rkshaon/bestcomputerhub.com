@@ -4,6 +4,7 @@ import {
   Wrench, 
   Sliders, 
   Settings, 
+  AlertCircle,
   Headphones, 
   Sparkles 
 } from 'lucide-vue-next';
@@ -37,6 +38,12 @@ const quickLinks: QuickLinkItem[] = [
     icon: Settings,
   },
   {
+    id: 'raise-complain',
+    title: 'Raise a Complain',
+    description: 'Report issues & get resolution support',
+    icon: AlertCircle,
+  },
+  {
     id: 'help-center',
     title: 'Help Center',
     description: 'Customer service & technical support',
@@ -55,7 +62,7 @@ const quickLinks: QuickLinkItem[] = [
 
 <template>
   <section class="container mx-auto px-4" aria-label="Quick Access Navigation">
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
       <div
         v-for="item in quickLinks"
         :key="item.id"
