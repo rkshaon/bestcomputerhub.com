@@ -24,6 +24,13 @@ const COLLECTION_ROUTES: Record<keyof SitemapUrlsResponse, string> = {
   blogs: '/blog/'
 };
 
+const COLLECTION_PRIORITIES: Record<keyof SitemapUrlsResponse, 0 | 0.8 | 0.7 | 0.6 | 1 | 0.1 | 0.2 | 0.3 | 0.4 | 0.5 | 0.9 | undefined> = {
+  products: 0.8,
+  categories: 0.8,
+  brands: 0.7,
+  blogs: 0.6
+};
+
 // A single path segment: letters (with combining marks, e.g. Bengali vowel
 // signs), digits, `-`, `_`, or an already percent-encoded byte (legacy
 // WordPress slugs such as `27%e2%80%b3`).
@@ -80,8 +87,10 @@ const buildEntries = (data: SitemapUrlsResponse): SitemapUrlInput[] => {
       seen.add(loc);
 
       const entryLastmod = toLastmod(lastmod);
+      const priority = COLLECTION_PRIORITIES[collection as keyof SitemapUrlsResponse];
       entries.push({
         loc,
+        priority,
         // `loc` is already percent-encoded; stop the module encoding it again.
         _encoded: true,
         ...(entryLastmod ? { lastmod: entryLastmod } : {})

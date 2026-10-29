@@ -67,15 +67,15 @@ export default defineNuxtConfig({
     excludeAppSources: true,
     // Public, indexable static pages with real content.
     urls: [
-      '/',
-      '/shop-now/',
-      '/blog/',
-      '/about-us/',
-      '/privacy-policy/',
-      '/return-refund-after-sales-policy/',
-      '/warranty-policy/',
-      '/disclaimer/',
-      '/digital-commerce-guidelines/'
+      { loc: '/', priority: 1.0 },
+      { loc: '/shop-now/', priority: 0.9 },
+      { loc: '/blog/', priority: 0.7 },
+      { loc: '/about-us/', priority: 0.5 },
+      { loc: '/privacy-policy/', priority: 0.3 },
+      { loc: '/return-refund-after-sales-policy/', priority: 0.4 },
+      { loc: '/warranty-policy/', priority: 0.4 },
+      { loc: '/disclaimer/', priority: 0.3 },
+      { loc: '/digital-commerce-guidelines/', priority: 0.3 }
     ],
     // Products, categories, brands and blog posts from the backend,
     // fetched at request time (see server/api/__sitemap__/urls.ts).
