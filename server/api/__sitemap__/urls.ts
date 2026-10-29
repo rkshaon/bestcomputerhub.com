@@ -31,6 +31,13 @@ const COLLECTION_PRIORITIES: Record<keyof SitemapUrlsResponse, 0 | 0.8 | 0.7 | 0
   blogs: 0.6
 };
 
+const COLLECTION_CHANGEFREQ: Record<keyof SitemapUrlsResponse, 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never' | undefined> = {
+  products: 'weekly',
+  categories: 'weekly',
+  brands: 'weekly',
+  blogs: 'monthly'
+};
+
 // A single path segment: letters (with combining marks, e.g. Bengali vowel
 // signs), digits, `-`, `_`, or an already percent-encoded byte (legacy
 // WordPress slugs such as `27%e2%80%b3`).
@@ -88,9 +95,11 @@ const buildEntries = (data: SitemapUrlsResponse): SitemapUrlInput[] => {
 
       const entryLastmod = toLastmod(lastmod);
       const priority = COLLECTION_PRIORITIES[collection as keyof SitemapUrlsResponse];
+      const changefreq = COLLECTION_CHANGEFREQ[collection as keyof SitemapUrlsResponse];
       entries.push({
         loc,
         priority,
+        changefreq,
         // `loc` is already percent-encoded; stop the module encoding it again.
         _encoded: true,
         ...(entryLastmod ? { lastmod: entryLastmod } : {})
