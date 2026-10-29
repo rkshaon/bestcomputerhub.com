@@ -49,8 +49,40 @@ export default defineNuxtConfig({
   modules: [
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
-    '@vueuse/nuxt'
+    '@vueuse/nuxt',
+    '@nuxtjs/sitemap'
   ],
+  // Canonical origin for sitemap <loc> values. Override per deployment at
+  // runtime with NUXT_PUBLIC_SITE_URL (no rebuild needed).
+  site: {
+    url: 'https://best-computers.rkshaon.info',
+    trailingSlash: true
+  },
+  sitemap: {
+    // Allowlist only: page files are not auto-listed, so placeholder,
+    // private and mock-data routes never leak into the sitemap.
+    excludeAppSources: true,
+    // Public, indexable static pages with real content.
+    urls: [
+      '/',
+      '/shop-now/',
+      '/blog/',
+      '/about-us/',
+      '/privacy-policy/',
+      '/return-refund-after-sales-policy/',
+      '/warranty-policy/',
+      '/disclaimer/',
+      '/digital-commerce-guidelines/'
+    ],
+    // Products, categories, brands and blog posts from the backend,
+    // fetched at request time (see server/api/__sitemap__/urls.ts).
+    sources: [
+      ['/api/__sitemap__/urls', { timeout: 30000 }]
+    ],
+    // Rendered sitemap is cached server-side for 10 minutes, then
+    // revalidated, so catalog changes appear without a rebuild.
+    cacheMaxAgeSeconds: 600
+  },
   css: [
     'assets/css/main.css'
   ],

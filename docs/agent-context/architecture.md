@@ -219,6 +219,8 @@ Domain-specific API endpoints and business operations should remain in their res
 
 Do not duplicate authentication or token-refresh infrastructure across domain services.
 
+**Nitro server routes (`/server/`)** run outside the Vue app, where `useApiClient` (toasts, client session, token refresh) is not available. A server route that reads a **public, unauthenticated** backend endpoint uses `$fetch` with `useRuntimeConfig().public.apiBase` directly. Example: `server/api/__sitemap__/urls.ts` (sitemap source). Never call authenticated endpoints from server routes this way.
+
 ---
 
 ## 7. Stores

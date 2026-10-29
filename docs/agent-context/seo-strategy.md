@@ -832,24 +832,32 @@ The production application utilizes a decoupled Sitemap and SEO architecture bet
 
 | Domain | Owner | Key Responsibilities |
 | :--- | :--- | :--- |
-| **Frontend / Nuxt** | Presentation & Rendering | • Public storefront routing and page rendering (`/product/{slug}/`, `/product-category/{slug}/`, `/blog/{slug}/`)<br>• `<title>` and Meta Descriptions<br>• Self-referencing and cross-page Canonical URLs (`<link rel="canonical">`)<br>• Open Graph (`og:*`) & Twitter Cards (`twitter:*`) metadata<br>• Entity-specific JSON-LD Structured Data (`Product`, `Offer`, `BreadcrumbList`, `Article`, `Organization`)<br>• Public `/robots.txt` hosting and sitemap reference<br>• Frontend-specific SEO rendering and Core Web Vitals optimization |
-| **Backend / Django** | Authority & Eligibility | • XML Sitemap Generation & Sitemap Index orchestration<br>• Entity-specific Sub-Sitemaps (`products`, `categories`, `blogs`, future `brands`/`pages`)<br>• Indexability & eligibility rules (active, published, non-deleted, indexed entities)<br>• Accurate entity timestamp derivation (`lastmod`)<br>• Canonical and `noindex` source data<br>• Centralized Public URL pattern configuration (`SITE_URL`, `PRODUCT_URL_PATTERN`, etc.) |
+| **Frontend / Nuxt** | Presentation, Rendering & Sitemap XML | • Public storefront routing and page rendering (`/product/{slug}/`, `/product-category/{slug}/`, `/blog/{slug}/`)<br>• `<title>` and Meta Descriptions<br>• Self-referencing and cross-page Canonical URLs (`<link rel="canonical">`)<br>• Open Graph (`og:*`) & Twitter Cards (`twitter:*`) metadata<br>• Entity-specific JSON-LD Structured Data (`Product`, `Offer`, `BreadcrumbList`, `Article`, `Organization`)<br>• Public `/robots.txt` hosting and sitemap reference<br>• **`/sitemap.xml` rendering** via `@nuxtjs/sitemap`, mapping backend slugs to storefront URL patterns<br>• Allowlist of indexable static pages<br>• Frontend-specific SEO rendering and Core Web Vitals optimization |
+| **Backend / Django** | Authority & Eligibility | • Indexability & eligibility rules (active, published, non-deleted, `noindex`)<br>• Accurate entity timestamp derivation (`lastmod`)<br>• Canonical and `noindex` source data<br>• Serving eligible slugs + `lastmod` through `GET /api/v1/seo/sitemap-urls/` |
 
 ---
 
-## 31a. Sitemap Structure & Sitemap Index
+## 31a. Sitemap Implementation (`@nuxtjs/sitemap`)
 
-The sitemap architecture employs a **Sitemap Index** pattern rather than a single monolithic XML sitemap file. This scales to hundreds of thousands of catalog items, avoids search engine file size/URL count limits (50k URLs / 50MB per sitemap), and isolates distinct catalog domains for targeted crawler indexing.
+Nuxt serves `/sitemap.xml` at runtime. There is no backend XML generator, no Celery task and no manual XML upload.
 
 ```text
-/sitemap.xml (Sitemap Index)
-    ├── /sitemap-products.xml   (Indexable products & lastmod)
-    ├── /sitemap-categories.xml (Active category hierarchy & lastmod)
-    ├── /sitemap-blogs.xml      (Published blog articles & lastmod)
-    └── [future sitemap types]  (e.g., /sitemap-brands.xml, /sitemap-pages.xml)
+GET /sitemap.xml  (Nuxt, @nuxtjs/sitemap)
+  ├── static allowlist        nuxt.config.ts → sitemap.urls
+  └── dynamic source          server/api/__sitemap__/urls.ts
+        └── $fetch {apiBase}/api/v1/seo/sitemap-urls/   (Django)
+              products   → /product/{slug}/
+              categories → /product-category/{slug}/
+              brands     → /brand/{slug}/
+              blogs      → /blog/{slug}/
 ```
 
-Do not design one giant unpartitioned sitemap as the primary architecture.
+* **Origin**: `site.url` in `nuxt.config.ts` (`https://best-computers.rkshaon.info`). Override per deployment at runtime with `NUXT_PUBLIC_SITE_URL` — no rebuild. `site.trailingSlash: true` keeps every `<loc>` slash-terminated.
+* **Static pages**: an explicit allowlist (`excludeAppSources: true`), so new page files never enter the sitemap by accident. Add a page only when it is public, has real (non-placeholder, non-mock) content and is intended for indexing.
+* **Dynamic entries**: the server source validates the payload, drops invalid slugs, keeps already percent-encoded legacy slugs byte-for-byte (`_encoded: true`), drops invalid `lastmod` values (the URL stays), and de-duplicates URLs. `lastmod` is written at second precision.
+* **Caching**: the rendered sitemap is cached server-side for `cacheMaxAgeSeconds` (600 s, stale-while-revalidate). Catalog changes appear within ~10 minutes without a rebuild. Do not prerender the sitemap or enable `zeroRuntime` — both freeze the catalog at build time.
+* **Failures**: if the backend fails or returns a malformed payload, the source serves the last successful result held in server memory; with no previous result, the sitemap contains the static pages only. Storefront pages are unaffected.
+* **Single sitemap**: one `/sitemap.xml` (≈10k URLs in 2026-10) is well inside the 50k URL / 50 MB limit. When the catalog approaches that limit, split it with the module's `sitemaps` option (served as `/sitemap_index.xml`, with `/sitemap.xml` redirecting).
 
 ---
 
@@ -879,21 +887,10 @@ Eligibility rules apply consistently across all entity types (products, categori
 
 ## 31c. Public URL Configuration & Centralization
 
-To prevent hardcoded frontend routes from being scattered across backend code, backend sitemap generation must centralize public URL generation through explicit, environment-aware configuration.
-
-### Conceptual Configuration Schema
-```python
-# Conceptual Centralized URL Patterns
-SITE_URL = "https://bestcomputerhub.com"
-PRODUCT_URL_PATTERN = "/product/{slug}/"
-CATEGORY_URL_PATTERN = "/product-category/{slug}/"
-BLOG_URL_PATTERN = "/blog/{slug}/"
-BRAND_URL_PATTERN = "/brand/{slug}/"
-PAGE_URL_PATTERN = "/{slug}/"
-```
+Sitemap URL patterns live in the frontend, in one place: `COLLECTION_ROUTES` in `server/api/__sitemap__/urls.ts`. The site origin is `site.url` in `nuxt.config.ts` (runtime override: `NUXT_PUBLIC_SITE_URL`).
 
 ### Multi-Storefront Architecture Protection
-Because the Django REST Framework backend may serve multiple storefront consumers or environments, backend code must not hardcode one storefront's domain or route structure into generic domain/model logic. Public URL resolution for sitemaps must operate through a configurable provider or settings layer that enforces the storefront's established URL conventions (including trailing slashes `/`).
+The Django REST Framework backend serves several storefronts, so it returns only slugs and timestamps — never a storefront domain or route structure. Each storefront maps those slugs to its own URL conventions (including trailing slashes `/`).
 
 ---
 
@@ -901,7 +898,7 @@ Because the Django REST Framework backend may serve multiple storefront consumer
 
 Keep sitemap generation and on-page frontend SEO strictly separated conceptually and architecturally:
 
-* **Sitemap answers**: *"What URLs should search engines know about?"* (Discovered via backend-generated XML indexes based on catalog eligibility and freshness).
+* **Sitemap answers**: *"What URLs should search engines know about?"* (Rendered by Nuxt from backend-supplied eligibility and freshness data).
 * **Frontend SEO answers**: *"What should search engines see when they visit that URL?"* (Rendered via Nuxt SSR with page metadata, canonical tags, Open Graph, and JSON-LD schemas).
 
 The backend provides the authoritative data and indexability status; the frontend delivers the rendered presentation, semantic HTML, and structured document metadata.
@@ -932,7 +929,7 @@ To protect crawl budget and prevent duplicate-content indexing, the following UR
 The public Nuxt frontend owns `/robots.txt` and is responsible for serving it at the site root.
 
 ### Standard Production Directive
-The frontend `robots.txt` must explicitly point crawlers to the backend-generated public sitemap index:
+The frontend `robots.txt` (`public/robots.txt`, static) must explicitly point crawlers to the public `/sitemap.xml` served by Nuxt:
 
 ```text
 User-agent: *
@@ -992,13 +989,9 @@ The roadmap for SEO and sitemap execution across Best Computer Hub consists of 5
 * Establish canonicalization and `noindex` rules.
 * Compile an inventory of legacy WordPress/WooCommerce URL structures.
 
-### Phase 2 — Backend Sitemap Implementation
-* Build backend Sitemap Service and generation commands/views.
-* Implement main `/sitemap.xml` Sitemap Index.
-* Implement `/sitemap-products.xml` with active product querysets and `lastmod`.
-* Implement `/sitemap-categories.xml` with active category hierarchy.
-* Implement `/sitemap-blogs.xml` with published blog posts.
-* Support future sitemap expansion (`/sitemap-brands.xml`, `/sitemap-pages.xml`) via modular sitemap providers.
+### Phase 2 — Sitemap Implementation (done 2026-10-29)
+* Backend: `GET /api/v1/seo/sitemap-urls/` returns eligible product, category, brand and blog slugs with `lastmod`.
+* Frontend: `@nuxtjs/sitemap` renders `/sitemap.xml` at runtime from that endpoint plus a static-page allowlist. See §31a.
 
 ### Phase 3 — Frontend SEO & Metadata Verification
 * Verify server-side rendering (SSR) of primary indexable content.

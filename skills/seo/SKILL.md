@@ -30,8 +30,8 @@ Examples:
 
 ## Core Separation of Responsibilities
 
-* **Frontend / Nuxt**: Owns page routing, SSR rendering, `<title>`, meta descriptions, canonical links, Open Graph/Twitter tags, JSON-LD structured data, and `/robots.txt`.
-* **Backend / Django**: Owns XML sitemap generation, `/sitemap.xml` index, sub-sitemaps (`products`, `categories`, `blogs`), eligibility/indexability evaluation, `lastmod` timestamps, and centralized public URL resolution (`SITE_URL`, `PRODUCT_URL_PATTERN`, etc.).
+* **Frontend / Nuxt**: Owns page routing, SSR rendering, `<title>`, meta descriptions, canonical links, Open Graph/Twitter tags, JSON-LD structured data, `/robots.txt`, and `/sitemap.xml` rendering (`@nuxtjs/sitemap`) including storefront URL patterns and the static-page allowlist.
+* **Backend / Django**: Owns eligibility/indexability evaluation and `lastmod` timestamps, exposed as slugs through `GET /api/v1/seo/sitemap-urls/`.
 
 > **Principle:** Frontend knows how a page is accessed. Backend knows which pages should be available to search engines.
 
@@ -51,11 +51,12 @@ Examples:
 
 ## Sitemap Coordination Workflow
 
-1. **Sitemap Index Structure**: Confirm sitemaps follow the index architecture (`/sitemap.xml` referencing `/sitemap-products.xml`, `/sitemap-categories.xml`, `/sitemap-blogs.xml`, etc.).
-2. **Eligibility Enforcement**: Confirm the backend filters out deleted, draft, unpublished, `noindex`, or non-canonical items from XML sitemaps.
-3. **URL Pattern Verification**: Ensure backend-generated sitemap URLs conform to the storefront URL patterns (including trailing slashes `/`).
-4. **Excluded Route Auditing**: Ensure administrative, search query, faceted filter combinations, and customer-private pages are strictly omitted from all sitemaps.
-5. **Robots Coordination**: Verify `/robots.txt` points to `Sitemap: https://bestcomputerhub.com/sitemap.xml`.
+1. **Implementation**: `/sitemap.xml` is rendered at runtime by `@nuxtjs/sitemap` (config in `nuxt.config.ts` → `site`, `sitemap`; dynamic source in `server/api/__sitemap__/urls.ts`). See `/docs/agent-context/seo-strategy.md` §31a. Never prerender it or enable `zeroRuntime`.
+2. **Eligibility Enforcement**: Confirm the backend filters out deleted, draft, unpublished, `noindex`, or non-canonical items from `/api/v1/seo/sitemap-urls/`. Do not re-implement eligibility in the frontend.
+3. **URL Pattern Verification**: Storefront URL patterns live in `COLLECTION_ROUTES` (`server/api/__sitemap__/urls.ts`); every `<loc>` must be absolute and end with `/`.
+4. **Static Pages**: New public pages are added to the `sitemap.urls` allowlist in `nuxt.config.ts` only when they are indexable and have real (non-placeholder, non-mock) content.
+5. **Excluded Route Auditing**: Ensure administrative, search query, faceted filter combinations, and customer-private pages are strictly omitted from all sitemaps.
+6. **Robots Coordination**: Verify `/robots.txt` points to `Sitemap: https://bestcomputerhub.com/sitemap.xml`.
 
 ## WordPress Migration & Redirect Workflow
 
