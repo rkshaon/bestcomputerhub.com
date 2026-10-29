@@ -852,7 +852,7 @@ GET /sitemap.xml  (Nuxt, @nuxtjs/sitemap)
               blogs      → /blog/{slug}/
 ```
 
-* **Origin**: `site.url` in `nuxt.config.ts` (`https://best-computers.rkshaon.info`). Override per deployment at runtime with `NUXT_PUBLIC_SITE_URL` — no rebuild. `site.trailingSlash: true` keeps every `<loc>` slash-terminated.
+* **Origin**: `site.url` in `nuxt.config.ts` (`https://best-computers.rkshaon.info`). Override per deployment at runtime with `NUXT_PUBLIC_SITE_URL` — no rebuild. `site.name` (`Best Computer Hub`, override: `NUXT_PUBLIC_SITE_NAME`) is the heading of the browser sitemap view (`/__sitemap__/style.xsl`); without it the heading reads `undefined`. `site.trailingSlash: true` keeps every `<loc>` slash-terminated.
 * **Static pages**: an explicit allowlist (`excludeAppSources: true`), so new page files never enter the sitemap by accident. Add a page only when it is public, has real (non-placeholder, non-mock) content and is intended for indexing.
 * **Dynamic entries**: the server source validates the payload, drops invalid slugs, keeps already percent-encoded legacy slugs byte-for-byte (`_encoded: true`), drops invalid `lastmod` values (the URL stays), and de-duplicates URLs. `lastmod` is written at second precision.
 * **Caching**: the rendered sitemap is cached server-side for `cacheMaxAgeSeconds` (600 s, stale-while-revalidate). Catalog changes appear within ~10 minutes without a rebuild. Do not prerender the sitemap or enable `zeroRuntime` — both freeze the catalog at build time.

@@ -52,10 +52,12 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@nuxtjs/sitemap'
   ],
-  // Canonical origin for sitemap <loc> values. Override per deployment at
-  // runtime with NUXT_PUBLIC_SITE_URL (no rebuild needed).
+  // Canonical origin for sitemap <loc> values and the sitemap viewer heading.
+  // Override per deployment at runtime with NUXT_PUBLIC_SITE_URL and
+  // NUXT_PUBLIC_SITE_NAME (no rebuild needed; empty values are ignored).
   site: {
     url: 'https://best-computers.rkshaon.info',
+    name: 'Best Computer Hub',
     trailingSlash: true
   },
   sitemap: {

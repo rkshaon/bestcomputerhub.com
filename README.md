@@ -299,6 +299,8 @@ NUXT_PUBLIC_APP_URL=http://localhost:3000
 NUXT_PUBLIC_API_BASE=http://localhost:8000
 ```
 
+Optional sitemap overrides (`@nuxtjs/sitemap`): `NUXT_PUBLIC_SITE_URL` sets the origin used in `/sitemap.xml` `<loc>` values, and `NUXT_PUBLIC_SITE_NAME` sets the sitemap viewer heading. When unset or empty, the `site` values in `nuxt.config.ts` apply.
+
 Production values must point to the real storefront and backend environments.
 
 Do not commit secrets to the repository.
