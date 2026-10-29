@@ -61,6 +61,7 @@ export default defineNuxtConfig({
     trailingSlash: true
   },
   sitemap: {
+    xsl: false,
     // Allowlist only: page files are not auto-listed, so placeholder,
     // private and mock-data routes never leak into the sitemap.
     excludeAppSources: true,
