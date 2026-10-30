@@ -49,8 +49,43 @@ export default defineNuxtConfig({
   modules: [
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
-    '@vueuse/nuxt'
+    '@vueuse/nuxt',
+    '@nuxtjs/sitemap'
   ],
+  // Canonical origin for sitemap <loc> values and the sitemap viewer heading.
+  // Override per deployment at runtime with NUXT_PUBLIC_SITE_URL and
+  // NUXT_PUBLIC_SITE_NAME (no rebuild needed; empty values are ignored).
+  site: {
+    url: 'https://best-computers.rkshaon.info',
+    name: 'Best Computer Hub',
+    trailingSlash: true
+  },
+  sitemap: {
+    xsl: false,
+    // Allowlist only: page files are not auto-listed, so placeholder,
+    // private and mock-data routes never leak into the sitemap.
+    excludeAppSources: true,
+    // Public, indexable static pages with real content.
+    urls: [
+      { loc: '/', priority: 1.0, changefreq: 'daily' },
+      { loc: '/shop-now/', priority: 0.9, changefreq: 'daily' },
+      { loc: '/blog/', priority: 0.7, changefreq: 'weekly' },
+      { loc: '/about-us/', priority: 0.5, changefreq: 'yearly' },
+      { loc: '/privacy-policy/', priority: 0.3, changefreq: 'yearly' },
+      { loc: '/return-refund-after-sales-policy/', priority: 0.4, changefreq: 'yearly' },
+      { loc: '/warranty-policy/', priority: 0.4, changefreq: 'yearly' },
+      { loc: '/disclaimer/', priority: 0.3, changefreq: 'yearly' },
+      { loc: '/digital-commerce-guidelines/', priority: 0.3, changefreq: 'yearly' }
+    ],
+    // Products, categories, brands and blog posts from the backend,
+    // fetched at request time (see server/api/__sitemap__/urls.ts).
+    sources: [
+      ['/api/__sitemap__/urls', { timeout: 30000 }]
+    ],
+    // Rendered sitemap is cached server-side for 10 minutes, then
+    // revalidated, so catalog changes appear without a rebuild.
+    cacheMaxAgeSeconds: 600
+  },
   css: [
     'assets/css/main.css'
   ],
@@ -85,6 +120,8 @@ export default defineNuxtConfig({
     public: {
       appUrl: '',
       apiBase: '',
+      // Google Tag Manager container ID (NUXT_PUBLIC_GTM_ID). Empty disables tracking.
+      gtmId: '',
       appVersion,
       buildTime
     }

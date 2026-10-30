@@ -45,12 +45,14 @@ import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import ProductImageGallery from '@/components/admin/ProductImageGallery.vue';
 import UiButton from '@/components/ui/Button.vue';
+import { useAnalytics } from '@/composables/useAnalytics';
 
 const route = useRoute();
 const productService = useProductService();
 const categoryService = useCategoryService();
 const cartStore = useCartStore();
 const uiStore = useUIStore();
+const { trackViewItem } = useAnalytics();
 
 const slug = computed(() => (route.params.slug as string) || '');
 
@@ -64,6 +66,15 @@ const { data: product, pending: isLoading, error, refresh } = await useAsyncData
   {
     watch: [slug]
   }
+);
+
+// One view_item per product shown (inline-edit refreshes keep the same id).
+watch(
+  () => product.value?.id,
+  (id) => {
+    if (id !== undefined && product.value) trackViewItem(product.value);
+  },
+  { immediate: true }
 );
 
 // Fetch product images for gallery: GET /api/v1/products/{id}/product-images/

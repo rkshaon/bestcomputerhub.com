@@ -146,6 +146,7 @@ jobs:
                   - PORT=3000
                   - HOST=0.0.0.0
                   - NUXT_PUBLIC_API_BASE=${{ secrets.PROD_NUXT_PUBLIC_API_BASE }}
+                  - NUXT_PUBLIC_GTM_ID=${{ secrets.PROD_NUXT_PUBLIC_GTM_ID }}
                 restart: unless-stopped
             EOF
 

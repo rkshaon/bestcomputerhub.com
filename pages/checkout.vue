@@ -22,6 +22,7 @@ import { useCartStore } from '@/stores/cart';
 import { useShippingService } from '@/composables/useShippingService';
 import { useCheckoutService } from '@/composables/useCheckoutService';
 import { toastSuccess, toastError, handleApiError, extractErrorMessage } from '@/composables/useToast';
+import { useAnalytics } from '@/composables/useAnalytics';
 import UiButton from '@/components/ui/Button.vue';
 import UiBrandLogo from '@/components/ui/UiBrandLogo.vue';
 import CheckoutDeliveryAreaStep from '@/components/commerce/checkout/CheckoutDeliveryAreaStep.vue';
@@ -44,6 +45,7 @@ const authStore = useAuthStore();
 const cartStore = useCartStore();
 const shippingService = useShippingService();
 const checkoutService = useCheckoutService();
+const analytics = useAnalytics();
 
 // ── Steps ────────────────────────────────────────────────────────
 
@@ -176,6 +178,7 @@ const placeOrder = async () => {
 
     placedOrder.value = order;
     idempotencyKey.value = null;
+    analytics.trackPurchase(order);
     cartStore.clearCart();
 
     if (order.status === 'cancelled') {
@@ -229,6 +232,13 @@ const continueToReview = async () => {
   if (!isValid && validation.value) {
     toastError(validation.value.errors[0] ?? 'Your order could not be verified.');
   }
+  if (isValid && validation.value?.pricing && selectedOption.value) {
+    analytics.trackAddShippingInfo(
+      cartStore.items,
+      validation.value.shipping?.method_name || selectedOption.value.shipping_method_name,
+      Number(validation.value.pricing.grand_total)
+    );
+  }
 };
 
 watch(selectedZoneId, (zoneId, previous) => {
@@ -264,6 +274,7 @@ onMounted(async () => {
 
   if (!authStore.isLoggedIn) return;
   await Promise.all([cartStore.fetchCart(), loadZones()]);
+  analytics.trackBeginCheckout(cartStore.items);
 });
 </script>
 

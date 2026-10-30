@@ -17,4 +17,5 @@ services:
       - HOST=0.0.0.0
       # - NUXT_PUBLIC_API_BASE=http://localhost:8000/api/v1/
       # - NUXT_PUBLIC_APP_URL=http://localhost:3000
+      # - NUXT_PUBLIC_GTM_ID=GTM-XXXXXXX
     restart: unless-stopped

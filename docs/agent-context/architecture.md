@@ -219,6 +219,8 @@ Domain-specific API endpoints and business operations should remain in their res
 
 Do not duplicate authentication or token-refresh infrastructure across domain services.
 
+**Nitro server routes (`/server/`)** run outside the Vue app, where `useApiClient` (toasts, client session, token refresh) is not available. A server route that reads a **public, unauthenticated** backend endpoint uses `$fetch` with `useRuntimeConfig().public.apiBase` directly. Example: `server/api/__sitemap__/urls.ts` (sitemap source). Never call authenticated endpoints from server routes this way.
+
 ---
 
 ## 7. Stores
@@ -411,6 +413,18 @@ The repository maintains a dedicated component inventory document at `/docs/agen
   - **Independent Responsibility**: The sub-tree owns a clear, isolated domain or UI responsibility.
   - **Encapsulated State Ownership**: The sub-tree manages complex, self-contained interactive state or lifecycle logic.
   - **Improved Maintainability & Testability**: Decoupling the component reduces cognitive complexity and improves stability.
+
+---
+
+## 16a. Analytics (Google Tag Manager & GA4)
+
+* `/plugins/tag-manager.ts` loads Google Tag Manager only when `NUXT_PUBLIC_GTM_ID` (`runtimeConfig.public.gtmId`) is a valid `GTM-…` ID, and sends a `page_view` for the landing page and every client-side navigation.
+* GA4 is configured inside the GTM container (`/docs/analytics/gtm-container.json`), never in code; this prevents double-counting.
+* Pages, components and stores send GA4 events only through `useAnalytics()`; never push to `window.dataLayer` directly.
+* `/admin/*` routes are never tracked. No personal data (names, emails, phones, addresses) is sent.
+* Event `value` fields come only from backend totals; the frontend never computes cart or order totals for analytics.
+
+Full setup and event reference: `/docs/analytics/google-tag-manager.md`.
 
 ---
 

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import type { Product, CartItem } from '@/types';
 import { useCartService } from '@/composables/useCartService';
 import { useToast } from '@/composables/useToast';
+import { useAnalytics } from '@/composables/useAnalytics';
 import { useAuthStore } from '@/stores/auth';
 
 const GUEST_CART_STORAGE_KEY = 'techcore_guest_cart';
@@ -57,6 +58,19 @@ export const useCartStore = defineStore('cart', {
     _isLoggedIn() {
       const authStore = useAuthStore();
       return authStore.isLoggedIn;
+    },
+
+    /** Matches the cart item, product or line id used by cart callers. */
+    _findItem(itemId: number | string): CartItem | undefined {
+      const key = String(itemId);
+      return this.items.find(i => String(i.id) === key || String(i.productId) === key || String(i.product?.id) === key);
+    },
+
+    /** Reports a quantity change as add_to_cart or remove_from_cart. */
+    _trackQuantityChange(product: Product, delta: number) {
+      const analytics = useAnalytics();
+      if (delta > 0) analytics.trackAddToCart(product, delta);
+      if (delta < 0) analytics.trackRemoveFromCart(product, -delta);
     },
 
     _loadGuestCart() {
@@ -122,6 +136,7 @@ export const useCartStore = defineStore('cart', {
           await cartService.addToCart(Number(product.id), qty);
           await this.fetchCart();
           useToast().toastSuccess('Item added to cart.');
+          this._trackQuantityChange(product, qty);
         } catch (err) {
           useToast().toastError('Failed to add item to cart.');
         } finally {
@@ -137,17 +152,20 @@ export const useCartStore = defineStore('cart', {
         }
         this._saveGuestCart();
         useToast().toastSuccess('Item added to cart.');
+        this._trackQuantityChange(product, qty);
       }
     },
 
     async removeFromCart(itemId: number | string) {
       if (this._isLoggedIn()) {
         const cartService = useCartService();
+        const removed = this._findItem(itemId);
         try {
           this.isLoading = true;
           await cartService.removeFromCart(Number(itemId));
           await this.fetchCart();
           useToast().toastSuccess('Item removed from cart.');
+          if (removed) this._trackQuantityChange(removed.product, -removed.quantity);
         } catch (err) {
           useToast().toastError('Failed to remove item from cart.');
         } finally {
@@ -155,9 +173,11 @@ export const useCartStore = defineStore('cart', {
         }
       } else {
         this._loadGuestCart();
+        const removed = this._findItem(itemId);
         this.items = this.items.filter(i => String(i.product.id) !== String(itemId) && String(i.productId) !== String(itemId));
         this._saveGuestCart();
         useToast().toastSuccess('Item removed from cart.');
+        if (removed) this._trackQuantityChange(removed.product, -removed.quantity);
       }
     },
 
@@ -165,10 +185,13 @@ export const useCartStore = defineStore('cart', {
       const qty = Math.max(1, Math.floor(Number(quantity) || 1));
       if (this._isLoggedIn()) {
         const cartService = useCartService();
+        const existing = this._findItem(itemId);
+        const previousQty = existing?.quantity ?? qty;
         try {
           this.isLoading = true;
           await cartService.updateCartItem(Number(itemId), qty);
           await this.fetchCart();
+          if (existing) this._trackQuantityChange(existing.product, qty - previousQty);
         } catch (err) {
           useToast().toastError('Failed to update quantity.');
         } finally {
@@ -178,8 +201,10 @@ export const useCartStore = defineStore('cart', {
         this._loadGuestCart();
         const item = this.items.find(i => String(i.product.id) === String(itemId) || String(i.productId) === String(itemId));
         if (item) {
+          const delta = qty - item.quantity;
           item.quantity = qty;
           this._saveGuestCart();
+          this._trackQuantityChange(item.product, delta);
         }
       }
     },

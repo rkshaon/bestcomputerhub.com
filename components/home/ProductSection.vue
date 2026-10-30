@@ -1,8 +1,9 @@
 <!-- File: /components/home/ProductSection.vue -->
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { ChevronRight, AlertCircle, RefreshCw, Package } from 'lucide-vue-next';
 import type { Product } from '@/types';
+import { useAnalytics } from '@/composables/useAnalytics';
 
 const props = withDefaults(
   defineProps<{
@@ -49,6 +50,10 @@ const titleParts = computed(() => {
     after: props.title.slice(index + props.titleHighlight.length)
   };
 });
+
+const { trackViewItemList } = useAnalytics();
+const listId = computed(() => `home:${props.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`);
+watch(() => props.products, (list) => trackViewItemList(listId.value, props.title, list), { immediate: true });
 
 const handleRetry = () => {
   if (props.onRetry) {
@@ -176,6 +181,9 @@ const handleRetry = () => {
         v-for="(product, index) in products" 
         :key="product.id" 
         :product="product"
+        :list-id="listId"
+        :list-name="title"
+        :list-index="index"
         :class="index >= 6 ? 'hidden sm:block' : ''"
       />
     </div>

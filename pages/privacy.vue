@@ -113,7 +113,7 @@ const sections = [
               <h2 class="text-3xl font-display font-bold">Cookies & Tracking</h2>
             </div>
             <p class="text-muted-foreground leading-relaxed">
-              We use essential cookies to maintain your session and security context. Optional analytics cookies may be used with your consent to improve our distribution logistics and procurement interfaces. You can manage your preferences at any time via your browser settings.
+              We use essential cookies to maintain your session and security context. We also use Google Analytics, loaded through Google Tag Manager, to understand how visitors browse and shop on our site. These analytics cookies record pages viewed and shopping actions such as viewing products, adding items to the cart and placing orders; we do not send your name, email, phone number or address to Google. You can block or delete these cookies at any time via your browser settings.
             </p>
           </div>
 

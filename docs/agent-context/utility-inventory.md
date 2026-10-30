@@ -568,6 +568,42 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `useAnalytics`
+- **File Location**: `/composables/useAnalytics.ts`
+- **Category**: Composable / Analytics
+- **Scope**: Storefront (no-op on `/admin/*`)
+- **Purpose**: Pushes typed GA4 events (`/types/analytics.ts`) to the Google Tag Manager `dataLayer`. GA4 itself is configured inside the GTM container — see `/docs/analytics/google-tag-manager.md`.
+- **Parameters & Return Value**: Returns `trackPageView`, `trackViewItemList`, `trackSelectItem`, `trackViewItem`, `trackAddToCart`, `trackRemoveFromCart`, `trackViewCart`, `trackBeginCheckout`, `trackAddShippingInfo`, `trackPurchase`, `trackSearch`, `trackLogin`, `trackSignUp`.
+- **Example Usage**:
+  ```ts
+  import { useAnalytics } from '@/composables/useAnalytics';
+
+  const { trackViewItem } = useAnalytics();
+  trackViewItem(product);
+  ```
+- **Files or Features Currently Using It**: `plugins/tag-manager.ts`, `stores/cart.ts`, `<CommerceProductCard>`, `<HomeProductSection>`, `<LayoutHeader>` (search), shop / category / brand / product / cart / checkout / login / signup pages.
+- **Side Effects**: `window.dataLayer.push`; `trackPurchase` stores the last 20 tracked order numbers in `localStorage` (`analytics_tracked_orders`) to send each `purchase` once.
+- **Accesses Browser State**: `window.dataLayer`, `window.location`, `document.title`, `localStorage`.
+- **Performs Network Work**: No (GTM sends the hits).
+- **Related Utilities**: `/utils/analytics.ts`, `/plugins/tag-manager.ts`.
+- **What It Explicitly Does Not Do**: Needs no Nuxt context (safe in stores and after `await`). Does nothing on the server, on admin routes, or when `NUXT_PUBLIC_GTM_ID` is unset. Never sends personal data. Never computes cart totals: `value` is only sent from backend totals (`add_shipping_info`, `purchase`).
+- **Reusability Level**: High (Storefront).
+
+---
+
+### `productToAnalyticsItem`, `cartItemToAnalyticsItem`, `orderItemToAnalyticsItem`, `isTrackedPath` & `ANALYTICS_CURRENCY`
+- **File Location**: `/utils/analytics.ts`
+- **Category**: Mapper / Analytics
+- **Scope**: Storefront analytics
+- **Purpose**: Map `Product`, `CartItem` and `OrderItem` to GA4 `AnalyticsItem` (SKU as `item_id`, falling back to the product ID; decoded names, brand, category; backend price). `isTrackedPath(path)` returns `false` for `/admin` routes. `ANALYTICS_CURRENCY` is `'BDT'`.
+- **Files or Features Currently Using It**: `useAnalytics`, `plugins/tag-manager.ts`.
+- **Side Effects**: None (Pure functions).
+- **Accesses Browser State**: No.
+- **Performs Network Work**: No.
+- **Reusability Level**: Medium (analytics only).
+
+---
+
 ## 8. Domain Service Composables Summary
 
 | Composable Service | Primary Domain Responsibility | Endpoint Scope | Key Responsibilities & Normalizations |
