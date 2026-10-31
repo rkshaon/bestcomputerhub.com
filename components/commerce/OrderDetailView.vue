@@ -96,9 +96,30 @@ const currentStatus = computed(() => {
       </div>
     </div>
     
-    <div v-if="order.notes" class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-2">
-        <h3 class="text-lg font-bold">Order Notes</h3>
-        <p class="text-sm text-muted-foreground">{{ order.notes }}</p>
+    <div v-if="order.accounting" class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold">Accounting Information</h3>
+        <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+                <p class="text-muted-foreground">Account Name</p>
+                <p class="font-bold">{{ order.accounting.account.name }}</p>
+            </div>
+            <div>
+                <p class="text-muted-foreground">Account Type</p>
+                <p class="font-bold">{{ order.accounting.account.type }}</p>
+            </div>
+            <div>
+                <p class="text-muted-foreground">Transaction No.</p>
+                <p class="font-bold font-mono">{{ order.accounting.transaction.no }}</p>
+            </div>
+            <div>
+                <p class="text-muted-foreground">Status</p>
+                <p class="font-bold">{{ order.accounting.transaction.status }}</p>
+            </div>
+             <div class="col-span-2">
+                <p class="text-muted-foreground">Reference</p>
+                <p class="font-bold">{{ order.accounting.transaction.reference }}</p>
+            </div>
+        </div>
     </div>
   </div>
 </template>
