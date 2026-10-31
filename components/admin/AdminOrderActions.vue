@@ -62,14 +62,14 @@ const updateStatus = async (status: string) => {
       
       <div class="flex flex-wrap gap-2">
         <UiButton 
-          v-for="status in ['processing', 'shipped', 'delivered', 'cancelled']" 
-          :key="status"
-          @click="updateStatus(status)"
-          :disabled="isProcessing || order.status === status"
+          v-for="status in order.allowedNextStatuses" 
+          :key="status.value"
+          @click="updateStatus(status.value)"
+          :disabled="isProcessing || order.status === status.value"
           variant="outline"
           class="capitalize"
         >
-          Set to {{ status }}
+          Set to {{ status.label }}
         </UiButton>
       </div>
     </div>

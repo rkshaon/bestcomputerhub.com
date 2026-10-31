@@ -28,19 +28,23 @@ export function normalizePaymentStatus(status: string | null | undefined): Order
 function mapOrderItem(item: BackendOrderItem): OrderItem {
   const unitPrice = toMoney(item.unit_price);
   const variantId = item.product_variant?.id;
+  const productName = item.product_variant?.name 
+    || item.product_variant?.product?.name 
+    || item.product_name;
+
   return {
     id: String(item.id),
     productId: variantId !== undefined && variantId !== null ? String(variantId) : '',
     product: {
       id: variantId !== undefined && variantId !== null ? String(variantId) : '',
-      name: item.product_name,
+      name: productName,
       price: unitPrice,
       images: []
     },
     quantity: item.quantity,
     price: unitPrice,
     lineTotal: toMoney(item.line_total),
-    sku: item.product_variant?.sku ?? null
+    sku: item.product_variant.sku || undefined
   };
 }
 
@@ -55,11 +59,15 @@ export function mapOrderDetail(raw: BackendOrderDetail): Order {
     customerName: raw.customer?.user?.username ?? '',
     items,
     itemCount: items.length,
-    subtotal: toMoney(raw.pricing?.subtotal),
-    shippingCharge: toMoney(raw.pricing?.shipping_charge),
-    discountTotal: toMoney(raw.pricing?.discount_total),
-    taxTotal: toMoney(raw.pricing?.tax_total),
-    totalAmount: toMoney(raw.pricing?.grand_total),
+    subtotal: toMoney(raw.subtotal_amount),
+    shippingCharge: toMoney(raw.shipping_amount),
+    discountTotal: toMoney(raw.discount_amount),
+    taxTotal: toMoney(raw.tax_amount),
+    totalAmount: toMoney(raw.total_amount),
+    accounting: raw.accounting_transaction ? {
+      account: { name: raw.account?.name || 'N/A', type: raw.account?.account_type || 'N/A' },
+      transaction: { no: raw.accounting_transaction.transaction_no, type: raw.accounting_transaction.transaction_type, status: raw.accounting_transaction.status, reference: raw.accounting_transaction.reference }
+    } : undefined,
     status: normalizeOrderStatus(raw.status),
     paymentStatus: normalizePaymentStatus(raw.payment_status),
     createdAt: raw.created_at,

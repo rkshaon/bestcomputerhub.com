@@ -94,6 +94,7 @@ export interface BackendOrderItemVariant {
   id: number;
   sku: string;
   name: string | null;
+  product: { name: string } | null;
 }
 
 export interface BackendOrderItem {
@@ -141,12 +142,20 @@ export interface BackendOrderDetail {
   } | null;
   items: BackendOrderItem[];
   shipping_address: BackendOrderShippingAddress | null;
-  pricing: CheckoutPricing;
+  subtotal_amount: ApiMoney;
+  discount_amount: ApiMoney;
+  tax_amount: ApiMoney;
+  shipping_amount: ApiMoney;
+  total_amount: ApiMoney;
   shipping_method: BackendOrderShippingMethod | null;
   notes: string;
   created_at: string;
   updated_at: string;
   allowed_next_statuses: BackendOrderStatusOption[];
+  account: { id: number; code: string; name: string; account_type: string } | null;
+  accounting_transaction: { id: number; transaction_no: string; transaction_type: string; status: string; reference: string } | null;
+  return_transaction: any | null;
+  collection_transaction: any | null;
 }
 
 // ── POST /api/v1/orders/{id}/cancel/ ─────────────────────────────
