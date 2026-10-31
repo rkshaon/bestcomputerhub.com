@@ -33,14 +33,14 @@ function mapOrderItem(item: BackendOrderItem): OrderItem {
     productId: variantId !== undefined && variantId !== null ? String(variantId) : '',
     product: {
       id: variantId !== undefined && variantId !== null ? String(variantId) : '',
-      name: item.product_name,
+      name: item.product_variant.name || item.product_name,
       price: unitPrice,
       images: []
     },
     quantity: item.quantity,
     price: unitPrice,
     lineTotal: toMoney(item.line_total),
-    sku: item.product_variant?.sku ?? null
+    sku: item.product_variant.sku || undefined
   };
 }
 
