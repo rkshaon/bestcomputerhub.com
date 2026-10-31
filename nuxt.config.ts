@@ -56,7 +56,7 @@ export default defineNuxtConfig({
   // Override per deployment at runtime with NUXT_PUBLIC_SITE_URL and
   // NUXT_PUBLIC_SITE_NAME (no rebuild needed; empty values are ignored).
   site: {
-    url: 'https://best-computers.rkshaon.info',
+    url: 'https://bestcomputerhub.com',
     name: 'Best Computer Hub',
     trailingSlash: true
   },
