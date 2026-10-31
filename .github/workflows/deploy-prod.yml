@@ -147,7 +147,7 @@ jobs:
                   - HOST=0.0.0.0
                   - NUXT_PUBLIC_API_BASE=${{ secrets.PROD_NUXT_PUBLIC_API_BASE }}
                   - NUXT_PUBLIC_GTM_ID=${{ secrets.PROD_NUXT_PUBLIC_GTM_ID }}
-                  - NUXT_PUBLIC_SITE_URL=${{ PROD_NUXT_PUBLIC_SITE_URL }}
+                  - NUXT_PUBLIC_SITE_URL=${{ secrets.PROD_NUXT_PUBLIC_SITE_URL }}
                 restart: unless-stopped
             EOF
 
