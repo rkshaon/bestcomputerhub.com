@@ -28,16 +28,12 @@ export function normalizePaymentStatus(status: string | null | undefined): Order
 function mapOrderItem(item: BackendOrderItem): OrderItem {
   const unitPrice = toMoney(item.unit_price);
   const variantId = item.product_variant?.id;
-  const productName = item.product_variant?.name 
-    || item.product_variant?.product?.name 
-    || item.product_name;
-
   return {
     id: String(item.id),
     productId: variantId !== undefined && variantId !== null ? String(variantId) : '',
     product: {
       id: variantId !== undefined && variantId !== null ? String(variantId) : '',
-      name: productName,
+      name: item.product_variant.product || item.product_variant.name || item.product_name,
       price: unitPrice,
       images: []
     },

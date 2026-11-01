@@ -94,7 +94,7 @@ export interface BackendOrderItemVariant {
   id: number;
   sku: string;
   name: string | null;
-  product: { name: string } | null;
+  product: string | null;
 }
 
 export interface BackendOrderItem {

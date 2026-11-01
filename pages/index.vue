@@ -6,8 +6,8 @@ import { useBrandService } from '@/composables/useBrandService';
 import type { Brand, Product } from '@/types';
 
 useSeoMeta({
-  title: 'Best Computer Hub | Gaming PC, Laptop & Computer Accessories in Bangladesh',
-  description: 'Best Computer Hub is your trusted destination for gaming PCs, laptops, computer components, networking devices, accessories, and enterprise hardware in Bangladesh. Shop authentic products at competitive prices with reliable support.'
+  title: 'Best Computer Hub I Branded Gaming, Laptop, Networking Shop in Bangladesh',
+  description: 'Best Computer Hub selling Branded Gaming PC, Laptop, Networking Products, Gadgets shop in Bangladesh with best after sell services.'
 });
 
 // Explicitly use the composables

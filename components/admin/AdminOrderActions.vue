@@ -47,12 +47,12 @@ const updateStatus = async (status: string) => {
 </script>
 
 <template>
-  <div v-if="permissions.canEditInModule('orders')" class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
+  <div v-if="permissions.hasPermission('sale_api.view_sale')" class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
     <h3 class="text-lg font-bold">Admin Actions</h3>
     
     <div class="flex flex-col gap-2">
       <UiButton 
-        v-if="order.paymentStatus === 'unpaid'" 
+        v-if="order.paymentStatus === 'unpaid' && permissions.hasPermission('sale_api.change_sale')" 
         @click="markPaid" 
         :disabled="isProcessing"
         variant="primary"
@@ -60,7 +60,7 @@ const updateStatus = async (status: string) => {
         Mark as Paid
       </UiButton>
       
-      <div class="flex flex-wrap gap-2">
+      <div v-if="permissions.hasPermission('sale_api.change_sale')" class="flex flex-wrap gap-2">
         <UiButton 
           v-for="status in order.allowedNextStatuses" 
           :key="status.value"
