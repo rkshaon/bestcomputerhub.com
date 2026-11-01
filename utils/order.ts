@@ -18,10 +18,9 @@ export function toMoney(value: ApiMoney | null | undefined): number {
 
 function getCustomerName(customer: BackendOrderDetail['customer']): string {
   if (!customer) return 'Guest';
-  if (customer.full_name) return customer.full_name;
+  if (customer.full_name && customer.full_name.trim()) return customer.full_name.trim();
   const names = [customer.first_name, customer.middle_name, customer.last_name].filter(Boolean);
-  if (names.length > 0) return names.join(' ');
-  if (customer.user?.username) return customer.user.username;
+  if (names.length > 0) return names.filter((n): n is string => typeof n === 'string').map(n => n.trim()).join(' ');
   return 'Guest';
 }
 
