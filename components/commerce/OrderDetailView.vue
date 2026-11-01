@@ -96,6 +96,19 @@ const currentStatus = computed(() => {
       </div>
     </div>
     
+    <div class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
+      <h3 class="text-lg font-bold">Customer Information</h3>
+      <div class="text-sm space-y-2">
+        <p><span class="text-muted-foreground">Name:</span> <span class="font-bold">{{ order.customerName || 'Guest' }}</span></p>
+        <p v-if="order.customerEmail"><span class="text-muted-foreground">Email:</span> <a :href="`mailto:${order.customerEmail}`" class="font-bold text-sky-600 hover:underline">{{ order.customerEmail }}</a></p>
+        <p v-if="order.customerPhone"><span class="text-muted-foreground">Phone:</span> <a :href="`tel:${order.customerPhone}`" class="font-bold text-sky-600 hover:underline">{{ order.customerPhone }}</a></p>
+        <p v-if="order.customerType"><span class="text-muted-foreground">Type:</span> <span class="font-bold">{{ order.customerType }}</span></p>
+        <p><span class="text-muted-foreground">Customer ID:</span> <span class="font-mono">{{ order.customerId || 'N/A' }}</span></p>
+        <p v-if="order.customerStatus"><span class="text-muted-foreground">Status:</span> <span class="font-bold">{{ order.customerStatus }}</span></p>
+        <p v-if="order.customerNotes" class="text-xs text-muted-foreground mt-2 italic">Note: {{ order.customerNotes }}</p>
+      </div>
+    </div>
+    
     <div v-if="order.accounting" class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
         <h3 class="text-lg font-bold">Accounting Information</h3>
         <div class="grid grid-cols-2 gap-4 text-sm">
