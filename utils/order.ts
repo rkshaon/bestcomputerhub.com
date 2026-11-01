@@ -16,6 +16,14 @@ export function toMoney(value: ApiMoney | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function getCustomerName(customer: BackendOrderDetail['customer']): string {
+  if (!customer) return 'Guest';
+  if (customer.full_name && customer.full_name.trim()) return customer.full_name.trim();
+  const names = [customer.first_name, customer.middle_name, customer.last_name].filter(Boolean);
+  if (names.length > 0) return names.filter((n): n is string => typeof n === 'string').map(n => n.trim()).join(' ');
+  return 'Guest';
+}
+
 /** Lower-cases a backend status (`OUT_OF_DELIVERY` → `out_of_delivery`). */
 export function normalizeOrderStatus(status: string | null | undefined): OrderStatus {
   return String(status || 'PENDING').toLowerCase() as OrderStatus;
@@ -52,7 +60,7 @@ export function mapOrderDetail(raw: BackendOrderDetail): Order {
     id: String(raw.id),
     orderNumber: raw.invoice_number || `#${raw.id}`,
     customerId: raw.customer?.id !== undefined ? String(raw.customer.id) : '',
-    customerName: raw.customer?.user?.username ?? '',
+    customerName: getCustomerName(raw.customer),
     customerEmail: raw.customer?.email ?? undefined,
     customerPhone: raw.customer?.phone ?? undefined,
     customerType: raw.customer?.type ?? undefined,
@@ -113,7 +121,7 @@ export function mapOrderSummary(raw: BackendOrderSummary): Order {
     shippingMethod: null,
     allowedNextStatuses: [],
     customerId: '',
-    customerName: raw.customer?.user?.username ?? 'NA',
+    customerName: raw.customer?.user?.username ?? 'Guest',
     items: [],
     itemCount: Number(raw.item_count) || 0,
     subtotal: 0,
