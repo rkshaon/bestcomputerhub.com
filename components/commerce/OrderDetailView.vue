@@ -56,36 +56,70 @@ const currentStatus = computed(() => {
 
     <div class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-6">
       <h3 class="text-lg font-bold border-b pb-4">Order Items</h3>
-      <div v-for="item in (order.items || [])" :key="item.id || item.productId" class="flex gap-4">
+      <div v-for="item in (order.items || [])" :key="item.id" class="flex gap-4">
         <div class="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
-          <img v-if="item.product?.images?.length > 0" :src="item.product.images[0]" :alt="decodeHtmlEntities(item.product?.name || 'Product')" class="w-full h-full object-cover" />
+          <Package class="w-6 h-6 text-muted-foreground" />
         </div>
         <div class="flex-grow">
           <p class="font-bold text-sm">{{ decodeHtmlEntities(item.product?.name || 'Product') }}</p>
-          <p class="text-xs text-muted-foreground">Qty: {{ item.quantity }}</p>
+          <p class="text-xs text-muted-foreground">SKU: {{ item.sku || 'N/A' }} | Qty: {{ item.quantity }}</p>
         </div>
-        <p class="font-bold text-sm">{{ formatCurrency((item.price || 0) * (item.quantity || 1)) }}</p>
+        <div class="text-right">
+          <p class="font-bold text-sm">{{ formatCurrency(item.lineTotal || 0) }}</p>
+          <p class="text-[10px] text-muted-foreground">@ {{ formatCurrency(item.price || 0) }}</p>
+        </div>
       </div>
-      <div class="flex justify-between font-bold pt-4 border-t">
-        <p>Total</p>
-        <p>{{ formatCurrency(order.totalAmount || 0) }}</p>
+      <div class="space-y-2 pt-4 border-t text-sm">
+        <div class="flex justify-between text-muted-foreground"><p>Subtotal</p><p>{{ formatCurrency(order.subtotal || 0) }}</p></div>
+        <div class="flex justify-between text-muted-foreground"><p>Shipping</p><p>{{ formatCurrency(order.shippingCharge || 0) }}</p></div>
+        <div class="flex justify-between text-muted-foreground"><p>Discount</p><p>-{{ formatCurrency(order.discountTotal || 0) }}</p></div>
+        <div class="flex justify-between text-muted-foreground"><p>Tax</p><p>{{ formatCurrency(order.taxTotal || 0) }}</p></div>
+        <div class="flex justify-between font-black text-lg pt-2"><p>Grand Total</p><p>{{ formatCurrency(order.totalAmount || 0) }}</p></div>
       </div>
     </div>
 
-    <div class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
-      <h3 class="text-lg font-bold">Shipping Information</h3>
-      <div class="text-sm text-muted-foreground" v-if="order.shippingAddress">
-        <p>{{ order.shippingAddress.street }}</p>
-        <p>{{ order.shippingAddress.city }}, {{ order.shippingAddress.zipCode }}</p>
-        <p>{{ order.shippingAddress.country }}</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold">Shipping Information</h3>
+        <div class="text-sm text-muted-foreground" v-if="order.shippingAddress">
+          <p class="font-bold text-foreground">{{ order.shippingAddress.firstName }} {{ order.shippingAddress.lastName }}</p>
+          <p>{{ order.shippingAddress.street }}</p>
+          <p>{{ order.shippingAddress.city }}, {{ order.shippingAddress.zipCode }}</p>
+          <p>{{ order.shippingAddress.country }}</p>
+          <p class="mt-2">{{ order.shippingAddress.phone }}</p>
+        </div>
+        <p class="text-sm font-bold mt-4">Shipping Method: <span class="font-normal">{{ order.shippingMethod?.name || 'Standard' }}</span></p>
       </div>
-      <p class="text-sm font-bold mt-4">Shipping Method: <span class="font-normal">{{ order.shippingMethod?.name || 'Standard' }}</span></p>
-      
-      <div v-if="order.status === 'pending'">
-        <UiButton @click="$emit('cancel')" variant="outline" class="w-full mt-4 text-rose-600 border-rose-200 hover:bg-rose-50">
-          Cancel Order
-        </UiButton>
+      <div class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold">Payment Information</h3>
+        <p class="text-sm font-bold text-muted-foreground">Status: <span class="text-foreground uppercase">{{ order.paymentStatus }}</span></p>
       </div>
+    </div>
+    
+    <div v-if="order.accounting" class="bg-card border rounded-[2rem] p-8 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold">Accounting Information</h3>
+        <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+                <p class="text-muted-foreground">Account Name</p>
+                <p class="font-bold">{{ order.accounting.account.name }}</p>
+            </div>
+            <div>
+                <p class="text-muted-foreground">Account Type</p>
+                <p class="font-bold">{{ order.accounting.account.type }}</p>
+            </div>
+            <div>
+                <p class="text-muted-foreground">Transaction No.</p>
+                <p class="font-bold font-mono">{{ order.accounting.transaction.no }}</p>
+            </div>
+            <div>
+                <p class="text-muted-foreground">Status</p>
+                <p class="font-bold">{{ order.accounting.transaction.status }}</p>
+            </div>
+             <div class="col-span-2">
+                <p class="text-muted-foreground">Reference</p>
+                <p class="font-bold">{{ order.accounting.transaction.reference }}</p>
+            </div>
+        </div>
     </div>
   </div>
 </template>

@@ -82,4 +82,8 @@ export interface Order {
     code?: string;
   } | null;
   allowedNextStatuses?: OrderStatusOption[];
+  accounting?: {
+    account: { name: string; type: string };
+    transaction: { no: string; type: string; status: string; reference: string };
+  };
 }

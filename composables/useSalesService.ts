@@ -1,7 +1,8 @@
 // File: /composables/useSalesService.ts
 import { useApiClient } from './useApiClient';
 import type { Order, OrderStatusResponse } from '@/types/order';
-import { mapOrderSummary } from '@/utils/order';
+import type { BackendOrderDetail } from '@/types/checkout';
+import { mapOrderSummary, mapOrderDetail } from '@/utils/order';
 
 export const useSalesService = () => {
   const apiClient = useApiClient();
@@ -33,10 +34,10 @@ export const useSalesService = () => {
 
   const getSaleDetails = async (saleId: string): Promise<Order> => {
     try {
-      const data = await apiClient.request<Order>(`/api/v1/sales/${saleId}/`, {
+      const data = await apiClient.request<BackendOrderDetail>(`/api/v1/sales/${saleId}/`, {
         method: 'GET'
       });
-      return data;
+      return mapOrderDetail(data);
     } catch (err: any) {
       throw err;
     }
