@@ -139,6 +139,10 @@ export interface BackendOrderDetail {
   customer: {
     id: number;
     user: { id: number; username: string } | null;
+    full_name?: string;
+    first_name?: string;
+    middle_name?: string;
+    last_name?: string;
     email?: string;
     phone?: string;
     type?: string;
