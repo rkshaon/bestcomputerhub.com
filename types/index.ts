@@ -17,3 +17,4 @@ export * from './request-log';
 export * from './banner';
 export * from './shipping';
 export * from './seo';
+export * from './order-notification';

@@ -124,6 +124,16 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     editPermission: ['sale_api.change_sale', 'store.change_order', 'change_order', 'orders.change_order'],
     deletePermission: ['store.delete_order', 'delete_order', 'orders.delete_order']
   },
+  orderNotifications: {
+    key: 'orderNotifications',
+    route: '/admin/order-notifications',
+    name: 'Order Notifications',
+    iconKey: 'Mail',
+    viewPermission: 'email_api.view_ordernotificationrecipient',
+    createPermission: 'email_api.add_ordernotificationrecipient',
+    editPermission: 'email_api.change_ordernotificationrecipient',
+    deletePermission: 'email_api.delete_ordernotificationrecipient'
+  },
   customers: {
     key: 'customers',
     route: '/admin/customers',
