@@ -139,6 +139,11 @@ export interface BackendOrderDetail {
   customer: {
     id: number;
     user: { id: number; username: string } | null;
+    email?: string;
+    phone?: string;
+    type?: string;
+    status?: string;
+    notes?: string;
   } | null;
   items: BackendOrderItem[];
   shipping_address: BackendOrderShippingAddress | null;

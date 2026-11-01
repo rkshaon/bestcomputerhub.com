@@ -62,6 +62,11 @@ export interface Order {
   orderNumber: string;
   customerId: string;
   customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerType?: string;
+  customerStatus?: string;
+  customerNotes?: string;
   items: OrderItem[];
   /** Number of lines; set from `item_count` on list rows that carry no items. */
   itemCount?: number;
