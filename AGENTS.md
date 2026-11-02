@@ -252,6 +252,8 @@ For detailed implementation specifications, consult the authoritative documentat
 | **E-Commerce Domain & Backend Authority** | `/docs/agent-context/ecommerce-domain.md` |
 | **SEO, Metadata, SSR & Redirects** | `/docs/agent-context/seo-strategy.md` |
 | **API Conventions & HTTP Standards** | `/docs/agent-context/api-conventions.md` |
+| **API Endpoints Reference** | `/docs/api/endpoints.md` |
+| **Routing Reference** | `/docs/routing/routes.md` |
 | **Temporarily Disabled Features** | `/docs/agent-context/disabled-features.md` |
 | **Component Inventory & Reuse** | `/docs/agent-context/component-inventory.md` |
 | **Utility & Helper Inventory** | `/docs/agent-context/utility-inventory.md` |
