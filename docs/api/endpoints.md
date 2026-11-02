@@ -118,6 +118,32 @@ This document serves as the authoritative inventory of all API operations for th
 | `/api/v1/email/order-notification-recipients/` | POST | Notifications | `useOrderNotificationService` |
 | `/api/v1/email/order-notification-recipients/{id}/` | PATCH | Notifications | `useOrderNotificationService` |
 | `/api/v1/email/order-notification-recipients/{id}/` | DELETE | Notifications | `useOrderNotificationService` |
+| `/api/v1/auth/email-verification/status/` | GET | Auth | `useEmailVerification` |
+| `/api/v1/auth/email-verification/request/` | POST | Auth | `useEmailVerification` |
+| `/api/v1/permissions/` | GET | Permissions | `usePermissionService` |
+| `/api/v1/roles/` | GET | Roles | `useRoleService` |
+| `/api/v1/roles/` | POST | Roles | `useRoleService` |
+| `/api/v1/roles/{id}/` | PATCH | Roles | `useRoleService` |
+| `/api/v1/roles/{id}/` | DELETE | Roles | `useRoleService` |
+| `/api/v1/roles/{id}/` | GET | Roles | `useRoleService` |
+| `/api/v1/users/` | GET | Users | `useUserService` |
+| `/api/v1/users/{id}/` | GET | Users | `useUserService` |
+| `/api/v1/users/` | POST | Users | `useUserService` |
+| `/api/v1/users/{id}/` | PATCH | Users | `useUserService` |
+| `/api/v1/users/{id}/` | DELETE | Users | `useUserService` |
+| `/api/v1/users/{id}/assign-role/` | POST | Users | `useUserService` |
+| `/api/v1/users/{id}/remove-role/` | POST | Users | `useUserService` |
+| `/api/v1/users/me/change-password/` | PATCH | Users | `useUserService` |
+| `/api/v1/users/me/` | PATCH | Users | `useUserService` |
+| `/api/v1/users/{id}/change-password/` | POST | Users | `useUserService` |
+| `/api/v1/users/{id}/change-username/` | POST | Users | `useUserService` |
+| `/api/v1/users/{id}/change-email/` | POST | Users | `useUserService` |
+| `/api/v1/auth/login/` | POST | Auth | `useApiClient` |
+| `/api/v1/auth/refresh/` | POST | Auth | `useApiClient` |
+| `/api/v1/auth/register/` | POST | Auth | `useApiClient` |
+| `/api/v1/auth/logout/` | POST | Auth | `useApiClient` |
+| `/api/v1/auth/password-reset/request/` | POST | Auth | `useApiClient` |
+| `/api/v1/auth/password-reset/confirm/` | POST | Auth | `useApiClient` |
 
 *(This list will be expanded as other services are inspected)*
 
@@ -288,3 +314,58 @@ This document serves as the authoritative inventory of all API operations for th
 #### Delete Recipient
 - **Endpoint**: `/api/v1/email/order-notification-recipients/{id}/`
 - **Method**: `DELETE`
+
+### Domain: Auth (`useEmailVerification`, `useApiClient`)
+
+#### Get Email Verification Status
+- **Endpoint**: `/api/v1/auth/email-verification/status/`
+- **Method**: `GET`
+- **Response Structure**: `{ email: string, email_verified: boolean }`
+
+#### Request Email Verification
+- **Endpoint**: `/api/v1/auth/email-verification/request/`
+- **Method**: `POST`
+
+#### Auth: Login, Refresh, Register, Logout, Password Reset
+*(Handled centrally in `useApiClient`; backend verification required for full schema)*
+
+### Domain: Permissions (`usePermissionService`)
+
+#### List Permissions
+- **Endpoint**: `/api/v1/permissions/`
+- **Method**: `GET`
+- **Response Structure**: `PaginatedPermissions` | `Permission[]`
+
+### Domain: Roles (`useRoleService`)
+
+#### List Roles
+- **Endpoint**: `/api/v1/roles/`
+- **Method**: `GET`
+- **Response Structure**: `PaginatedRoles`
+
+#### Create Role
+- **Endpoint**: `/api/v1/roles/`
+- **Method**: `POST`
+- **Request Body**: `CreateRolePayload`
+
+#### Update Role
+- **Endpoint**: `/api/v1/roles/{id}/`
+- **Method**: `PATCH`
+- **Request Body**: `UpdateRolePayload`
+
+#### Delete Role
+- **Endpoint**: `/api/v1/roles/{id}/`
+- **Method**: `DELETE`
+
+### Domain: Users (`useUserService`)
+
+#### List Users
+- **Endpoint**: `/api/v1/users/`
+- **Method**: `GET`
+- **Request Parameters**: `page`, `page_size`, `search`
+- **Response Structure**: `PaginatedUsers`
+
+#### Create/Update/Delete/Change Operations
+- **Endpoints**: `/api/v1/users/`, `/api/v1/users/{id}/`, `/api/v1/users/{id}/assign-role/`, `/api/v1/users/{id}/remove-role/`, `/api/v1/users/me/change-password/`, `/api/v1/users/me/`, `/api/v1/users/{id}/change-password/`, `/api/v1/users/{id}/change-username/`, `/api/v1/users/{id}/change-email/`
+- **Methods**: `POST`, `PATCH`
+- **Note**: Administrative user management and self-service profile updates.
