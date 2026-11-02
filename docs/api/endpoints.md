@@ -107,6 +107,17 @@ This document serves as the authoritative inventory of all API operations for th
 | `/api/v1/shipping/rates/{id}/` | DELETE | Shipping | `useShippingService` |
 | `/api/v1/shipping/zones/available/` | GET | Shipping | `useShippingService` |
 | `/api/v1/shipping/options/` | GET | Shipping | `useShippingService` |
+| `/api/v1/customer-addresses/` | GET | Customers | `useCustomerAddressService` |
+| `/api/v1/customer-addresses/` | POST | Customers | `useCustomerAddressService` |
+| `/api/v1/customer-addresses/{id}/` | PATCH | Customers | `useCustomerAddressService` |
+| `/api/v1/customers/` | GET | Customers | `useCustomerService` |
+| `/api/v1/orders/` | GET | Orders | `useOrderService` |
+| `/api/v1/orders/{id}/` | GET | Orders | `useOrderService` |
+| `/api/v1/orders/{id}/cancel/` | POST | Orders | `useOrderService` |
+| `/api/v1/email/order-notification-recipients/` | GET | Notifications | `useOrderNotificationService` |
+| `/api/v1/email/order-notification-recipients/` | POST | Notifications | `useOrderNotificationService` |
+| `/api/v1/email/order-notification-recipients/{id}/` | PATCH | Notifications | `useOrderNotificationService` |
+| `/api/v1/email/order-notification-recipients/{id}/` | DELETE | Notifications | `useOrderNotificationService` |
 
 *(This list will be expanded as other services are inspected)*
 
@@ -213,15 +224,67 @@ This document serves as the authoritative inventory of all API operations for th
 - **Endpoint**: `/api/v1/shipping/methods/{id}/`
 - **Method**: `DELETE`
 
-*(Note: Shipping Zones and Rates follow analogous CRUD patterns to Methods; backend verification required for full schema)*
+### Domain: Customers (`useCustomerAddressService`, `useCustomerService`)
 
-#### Get Available Shipping Zones
-- **Endpoint**: `/api/v1/shipping/zones/available/`
+#### List Customer Addresses
+- **Endpoint**: `/api/v1/customer-addresses/`
 - **Method**: `GET`
-- **Response Structure**: `AvailableShippingZone[]`
+- **Request Parameters**: `page`, `page_size`
+- **Response Structure**: `PaginatedCustomerAddresses`
 
-#### Get Shipping Options
-- **Endpoint**: `/api/v1/shipping/options/`
+#### Create Customer Address
+- **Endpoint**: `/api/v1/customer-addresses/`
+- **Method**: `POST`
+- **Request Body**: `CreateCustomerAddressPayload`
+
+#### Update Customer Address
+- **Endpoint**: `/api/v1/customer-addresses/{id}/`
+- **Method**: `PATCH`
+- **Request Body**: `UpdateCustomerAddressPayload`
+
+#### List Customers
+- **Endpoint**: `/api/v1/customers/`
 - **Method**: `GET`
-- **Query Parameters**: `address_id` (number)
-- **Response Structure**: `ShippingOptionsResponse`
+- **Request Parameters**: `page`, `page_size`, `customer_type`, `is_active`, `search`
+- **Response Structure**: `PaginatedCustomers`
+
+### Domain: Orders (`useOrderService`)
+
+#### Get Orders List (Customer)
+- **Endpoint**: `/api/v1/orders/`
+- **Method**: `GET`
+- **Response Structure**: `BackendOrderSummary[]` (backend may return wrapped `results` array)
+- **Normalization**: Maps to `Order` list via `mapOrderSummary`.
+
+#### Get Order Details (Customer)
+- **Endpoint**: `/api/v1/orders/{id}/`
+- **Method**: `GET`
+- **Response Structure**: `BackendOrderDetail`
+- **Normalization**: Maps to `Order` type via `mapOrderDetail`.
+
+#### Cancel Order
+- **Endpoint**: `/api/v1/orders/{id}/cancel/`
+- **Method**: `POST`
+- **Response Structure**: `BackendOrderCancelResponse`
+
+### Domain: Notifications (`useOrderNotificationService`)
+
+#### List Order Notification Recipients
+- **Endpoint**: `/api/v1/email/order-notification-recipients/`
+- **Method**: `GET`
+- **Request Parameters**: `page`, `page_size`, `search`, `is_active`
+- **Response Structure**: `PaginatedOrderNotificationRecipients`
+
+#### Create Recipient
+- **Endpoint**: `/api/v1/email/order-notification-recipients/`
+- **Method**: `POST`
+- **Request Body**: `CreateOrderNotificationRecipientPayload`
+
+#### Update Recipient
+- **Endpoint**: `/api/v1/email/order-notification-recipients/{id}/`
+- **Method**: `PATCH`
+- **Request Body**: `UpdateOrderNotificationRecipientPayload`
+
+#### Delete Recipient
+- **Endpoint**: `/api/v1/email/order-notification-recipients/{id}/`
+- **Method**: `DELETE`
