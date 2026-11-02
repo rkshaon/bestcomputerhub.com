@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useSalesService } from '@/composables/useSalesService';
-import { formatCurrency } from '@/utils';
 import UiCard from '@/components/ui/UiCard.vue';
 import type { OrderStatusOption } from '@/types/order';
 import {
@@ -30,7 +29,6 @@ const getStatusConfig = (status: string) => statusConfig[status.toLowerCase()] ?
 
 const salesService = useSalesService();
 const counts = ref<number[]>([]);
-const amounts = ref<number[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 
@@ -38,13 +36,8 @@ const fetchData = async () => {
   isLoading.value = true;
   error.value = null;
   try {
-    const [summary, amountSummary] = await Promise.all([
-      salesService.getSalesSummary(),
-      salesService.getSalesAmountSummary()
-    ]);
-    
+    const summary = await salesService.getSalesSummary();
     counts.value = Object.values(summary.data);
-    amounts.value = Object.values(amountSummary.data);
   } catch (err: any) {
     error.value = 'Failed to load statistics';
     console.error(err);
@@ -65,16 +58,14 @@ onMounted(() => fetchData());
     {{ error }}
   </div>
   <div v-else class="flex overflow-x-auto pb-4 gap-3 animate-in fade-in duration-500 lg:grid lg:grid-cols-9 lg:overflow-visible lg:pb-0">
-    <UiCard v-for="(status, index) in statuses" :key="status.value" class="flex items-center gap-3 p-3 min-w-[200px] lg:min-w-0">
+    <UiCard v-for="(status, index) in statuses" :key="status.value" class="flex items-center gap-3 p-3 min-w-[160px] lg:min-w-0">
       <div :class="['w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-inner', getStatusConfig(status.value)?.bg, getStatusConfig(status.value)?.color]">
         <component :is="getStatusConfig(status.value)?.icon" class="w-4 h-4" />
       </div>
       <div class="min-w-0">
         <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">{{ status.label }}</p>
-        <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ (counts && counts[index] !== undefined) ? counts[index] : 0 }}</p>
         <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Total Orders</p>
-        <p class="text-sm font-bold text-primary truncate">{{ formatCurrency((amounts && amounts[index] !== undefined) ? amounts[index] : 0) }}</p>
-        <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Total Amount</p>
+        <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ (counts && counts[index] !== undefined) ? counts[index] : 0 }}</p>
       </div>
     </UiCard>
   </div>

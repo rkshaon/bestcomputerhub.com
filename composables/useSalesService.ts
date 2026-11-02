@@ -77,17 +77,6 @@ export const useSalesService = () => {
     }
   };
 
-  const getSalesAmountSummary = async (): Promise<{ data: Record<string, number> }> => {
-    try {
-      const data = await apiClient.request<{ success: boolean; data: Record<string, number> }>('/api/v1/sales/amount-summary/', {
-        method: 'GET'
-      });
-      return { data: data.data };
-    } catch (err: any) {
-      throw err;
-    }
-  };
-
   return {
     getSales,
     getStatuses,
@@ -95,7 +84,6 @@ export const useSalesService = () => {
     updateStatus,
     markPaid,
     getSalesSummary,
-    getSalesAmountSummary,
     isLoading: apiClient.isLoading,
     errorMsg: apiClient.errorMsg
   };
