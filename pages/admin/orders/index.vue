@@ -124,10 +124,6 @@ const clearFilters = () => { searchQuery.value = ''; statusFilter.value = 'all';
           <RefreshCcw :class="['w-3.5 h-3.5', isLoading && 'animate-spin']" />
           <span>Refresh</span>
         </UiButton>
-        <UiButton variant="outline" class="rounded-xl h-9 px-3.5 gap-1.5 font-bold text-xs">
-          <Download class="w-3.5 h-3.5" />
-          <span>Bulk Export</span>
-        </UiButton>
       </div>
     </template>
 
