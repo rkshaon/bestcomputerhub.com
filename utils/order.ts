@@ -114,16 +114,18 @@ export function mapOrderSummary(raw: BackendOrderSummary): Order {
   return {
     id: String(raw.id),
     orderNumber: raw.invoice_number || `#${raw.id}`,
-    createdAt: raw.created_at,
-    updatedAt: raw.created_at,
+    createdAt: raw.sale_date || raw.created_at,
+    updatedAt: raw.sale_date || raw.created_at,
     notes: '',
     shippingAddress: null,
     shippingMethod: null,
     allowedNextStatuses: [],
     customerId: '',
-    customerName: raw.customer?.user?.username ?? 'Guest',
+    customerName: raw.customer?.full_name?.trim() || raw.customer?.user?.username || 'Guest',
     items: [],
-    itemCount: Number(raw.item_count) || 0,
+    // If itemCount is not provided (0), it might be missing from API response.
+    // Displaying 0 is the current fallback.
+    itemCount: Number(raw.item_count),
     subtotal: 0,
     shippingCharge: 0,
     discountTotal: 0,

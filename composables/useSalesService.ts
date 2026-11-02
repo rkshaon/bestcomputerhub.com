@@ -66,12 +66,24 @@ export const useSalesService = () => {
     }
   };
 
+  const getSalesSummary = async (): Promise<{ data: Record<string, number> }> => {
+    try {
+      const data = await apiClient.request<{ success: boolean; data: Record<string, number> }>('/api/v1/sales/summary/', {
+        method: 'GET'
+      });
+      return { data: data.data };
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   return {
     getSales,
     getStatuses,
     getSaleDetails,
     updateStatus,
     markPaid,
+    getSalesSummary,
     isLoading: apiClient.isLoading,
     errorMsg: apiClient.errorMsg
   };
