@@ -10,7 +10,7 @@ import {
   Truck,
   CheckCircle2,
   XCircle,
-  LucideIcon
+  type LucideIcon
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -71,9 +71,9 @@ onMounted(() => fetchData());
       </div>
       <div class="min-w-0">
         <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">{{ status.label }}</p>
-        <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ counts[index] ?? 0 }}</p>
+        <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ (counts && counts[index] !== undefined) ? counts[index] : 0 }}</p>
         <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Total Orders</p>
-        <p class="text-sm font-bold text-primary truncate">{{ formatCurrency(amounts[index] ?? 0) }}</p>
+        <p class="text-sm font-bold text-primary truncate">{{ formatCurrency((amounts && amounts[index] !== undefined) ? amounts[index] : 0) }}</p>
         <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Total Amount</p>
       </div>
     </UiCard>
