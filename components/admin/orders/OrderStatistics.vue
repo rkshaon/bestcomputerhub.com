@@ -66,8 +66,8 @@ onMounted(() => fetchData());
   </div>
   <div v-else class="flex overflow-x-auto pb-4 gap-3 animate-in fade-in duration-500 lg:grid lg:grid-cols-9 lg:overflow-visible lg:pb-0">
     <UiCard v-for="(status, index) in statuses" :key="status.value" class="flex items-center gap-3 p-3 min-w-[200px] lg:min-w-0">
-      <div :class="['w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-inner', getStatusConfig(status.value).bg, getStatusConfig(status.value).color]">
-        <component :is="getStatusConfig(status.value).icon" class="w-4 h-4" />
+      <div :class="['w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-inner', getStatusConfig(status.value)?.bg, getStatusConfig(status.value)?.color]">
+        <component :is="getStatusConfig(status.value)?.icon" class="w-4 h-4" />
       </div>
       <div class="min-w-0">
         <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">{{ status.label }}</p>
