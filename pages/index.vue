@@ -6,7 +6,7 @@ import { useBrandService } from '@/composables/useBrandService';
 import type { Brand, Product } from '@/types';
 
 useSeoMeta({
-  title: 'Best Computer Hub I Branded Gaming, Laptop, Networking Shop in Bangladesh',
+  title: 'Best Computer Hub | Branded Gaming, Laptop, Networking Shop in Bangladesh',
   description: 'Best Computer Hub selling Branded Gaming PC, Laptop, Networking Products, Gadgets shop in Bangladesh with best after sell services.'
 });
 useHead({
