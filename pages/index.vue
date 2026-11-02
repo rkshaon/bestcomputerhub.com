@@ -9,6 +9,9 @@ useSeoMeta({
   title: 'Best Computer Hub I Branded Gaming, Laptop, Networking Shop in Bangladesh',
   description: 'Best Computer Hub selling Branded Gaming PC, Laptop, Networking Products, Gadgets shop in Bangladesh with best after sell services.'
 });
+useHead({
+  link: [{ rel: 'canonical', href: 'https://bestcomputerhub.com/' }]
+});
 
 // Explicitly use the composables
 const productService = useProductService();

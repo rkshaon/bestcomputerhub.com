@@ -234,6 +234,9 @@ useSeoMeta({
   ogDescription: () => product.value?.short_description || product.value?.description || 'Shop authentic computer components with official warranty at Best Computer Hub.',
   ogImage: () => selectedImage.value || '/logo.png'
 });
+useHead({
+  link: [{ rel: 'canonical', href: computed(() => `https://bestcomputerhub.com${route.path}`) }]
+});
 
 // Category and Origin resolution
 const originCategory = computed(() => {
