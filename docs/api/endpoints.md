@@ -145,7 +145,29 @@ This document serves as the authoritative inventory of all API operations for th
 | `/api/v1/auth/password-reset/request/` | POST | Auth | `useApiClient` |
 | `/api/v1/auth/password-reset/confirm/` | POST | Auth | `useApiClient` |
 
-*(This list will be expanded as other services are inspected)*
+| `/api/v1/content-security/keyword-rules/` | GET | Security | `useContentSecurityService` |
+| `/api/v1/content-security/keyword-rules/` | POST | Security | `useContentSecurityService` |
+| `/api/v1/content-security/keyword-rules/{id}/` | GET | Security | `useContentSecurityService` |
+| `/api/v1/content-security/keyword-rules/{id}/` | PATCH | Security | `useContentSecurityService` |
+| `/api/v1/content-security/keyword-rules/{id}/` | DELETE | Security | `useContentSecurityService` |
+| `/api/v1/content-security/domain-rules/` | GET | Security | `useContentSecurityService` |
+| `/api/v1/content-security/domain-rules/` | POST | Security | `useContentSecurityService` |
+| `/api/v1/content-security/domain-rules/{id}/` | GET | Security | `useContentSecurityService` |
+| `/api/v1/content-security/domain-rules/{id}/` | PATCH | Security | `useContentSecurityService` |
+| `/api/v1/content-security/domain-rules/{id}/` | DELETE | Security | `useContentSecurityService` |
+| `/api/v1/content-security/hidden-content-rules/` | GET | Security | `useContentSecurityService` |
+| `/api/v1/content-security/hidden-content-rules/` | POST | Security | `useContentSecurityService` |
+| `/api/v1/content-security/hidden-content-rules/{id}/` | GET | Security | `useContentSecurityService` |
+| `/api/v1/content-security/hidden-content-rules/{id}/` | PATCH | Security | `useContentSecurityService` |
+| `/api/v1/content-security/hidden-content-rules/{id}/` | DELETE | Security | `useContentSecurityService` |
+| `/api/v1/content-security/obfuscation-rules/` | GET | Security | `useContentSecurityService` |
+| `/api/v1/content-security/obfuscation-rules/` | POST | Security | `useContentSecurityService` |
+| `/api/v1/content-security/obfuscation-rules/{id}/` | GET | Security | `useContentSecurityService` |
+| `/api/v1/content-security/obfuscation-rules/{id}/` | PATCH | Security | `useContentSecurityService` |
+| `/api/v1/content-security/obfuscation-rules/{id}/` | DELETE | Security | `useContentSecurityService` |
+| `/api/v1/request-logs/` | GET | System | `useRequestLogService` |
+| `/api/v1/request-logs/{id}/` | GET | System | `useRequestLogService` |
+| `/api/v1/categories/children/` | GET | Categories | `useMegaMenu` |
 
 ## 3. Detailed Endpoint Contracts
 
@@ -356,16 +378,37 @@ This document serves as the authoritative inventory of all API operations for th
 #### Delete Role
 - **Endpoint**: `/api/v1/roles/{id}/`
 - **Method**: `DELETE`
+### Domain: Security (`useContentSecurityService`)
 
-### Domain: Users (`useUserService`)
+#### Content Security Rules (Keyword, Domain, Hidden, Obfuscation)
+- **Endpoints**: `/api/v1/content-security/{rule_type}/` (GET, POST), `/api/v1/content-security/{rule_type}/{id}/` (GET, PATCH, DELETE)
+- **Rule Types**: `keyword-rules`, `domain-rules`, `hidden-content-rules`, `obfuscation-rules`
+- **Method**: GET, POST, PATCH, DELETE
+- **Request Body**: `Create{Type}RulePayload`, `Update{Type}RulePayload`
+- **Response Structure**: `{Type}Rule`, `{Type}RuleDetail`
+- **Note**: backend verification required for full schema; these manage security heuristics for content filtering.
 
-#### List Users
-- **Endpoint**: `/api/v1/users/`
+### Domain: System (`useRequestLogService`)
+
+#### List Request Logs
+- **Endpoint**: `/api/v1/request-logs/`
 - **Method**: `GET`
-- **Request Parameters**: `page`, `page_size`, `search`
-- **Response Structure**: `PaginatedUsers`
+- **Request Parameters**: `page`, `page_size`, etc.
+- **Response Structure**: `PaginatedRequestLogs`
 
-#### Create/Update/Delete/Change Operations
-- **Endpoints**: `/api/v1/users/`, `/api/v1/users/{id}/`, `/api/v1/users/{id}/assign-role/`, `/api/v1/users/{id}/remove-role/`, `/api/v1/users/me/change-password/`, `/api/v1/users/me/`, `/api/v1/users/{id}/change-password/`, `/api/v1/users/{id}/change-username/`, `/api/v1/users/{id}/change-email/`
-- **Methods**: `POST`, `PATCH`
-- **Note**: Administrative user management and self-service profile updates.
+#### Get Request Log Detail
+- **Endpoint**: `/api/v1/request-logs/{id}/`
+- **Method**: `GET`
+- **Response Structure**: `RequestLog`
+
+### Domain: Categories / Navigation (`useMegaMenu`)
+
+#### Get Category Children
+- **Endpoint**: `/api/v1/categories/children/`
+- **Method**: `GET`
+- **Query Parameters**: `ids` (string), `is_menu` (boolean)
+- **Response Structure**: `CategoryChildrenApiItem[]` or `{ results: CategoryChildrenApiItem[] }`
+- **Normalization**: Maps backend item to frontend `Category` model.
+
+### Local-Only / Browser-Side Logic
+- `useVersionCheck.ts`: Does not call internal backend API; performs `GET /version.json` check against the deployment host (frontend static file) to detect version changes.
