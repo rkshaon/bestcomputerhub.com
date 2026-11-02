@@ -334,6 +334,9 @@ useSeoMeta({
   ogTitle: pageTitle,
   ogDescription: pageDescription
 });
+useHead({
+  link: [{ rel: 'canonical', href: computed(() => `https://bestcomputerhub.com${route.path}`) }]
+});
 
 const resolveCategory = async () => {
   // Prevent category resolution when navigating to other routes (e.g. product details)

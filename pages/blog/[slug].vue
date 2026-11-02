@@ -139,7 +139,7 @@ useHead({
   link: [
     {
       rel: 'canonical',
-      href: computed(() => post.value?.slug ? `/blog/${post.value.slug}/` : `/blog/`)
+      href: computed(() => `https://bestcomputerhub.com${post.value?.slug ? `/blog/${post.value.slug}/` : `/blog/`}`)
     }
   ]
 });

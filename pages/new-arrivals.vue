@@ -9,6 +9,9 @@ useSeoMeta({
   title: 'New Arrivals',
   description: 'Explore the latest gaming laptops, PC components, monitors, and computer accessories just arrived at Best Computer Hub.'
 });
+useHead({
+  link: [{ rel: 'canonical', href: 'https://bestcomputerhub.com/new-arrivals/' }]
+});
 
 const productService = useProductService();
 const cartStore = useCartStore();
