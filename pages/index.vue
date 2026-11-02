@@ -31,7 +31,6 @@ const {
   }
 );
 
-
 const bestSellerProducts = computed<Product[]>(() => bestSellersResponse.value?.results || []);
 
 // Initialize brands with standard defaults from product service mapping for high SSR alignment and zero layout pop

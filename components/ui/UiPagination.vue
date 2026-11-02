@@ -149,7 +149,7 @@ const paginationSlots = computed<PaginationSlot[]>(() => {
               'w-8 h-8 sm:w-10 sm:h-10 rounded-xl font-bold transition-all cursor-pointer text-xs shrink-0',
               currentPage === slot.page 
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
-                : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500'
+                : 'border border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500 dark:text-slate-400'
             )"
           >
             {{ slot.page }}
