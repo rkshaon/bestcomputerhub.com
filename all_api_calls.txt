@@ -1,0 +1,174 @@
+composables/useContentSecurityService.ts:      const data = await apiClient.request<any>('/api/v1/content-security/keyword-rules/', {
+composables/useContentSecurityService.ts:      const data = await apiClient.request<KeywordRule>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<KeywordRuleDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<KeywordRuleDetail>(
+composables/useContentSecurityService.ts:      await apiClient.request(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<any>('/api/v1/content-security/domain-rules/', {
+composables/useContentSecurityService.ts:      const data = await apiClient.request<DomainRule>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<DomainRuleDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<DomainRuleDetail>(
+composables/useContentSecurityService.ts:      await apiClient.request(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<any>('/api/v1/content-security/hidden-content-rules/', {
+composables/useContentSecurityService.ts:      const data = await apiClient.request<HiddenContentRule>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<HiddenContentRuleDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<HiddenContentRuleDetail>(
+composables/useContentSecurityService.ts:      await apiClient.request(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<any>('/api/v1/content-security/obfuscation-rules/', {
+composables/useContentSecurityService.ts:      const data = await apiClient.request<ObfuscationRule>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<ObfuscationRuleDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<ObfuscationRuleDetail>(
+composables/useContentSecurityService.ts:      await apiClient.request(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<any>('/api/v1/content-security/redirect-rules/', {
+composables/useContentSecurityService.ts:      const data = await apiClient.request<RedirectRule>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<RedirectRuleDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<RedirectRuleDetail>(
+composables/useContentSecurityService.ts:      await apiClient.request(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<any>('/api/v1/content-security/html-tag-rules/', {
+composables/useContentSecurityService.ts:      const data = await apiClient.request<HtmlTagRule>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<HtmlTagRuleDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<HtmlTagRuleDetail>(
+composables/useContentSecurityService.ts:      await apiClient.request(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<any>('/api/v1/content-security/html-attribute-rules/', {
+composables/useContentSecurityService.ts:      const data = await apiClient.request<HtmlAttributeRule>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<HtmlAttributeRuleDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<HtmlAttributeRuleDetail>(
+composables/useContentSecurityService.ts:      await apiClient.request(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<any>('/api/v1/content-security/scans/', {
+composables/useContentSecurityService.ts:      const data = await apiClient.request<ContentScanRunResult>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<ContentScanDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<any>('/api/v1/content-security/findings/', {
+composables/useContentSecurityService.ts:      const data = await apiClient.request<ContentScanFindingDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<ContentScanFindingDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<ContentScanFindingDetail>(
+composables/useContentSecurityService.ts:      const data = await apiClient.request<DetectionRulesSummary>(
+composables/useSalesService.ts:      const data = await apiClient.request<any>('/api/v1/sales/', {
+composables/useSalesService.ts:      const data = await apiClient.request<OrderStatusResponse>('/api/v1/sales/statuses/', {
+composables/useSalesService.ts:      const data = await apiClient.request<BackendOrderDetail>(`/api/v1/sales/${saleId}/`, {
+composables/useSalesService.ts:      const data = await apiClient.request<Order>(`/api/v1/sales/${saleId}/update-status/`, {
+composables/useSalesService.ts:      const data = await apiClient.request<Order>(`/api/v1/sales/${saleId}/mark-paid/`, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(endpoint, {
+composables/useCategoryService.ts:      const data = await apiClient.request<CategorySummaryResponse>('/api/v1/categories/summary/', {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(`/api/v1/categories/${resolvedId}/`, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>('/api/v1/categories/', {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(`/api/v1/categories/${id}/`, {
+composables/useCategoryService.ts:      await apiClient.request(`/api/v1/categories/${id}/`, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(`/api/v1/categories/${slug}/mark-as-menu/`, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(`/api/v1/categories/${slug}/remove-from-menu/`, {
+composables/useCategoryService.ts:      const res = await apiClient.request<BulkMenuUpdateResponse>('/api/v1/categories/bulk-menu-update/', {
+composables/useCategoryService.ts:      const res = await apiClient.request<CategoryImportResponse>('/api/v1/categories/import-csv/', {
+composables/useCategoryService.ts:      const res = await apiClient.request<CategoryImportResponse>('/api/v1/categories/import-json/', {
+composables/useCategoryService.ts:      const res = await apiClient.request<CategoryImportResponse>('/api/v1/categories/import-xlsx/', {
+composables/useCategoryService.ts:      const data = await apiClient.request<PaginatedResponse<Category> | Category[]>(endpoint, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(endpoint, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(`/api/v1/categories/${slug}/reorder/`, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(endpoint, {
+composables/useCategoryService.ts:      const data = await apiClient.request<CategoryPriceRange>(endpoint, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>('/api/v1/categories/featured/', {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(`/api/v1/categories/${id}/featured-icon/`, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(`/api/v1/categories/${id}/feature/`, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(`/api/v1/categories/${id}/unfeature/`, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>(`/api/v1/categories/${id}/featured-icon/`, {
+composables/useCategoryService.ts:      const data = await apiClient.request<any>('/api/v1/categories/featured/reorder/', {
+composables/useBannerService.ts:      const response = await apiClient.request<any>(`/api/v1/banners/${queryString}`, {
+composables/useBannerService.ts:      const response = await apiClient.request<any>(`/api/v1/banners/${id}/`, {
+composables/useBannerService.ts:      const response = await apiClient.request<any>('/api/v1/banners/', {
+composables/useBannerService.ts:      const response = await apiClient.request<any>(`/api/v1/banners/${id}/`, {
+composables/useBannerService.ts:      const response = await apiClient.request<any>(`/api/v1/banners/${id}/`, {
+composables/useBannerService.ts:      const response = await apiClient.request<any>('/api/v1/banners/reorder/', {
+composables/useBannerService.ts:      const response = await apiClient.request<any>(`/api/v1/banners/available/${queryString}`, {
+composables/useBannerService.ts:      const response = await apiClient.request<any>(`/api/v1/placements/${queryString}`, {
+composables/useBannerService.ts:      const response = await apiClient.request<any>(`/api/v1/placements/${id}/`, {
+composables/useBannerService.ts:      const response = await apiClient.request<any>('/api/v1/placements/', {
+composables/useBannerService.ts:      const response = await apiClient.request<any>(`/api/v1/placements/${id}/`, {
+composables/useBannerService.ts:      const response = await apiClient.request<any>(`/api/v1/placements/${id}/`, {
+composables/useCheckoutService.ts:    const data = await apiClient.request<CheckoutValidateResponse>('/api/v1/checkout/validate/', {
+composables/useCheckoutService.ts:    const data = await apiClient.request<BackendOrderDetail>('/api/v1/checkout/confirm/', {
+composables/useCheckoutService.ts:    const data = await apiClient.request<BackendOrderDetail>(`/api/v1/orders/${orderId}/`, {
+composables/useUserService.ts:      const data = await apiClient.request<PaginatedUsers | UserItem[]>('/api/v1/users/', {
+composables/useUserService.ts:      const data = await apiClient.request<UserItem>(`/api/v1/users/${id}/`, {
+composables/useUserService.ts:      const created = await apiClient.request<UserItem>('/api/v1/users/', {
+composables/useUserService.ts:      const updated = await apiClient.request<UserItem>(`/api/v1/users/${id}/`, {
+composables/useUserService.ts:      await apiClient.request(`/api/v1/users/${id}/`, {
+composables/useUserService.ts:      await apiClient.request(`/api/v1/users/${userId}/assign-role/`, {
+composables/useUserService.ts:      await apiClient.request(`/api/v1/users/${userId}/remove-role/`, {
+composables/useUserService.ts:      await apiClient.request('/api/v1/users/me/change-password/', {
+composables/useUserService.ts:      const updated = await apiClient.request<UserItem>('/api/v1/users/me/', {
+composables/useUserService.ts:      const data = await apiClient.request<{ message?: string }>(`/api/v1/users/${userId}/change-password/`, {
+composables/useUserService.ts:      const data = await apiClient.request<{ message?: string }>(`/api/v1/users/${userId}/change-username/`, {
+composables/useUserService.ts:      const data = await apiClient.request<{ message?: string }>(`/api/v1/users/${userId}/change-email/`, {
+composables/useCustomerAddressService.ts:      const data = await apiClient.request<PaginatedCustomerAddresses>(endpoint, {
+composables/useCustomerAddressService.ts:      const data = await apiClient.request<CustomerAddress>('/api/v1/customer-addresses/', {
+composables/useCustomerAddressService.ts:      const data = await apiClient.request<CustomerAddress>(`/api/v1/customer-addresses/${id}/`, {
+composables/useBlogService.ts:      const data = await apiClient.request<PaginatedBlogPosts>('/api/v1/blog/posts/', {
+composables/useBlogService.ts:      const data = await apiClient.request<BlogPostItem>(`/api/v1/blog/posts/${id}/`, {
+composables/useBlogService.ts:      const data = await apiClient.request<{ message?: string; categories: BlogCategory[]; [key: string]: any }>(
+composables/useBlogService.ts:      const data = await apiClient.request<{ message?: string; categories: BlogCategory[]; [key: string]: any }>(
+composables/useBlogService.ts:      const data = await apiClient.request<BlogPostItem>(`/api/v1/blog/posts/${id}/`, {
+composables/useBlogService.ts:      const data = await apiClient.request<BlogPostItem>('/api/v1/blog/posts/', {
+composables/useBlogService.ts:      const data = await apiClient.request<PaginatedBlogTags | BlogTag[]>('/api/v1/blog/tags/', {
+composables/useBlogService.ts:      const data = await apiClient.request<BlogTag>('/api/v1/blog/tags/', {
+composables/useBlogService.ts:      const data = await apiClient.request<BlogTag>(`/api/v1/blog/tags/${id}/`, {
+composables/useBlogService.ts:      await apiClient.request<void>(`/api/v1/blog/tags/${id}/`, {
+composables/useBlogService.ts:      await apiClient.request<void>(`/api/v1/blog/posts/${id}/`, {
+composables/useBlogService.ts:      const data = await apiClient.request<BlogPostItem>(`/api/v1/blog/posts/${id}/unpublish/`, {
+composables/useBlogService.ts:      const data = await apiClient.request<BlogPostItem>(`/api/v1/blog/posts/${id}/publish/`, {
+composables/useRequestLogService.ts:      const data = await apiClient.request<PaginatedRequestLogs | RequestLog[]>('/api/v1/request-logs/', {
+composables/useRequestLogService.ts:      const data = await apiClient.request<RequestLog>(`/api/v1/request-logs/${id}/`, {
+composables/useEmailVerification.ts:      const res = await apiClient.request<{ email: string; email_verified: boolean }>('/api/v1/auth/email-verification/status/');
+composables/useEmailVerification.ts:      const res = await apiClient.request<{ message: string }>('/api/v1/auth/email-verification/request/', { method: 'POST' });
+composables/useShippingService.ts:      const data = await apiClient.request<any>(endpoint, {
+composables/useShippingService.ts:      const data = await apiClient.request<ShippingMethod>(`/api/v1/shipping/methods/${id}/`, {
+composables/useShippingService.ts:      const data = await apiClient.request<ShippingMethod>('/api/v1/shipping/methods/', {
+composables/useShippingService.ts:      const data = await apiClient.request<ShippingMethod>(`/api/v1/shipping/methods/${id}/`, {
+composables/useShippingService.ts:      await apiClient.request(`/api/v1/shipping/methods/${id}/`, {
+composables/useShippingService.ts:      const data = await apiClient.request<any>(endpoint, {
+composables/useShippingService.ts:      const data = await apiClient.request<ShippingZone>(`/api/v1/shipping/zones/${id}/`, {
+composables/useShippingService.ts:      const data = await apiClient.request<ShippingZone>('/api/v1/shipping/zones/', {
+composables/useShippingService.ts:      const data = await apiClient.request<ShippingZone>(`/api/v1/shipping/zones/${id}/`, {
+composables/useShippingService.ts:      await apiClient.request(`/api/v1/shipping/zones/${id}/`, {
+composables/useShippingService.ts:      const data = await apiClient.request<any>(endpoint, {
+composables/useShippingService.ts:      const data = await apiClient.request<ShippingRate>(`/api/v1/shipping/rates/${id}/`, {
+composables/useShippingService.ts:      const data = await apiClient.request<ShippingRate>('/api/v1/shipping/rates/', {
+composables/useShippingService.ts:      const data = await apiClient.request<ShippingRate>(`/api/v1/shipping/rates/${id}/`, {
+composables/useShippingService.ts:      await apiClient.request(`/api/v1/shipping/rates/${id}/`, {
+composables/useShippingService.ts:      const data = await apiClient.request<AvailableShippingZone[]>('/api/v1/shipping/zones/available/', {
+composables/useShippingService.ts:      const data = await apiClient.request<ShippingOptionsResponse>(
+composables/useBrandService.ts:      const data = await apiClient.request<any>(endpoint, {
+composables/useBrandService.ts:      const data = await apiClient.request<any>(endpoint, {
+composables/useBrandService.ts:      const data = await apiClient.request<any>(`/api/v1/brands/category/${categoryId}/`, {
+composables/useBrandService.ts:      const data = await apiClient.request<Brand>(`/api/v1/brands/${id}/`, {
+composables/useBrandService.ts:      const data = await apiClient.request<Brand>('/api/v1/brands/', {
+composables/useBrandService.ts:      const data = await apiClient.request<Brand>(`/api/v1/brands/${id}/`, {
+composables/useBrandService.ts:      await apiClient.request(`/api/v1/brands/${id}/`, {
+composables/useCustomerService.ts:      const data = await apiClient.request<PaginatedCustomers>(endpoint, {
+composables/useProductService.ts:      const response = await apiClient.request<any>(`/api/v1/products/${urlSuffix}`, {
+composables/useProductService.ts:      const response = await apiClient.request<any>(`/api/v1/products/${idOrSlug}/`, {
+composables/useProductService.ts:      const response = await apiClient.request<PaginatedResponse<ProductImage>>('/api/v1/product-images/', {
+composables/useProductService.ts:      const response = await apiClient.request<ProductImageSummaryResponse>('/api/v1/product-images/summary/', {
+composables/useProductService.ts:      const response = await apiClient.request<any>(`/api/v1/products/${idOrSlug}/product-images/`, {
+composables/useProductService.ts:      const data = await apiClient.request<any>('/api/v1/product-images/', {
+composables/useProductService.ts:      const response = await apiClient.request<any>('/api/v1/product-images/bulk-upload/', {
+composables/useProductService.ts:      await apiClient.request<void>(`/api/v1/product-images/${id}/`, {
+composables/useProductService.ts:      const response = await apiClient.request<any>(`/api/v1/product-images/${id}/`, {
+composables/useProductService.ts:      const response = await apiClient.request<any>(`/api/v1/product-images/${id}/`, {
+composables/useProductService.ts:      const response = await apiClient.request<any>(`/api/v1/product-images/${id}/reorder/`, {
+composables/useProductService.ts:      const response = await apiClient.request<any>(`/api/v1/product-images/${id}/set-default/`, {
+composables/useProductService.ts:      const response = await apiClient.request<any>(`/api/v1/product-images/${id}/replace-image/`, {
+composables/useProductService.ts:      const response = await apiClient.request<any>('/api/v1/products/', {
+composables/useProductService.ts:      const response = await apiClient.request<any>(`/api/v1/products/${id}/`, {
+composables/useProductService.ts:      await apiClient.request<any>(`/api/v1/products/${id}/`, {
+composables/useRoleService.ts:      const data = await apiClient.request<PaginatedRoles | Role[]>('/api/v1/roles/', {
+composables/useRoleService.ts:      const created = await apiClient.request<Role>('/api/v1/roles/', {
+composables/useRoleService.ts:      const updated = await apiClient.request<Role>(`/api/v1/roles/${id}/`, {
+composables/useRoleService.ts:      await apiClient.request(`/api/v1/roles/${id}/`, {
+composables/useRoleService.ts:      const data = await apiClient.request<Role>(`/api/v1/roles/${id}/`, {
+composables/useOrderNotificationService.ts:      const data = await apiClient.request<PaginatedOrderNotificationRecipients>(RECIPIENTS_ENDPOINT, {
+composables/useOrderNotificationService.ts:    apiClient.request<OrderNotificationRecipient>(RECIPIENTS_ENDPOINT, {
+composables/useOrderNotificationService.ts:    apiClient.request<OrderNotificationRecipient>(`${RECIPIENTS_ENDPOINT}${id}/`, {
+composables/useOrderNotificationService.ts:    apiClient.request<void>(`${RECIPIENTS_ENDPOINT}${id}/`, {
+composables/usePermissionService.ts:        const data = await apiClient.request<PaginatedPermissions | Permission[]>('/api/v1/permissions/', {
+composables/usePermissionService.ts:      const data = await apiClient.request<PaginatedPermissions | Permission[]>('/api/v1/permissions/', {
+composables/useMegaMenu.ts:        const payload = await apiClient.request<unknown>(
+composables/useOrderService.ts:    const data = await apiClient.request<BackendOrderSummary[] | { results: BackendOrderSummary[]; count?: number }>(
+composables/useOrderService.ts:    const data = await apiClient.request<BackendOrderDetail>(`/api/v1/orders/${orderId}/`, {
+composables/useOrderService.ts:    return apiClient.request<BackendOrderCancelResponse>(`/api/v1/orders/${orderId}/cancel/`, {
