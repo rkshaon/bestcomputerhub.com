@@ -24,6 +24,7 @@ import { useSalesService } from '@/composables/useSalesService';
 import { formatCurrency, cn } from '@/utils';
 import type { Order, OrderStatusOption } from '@/types/order';
 import KanbanBoard from '@/components/admin/orders/KanbanBoard.vue';
+import OrderStatistics from '@/components/admin/orders/OrderStatistics.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
 import UiTable, { type UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiButton from '@/components/ui/Button.vue';
@@ -54,6 +55,7 @@ const statusFilter = ref('all');
 const statuses = ref<OrderStatusOption[]>([]);
 const transitions = ref<Record<string, string[]>>({});
 const viewMode = ref<'table' | 'kanban'>('table');
+const statsRef = ref<InstanceType<typeof OrderStatistics> | null>(null);
 
 const isLoading = ref(false);
 const currentPage = ref(1);
@@ -120,7 +122,7 @@ const clearFilters = () => { searchQuery.value = ''; statusFilter.value = 'all';
 
     <template #header-actions>
       <div class="flex flex-wrap items-center gap-2">
-        <UiButton variant="outline" class="rounded-xl h-9 px-3.5 gap-1.5 font-bold text-xs" @click="fetchOrders" :disabled="isLoading">
+        <UiButton variant="outline" class="rounded-xl h-9 px-3.5 gap-1.5 font-bold text-xs" @click="() => { fetchOrders(); statsRef?.refresh(); }" :disabled="isLoading">
           <RefreshCcw :class="['w-3.5 h-3.5', isLoading && 'animate-spin']" />
           <span>Refresh</span>
         </UiButton>
@@ -128,6 +130,7 @@ const clearFilters = () => { searchQuery.value = ''; statusFilter.value = 'all';
     </template>
 
     <div class="space-y-4 animate-in fade-in duration-500">
+      <OrderStatistics ref="statsRef" :statuses="statuses" />
       <!-- Search & Filters -->
       <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
         <div class="flex items-center gap-3 w-full sm:w-auto">
