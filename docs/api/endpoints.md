@@ -387,6 +387,7 @@ This document serves as the authoritative inventory of all API operations for th
 #### Delete Role
 - **Endpoint**: `/api/v1/roles/{id}/`
 - **Method**: `DELETE`
+
 ### Domain: Security (`useContentSecurityService`)
 
 #### Content Security Rules (Keyword, Domain, Hidden, Obfuscation)
@@ -421,3 +422,22 @@ This document serves as the authoritative inventory of all API operations for th
 
 ### Local-Only / Browser-Side Logic
 - `useVersionCheck.ts`: Does not call internal backend API; performs `GET /version.json` check against the deployment host (frontend static file) to detect version changes.
+
+## 4. Type Coverage Analysis
+- Most operations are strongly typed via interfaces in `/types/`.
+- **Inadequate Type Coverage (Requires Backend Schema Verification)**:
+  - `GET /api/v1/cart/items/`: Current frontend mapping requires stricter typing for complex nested product representations.
+  - `GET /api/v1/sales/statuses/`: Requires exact DRF choice-field mapping verification.
+  - `POST /api/v1/blog/posts/{id}/categories/`: Payload schema needs explicit validation against the backend model to ensure all required fields are satisfied.
+
+## 5. Route Relationships
+
+### 5.1 Route-API Mapping
+- **Many-to-Many**: Frontend routes often consume multiple endpoints to assemble view state (e.g., product detail pages call `/api/v1/products/{id}/`, `/api/v1/product-images/{id}/`, and relevant category endpoints).
+- **Aliases & Redirects**:
+  - `/account/orders/` and `/my-account/orders/`: `/account/orders/` is the primary route; `/my-account/orders/` redirects to it to maintain legacy compatibility. Both use `useOrderService.getOrders()`.
+  - `/shop/` and `/shop-now/`: `/shop/` is the main storefront listing; `/shop-now/` redirects to the shop page via a temporary alias used in marketing campaigns. Both ultimately fetch product data via `useProductService.getProducts()`.
+
+### 5.2 Consumption Logic
+- All API consumption occurs via `useApiClient.request()`, ensuring standardized headers, authentication, and error handling.
+- Storefront navigation uses `useRouter` and URL params, while API requests dynamically construct paths based on these parameters and required domain services.
