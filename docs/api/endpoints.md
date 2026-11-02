@@ -80,6 +80,33 @@ This document serves as the authoritative inventory of all API operations for th
 | `/api/v1/categories/import-json/` | POST | Categories | `useCategoryService` |
 | `/api/v1/categories/import-xlsx/` | POST | Categories | `useCategoryService` |
 | `/api/v1/categories/roots/` | GET | Categories | `useCategoryService` |
+| `/api/v1/cart/items/` | GET | Cart | `useCartService` |
+| `/api/v1/cart/items/` | POST | Cart | `useCartService` |
+| `/api/v1/cart/items/{id}/` | PATCH | Cart | `useCartService` |
+| `/api/v1/cart/items/{id}/` | DELETE | Cart | `useCartService` |
+| `/api/v1/checkout/validate/` | POST | Checkout | `useCheckoutService` |
+| `/api/v1/checkout/confirm/` | POST | Checkout | `useCheckoutService` |
+| `/api/v1/orders/{id}/` | GET | Checkout | `useCheckoutService` |
+| `/api/v1/shipping/methods/` | GET | Shipping | `useShippingService` |
+| `/api/v1/shipping/methods/{id}/` | GET | Shipping | `useShippingService` |
+| `/api/v1/shipping/methods/` | POST | Shipping | `useShippingService` |
+| `/api/v1/shipping/methods/{id}/` | PATCH | Shipping | `useShippingService` |
+| `/api/v1/shipping/methods/{id}/` | PUT | Shipping | `useShippingService` |
+| `/api/v1/shipping/methods/{id}/` | DELETE | Shipping | `useShippingService` |
+| `/api/v1/shipping/zones/` | GET | Shipping | `useShippingService` |
+| `/api/v1/shipping/zones/{id}/` | GET | Shipping | `useShippingService` |
+| `/api/v1/shipping/zones/` | POST | Shipping | `useShippingService` |
+| `/api/v1/shipping/zones/{id}/` | PATCH | Shipping | `useShippingService` |
+| `/api/v1/shipping/zones/{id}/` | PUT | Shipping | `useShippingService` |
+| `/api/v1/shipping/zones/{id}/` | DELETE | Shipping | `useShippingService` |
+| `/api/v1/shipping/rates/` | GET | Shipping | `useShippingService` |
+| `/api/v1/shipping/rates/{id}/` | GET | Shipping | `useShippingService` |
+| `/api/v1/shipping/rates/` | POST | Shipping | `useShippingService` |
+| `/api/v1/shipping/rates/{id}/` | PATCH | Shipping | `useShippingService` |
+| `/api/v1/shipping/rates/{id}/` | PUT | Shipping | `useShippingService` |
+| `/api/v1/shipping/rates/{id}/` | DELETE | Shipping | `useShippingService` |
+| `/api/v1/shipping/zones/available/` | GET | Shipping | `useShippingService` |
+| `/api/v1/shipping/options/` | GET | Shipping | `useShippingService` |
 
 *(This list will be expanded as other services are inspected)*
 
@@ -115,3 +142,86 @@ This document serves as the authoritative inventory of all API operations for th
 - **Endpoint**: `/api/v1/sales/{id}/mark-paid/`
 - **Method**: `POST`
 - **Response Structure**: `Order`
+
+### Domain: Cart (`useCartService`)
+
+#### Get Cart Items
+- **Endpoint**: `/api/v1/cart/items/`
+- **Method**: `GET`
+- **Response Structure**: `CartItem[]`
+- **Normalization**: Maps backend product representation to frontend `CartItem` model.
+
+#### Add to Cart
+- **Endpoint**: `/api/v1/cart/items/`
+- **Method**: `POST`
+- **Request Body**: `{ product: number, quantity: number }`
+
+#### Update Cart Item
+- **Endpoint**: `/api/v1/cart/items/{id}/`
+- **Method**: `PATCH`
+- **Request Body**: `{ quantity: number }`
+
+#### Remove from Cart
+- **Endpoint**: `/api/v1/cart/items/{id}/`
+- **Method**: `DELETE`
+
+### Domain: Checkout (`useCheckoutService`)
+
+#### Validate Checkout
+- **Endpoint**: `/api/v1/checkout/validate/`
+- **Method**: `POST`
+- **Request Body**: `CheckoutValidatePayload`
+- **Response Structure**: `CheckoutValidateResponse`
+
+#### Confirm Order
+- **Endpoint**: `/api/v1/checkout/confirm/`
+- **Method**: `POST`
+- **Request Body**: `CheckoutConfirmPayload`
+- **Headers**: `Idempotency-Key` (required)
+- **Response Structure**: `Order`
+
+#### Get Order Details
+- **Endpoint**: `/api/v1/orders/{id}/`
+- **Method**: `GET`
+- **Response Structure**: `Order`
+- **Normalization**: Maps `BackendOrderDetail` to frontend `Order` type via `mapOrderDetail`.
+
+### Domain: Shipping (`useShippingService`)
+
+#### List Shipping Methods
+- **Endpoint**: `/api/v1/shipping/methods/`
+- **Method**: `GET`
+- **Request Parameters**: `page` (number), `page_size` (number), `search` (string), `is_active` (boolean)
+- **Response Structure**: `PaginatedShippingMethods`
+
+#### Get Shipping Method Details
+- **Endpoint**: `/api/v1/shipping/methods/{id}/`
+- **Method**: `GET`
+- **Response Structure**: `ShippingMethod`
+
+#### Create Shipping Method
+- **Endpoint**: `/api/v1/shipping/methods/`
+- **Method**: `POST`
+- **Request Body**: `CreateShippingMethodPayload`
+
+#### Update Shipping Method
+- **Endpoint**: `/api/v1/shipping/methods/{id}/`
+- **Method**: `PATCH` / `PUT`
+- **Request Body**: `UpdateShippingMethodPayload`
+
+#### Delete Shipping Method
+- **Endpoint**: `/api/v1/shipping/methods/{id}/`
+- **Method**: `DELETE`
+
+*(Note: Shipping Zones and Rates follow analogous CRUD patterns to Methods; backend verification required for full schema)*
+
+#### Get Available Shipping Zones
+- **Endpoint**: `/api/v1/shipping/zones/available/`
+- **Method**: `GET`
+- **Response Structure**: `AvailableShippingZone[]`
+
+#### Get Shipping Options
+- **Endpoint**: `/api/v1/shipping/options/`
+- **Method**: `GET`
+- **Query Parameters**: `address_id` (number)
+- **Response Structure**: `ShippingOptionsResponse`
