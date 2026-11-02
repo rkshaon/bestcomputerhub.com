@@ -57,6 +57,9 @@ const transitions = ref<Record<string, string[]>>({});
 const viewMode = ref<'table' | 'kanban'>('table');
 const statsRef = ref<InstanceType<typeof OrderStatistics> | null>(null);
 
+const router = useRouter();
+const navigateToOrder = (order: Order) => router.push(`/admin/orders/${order.id}`);
+
 const isLoading = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
@@ -158,7 +161,7 @@ const clearFilters = () => { searchQuery.value = ''; statusFilter.value = 'all';
       </div>
 
       <!-- Table View -->
-      <UiTable v-if="viewMode === 'table'" :columns="tableColumns" :data="orders" :loading="isLoading" key-field="id">
+      <UiTable v-if="viewMode === 'table'" :columns="tableColumns" :data="orders" :loading="isLoading" key-field="id" @row-click="navigateToOrder" row-class="cursor-pointer">
         <template #cell-orderInfo="{ item: order }">
           <div class="flex flex-col"><span class="font-mono text-xs font-bold tracking-tighter">{{ order.orderNumber }}</span><span class="text-[10px] text-muted-foreground mt-0.5">{{ order.itemCount }} Items</span></div>
         </template>
@@ -179,7 +182,7 @@ const clearFilters = () => { searchQuery.value = ''; statusFilter.value = 'all';
         <template #cell-actions="{ item: order }">
           <div class="flex items-center justify-end gap-1">
             <NuxtLink :to="`/admin/orders/${order.id}`" class="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="View details" aria-label="View details"><Eye class="w-4 h-4" /></NuxtLink>
-            <button class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors" title="More options" aria-label="More options"><MoreVertical class="w-4 h-4" /></button>
+            <button class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors" title="More options" aria-label="More options" @click.stop><MoreVertical class="w-4 h-4" /></button>
           </div>
         </template>
         <template #footer><UiPagination v-model:current-page="currentPage" :total-pages="totalPages" :total-count="totalCount" :items-per-page="itemsPerPage" item-label="orders" /></template>
