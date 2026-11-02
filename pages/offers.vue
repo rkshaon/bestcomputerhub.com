@@ -10,6 +10,9 @@ useSeoMeta({
   title: 'Special Offers & Deals',
   description: 'Exclusive discounts, flash sales, and special offers on gaming PCs, laptops, graphics cards, and accessories at Best Computer Hub.'
 });
+useHead({
+  link: [{ rel: 'canonical', href: 'https://bestcomputerhub.com/offers/' }]
+});
 
 const productService = useProductService();
 const cartStore = useCartStore();
