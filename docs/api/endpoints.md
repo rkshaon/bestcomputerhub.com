@@ -2,6 +2,15 @@
 
 This document serves as the authoritative inventory of all API operations for the Best Computer Hub Nuxt 4 frontend.
 
+## Summary Statistics
+| Metric | Value |
+|---|---|
+| Total Unique Operations | 161 |
+| GET | 72 |
+| POST | 68 |
+| PATCH | 16 |
+| DELETE | 5 |
+
 ## 1. API Architecture
 
 - **Client**: Centralized `useApiClient.request()` in `/composables/useApiClient.ts`.
