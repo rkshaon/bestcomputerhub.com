@@ -31,6 +31,7 @@
   --input: 0 0% 100%;
   --ring: 213 83% 53%;
   --radius: 0.75rem;
+  --header-footer-background: 210 20% 96%;
 }
 
 .dark {
@@ -40,6 +41,7 @@
   --card-foreground: 210 40% 98%;
   --popover: 215 50% 13%;
   --popover-foreground: 210 40% 98%;
+  --header-footer-background: 215 50% 13%;
   --primary: 214 90% 60%;
   --primary-foreground: 0 0% 100%;
   --primary-hover: 214 90% 68%;
