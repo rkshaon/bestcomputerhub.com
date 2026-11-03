@@ -383,7 +383,7 @@ if (process.client) {
 
 <template>
   <header 
-    class="fixed top-0 z-50 w-full md:sticky md:top-0 border-b py-0 sm:py-1 bg-background border-border/50 shadow-sm"
+    class="fixed top-0 z-50 w-full md:sticky md:top-0 border-b py-0 sm:py-1 bg-card border-border/50 shadow-sm"
   >
     <!-- TEMPORARILY DISABLED: Storefront Top Utility Bar -->
     <!-- Restore when the utility bar is required again. -->
@@ -784,7 +784,7 @@ if (process.client) {
           >
             <div 
               v-if="isMoreOpen"
-              class="absolute top-full right-0 mt-1 min-w-[200px] max-w-[260px] bg-background/98 backdrop-blur-xl border border-border/80 shadow-2xl rounded-xl p-1.5 z-50 flex flex-col gap-0.5"
+              class="absolute top-full right-0 mt-1 min-w-[200px] max-w-[260px] bg-card/98 backdrop-blur-xl border border-border/80 shadow-2xl rounded-xl p-1.5 z-50 flex flex-col gap-0.5"
               @mouseenter="keepMoreOpen"
               @mouseleave="closeMoreDropdown"
             >

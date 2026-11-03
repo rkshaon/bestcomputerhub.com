@@ -127,7 +127,7 @@ const hasChildren = (cat: Category): boolean => {
   >
     <div 
       v-if="uiStore.isMobileMenuOpen" 
-      class="md:hidden absolute top-full left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border flex flex-col p-6 space-y-6 max-h-[80vh] overflow-y-auto shadow-2xl"
+      class="md:hidden absolute top-full left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border flex flex-col p-6 space-y-6 max-h-[80vh] overflow-y-auto shadow-2xl"
     >
 
       <!-- Navigation Menu Hierarchy -->

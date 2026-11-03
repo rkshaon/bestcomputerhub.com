@@ -185,7 +185,7 @@ defineExpose({
         type="text" 
         placeholder="Search products, brands or models..." 
         aria-label="Search items"
-        class="w-full bg-muted/50 border border-input rounded-full outline-none h-10 md:h-11 text-sm px-12 transition-all duration-200 focus:bg-background focus:ring-2 focus:ring-primary/20"
+        class="w-full bg-muted/50 border border-input rounded-full outline-none h-10 md:h-11 text-sm px-12 transition-all duration-200 focus:bg-card focus:ring-2 focus:ring-primary/20"
         @focus="handleInputFocus"
         @keyup.enter="handleSearchSubmit"
       />
@@ -212,7 +212,7 @@ defineExpose({
     >
       <div 
         v-if="isOpen && searchQueryModel.trim().length >= 1" 
-        class="absolute top-full left-0 right-0 z-50 mt-1.5 bg-background border border-border rounded-2xl p-4 sm:p-5 overflow-hidden space-y-3 max-h-[75vh] overflow-y-auto"
+        class="absolute top-full left-0 right-0 z-50 mt-1.5 bg-card border border-border rounded-2xl p-4 sm:p-5 overflow-hidden space-y-3 max-h-[75vh] overflow-y-auto"
       >
         <!-- Header with matching count label and View all results button -->
         <div class="flex items-center justify-between border-b border-border pb-2.5 gap-3">

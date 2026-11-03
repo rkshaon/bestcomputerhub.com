@@ -58,7 +58,7 @@ const handleMenuClick = () => {
 <template>
   <nav
     v-if="isVisible"
-    class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-background/95 backdrop-blur-md border-t border-border shadow-lg md:hidden pb-[env(safe-area-inset-bottom,0px)]"
+    class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-card/95 backdrop-blur-md border-t border-border shadow-lg md:hidden pb-[env(safe-area-inset-bottom,0px)]"
     aria-label="Mobile Bottom Navigation"
   >
     <div class="grid grid-cols-7 items-center h-14 max-w-lg mx-auto w-full px-1 text-muted-foreground">
@@ -66,7 +66,7 @@ const handleMenuClick = () => {
       <NuxtLink
         to="/"
         class="flex flex-col items-center justify-center h-full w-full py-1 px-0.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-        :class="isHomeActive ? 'text-primary font-semibold' : 'text-slate-400 hover:text-slate-200'"
+        :class="isHomeActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'"
         title="Home"
         aria-label="Home"
       >
@@ -79,7 +79,7 @@ const handleMenuClick = () => {
         type="button"
         disabled
         aria-disabled="true"
-        class="flex flex-col items-center justify-center h-full w-full py-1 px-0.5 rounded-lg text-slate-600 cursor-not-allowed select-none opacity-40 focus:outline-none"
+        class="flex flex-col items-center justify-center h-full w-full py-1 px-0.5 rounded-lg text-muted-foreground/50 cursor-not-allowed select-none opacity-40 focus:outline-none"
         title="PC Builder coming soon"
         aria-label="PC Builder (coming soon)"
         @click.prevent
@@ -92,7 +92,7 @@ const handleMenuClick = () => {
       <NuxtLink
         :to="accountLink"
         class="flex flex-col items-center justify-center h-full w-full py-1 px-0.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-        :class="isAccountActive ? 'text-primary font-semibold' : 'text-slate-400 hover:text-slate-200'"
+        :class="isAccountActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'"
         :title="accountLabel"
         :aria-label="accountLabel"
       >
@@ -105,7 +105,7 @@ const handleMenuClick = () => {
         type="button"
         @click="handleCartClick"
         class="relative flex flex-col items-center justify-center h-full w-full py-1 px-0.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
-        :class="isCartActive ? 'text-primary font-semibold' : 'text-slate-400 hover:text-slate-200'"
+        :class="isCartActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'"
         title="Shopping Cart"
         aria-label="Cart"
       >
@@ -126,7 +126,7 @@ const handleMenuClick = () => {
         type="button"
         @click="handleMenuClick"
         class="flex flex-col items-center justify-center h-full w-full py-1 px-0.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
-        :class="uiStore.isMobileMenuOpen ? 'text-primary font-semibold' : 'text-slate-400 hover:text-slate-200'"
+        :class="uiStore.isMobileMenuOpen ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'"
         title="Toggle Menu"
         aria-label="Menu"
       >
@@ -138,7 +138,7 @@ const handleMenuClick = () => {
       <button
         type="button"
         @click="handleToolsClick"
-        class="flex flex-col items-center justify-center h-full w-full py-1 px-0.5 rounded-lg text-slate-400 hover:text-slate-200 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
+        class="flex flex-col items-center justify-center h-full w-full py-1 px-0.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
         title="Tools"
         aria-label="Tools"
       >
@@ -150,7 +150,7 @@ const handleMenuClick = () => {
       <NuxtLink
         to="/my-account/"
         class="flex flex-col items-center justify-center h-full w-full py-1 px-0.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-        :class="isTrackActive ? 'text-primary font-semibold' : 'text-slate-400 hover:text-slate-200'"
+        :class="isTrackActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'"
         title="Track Order"
         aria-label="Track Order"
       >
