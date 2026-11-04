@@ -206,7 +206,7 @@ const activeFiltersCount = computed(() => {
               v-model="filters.query"
               type="text" 
               placeholder="Search components..." 
-              class="w-full h-11 bg-muted/50 border rounded-2xl pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-sm"
+              class="w-full h-11 bg-muted/50 border rounded-md pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-sm"
             />
           </div>
 
@@ -383,11 +383,11 @@ const activeFiltersCount = computed(() => {
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <label class="text-[10px] font-bold text-muted-foreground uppercase">Min</label>
-                  <input v-model.number="filters.minPrice" type="number" class="w-full h-11 bg-muted/50 border rounded-xl px-4 text-sm font-bold transition-all focus:border-primary outline-none" />
+                  <input v-model.number="filters.minPrice" type="number" class="w-full h-11 bg-muted/50 border rounded-md px-4 text-sm font-bold transition-all focus:border-primary outline-none" />
                 </div>
                 <div class="space-y-2">
                   <label class="text-[10px] font-bold text-muted-foreground uppercase">Max</label>
-                  <input v-model.number="filters.maxPrice" type="number" class="w-full h-11 bg-muted/50 border rounded-xl px-4 text-sm font-bold transition-all focus:border-primary outline-none" />
+                  <input v-model.number="filters.maxPrice" type="number" class="w-full h-11 bg-muted/50 border rounded-md px-4 text-sm font-bold transition-all focus:border-primary outline-none" />
                 </div>
               </div>
             </div>

@@ -120,15 +120,15 @@ const handleSignUp = async () => {
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="space-y-1.5 md:col-span-1">
                 <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">First Name</label>
-                <input v-model="firstName" type="text" placeholder="John" class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm" required />
+                <input v-model="firstName" type="text" placeholder="John" class="w-full h-12 bg-muted/30 border border-border/50 rounded-md px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm" required />
               </div>
               <div class="space-y-1.5 md:col-span-1">
                 <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Middle Name</label>
-                <input v-model="middleName" type="text" placeholder="Michael" class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm" />
+                <input v-model="middleName" type="text" placeholder="Michael" class="w-full h-12 bg-muted/30 border border-border/50 rounded-md px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm" />
               </div>
               <div class="space-y-1.5 md:col-span-1">
                 <label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Last Name</label>
-                <input v-model="lastName" type="text" placeholder="Doe" class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm" />
+                <input v-model="lastName" type="text" placeholder="Doe" class="w-full h-12 bg-muted/30 border border-border/50 rounded-md px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm" />
               </div>
             </div>
 
@@ -143,7 +143,7 @@ const handleSignUp = async () => {
                   v-model="email"
                   type="email" 
                   placeholder="name@enterprise.com"
-                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm"
+                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-md pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm"
                   required
                 />
               </div>
@@ -160,7 +160,7 @@ const handleSignUp = async () => {
                   v-model="phone"
                   type="text" 
                   placeholder="+1 (555) 019-2834"
-                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm"
+                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-md pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium text-sm"
                 />
               </div>
             </div>
@@ -176,7 +176,7 @@ const handleSignUp = async () => {
                   v-model="password"
                   :type="showPassword ? 'text' : 'password'" 
                   placeholder="••••••••"
-                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-12 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium tracking-widest text-sm"
+                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-md pl-12 pr-12 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium tracking-widest text-sm"
                   required
                 />
                 <button 
@@ -202,7 +202,7 @@ const handleSignUp = async () => {
                   v-model="confirmPassword"
                   :type="showConfirmPassword ? 'text' : 'password'" 
                   placeholder="••••••••"
-                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-12 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium tracking-widest text-sm"
+                  class="w-full h-12 bg-muted/30 border border-border/50 rounded-md pl-12 pr-12 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium tracking-widest text-sm"
                   required
                 />
                 <button 
