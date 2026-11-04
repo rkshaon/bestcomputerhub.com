@@ -58,7 +58,7 @@ const handleMenuClick = () => {
 <template>
   <nav
     v-if="isVisible"
-    class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-header-card/95 backdrop-blur-md border-t border-header-border shadow-lg md:hidden pb-[env(safe-area-inset-bottom,0px)]"
+    class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-header/95 backdrop-blur-md border-t border-header-border shadow-lg md:hidden pb-[env(safe-area-inset-bottom,0px)]"
     aria-label="Mobile Bottom Navigation"
   >
     <div class="grid grid-cols-7 items-center h-14 max-w-lg mx-auto w-full px-1 text-header-muted-foreground">
