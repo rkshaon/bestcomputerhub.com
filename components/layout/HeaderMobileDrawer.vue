@@ -127,7 +127,7 @@ const hasChildren = (cat: Category): boolean => {
   >
     <div 
       v-if="uiStore.isMobileMenuOpen" 
-      class="md:hidden absolute top-full left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border flex flex-col p-6 space-y-6 max-h-[80vh] overflow-y-auto shadow-2xl"
+      class="md:hidden absolute top-full left-0 right-0 z-40 bg-header-card/95 backdrop-blur-xl border-t border-header-border flex flex-col p-6 space-y-6 max-h-[80vh] overflow-y-auto shadow-2xl text-header-card-foreground"
     >
 
       <!-- Navigation Menu Hierarchy -->
@@ -148,17 +148,17 @@ const hasChildren = (cat: Category): boolean => {
         -->
 
         <!-- Dynamic Loader -->
-        <div v-if="isMenuLoading" class="py-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <span class="animate-spin border-2 border-primary/30 border-t-primary rounded-full w-4 h-4"></span>
+        <div v-if="isMenuLoading" class="py-4 flex items-center justify-center gap-2 text-xs text-header-muted-foreground">
+          <span class="animate-spin border-2 border-header-primary/30 border-t-header-primary rounded-full w-4 h-4"></span>
           Synchronizing Nodes...
         </div>
         
         <div v-else class="space-y-3">
-          <div v-for="cat in categories" :key="cat.id" class="border-b border-border/40 pb-2">
+          <div v-for="cat in categories" :key="cat.id" class="border-b border-header-border/40 pb-2">
             <div class="flex items-center justify-between">
               <NuxtLink 
                 :to="categoryService.getCategoryUrl(cat, allCategories)" 
-                class="font-bold text-xs uppercase tracking-wider block hover:text-primary transition-colors py-1"
+                class="font-bold text-xs uppercase tracking-wider block hover:text-header-primary transition-colors py-1"
                 @click="uiStore.closeMobileMenu()"
               >
                 {{ decodeHtmlEntities(cat.name) }}
@@ -168,11 +168,11 @@ const hasChildren = (cat: Category): boolean => {
                 v-if="hasChildren(cat)"
                 type="button"
                 @click="toggleMobileCategory(cat.id)"
-                class="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                class="p-1.5 hover:bg-header-muted rounded-md text-header-muted-foreground hover:text-header-foreground transition-colors"
                 :aria-label="`Toggle subcategories for ${cat.name}`"
               >
                 <ChevronRight 
-                  :class="cn('w-4 h-4 transition-transform duration-200', categoryService.isChildrenLoading(cat.id) ? 'animate-spin text-primary' : (openMobileCategoryIds.includes(cat.id) ? 'rotate-90 text-primary' : ''))" 
+                  :class="cn('w-4 h-4 transition-transform duration-200', categoryService.isChildrenLoading(cat.id) ? 'animate-spin text-header-primary' : (openMobileCategoryIds.includes(cat.id) ? 'rotate-90 text-header-primary' : ''))" 
                 />
               </button>
             </div>
@@ -188,12 +188,12 @@ const hasChildren = (cat: Category): boolean => {
             >
               <ul 
                 v-if="getSubCategories(cat).length && openMobileCategoryIds.includes(cat.id)" 
-                class="pl-3 mt-1.5 border-l-2 border-primary/40 space-y-2 py-1.5 bg-muted/20 rounded-r-lg"
+                class="pl-3 mt-1.5 border-l-2 border-header-primary/40 space-y-2 py-1.5 bg-header-muted/20 rounded-r-lg"
               >
                 <li v-for="subCat in getSubCategories(cat)" :key="subCat.id">
                   <NuxtLink 
                     :to="categoryService.getCategoryUrl(subCat, allCategories)" 
-                    class="text-[11px] font-semibold tracking-wide text-muted-foreground hover:text-primary block py-1 px-1.5 rounded hover:bg-muted/50 transition-colors"
+                    class="text-[11px] font-semibold tracking-wide text-header-muted-foreground hover:text-header-primary block py-1 px-1.5 rounded hover:bg-header-muted/50 transition-colors"
                     @click="uiStore.closeMobileMenu()"
                   >
                     {{ decodeHtmlEntities(subCat.name) }}
@@ -206,24 +206,24 @@ const hasChildren = (cat: Category): boolean => {
       </div>
 
       <!-- Secondary Support / Corporate Links -->
-      <div class="space-y-3 pt-4 border-t border-border/50">
+      <div class="space-y-3 pt-4 border-t border-header-border/50">
 
 
         <NuxtLink 
           v-if="isSuperAdmin"
           to="/admin" 
-          class="font-bold text-xs uppercase tracking-widest text-primary flex items-center gap-2 hover:underline transition-colors"
+          class="font-bold text-xs uppercase tracking-widest text-header-primary flex items-center gap-2 hover:underline transition-colors"
           @click="uiStore.closeMobileMenu()"
         >
-          <ShieldCheck class="w-4 h-4 text-primary" />
+          <ShieldCheck class="w-4 h-4 text-header-primary" />
           <span>Admin Panel</span>
         </NuxtLink>
         <NuxtLink 
           :to="authStore.isLoggedIn ? '/my-account/' : '/login/'" 
-          class="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2 hover:text-primary transition-colors"
+          class="font-bold text-xs uppercase tracking-widest text-header-card-foreground flex items-center gap-2 hover:text-header-primary transition-colors"
           @click="uiStore.closeMobileMenu()"
         >
-          <User class="w-4 h-4 text-primary" />
+          <User class="w-4 h-4 text-header-primary" />
           <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
         </NuxtLink>
         <a 

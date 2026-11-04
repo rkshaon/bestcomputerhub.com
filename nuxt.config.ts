@@ -5,6 +5,7 @@ const buildTime = new Date().toISOString()
 const appVersion = process.env.APP_VERSION || process.env.npm_package_version || `v-${Date.now()}`
 
 export default defineNuxtConfig({
+  srcDir: '.',
   devServer: {
     port: 3000,
     host: '0.0.0.0'

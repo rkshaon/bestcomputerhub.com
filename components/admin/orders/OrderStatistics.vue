@@ -58,16 +58,13 @@ onMounted(() => fetchData());
     {{ error }}
   </div>
   <div v-else class="flex overflow-x-auto pb-4 gap-3 animate-in fade-in duration-500 lg:grid lg:grid-cols-9 lg:overflow-visible lg:pb-0">
-    <UiCard v-for="(status, index) in statuses" :key="status.value" class="flex items-center gap-3 p-3 min-w-[160px] lg:min-w-0">
+    <UiCard v-for="(status, index) in statuses" :key="status.value" class="flex items-center gap-3 p-3 min-w-[160px] lg:min-w-0 dark:bg-slate-900 dark:border-slate-800">
       <div :class="['w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-inner', getStatusConfig(status.value)?.bg, getStatusConfig(status.value)?.color]">
         <component :is="getStatusConfig(status.value)?.icon" class="w-4 h-4" />
       </div>
       <div class="min-w-0">
-        <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">{{ status.label }}</p>
-        <!--
-        <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">Total Orders</p>
-        -->
-        <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ (counts && counts[index] !== undefined) ? counts[index] : 0 }}</p>
+        <p class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground dark:text-slate-400 truncate">{{ status.label }}</p>
+        <p class="text-xl font-display font-bold tracking-tight text-foreground dark:text-white leading-tight">{{ (counts && counts[index] !== undefined) ? counts[index] : 0 }}</p>
       </div>
     </UiCard>
   </div>

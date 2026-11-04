@@ -383,7 +383,7 @@ if (process.client) {
 
 <template>
   <header 
-    class="fixed top-0 z-50 w-full md:sticky md:top-0 border-b py-0 sm:py-1 bg-background border-border/50 shadow-sm"
+    class="fixed top-0 z-50 w-full md:sticky md:top-0 border-b py-0 sm:py-1 bg-header text-header-foreground border-header-border/50 shadow-sm"
   >
     <!-- TEMPORARILY DISABLED: Storefront Top Utility Bar -->
     <!-- Restore when the utility bar is required again. -->
@@ -400,7 +400,7 @@ if (process.client) {
       <div class="flex md:hidden items-center justify-between w-full gap-2 py-0.5">
         <button 
           @click="uiStore.toggleMobileMenu()" 
-          class="p-2 hover:bg-accent rounded-full transition-colors shrink-0 text-foreground"
+          class="p-2 hover:bg-header-accent rounded-full transition-colors shrink-0 text-header-foreground"
           aria-label="Toggle navigation menu"
         >
           <Menu v-if="!uiStore.isMobileMenuOpen" class="w-6 h-6" />
@@ -438,14 +438,14 @@ if (process.client) {
           <button 
             v-if="!isAuthRoute"
             @click="uiStore.toggleCart()" 
-            class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground shrink-0"
+            class="p-2 hover:bg-header-accent rounded-full transition-colors relative text-header-muted-foreground hover:text-header-foreground shrink-0"
             title="Shopping Bag"
             aria-label="Cart"
           >
             <Handbag class="w-5 h-5" />
             <span 
               v-if="cartStore.totalItems > 0" 
-              class="absolute -bottom-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
+              class="absolute -bottom-0.5 -right-0.5 bg-header-primary text-header-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
             >
               {{ cartStore.totalItems }}
             </span>
@@ -539,7 +539,7 @@ if (process.client) {
           <NuxtLink 
             v-if="isSuperAdmin" 
             to="/admin" 
-            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 hover:bg-primary/10 border border-primary/20 text-primary rounded-full transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
+            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 hover:bg-header-primary/10 border border-header-primary/20 text-header-primary rounded-full transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
             title="Admin Protocol System"
           >
             <ShieldCheck class="w-4 h-4" />
@@ -550,7 +550,7 @@ if (process.client) {
           <NuxtLink 
             v-if="isSuperAdmin" 
             to="/admin" 
-            class="sm:hidden p-2 hover:bg-primary/10 text-primary rounded-full transition-colors shrink-0" 
+            class="sm:hidden p-2 hover:bg-header-primary/10 text-header-primary rounded-full transition-colors shrink-0" 
             title="Admin Protocol System"
           >
             <ShieldCheck class="w-5 h-5" />
@@ -562,7 +562,7 @@ if (process.client) {
             <NuxtLink 
               v-if="false"
               to="/offers/" 
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-destructive/40 hover:bg-destructive/10 text-muted-foreground hover:text-destructive text-xs font-semibold transition-all shrink-0 group"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-header-border/60 hover:border-destructive/40 hover:bg-destructive/10 text-header-muted-foreground hover:text-destructive text-xs font-semibold transition-all shrink-0 group"
               title="Offers"
               aria-label="Offers"
             >
@@ -574,7 +574,7 @@ if (process.client) {
             <NuxtLink 
               v-if="false"
               to="/new-arrivals/" 
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-amber-500/40 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-500 text-xs font-semibold transition-all shrink-0"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-header-border/60 hover:border-amber-500/40 hover:bg-amber-500/10 text-header-muted-foreground hover:text-amber-500 text-xs font-semibold transition-all shrink-0"
               title="New Arrivals"
               aria-label="New Arrivals"
             >
@@ -586,11 +586,11 @@ if (process.client) {
             <NuxtLink 
               v-if="false"
               to="/offers/" 
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-primary/10 text-muted-foreground hover:text-primary text-xs font-semibold transition-all shrink-0"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-header-border/60 hover:border-header-primary/40 hover:bg-header-primary/10 text-header-muted-foreground hover:text-header-primary text-xs font-semibold transition-all shrink-0"
               title="Flash Sale"
               aria-label="Flash Sale"
             >
-              <Zap class="w-3.5 h-3.5 text-primary shrink-0" />
+              <Zap class="w-3.5 h-3.5 text-header-primary shrink-0" />
               <span>Flash Sale</span>
             </NuxtLink>
 
@@ -598,7 +598,7 @@ if (process.client) {
             <NuxtLink 
               v-if="false"
               to="/offers/" 
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-sky-500/40 hover:bg-sky-500/10 text-muted-foreground hover:text-sky-500 text-xs font-semibold transition-all shrink-0"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-header-border/60 hover:border-sky-500/40 hover:bg-sky-500/10 text-header-muted-foreground hover:text-sky-500 text-xs font-semibold transition-all shrink-0"
               title="Happy Hours"
               aria-label="Happy Hours"
             >
@@ -610,11 +610,11 @@ if (process.client) {
           <!-- PC Builder -->
           <div 
             v-if="!isAuthRoute"
-            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 text-muted-foreground text-xs font-semibold shrink-0 cursor-default"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-header-border/60 text-header-muted-foreground text-xs font-semibold shrink-0 cursor-default"
             title="PC Builder"
             aria-label="PC Builder"
           >
-            <Cpu class="w-4 h-4 text-primary shrink-0" />
+            <Cpu class="w-4 h-4 text-header-primary shrink-0" />
             <span>PC Builder</span>
           </div>
 
@@ -624,11 +624,11 @@ if (process.client) {
             v-if="false"
             @click="handleCompareClick"
             type="button"
-            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0 cursor-pointer"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0 cursor-pointer"
             title="Compare products"
             aria-label="Compare products"
           >
-            <ArrowLeftRight class="w-4 h-4 text-primary shrink-0" />
+            <ArrowLeftRight class="w-4 h-4 text-header-primary shrink-0" />
             <span>Compare</span>
           </button>
 
@@ -636,11 +636,11 @@ if (process.client) {
           <NuxtLink 
             v-if="!isAuthRoute"
             to="/my-account/" 
-            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0"
             title="Track Your Order"
             aria-label="Track Your Order"
           >
-            <PackageSearch class="w-3.5 h-3.5 text-primary shrink-0" />
+            <PackageSearch class="w-3.5 h-3.5 text-header-primary shrink-0" />
             <span>Track Order</span>
           </NuxtLink>
 
@@ -649,11 +649,11 @@ if (process.client) {
           <NuxtLink 
             v-if="false"
             to="/blog/" 
-            class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0"
             title="Blogs"
             aria-label="Blogs"
           >
-            <BookOpen class="w-3.5 h-3.5 text-primary shrink-0" />
+            <BookOpen class="w-3.5 h-3.5 text-header-primary shrink-0" />
             <span>Insights</span>
           </NuxtLink>
 
@@ -664,11 +664,11 @@ if (process.client) {
             href="https://www.google.com/maps/place/G.M+Plaza/@23.7388697,90.386565,17z/data=!3m1!5s0x3755b8c81091d773:0x601a730b2bf4e399!4m16!1m9!3m8!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!2sG.M+Plaza!8m2!3d23.7388697!4d90.386565!9m1!1b1!16s%2Fg%2F11c2p4g0df!3m5!1s0x3755b8c77df0f4fb:0x8620358ee5376a1a!8m2!3d23.7388697!4d90.386565!16s%2Fg%2F11c2p4g0df?hl=en-US&entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D" 
             target="_blank" 
             rel="noopener noreferrer" 
-            class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0"
             title="Store Location"
             aria-label="Store Location on Google Maps"
           >
-            <MapPin class="w-3.5 h-3.5 text-primary shrink-0" />
+            <MapPin class="w-3.5 h-3.5 text-header-primary shrink-0" />
             <span>Store</span>
           </a>
 
@@ -676,14 +676,14 @@ if (process.client) {
           <button 
             v-if="!isAuthRoute"
             @click="uiStore.toggleCart()" 
-            class="p-2 hover:bg-accent rounded-full transition-colors relative text-muted-foreground hover:text-foreground shrink-0"
+            class="p-2 hover:bg-header-accent rounded-full transition-colors relative text-header-muted-foreground hover:text-header-foreground shrink-0"
             title="Shopping Bag"
             aria-label="Cart"
           >
             <Handbag class="w-5 h-5" />
             <span 
               v-if="cartStore.totalItems > 0" 
-              class="absolute -bottom-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
+              class="absolute -bottom-0.5 -right-0.5 bg-header-primary text-header-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
             >
               {{ cartStore.totalItems }}
             </span>
@@ -692,15 +692,15 @@ if (process.client) {
           <!-- Relocated Login / Account Action -->
           <NuxtLink 
             :to="authStore.isLoggedIn ? '/my-account/' : '/login/'" 
-            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-accent text-muted-foreground hover:text-foreground text-xs font-semibold transition-all shrink-0"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0"
             :title="authStore.isLoggedIn ? 'Account Dashboard' : 'Login or Sign Up'"
             :aria-label="authStore.isLoggedIn ? 'Account Dashboard' : 'Login'"
           >
-            <User class="w-4 h-4 text-primary shrink-0" />
+            <User class="w-4 h-4 text-header-primary shrink-0" />
             <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
           </NuxtLink>
 
-          <button @click="uiStore.toggleMobileMenu()" class="md:hidden p-2 hover:bg-accent rounded-full transition-colors" title="Toggle navigation menu" aria-label="Toggle navigation menu">
+          <button @click="uiStore.toggleMobileMenu()" class="md:hidden p-2 hover:bg-header-accent rounded-full transition-colors text-header-foreground" title="Toggle navigation menu" aria-label="Toggle navigation menu">
             <Menu v-if="!uiStore.isMobileMenuOpen" class="w-6 h-6" />
             <X v-else class="w-6 h-6" />
           </button>
@@ -713,7 +713,7 @@ if (process.client) {
         v-if="!isAuthRoute"
         ref="navRef"
         :class="cn(
-          'hidden md:flex relative items-center justify-between w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-border/50 transition-all duration-200',
+          'hidden md:flex relative items-center justify-between w-full flex-nowrap h-9 overflow-visible opacity-100 mt-2.5 pt-2 border-t border-header-border/50 transition-all duration-200',
           isNavUltraCompact ? 'gap-2' : (isNavCompact ? 'gap-3' : 'gap-4')
         )"
       >
@@ -731,9 +731,9 @@ if (process.client) {
             <NuxtLink 
               :to="categoryService.getCategoryUrl(cat, allCategories)" 
               :class="cn(
-                'relative flex items-center font-semibold tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:transition-all after:duration-200',
+                'relative flex items-center font-semibold tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-header-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-header-primary after:transition-all after:duration-200',
                 isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
-                activeMegaMenuId === String(cat.id) ? 'text-primary font-semibold after:opacity-100' : 'text-foreground/85 after:opacity-0 hover:after:opacity-100'
+                activeMegaMenuId === String(cat.id) ? 'text-header-primary font-semibold after:opacity-100' : 'text-header-foreground/85 after:opacity-0 hover:after:opacity-100'
               )"
             >
               {{ decodeHtmlEntities(cat.name) }}
@@ -762,15 +762,15 @@ if (process.client) {
           <button
             type="button"
             :class="cn(
-              'relative flex items-center gap-1 font-semibold transition-colors whitespace-nowrap py-1.5 px-1.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md cursor-pointer',
+              'relative flex items-center gap-1 font-semibold transition-colors whitespace-nowrap py-1.5 px-1.5 hover:text-header-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-header-primary rounded-md cursor-pointer',
               isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
-              isMoreOpen || (typeof activeMegaMenuId === 'string' && activeMegaMenuId.startsWith('more-')) ? 'text-primary font-semibold' : 'text-foreground/85'
+              isMoreOpen || (typeof activeMegaMenuId === 'string' && activeMegaMenuId.startsWith('more-')) ? 'text-header-primary font-semibold' : 'text-header-foreground/85'
             )"
             :aria-expanded="isMoreOpen"
             aria-label="More categories"
           >
             <span>More</span>
-            <ChevronDown :class="cn('w-3.5 h-3.5 transition-transform duration-200', isMoreOpen ? 'rotate-180 text-primary' : 'text-muted-foreground')" />
+            <ChevronDown :class="cn('w-3.5 h-3.5 transition-transform duration-200', isMoreOpen ? 'rotate-180 text-header-primary' : 'text-header-muted-foreground')" />
           </button>
 
           <!-- More Categories Dropdown Menu -->
@@ -784,7 +784,7 @@ if (process.client) {
           >
             <div 
               v-if="isMoreOpen"
-              class="absolute top-full right-0 mt-1 min-w-[200px] max-w-[260px] bg-background/98 backdrop-blur-xl border border-border/80 shadow-2xl rounded-xl p-1.5 z-50 flex flex-col gap-0.5"
+              class="absolute top-full right-0 mt-1 min-w-[200px] max-w-[260px] bg-header-card/98 backdrop-blur-xl border border-header-border/80 shadow-2xl rounded-xl p-1.5 z-50 flex flex-col gap-0.5 text-header-card-foreground"
               @mouseenter="keepMoreOpen"
               @mouseleave="closeMoreDropdown"
             >
@@ -799,12 +799,12 @@ if (process.client) {
                   :to="categoryService.getCategoryUrl(cat, allCategories)"
                   :class="cn(
                     'flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
-                    activeMegaMenuId === 'more-' + cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted/80 text-foreground/90 hover:text-primary'
+                    activeMegaMenuId === 'more-' + cat.id ? 'bg-header-primary/10 text-header-primary' : 'hover:bg-header-muted/80 text-header-card-foreground/90 hover:text-header-primary'
                   )"
                   @click="isMoreOpen = false; activeMegaMenuId = null"
                 >
                   <span class="truncate">{{ decodeHtmlEntities(cat.name) }}</span>
-                  <ChevronRight v-if="hasChildren(cat)" class="w-3.5 h-3.5 text-muted-foreground group-hover/moreitem:text-primary shrink-0 ml-2" />
+                  <ChevronRight v-if="hasChildren(cat)" class="w-3.5 h-3.5 text-header-muted-foreground group-hover/moreitem:text-header-primary shrink-0 ml-2" />
                 </NuxtLink>
 
                 <!-- Nested Mega Menu for overflow items -->
