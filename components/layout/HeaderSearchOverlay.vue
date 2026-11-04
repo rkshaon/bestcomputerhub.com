@@ -189,7 +189,9 @@ defineExpose({
         @focus="handleInputFocus"
         @keyup.enter="handleSearchSubmit"
       />
-      <Search class="absolute left-4 top-1/2 -translate-y-1/2 text-header-muted-foreground group-focus-within:text-header-primary w-5 h-5 transition-colors" />
+      <div class="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 md:w-8 md:h-8 rounded-l-full rounded-r-none bg-white flex items-center justify-center text-slate-900 shadow-xs shrink-0 pointer-events-none">
+        <Search class="w-3.5 h-3.5 md:w-4 md:h-4" />
+      </div>
       <button 
         v-if="searchQueryModel" 
         type="button" 
