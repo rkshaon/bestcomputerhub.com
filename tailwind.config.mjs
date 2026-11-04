@@ -59,7 +59,6 @@ export default {
           DEFAULT: 'hsl(var(--card) / <alpha-value>)',
           foreground: 'hsl(var(--card-foreground) / <alpha-value>)',
         },
-        'header-footer': 'hsl(var(--header-footer-background))',
       },
     },
   },
