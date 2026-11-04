@@ -51,32 +51,32 @@ const socialLinks = [
 </script>
 
 <template>
-  <footer v-if="!isAuthRoute" class="bg-background pt-8 sm:pt-10 md:pt-12 pb-20 md:pb-8 border-t">
+  <footer v-if="!isAuthRoute" class="bg-header text-header-foreground border-header-border pt-8 sm:pt-10 md:pt-12 pb-20 md:pb-8 border-t">
     <div class="container mx-auto px-4">
       <div class="w-full lg:w-[90%] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 sm:mb-10">
         <!-- Brand -->
         <div class="space-y-4 sm:space-y-6 text-left">
           <div class="space-y-3 sm:space-y-4">
-            <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground">We're Here to Help</h4>
-            <div class="flex flex-col gap-2.5 sm:gap-3 text-muted-foreground text-xs sm:text-sm">
+            <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-header-foreground">We're Here to Help</h4>
+            <div class="flex flex-col gap-2.5 sm:gap-3 text-header-muted-foreground text-xs sm:text-sm">
               <div class="flex items-center gap-3">
-                <Phone class="w-4 h-4 text-primary shrink-0" />
-                <a href="tel:+8801794062601" class="hover:text-primary transition-colors">(+880) 1794062601</a>
+                <Phone class="w-4 h-4 text-header-primary shrink-0" />
+                <a href="tel:+8801794062601" class="hover:text-header-primary transition-colors">(+880) 1794062601</a>
               </div>
               <div class="flex items-center gap-3">
-                <Phone class="w-4 h-4 text-primary shrink-0" />
-                <a href="tel:+8801783553844" class="hover:text-primary transition-colors">(+880) 1783553844</a>
+                <Phone class="w-4 h-4 text-header-primary shrink-0" />
+                <a href="tel:+8801783553844" class="hover:text-header-primary transition-colors">(+880) 1783553844</a>
               </div>
               <div class="flex items-center gap-3">
-                <Phone class="w-4 h-4 text-primary shrink-0" />
-                <a href="tel:+8801714111479" class="hover:text-primary transition-colors">(+880) 1714111479</a>
+                <Phone class="w-4 h-4 text-header-primary shrink-0" />
+                <a href="tel:+8801714111479" class="hover:text-header-primary transition-colors">(+880) 1714111479</a>
               </div>
               <div class="flex items-center gap-3">
-                <Mail class="w-4 h-4 text-primary shrink-0" />
-                <a href="mailto:support@bestcomputerhub.com" class="hover:text-primary transition-colors">support@bestcomputerhub.com</a>
+                <Mail class="w-4 h-4 text-header-primary shrink-0" />
+                <a href="mailto:support@bestcomputerhub.com" class="hover:text-header-primary transition-colors">support@bestcomputerhub.com</a>
               </div>
               <div class="flex items-start gap-3">
-                <MapPin class="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <MapPin class="w-4 h-4 text-header-primary mt-0.5 shrink-0" />
                 <span>74/1 (1st Floor), Rajonigondha Bhaban, Science Laboratory Road, Dhanmondi, Dhaka 1205, Bangladesh</span>
               </div>
             </div>
@@ -89,11 +89,11 @@ const socialLinks = [
               :aria-label="social.label"
               target="_blank"
               rel="noopener noreferrer"
-              class="w-10 h-10 border border-border hover:border-primary rounded-full flex items-center justify-center transition-all duration-300 hover:bg-primary hover:text-white group shadow-sm"
+              class="w-10 h-10 border border-header-border hover:border-header-primary rounded-full flex items-center justify-center transition-all duration-300 hover:bg-header-primary hover:text-header-primary-foreground group shadow-sm"
             >
               <component 
                 :is="social.icon" 
-                class="w-5 h-5 text-muted-foreground group-hover:text-white transition-colors duration-300" 
+                class="w-5 h-5 text-header-muted-foreground group-hover:text-header-primary-foreground transition-colors duration-300" 
               />
             </a>
           </div>
@@ -140,11 +140,11 @@ const socialLinks = [
             ] 
           }
         ]" :key="section.title" :class="['space-y-3 sm:space-y-4 px-0', section.alignClass]">
-          <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-foreground px-0 mx-0">{{ section.title }}</h4>
+          <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-header-foreground px-0 mx-0">{{ section.title }}</h4>
           <ul class="space-y-2.5 sm:space-y-3 px-0 mx-0 list-none">
             <li v-for="link in section.links" :key="link.name" class="px-0 mx-0">
-              <NuxtLink v-if="link.url" :to="link.url" class="inline-block text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors px-0 mx-0">{{ link.name }}</NuxtLink>
-              <span v-else class="inline-block text-xs sm:text-sm text-muted-foreground px-0 mx-0">{{ link.name }}</span>
+              <NuxtLink v-if="link.url" :to="link.url" class="inline-block text-xs sm:text-sm text-header-muted-foreground hover:text-header-primary transition-colors px-0 mx-0">{{ link.name }}</NuxtLink>
+              <span v-else class="inline-block text-xs sm:text-sm text-header-muted-foreground px-0 mx-0">{{ link.name }}</span>
             </li>
           </ul>
         </div>
@@ -171,8 +171,8 @@ const socialLinks = [
       -->
 
       <!-- Bottom Bar -->
-      <div class="pt-6 sm:pt-8 border-t flex flex-col md:flex-row justify-center items-center gap-6">
-        <div class="flex flex-wrap justify-center gap-6 text-xs font-medium text-muted-foreground">
+      <div class="pt-6 sm:pt-8 border-t border-header-border flex flex-col md:flex-row justify-center items-center gap-6">
+        <div class="flex flex-wrap justify-center gap-6 text-xs font-medium text-header-muted-foreground">
           <span>&copy; {{ currentYear }}, Best Technology BD. All Rights Reserved.</span>
         </div>
       </div>

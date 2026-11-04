@@ -63,6 +63,29 @@
   --ring: 199 89% 60%;
 }
 
+/* Dedicated Header/Footer Theme Variables (Always Dark / Consistent) */
+:root, .dark {
+  --header-bg: 222 47% 11%;
+  --header-foreground: 210 40% 96%;
+  --header-card: 217 33% 17%;
+  --header-card-foreground: 210 40% 96%;
+  --header-popover: 217 33% 17%;
+  --header-popover-foreground: 210 40% 96%;
+  --header-primary: 199 89% 60%;
+  --header-primary-foreground: 222 47% 11%;
+  --header-primary-hover: 199 89% 50%;
+  --header-primary-soft: 199 89% 15%;
+  --header-secondary: 217 33% 22%;
+  --header-secondary-foreground: 210 40% 96%;
+  --header-muted: 217 33% 15%;
+  --header-muted-foreground: 215 20% 65%;
+  --header-accent: 217 33% 22%;
+  --header-accent-foreground: 210 40% 96%;
+  --header-border: 217 25% 24%;
+  --header-input: 217 33% 15%;
+  --header-ring: 199 89% 60%;
+}
+
 @layer base {
   * {
     @apply border-border;
