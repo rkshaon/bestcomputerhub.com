@@ -1,6 +1,6 @@
 <!-- File: /layouts/admin.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 
 useSeoMeta({
   robots: 'noindex, nofollow'
@@ -40,6 +40,7 @@ import {
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { useSalesService, pendingOrdersCount } from '@/composables/useSalesService';
 import { cn } from '@/utils';
 import { markRaw } from 'vue';
 
@@ -47,15 +48,47 @@ const route = useRoute();
 const authStore = useAuthStore();
 const uiStore = useUIStore();
 const { canViewModule } = useAdminPermissions();
+const salesService = useSalesService();
 
 const isSidebarOpen = ref(true);
 const isMobileMenuOpen = ref(false);
 const isThemeMenuOpen = ref(false);
 
-// Automatically dismiss mobile menu overlay when route changes
+const fetchPendingCount = () => {
+  if (canViewModule('/admin/orders')) {
+    salesService.getPendingOrdersCount().catch(() => {});
+  }
+};
+
+let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  fetchPendingCount();
+  if (process.client) {
+    pollInterval = setInterval(() => {
+      fetchPendingCount();
+    }, 60000);
+  }
+});
+
+onUnmounted(() => {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+  }
+});
+
+// Automatically dismiss mobile menu overlay and refresh pending count when route changes
 watch(() => route.path, () => {
   isMobileMenuOpen.value = false;
+  fetchPendingCount();
 });
+
+const getMenuItemLabel = (item: { name: string; href: string }) => {
+  if (item.href === '/admin/orders' && pendingOrdersCount.value !== null) {
+    return `${item.name} (${pendingOrdersCount.value})`;
+  }
+  return item.name;
+};
 
 if (process.client) {
   // Close theme menu on click outside
@@ -188,7 +221,7 @@ const breadcrumbs = computed(() => {
             )"
           >
             <component :is="iconMap[item.iconKey as keyof typeof iconMap]" :class="cn('w-5 h-5 shrink-0')" />
-            <span v-if="isSidebarOpen" class="whitespace-nowrap">{{ item.name }}</span>
+            <span v-if="isSidebarOpen" class="whitespace-nowrap">{{ getMenuItemLabel(item) }}</span>
           </NuxtLink>
 
           <div v-if="filteredSecondaryNavigation.length > 0" class="pt-6 pb-2">
@@ -415,7 +448,7 @@ const breadcrumbs = computed(() => {
             )"
           >
             <component :is="iconMap[item.iconKey as keyof typeof iconMap]" class="w-5 h-5 shrink-0" />
-            <span class="whitespace-nowrap">{{ item.name }}</span>
+            <span class="whitespace-nowrap">{{ getMenuItemLabel(item) }}</span>
           </NuxtLink>
 
           <div v-if="filteredSecondaryNavigation.length > 0" class="pt-4 pb-1">
