@@ -79,11 +79,11 @@ export const useSalesService = () => {
 
   const getSalesPerformance = async (days: number = 90): Promise<any> => {
     try {
-      const data = await apiClient.request<any>('/api/v1/sales/reports/performance/', {
+      const response = await apiClient.request<any>('/api/v1/sales/reports/performance/', {
         method: 'GET',
         query: { days }
       });
-      return data;
+      return response?.data || response;
     } catch (err: any) {
       throw err;
     }
