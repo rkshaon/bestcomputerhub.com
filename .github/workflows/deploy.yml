@@ -33,12 +33,12 @@ jobs:
       - name: Install pnpm
         uses: pnpm/setup@v2
         with:
-          version: 11.25.0
+          version: 9.15.0
 
-      - name: Set up Node.js 24
+      - name: Set up Node.js 22
         uses: actions/setup-node@v5
         with:
-          node-version: 24
+          node-version: 22
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
