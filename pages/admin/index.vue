@@ -180,7 +180,7 @@ const iconMap = {
         </div>
 
         <!-- Daily Trend Visualization -->
-        <UiCard class="p-6 sm:p-8 space-y-6">
+        <UiCard class="p-5 sm:p-6 space-y-4">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
             <div>
               <h3 class="text-base font-display font-bold">Daily Sales Trend</h3>
@@ -218,7 +218,7 @@ const iconMap = {
 
           <!-- Chart Area -->
           <div v-else class="space-y-4">
-            <div class="h-48 sm:h-64 w-full relative pt-4">
+            <div class="h-40 sm:h-52 w-full relative pt-2">
               <svg viewBox="0 0 600 160" class="w-full h-full overflow-visible preserve-3d">
                 <line x1="0" y1="20" x2="600" y2="20" stroke="currentColor" class="text-border/40" stroke-dasharray="4 4" />
                 <line x1="0" y1="70" x2="600" y2="70" stroke="currentColor" class="text-border/40" stroke-dasharray="4 4" />
