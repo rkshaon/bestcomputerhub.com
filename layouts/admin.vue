@@ -5,6 +5,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue';
 useSeoMeta({
   robots: 'noindex, nofollow'
 });
+
 import { 
   LayoutDashboard, 
   Package, 
@@ -82,13 +83,6 @@ watch(() => route.path, () => {
   isMobileMenuOpen.value = false;
   fetchPendingCount();
 });
-
-const getMenuItemLabel = (item: { name: string; href: string }) => {
-  if (item.href === '/admin/orders' && pendingOrdersCount.value !== null) {
-    return `${item.name} (${pendingOrdersCount.value})`;
-  }
-  return item.name;
-};
 
 if (process.client) {
   // Close theme menu on click outside
@@ -220,8 +214,37 @@ const breadcrumbs = computed(() => {
                 : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
             )"
           >
-            <component :is="iconMap[item.iconKey as keyof typeof iconMap]" :class="cn('w-5 h-5 shrink-0')" />
-            <span v-if="isSidebarOpen" class="whitespace-nowrap">{{ getMenuItemLabel(item) }}</span>
+            <div class="relative shrink-0 flex items-center justify-center">
+              <component :is="iconMap[item.iconKey as keyof typeof iconMap]" class="w-5 h-5 shrink-0" />
+              <!-- Collapsed Sidebar Badge Overlay -->
+              <span 
+                v-if="!isSidebarOpen && item.href === '/admin/orders' && pendingOrdersCount !== null"
+                :class="cn(
+                  'absolute -top-1.5 -right-2 text-[9px] leading-none font-black px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center border shadow-xs transition-colors',
+                  pendingOrdersCount > 0 
+                    ? 'bg-amber-500 text-white border-amber-600' 
+                    : 'bg-muted-foreground/30 text-card-foreground border-border'
+                )"
+                :title="`${pendingOrdersCount} pending orders`"
+              >
+                {{ pendingOrdersCount > 99 ? '99+' : pendingOrdersCount }}
+              </span>
+            </div>
+
+            <span v-if="isSidebarOpen" class="whitespace-nowrap">{{ item.name }}</span>
+
+            <!-- Expanded Sidebar Right-Aligned Pill Badge -->
+            <span 
+              v-if="isSidebarOpen && item.href === '/admin/orders' && pendingOrdersCount !== null"
+              :class="cn(
+                'ml-auto text-[11px] font-extrabold px-2 py-0.5 rounded-full shrink-0 shadow-xs border transition-colors',
+                pendingOrdersCount > 0 
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25' 
+                  : 'bg-muted text-muted-foreground border-border/50 font-semibold'
+              )"
+            >
+              {{ pendingOrdersCount }}
+            </span>
           </NuxtLink>
 
           <div v-if="filteredSecondaryNavigation.length > 0" class="pt-6 pb-2">
@@ -448,7 +471,18 @@ const breadcrumbs = computed(() => {
             )"
           >
             <component :is="iconMap[item.iconKey as keyof typeof iconMap]" class="w-5 h-5 shrink-0" />
-            <span class="whitespace-nowrap">{{ getMenuItemLabel(item) }}</span>
+            <span class="whitespace-nowrap">{{ item.name }}</span>
+            <span 
+              v-if="item.href === '/admin/orders' && pendingOrdersCount !== null"
+              :class="cn(
+                'ml-auto text-[11px] font-extrabold px-2 py-0.5 rounded-full shrink-0 shadow-xs border transition-colors',
+                pendingOrdersCount > 0 
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25' 
+                  : 'bg-muted text-muted-foreground border-border/50 font-semibold'
+              )"
+            >
+              {{ pendingOrdersCount }}
+            </span>
           </NuxtLink>
 
           <div v-if="filteredSecondaryNavigation.length > 0" class="pt-4 pb-1">
