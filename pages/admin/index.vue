@@ -1,30 +1,24 @@
 <!-- File: /pages/admin/index.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { markRaw } from 'vue';
 import { 
-  Users, 
   DollarSign, 
   ShoppingBag, 
   TrendingUp,
   Download,
   Package,
-  Calendar,
   Loader2,
   AlertCircle
 } from 'lucide-vue-next';
-import { useAdminStore } from '@/stores/admin';
 import { useSalesService } from '@/composables/useSalesService';
 import { formatCurrency } from '@/utils';
 import DashboardStatCard from '@/features/admin/components/DashboardStatCard.vue';
-import RecentOrdersTable from '@/features/admin/components/RecentOrdersTable.vue';
 import UiCard from '@/components/ui/UiCard.vue';
 
 definePageMeta({
   layout: 'admin'
 });
 
-const adminStore = useAdminStore();
 const salesService = useSalesService();
 
 const performanceDays = ref<number>(90);
@@ -60,7 +54,6 @@ watch(performanceDays, () => {
 });
 
 onMounted(() => {
-  adminStore.fetchStats();
   fetchPerformance();
 });
 
@@ -88,13 +81,6 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
     const y = height - ((val - min) / range) * (height - 20) - 10;
     return `${x},${y}`;
   }).join(' ');
-};
-
-const iconMap = {
-  Users,
-  DollarSign,
-  ShoppingBag,
-  TrendingUp
 };
 </script>
 
@@ -247,63 +233,19 @@ const iconMap = {
       </template>
     </div>
 
-    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-      <!-- Recent Orders Feature -->
-      <div class="xl:col-span-2">
-        <RecentOrdersTable :orders="adminStore.recentOrders" />
+    <!-- Enterprise Shield Section -->
+    <div class="bg-slate-950 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
+      <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+        <Package class="w-32 h-32" />
       </div>
-
-      <!-- Inventory Pulse / Secondary Column -->
-      <div class="space-y-8">
-        <UiCard>
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-              Stock Anomalies
-            </h3>
-            <span class="bg-rose-100 dark:bg-rose-950/30 text-rose-600 px-2 py-0.5 rounded text-[10px] font-bold">{{ adminStore.inventoryAlerts.length }} Critical</span>
-          </div>
-          <div class="space-y-6">
-            <div v-for="alert in adminStore.inventoryAlerts.slice(0, 3)" :key="alert.productId" class="flex items-start gap-4 group">
-              <div :class="[
-                'w-10 h-10 shrink-0 rounded-xl flex items-center justify-center font-bold text-xs',
-                alert.status === 'out_of_stock' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'
-              ]">
-                {{ alert.currentStock }}
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-bold truncate">{{ alert.productName }}</p>
-                <div class="flex justify-between items-center mt-1">
-                  <span class="text-[10px] text-slate-400 font-bold uppercase italic">{{ alert.status.replace('_', ' ') }}</span>
-                  <div class="h-1 w-12 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden">
-                    <div 
-                      :class="['h-full rounded-full', alert.status === 'out_of_stock' ? 'bg-rose-500' : 'bg-amber-500']"
-                      :style="{ width: (alert.currentStock / alert.threshold * 100) + '%' }"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <NuxtLink to="/admin/products" class="block text-center pt-4 border-t border-slate-50 dark:border-slate-900 border-dashed text-[10px] font-bold uppercase tracking-widest text-primary hover:underline">
-              Inventory Registry Audit
-            </NuxtLink>
-          </div>
-        </UiCard>
-
-        <div class="bg-slate-950 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
-          <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-            <Package class="w-32 h-32" />
-          </div>
-          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 mb-2">Security protocol</p>
-          <h3 class="text-xl font-display font-black tracking-tight mb-4">Enterprise Shield Active</h3>
-          <p class="text-xs text-slate-400 leading-relaxed mb-6">
-            All procurement protocols are encrypted with Quantum-grade tunneling. Transaction integrity verified.
-          </p>
-          <button class="text-[10px] font-bold uppercase tracking-widest text-white border-b border-emerald-400 pb-1">
-            Identity Registry Overview
-          </button>
-        </div>
-      </div>
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 mb-2">Security protocol</p>
+      <h3 class="text-xl font-display font-black tracking-tight mb-4">Enterprise Shield Active</h3>
+      <p class="text-xs text-slate-400 leading-relaxed mb-6">
+        All procurement protocols are encrypted with Quantum-grade tunneling. Transaction integrity verified.
+      </p>
+      <button class="text-[10px] font-bold uppercase tracking-widest text-white border-b border-emerald-400 pb-1">
+        Identity Registry Overview
+      </button>
     </div>
   </div>
 </template>
