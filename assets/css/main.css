@@ -31,6 +31,7 @@
   --input: 0 0% 100%;
   --ring: 213 83% 53%;
   --radius: 0.75rem;
+  --brand: 217 92% 47%;
 }
 
 .dark {
@@ -61,6 +62,7 @@
   --border: 217 25% 24%;
   --input: 217 33% 15%;
   --ring: 199 89% 60%;
+  --brand: 217 92% 47%;
 }
 
 /* Dedicated Header/Footer Theme Variables (Always Dark / Consistent) */
