@@ -116,38 +116,6 @@ const iconMap = {
       </div>
     </div>
 
-    <!-- Metrics Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <DashboardStatCard 
-        label="Total Revenue"
-        :value="formatCurrency(adminStore.stats.revenue.total)"
-        :icon="iconMap.DollarSign"
-        :trend="adminStore.stats.revenue.growth"
-        color="bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600"
-      />
-      <DashboardStatCard 
-        label="Completed Orders"
-        :value="adminStore.stats.orders.total"
-        :icon="iconMap.ShoppingBag"
-        :trend="adminStore.stats.orders.growth"
-        color="bg-blue-100 dark:bg-blue-950/30 text-blue-600"
-      />
-      <DashboardStatCard 
-        label="Market Reach"
-        :value="adminStore.stats.customers.total.toLocaleString()"
-        :icon="iconMap.Users"
-        :trend="adminStore.stats.customers.growth"
-        color="bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600"
-      />
-      <DashboardStatCard 
-        label="Avg Order Value"
-        :value="formatCurrency(adminStore.stats.avgOrderValue.amount)"
-        :icon="iconMap.TrendingUp"
-        :trend="adminStore.stats.avgOrderValue.growth"
-        color="bg-amber-100 dark:bg-amber-950/30 text-amber-600"
-      />
-    </div>
-
     <!-- Sales Performance Report Section -->
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-border rounded-2xl p-6 shadow-sm">
