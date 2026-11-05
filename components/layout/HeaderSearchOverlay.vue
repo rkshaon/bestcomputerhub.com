@@ -185,21 +185,27 @@ defineExpose({
         type="text" 
         placeholder="Search products, brands or models..." 
         aria-label="Search items"
-        class="w-full bg-header-muted/50 border border-header-input rounded-full outline-none h-10 md:h-11 text-sm px-12 transition-all duration-200 text-header-foreground focus:bg-header-card focus:ring-2 focus:ring-header-primary/20"
+        class="w-full bg-background border border-input rounded-md outline-none h-10 md:h-11 text-sm pl-4 pr-14 transition-all duration-200 text-slate-900 placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
         @focus="handleInputFocus"
         @keyup.enter="handleSearchSubmit"
       />
-      <div class="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 md:w-8 md:h-8 rounded-l-full rounded-r-none bg-white flex items-center justify-center text-slate-900 shadow-xs shrink-0 pointer-events-none">
-        <Search class="w-3.5 h-3.5 md:w-4 md:h-4" />
-      </div>
       <button 
         v-if="searchQueryModel" 
         type="button" 
         @click="handleClear"
-        class="absolute right-4 top-1/2 -translate-y-1/2 text-header-muted-foreground hover:text-header-foreground text-xs p-1 rounded-full hover:bg-header-muted cursor-pointer"
+        class="absolute right-12 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 rounded hover:bg-muted/50 cursor-pointer"
         aria-label="Clear search text"
       >
         <X class="w-4 h-4" />
+      </button>
+      <button 
+        type="button"
+        @click="handleSearchSubmit"
+        class="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 md:w-9 md:h-9 bg-header-primary text-primary-foreground rounded-md flex items-center justify-center hover:bg-header-primary/90 transition-colors cursor-pointer shadow-xs"
+        aria-label="Search"
+        title="Search"
+      >
+        <Search class="w-4 h-4 text-white" />
       </button>
     </div>
 
