@@ -13,19 +13,19 @@ const authStore = useAuthStore();
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="space-y-2">
           <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Full Name</label>
-          <input type="text" :value="authStore.user?.name" disabled class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none font-medium" />
+          <input type="text" :value="authStore.user?.name" disabled class="w-full h-12 bg-muted/30 dark:bg-slate-900 border rounded-xl px-4 outline-none font-medium" />
         </div>
         <div class="space-y-2">
           <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address</label>
-          <input type="email" :value="authStore.user?.email" disabled class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none font-medium" />
+          <input type="email" :value="authStore.user?.email" disabled class="w-full h-12 bg-muted/30 dark:bg-slate-900 border rounded-xl px-4 outline-none font-medium" />
         </div>
         <div class="space-y-2">
           <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Phone Number</label>
-          <input type="tel" :value="authStore.user?.phone || 'Not provided'" disabled class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none font-medium" />
+          <input type="tel" :value="authStore.user?.phone || 'Not provided'" disabled class="w-full h-12 bg-muted/30 dark:bg-slate-900 border rounded-xl px-4 outline-none font-medium" />
         </div>
         <div class="space-y-2">
           <label class="text-xs font-bold uppercase tracking-widest text-muted-foreground">Registration Date</label>
-          <input type="text" :value="authStore.user?.joinedAt ? new Date(authStore.user.joinedAt).toLocaleDateString() : 'N/A'" disabled class="w-full h-12 bg-muted/30 border rounded-xl px-4 outline-none font-medium" />
+          <input type="text" :value="authStore.user?.joinedAt ? new Date(authStore.user.joinedAt).toLocaleDateString() : 'N/A'" disabled class="w-full h-12 bg-muted/30 dark:bg-slate-900 border rounded-xl px-4 outline-none font-medium" />
         </div>
       </div>
 

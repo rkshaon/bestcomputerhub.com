@@ -30,7 +30,7 @@ defineEmits(['update:modelValue']);
       :placeholder="placeholder"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       :class="cn(
-        'w-full h-12 pl-12 pr-4 bg-muted/50 border border-input rounded-2xl outline-none focus:ring-2 focus:ring-ring/20 transition-all text-sm font-medium',
+        'w-full h-12 pl-12 pr-4 bg-muted/50 border border-input rounded-md outline-none focus:ring-2 focus:ring-ring/20 transition-all text-sm font-medium',
         $attrs.class as string
       )"
     />

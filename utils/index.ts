@@ -100,10 +100,6 @@ export function decodeHtmlEntities(value: string | { name?: string } | any): str
   if (typeof value !== 'string') {
     return '';
   }
-  if (!value.includes('&')) {
-    return value;
-  }
-
   return value
     .replace(ENTITY_REGEX, (match) => HTML_ENTITIES[match] || match)
     .replace(/&#(\d+);/g, (match, dec) => {
@@ -122,4 +118,15 @@ export function decodeHtmlEntities(value: string | { name?: string } | any): str
         return match;
       }
     });
+}
+
+export function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'N/A';
+  
+  const day = date.getDate();
+  const month = date.toLocaleString('en-US', { month: 'short' });
+  const year = date.getFullYear();
+  return `${day} ${month}, ${year}`;
 }

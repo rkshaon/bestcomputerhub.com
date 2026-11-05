@@ -66,12 +66,37 @@ export const useSalesService = () => {
     }
   };
 
+  const getSalesSummary = async (): Promise<{ data: Record<string, number> }> => {
+    try {
+      const data = await apiClient.request<{ success: boolean; data: Record<string, number> }>('/api/v1/sales/summary/', {
+        method: 'GET'
+      });
+      return { data: data.data };
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  const getSalesPerformance = async (days: number = 90): Promise<any> => {
+    try {
+      const response = await apiClient.request<any>('/api/v1/sales/reports/performance/', {
+        method: 'GET',
+        query: { days }
+      });
+      return response?.data || response;
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   return {
     getSales,
     getStatuses,
     getSaleDetails,
     updateStatus,
     markPaid,
+    getSalesSummary,
+    getSalesPerformance,
     isLoading: apiClient.isLoading,
     errorMsg: apiClient.errorMsg
   };

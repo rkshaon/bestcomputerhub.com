@@ -302,7 +302,7 @@ const childSubmenuStyle = computed<Record<string, string>>(() => {
 
     <div
       ref="outerCardRef"
-      class="bg-card border border-border shadow-2xl rounded-xl text-card-foreground relative overflow-visible flex items-stretch divide-x divide-border/40"
+      class="bg-header-card border border-header-border shadow-2xl rounded-xl text-header-card-foreground relative overflow-visible flex items-stretch divide-x divide-header-border/40"
     >
       <div
         v-for="(colItems, colIdx) in columns"
@@ -323,10 +323,10 @@ const childSubmenuStyle = computed<Record<string, string>>(() => {
             <NuxtLink
               :to="megaMenu.buildCategoryUrl(ancestorSlugs, item)"
               :class="cn(
-                'flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors select-none cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary',
+                'flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors select-none cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-header-primary',
                 activeItemId === String(item.id)
-                  ? 'bg-primary/10 text-primary font-bold'
-                  : 'text-foreground/85 hover:bg-muted/70 hover:text-foreground'
+                  ? 'bg-header-primary/10 text-header-primary font-bold'
+                  : 'text-header-card-foreground/85 hover:bg-header-muted/70 hover:text-header-card-foreground'
               )"
               @focus="handleItemEnter(item, $event)"
               @click="handleLinkClick"
@@ -337,10 +337,10 @@ const childSubmenuStyle = computed<Record<string, string>>(() => {
                 :class="cn(
                   'w-3.5 h-3.5 transition-transform duration-150 shrink-0 ml-2',
                   megaMenu.isLoadingChildren(item.id)
-                    ? 'animate-spin text-primary'
+                    ? 'animate-spin text-header-primary'
                     : (activeItemId === String(item.id)
-                      ? 'text-primary translate-x-0.5'
-                      : 'text-muted-foreground/60 group-hover/item:translate-x-0.5 group-hover/item:text-foreground')
+                      ? 'text-header-primary translate-x-0.5'
+                      : 'text-header-muted-foreground/60 group-hover/item:translate-x-0.5 group-hover/item:text-header-card-foreground')
                 )"
               />
             </NuxtLink>

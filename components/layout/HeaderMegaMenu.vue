@@ -69,9 +69,9 @@ watch(
     )"
   >
     <div
-      class="bg-card border border-border shadow-2xl rounded-xl text-card-foreground min-w-[200px] px-3 py-3 flex items-center gap-2 text-xs text-muted-foreground"
+      class="bg-header-card border border-header-border shadow-2xl rounded-xl text-header-card-foreground min-w-[200px] px-3 py-3 flex items-center gap-2 text-xs text-header-muted-foreground"
     >
-      <span class="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></span>
+      <span class="w-3.5 h-3.5 border-2 border-header-primary/30 border-t-header-primary rounded-full animate-spin"></span>
       <span>Loading categories…</span>
     </div>
   </div>

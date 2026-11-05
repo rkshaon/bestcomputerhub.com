@@ -40,7 +40,7 @@ const currentStatus = computed(() => {
 
 <template>
   <div class="space-y-8" v-if="order">
-    <div :class="cn('p-6 rounded-[2rem] border flex items-center justify-between', currentStatus.bg)">
+    <div :class="cn('p-6 rounded-[2rem] border flex items-center justify-between', currentStatus.bg, currentStatus.bg.includes('dark:') ? '' : 'dark:bg-slate-900')">
       <div class="flex items-center gap-5">
         <div :class="cn('w-12 h-12 rounded-2xl flex items-center justify-center bg-white')">
           <component :is="currentStatus.icon" :class="cn('w-6 h-6', currentStatus.color)" />
