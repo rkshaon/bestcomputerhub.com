@@ -77,6 +77,18 @@ export const useSalesService = () => {
     }
   };
 
+  const getSalesPerformance = async (days: number = 90): Promise<any> => {
+    try {
+      const data = await apiClient.request<any>('/api/v1/sales/reports/performance/', {
+        method: 'GET',
+        query: { days }
+      });
+      return data;
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   return {
     getSales,
     getStatuses,
@@ -84,6 +96,7 @@ export const useSalesService = () => {
     updateStatus,
     markPaid,
     getSalesSummary,
+    getSalesPerformance,
     isLoading: apiClient.isLoading,
     errorMsg: apiClient.errorMsg
   };
