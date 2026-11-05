@@ -41,3 +41,6 @@ Always enforce demand-driven API calling: never dispatch API requests on compone
 
 Always process API errors centrally through `useApiClient` and `useToast` (`handleApiError` / `extractErrorMessage`). Extract backend-provided user-facing messages (such as `detail`, `message`, or field errors) for toasts rather than displaying raw technical request strings, URLs, or HTTP status signatures. Fall back to a generic user-friendly error message when no backend message is provided.
 
+Always observe the Package Lockfile Protection Policy (see `AGENTS.md` §13): do not modify `pnpm-lock.yaml`, run unnecessary `pnpm install` commands, or perform unrequested dependency updates unless explicitly required by the task.
+
+
