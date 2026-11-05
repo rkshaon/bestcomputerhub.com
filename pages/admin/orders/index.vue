@@ -46,36 +46,68 @@ const tableColumns: UiTableColumn<Order>[] = [
   { key: 'actions', label: 'Actions', align: 'right', headerClass: 'px-6 py-4 text-right whitespace-nowrap', cellClass: 'px-6 py-4 text-right whitespace-nowrap' },
 ];
 
+const route = useRoute();
+const router = useRouter();
+
 const salesService = useSalesService();
 const orders = ref<Order[]>([]);
 const totalCount = ref(0);
-const searchQuery = ref('');
+const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
-const statusFilter = ref('all');
+const statusFilter = ref(route.query.status ? String(route.query.status) : 'all');
 const statuses = ref<OrderStatusOption[]>([]);
 const transitions = ref<Record<string, string[]>>({});
 const viewMode = ref<'table' | 'kanban'>('table');
 const statsRef = ref<InstanceType<typeof OrderStatistics> | null>(null);
 
-const router = useRouter();
 const navigateToOrder = (order: Order) => router.push(`/admin/orders/${order.id}`);
 
 const isLoading = ref(false);
-const currentPage = ref(1);
-const itemsPerPage = ref(10);
+const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
+const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
+
+const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
 
 const fetchOrders = async () => {
   isLoading.value = true;
   try {
-    const result = await salesService.getSales({
+    const params: Record<string, any> = {
       page: currentPage.value,
       page_size: itemsPerPage.value
-    });
+    };
+    if (debouncedSearchQuery.value.trim()) {
+      params.search = debouncedSearchQuery.value.trim();
+    }
+    if (statusFilter.value && statusFilter.value !== 'all') {
+      params.status = statusFilter.value;
+    }
+    const result = await salesService.getSales(params);
     orders.value = result.results || [];
     totalCount.value = result.count || 0;
+  } catch (err: any) {
+    console.error('Failed to fetch orders:', err);
   } finally {
     isLoading.value = false;
   }
+};
+
+const updateRouteAndFetch = () => {
+  const query: Record<string, any> = { ...route.query };
+
+  if (debouncedSearchQuery.value.trim()) query.search = debouncedSearchQuery.value.trim();
+  else delete query.search;
+
+  if (statusFilter.value && statusFilter.value !== 'all') query.status = statusFilter.value;
+  else delete query.status;
+
+  if (currentPage.value > 1) query.page = String(currentPage.value);
+  else delete query.page;
+
+  if (itemsPerPage.value !== 10) query.pageSize = String(itemsPerPage.value);
+  else delete query.pageSize;
+
+  router.replace({ query });
+  fetchOrders();
 };
 
 const fetchStatuses = async () => {
@@ -88,9 +120,51 @@ const fetchStatuses = async () => {
   }
 };
 
-watch([currentPage, itemsPerPage, debouncedSearchQuery, statusFilter], () => {
-  currentPage.value = 1;
-  fetchOrders();
+// Reset page index to 1 when filters or itemsPerPage change
+watch([debouncedSearchQuery, statusFilter, itemsPerPage], () => {
+  if (currentPage.value !== 1) {
+    currentPage.value = 1;
+  } else {
+    updateRouteAndFetch();
+  }
+});
+
+// Fetch active page data when currentPage changes
+watch(currentPage, () => {
+  updateRouteAndFetch();
+});
+
+// Sync state from URL query parameter changes (e.g. browser back/forward navigation)
+watch(() => route.query, async (newQuery) => {
+  let needsFetch = false;
+
+  const newSearch = newQuery.search ? String(newQuery.search) : '';
+  if (searchQuery.value !== newSearch) {
+    searchQuery.value = newSearch;
+    needsFetch = true;
+  }
+
+  const newStatus = newQuery.status ? String(newQuery.status) : 'all';
+  if (statusFilter.value !== newStatus) {
+    statusFilter.value = newStatus;
+    needsFetch = true;
+  }
+
+  const newPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
+  if (currentPage.value !== newPage) {
+    currentPage.value = newPage;
+    needsFetch = true;
+  }
+
+  const newPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 10 : 10;
+  if (itemsPerPage.value !== newPageSize) {
+    itemsPerPage.value = newPageSize;
+    needsFetch = true;
+  }
+
+  if (needsFetch) {
+    await fetchOrders();
+  }
 });
 
 onMounted(() => {
@@ -110,7 +184,6 @@ const statusConfig = {
 const getStatusConfig = (status: Order['status']) =>
   statusConfig[status as keyof typeof statusConfig] ?? statusConfig.pending;
 
-const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage.value) || 1);
 const clearFilters = () => { searchQuery.value = ''; statusFilter.value = 'all'; };
 </script>
 
@@ -153,10 +226,15 @@ const clearFilters = () => { searchQuery.value = ''; statusFilter.value = 'all';
           <div class="flex items-center gap-1.5 border-l border-border pl-2.5">
             <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
             <select v-model="itemsPerPage" class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer">
-              <option :value="5">5</option> <option :value="10">10</option> <option :value="25">25</option> <option :value="50">50</option>
+              <option :value="5">5 / page</option>
+              <option :value="10">10 / page</option>
+              <option :value="25">25 / page</option>
+              <option :value="50">50 / page</option>
+              <option :value="100">100 / page</option>
+              <option :value="1000">1000 / page</option>
             </select>
           </div>
-          <button v-if="searchQuery || statusFilter !== 'all'" @click="clearFilters" class="text-muted-foreground hover:text-foreground text-xs font-bold p-2"><X class="w-4 h-4" /></button>
+          <button v-if="searchQuery || statusFilter !== 'all'" @click="clearFilters" class="text-muted-foreground hover:text-foreground text-xs font-bold p-2" title="Clear Filters"><X class="w-4 h-4" /></button>
         </div>
       </div>
 

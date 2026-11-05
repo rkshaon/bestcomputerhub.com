@@ -10,7 +10,7 @@ export const pendingOrdersCount = ref<number | null>(null);
 export const useSalesService = () => {
   const apiClient = useApiClient();
 
-  const getSales = async (params: { page?: number; page_size?: number; search?: string } = {}): Promise<{ results: Order[]; count: number }> => {
+  const getSales = async (params: { page?: number; page_size?: number; search?: string; status?: string } = {}): Promise<{ results: Order[]; count: number }> => {
     try {
       const data = await apiClient.request<any>('/api/v1/sales/', {
         method: 'GET',
