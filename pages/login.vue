@@ -96,7 +96,7 @@ if (authStore.isLoggedIn) {
                   v-model="credential"
                   type="text" 
                   placeholder="Enter email, username or phone number"
-                  class="w-full h-14 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium"
+                  class="w-full h-14 bg-muted/30 border border-border/50 rounded-md pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium"
                   required
                 />
               </div>
@@ -116,7 +116,7 @@ if (authStore.isLoggedIn) {
                   v-model="password"
                   :type="showPassword ? 'text' : 'password'" 
                   placeholder="••••••••"
-                  class="w-full h-14 bg-muted/30 border border-border/50 rounded-2xl pl-12 pr-12 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium tracking-widest"
+                  class="w-full h-14 bg-muted/30 border border-border/50 rounded-md pl-12 pr-12 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all font-medium tracking-widest"
                   required
                 />
                 <button 
