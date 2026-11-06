@@ -72,6 +72,8 @@ Examples:
 * For paginated filter option controls across Admin and Storefront, implement infinite scroll (`useInfinitePagination` / `<UiInfiniteScroll />`) to fetch and append sequential option pages as the user scrolls until `next` is `null`. Do not overwrite loaded options, prevent duplicate concurrent requests, preserve loaded option state when closed and reopened where lifecycle permits, fetch options strictly on demand when activated, and debounce search inputs (300ms).
 * For hierarchical tree components (e.g. Admin Categories Tree), enforce sibling-level accordion expansion behavior: expanding a node collapses other expanded siblings with the same immediate parent, while all ancestor levels remain expanded.
 * Do not create premature generic abstractions for hypothetical future use.
+* Observe the Package Lockfile Protection Policy (refer to `AGENTS.md` §13): leave `pnpm-lock.yaml` completely untouched and do not run unnecessary dependency installation or lockfile updates unless explicitly required by the task.
+
 
 ## Component Placement
 

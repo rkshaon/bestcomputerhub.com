@@ -229,7 +229,25 @@ All administrative list, table, and CRUD interfaces must adhere to established s
 
 ---
 
-## 13. Definition of Done
+## 13. Package Lockfile Protection Policy
+
+To maintain deterministic build stability and prevent unintended lockfile churn, strictly observe these rules:
+
+1. **Do not modify `pnpm-lock.yaml` by default**: If a task does not require changes to `package.json`, dependency declarations, package manager configuration, or dependency resolution, leave `pnpm-lock.yaml` completely untouched.
+2. **No Unnecessary Regeneration**: Do not run commands or installation flags that unnecessarily regenerate, update, or rewrite `pnpm-lock.yaml`.
+3. **No Gratuitous Installation**: Do not run `pnpm install` merely to verify an implementation or resolve unrelated issues.
+4. **No Unrequested Dependency Churn**: Do not update dependency versions, regenerate lockfiles, or perform dependency cleanup unless explicitly required by the user prompt.
+5. **Justified Dependency Changes**: If a dependency change is genuinely necessary:
+   - Explain why the dependency update or addition is required.
+   - Identify the specific affected package(s).
+   - Update the relevant dependency declarations in `package.json` and `pnpm-lock.yaml` consistently.
+   - Report both modified files in the final task deliverable.
+6. **Separate Lockfile Inconsistency Reporting**: If an existing lockfile inconsistency is discovered, report it separately to the user. Do not automatically fix or rewrite lockfile anomalies without explicit authorization.
+7. **No Unauthorized Reverts or Overwrites**: Never revert or overwrite existing lockfile changes without authorization.
+
+---
+
+## 14. Definition of Done
 
 Before considering any task complete, verify that:
 1. **TypeScript Validation Passes**: `pnpm lint` (which runs `nuxt typecheck`) passes with zero type errors.
@@ -241,7 +259,7 @@ Before considering any task complete, verify that:
 
 ---
 
-## 14. Authoritative Knowledge Base Reference Map
+## 15. Authoritative Knowledge Base Reference Map
 
 For detailed implementation specifications, consult the authoritative documentation:
 

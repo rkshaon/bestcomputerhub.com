@@ -205,7 +205,7 @@ defineExpose({
         aria-label="Search"
         title="Search"
       >
-        <Search class="w-4 h-4 text-white" />
+        <Search class="w-4 h-4 text-brand" />
       </button>
     </div>
 

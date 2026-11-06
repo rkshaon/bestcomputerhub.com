@@ -443,6 +443,22 @@ The repository maintains a dedicated inventory of utilities, helpers, composable
 - **Exclusion of Trivial Functions**: Trivial, single-use local functions or small inline callbacks do not need to be added to the inventory.
 - **Utility Extraction Criteria**: Utility extraction must be driven by meaningful reuse, clear domain responsibility, or improved maintainability—never merely to reduce file length.
 
+---
+
+## 17. Package Lockfile Protection Policy
+
+Dependency declarations (`package.json`) and the project lockfile (`pnpm-lock.yaml`) are governed by strict protection rules to maintain build determinism and prevent unintended dependency churn across the repository:
+
+1. **Default Immutability**: `pnpm-lock.yaml` must not be modified by default during feature implementation, bug fixes, or refactoring tasks that do not involve package dependency changes.
+2. **Restricted Lockfile Mutation**: Do not run commands, scripts, or installation flags that trigger unnecessary regeneration or rewriting of `pnpm-lock.yaml`.
+3. **No Gratuitous Installation**: Running `pnpm install` merely to verify code changes or diagnose unrelated runtime issues is prohibited.
+4. **No Unrequested Version Churn**: Do not update package versions, regenerate lockfiles, or perform dependency cleanup unless explicitly requested.
+5. **Justified Dependency Workflow**: When a dependency change is required by the task, explain the justification, identify affected packages, and update `package.json` and `pnpm-lock.yaml` consistently.
+6. **Lockfile Anomalies**: Report any existing lockfile inconsistencies separately without automatically rewriting or fixing them.
+7. **No Unauthorized Reverts**: Never revert or overwrite existing lockfile changes without explicit authorization.
+
+*Primary authoritative policy*: `AGENTS.md` (Section 13).
+
 
 
 
