@@ -125,45 +125,54 @@ watch([debouncedSearchQuery, statusFilter, itemsPerPage], () => {
   if (currentPage.value !== 1) {
     currentPage.value = 1;
   } else {
-    updateRouteAndFetch();
+    fetchOrders();
   }
 });
 
 // Fetch active page data when currentPage changes
 watch(currentPage, () => {
-  updateRouteAndFetch();
+  fetchOrders();
+});
+
+// Keep list state in the URL
+watch([searchQuery, statusFilter, currentPage, itemsPerPage], () => {
+  const query: Record<string, any> = { ...route.query };
+
+  if (searchQuery.value.trim()) query.search = searchQuery.value.trim();
+  else delete query.search;
+
+  if (statusFilter.value && statusFilter.value !== 'all') query.status = statusFilter.value;
+  else delete query.status;
+
+  if (currentPage.value > 1) query.page = String(currentPage.value);
+  else delete query.page;
+
+  if (itemsPerPage.value !== 10) query.pageSize = String(itemsPerPage.value);
+  else delete query.pageSize;
+
+  router.replace({ query });
 });
 
 // Sync state from URL query parameter changes (e.g. browser back/forward navigation)
-watch(() => route.query, async (newQuery) => {
-  let needsFetch = false;
-
+watch(() => route.query, (newQuery) => {
   const newSearch = newQuery.search ? String(newQuery.search) : '';
   if (searchQuery.value !== newSearch) {
     searchQuery.value = newSearch;
-    needsFetch = true;
   }
 
   const newStatus = newQuery.status ? String(newQuery.status) : 'all';
   if (statusFilter.value !== newStatus) {
     statusFilter.value = newStatus;
-    needsFetch = true;
   }
 
   const newPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
   if (currentPage.value !== newPage) {
     currentPage.value = newPage;
-    needsFetch = true;
   }
 
   const newPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 10 : 10;
   if (itemsPerPage.value !== newPageSize) {
     itemsPerPage.value = newPageSize;
-    needsFetch = true;
-  }
-
-  if (needsFetch) {
-    await fetchOrders();
   }
 });
 
