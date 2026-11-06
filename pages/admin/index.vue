@@ -6,7 +6,6 @@ import {
   ShoppingBag, 
   TrendingUp,
   Download,
-  Package,
   Loader2,
   AlertCircle
 } from 'lucide-vue-next';
@@ -233,19 +232,5 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
       </template>
     </div>
 
-    <!-- Enterprise Shield Section -->
-    <div class="bg-slate-950 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
-      <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-        <Package class="w-32 h-32" />
-      </div>
-      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 mb-2">Security protocol</p>
-      <h3 class="text-xl font-display font-black tracking-tight mb-4">Enterprise Shield Active</h3>
-      <p class="text-xs text-slate-400 leading-relaxed mb-6">
-        All procurement protocols are encrypted with Quantum-grade tunneling. Transaction integrity verified.
-      </p>
-      <button class="text-[10px] font-bold uppercase tracking-widest text-white border-b border-emerald-400 pb-1">
-        Identity Registry Overview
-      </button>
-    </div>
   </div>
 </template>
