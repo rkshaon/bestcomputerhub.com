@@ -474,7 +474,7 @@ if (process.client) {
           <img 
             src="/logo.png"
             alt="Best Computer Hub"
-            class="object-contain transition-all duration-300 group-hover:scale-105 shrink-0 h-9 lg:h-10 w-auto max-w-[200px]"
+            class="object-contain transition-all duration-300 group-hover:scale-105 shrink-0 h-9 md:h-10 lg:h-11 w-auto max-w-[200px]"
           />
         </NuxtLink>
 
