@@ -116,4 +116,27 @@
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
   }
+
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid hsl(var(--border));
+  }
+  .prose th {
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--muted) / 0.5);
+    padding: 0.5rem;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: hsl(var(--foreground));
+  }
+  .prose td {
+    border: 1px solid hsl(var(--border));
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    color: hsl(var(--foreground));
+  }
 }
