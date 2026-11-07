@@ -14,6 +14,7 @@ import {
   AlignCenter,
   AlignRight,
   Link as LinkIcon,
+  Unlink,
   Table as TableIcon,
   Code as CodeIcon,
   RotateCcw,
@@ -129,12 +130,59 @@ const formatBlock = (tag: string) => {
   execCommand('formatBlock', `<${tag}>`);
 };
 
+const getSelectedAnchor = (): HTMLAnchorElement | null => {
+  const selection = window.getSelection();
+  if (!selection || !selection.anchorNode) return null;
+  let node: Node | null = selection.anchorNode;
+  if (node.nodeType === Node.TEXT_NODE) {
+    node = node.parentNode;
+  }
+  while (node && node !== editorRef.value) {
+    if (node.nodeName === 'A') {
+      return node as HTMLAnchorElement;
+    }
+    node = node.parentNode;
+  }
+  return null;
+};
+
 const insertLink = () => {
   if (props.disabled || isSourceMode.value) return;
-  const url = prompt('Enter the link URL (e.g. https://example.com):');
-  if (url && url.trim()) {
-    execCommand('createLink', url.trim());
+  if (editorRef.value) {
+    editorRef.value.focus();
   }
+
+  const existingAnchor = getSelectedAnchor();
+  const existingHref = existingAnchor ? existingAnchor.getAttribute('href') || '' : '';
+
+  const url = prompt('Enter the link URL (e.g. https://example.com):', existingHref);
+  
+  if (url === null) {
+    return;
+  }
+
+  const trimmed = url.trim();
+  if (!trimmed) {
+    if (existingAnchor) {
+      execCommand('unlink');
+    }
+    return;
+  }
+
+  if (existingAnchor) {
+    existingAnchor.setAttribute('href', trimmed);
+    handleInput();
+  } else {
+    execCommand('createLink', trimmed);
+  }
+};
+
+const removeLink = () => {
+  if (props.disabled || isSourceMode.value) return;
+  if (editorRef.value) {
+    editorRef.value.focus();
+  }
+  execCommand('unlink');
 };
 
 const insertTable = () => {
@@ -332,11 +380,20 @@ const clearFormatting = () => {
             <button
               type="button"
               @click.prevent="insertLink"
-              title="Insert Link"
-              aria-label="Insert Link"
+              title="Insert / Edit Link"
+              aria-label="Insert / Edit Link"
               class="w-7 h-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
             >
               <LinkIcon class="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              @click.prevent="removeLink"
+              title="Remove Link"
+              aria-label="Remove Link"
+              class="w-7 h-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            >
+              <Unlink class="w-3.5 h-3.5" />
             </button>
             <button
               v-if="allowTables"
