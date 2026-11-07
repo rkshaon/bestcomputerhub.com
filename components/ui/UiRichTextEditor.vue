@@ -130,6 +130,47 @@ const formatBlock = (tag: string) => {
   execCommand('formatBlock', `<${tag}>`);
 };
 
+const setFontSize = (event: Event) => {
+  const select = event.target as HTMLSelectElement;
+  const size = select.value;
+  if (!size) return;
+  if (props.disabled || isSourceMode.value) return;
+
+  if (editorRef.value) {
+    editorRef.value.focus();
+  }
+
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    select.value = '';
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  if (range.collapsed) {
+    select.value = '';
+    return;
+  }
+
+  const content = range.extractContents();
+  const span = document.createElement('span');
+  span.style.fontSize = size;
+  span.appendChild(content);
+
+  range.insertNode(span);
+
+  selection.removeAllRanges();
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  selection.addRange(newRange);
+
+  handleInput();
+
+  nextTick(() => {
+    select.value = '';
+  });
+};
+
 const getSelectedAnchor = (): HTMLAnchorElement | null => {
   const selection = window.getSelection();
   if (!selection || !selection.anchorNode) return null;
@@ -289,6 +330,26 @@ const clearFormatting = () => {
             >
               <Strikethrough class="w-3.5 h-3.5" />
             </button>
+          </div>
+
+          <!-- Font Size Dropdown -->
+          <div class="flex items-center bg-background/80 border border-border/60 rounded-lg p-0.5">
+            <select
+              @change="setFontSize"
+              title="Font Size"
+              aria-label="Font Size"
+              class="h-7 px-2 bg-transparent text-xs font-semibold text-muted-foreground hover:text-foreground outline-none cursor-pointer rounded"
+            >
+              <option value="" disabled selected>Size</option>
+              <option value="12px">12px</option>
+              <option value="14px">14px</option>
+              <option value="16px">16px</option>
+              <option value="18px">18px</option>
+              <option value="20px">20px</option>
+              <option value="24px">24px</option>
+              <option value="28px">28px</option>
+              <option value="32px">32px</option>
+            </select>
           </div>
 
           <!-- Headings & Structure -->
