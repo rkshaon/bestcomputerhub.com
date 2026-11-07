@@ -14,6 +14,7 @@ import {
   AlignCenter,
   AlignRight,
   Link as LinkIcon,
+  Unlink,
   Table as TableIcon,
   Code as CodeIcon,
   RotateCcw,
@@ -129,12 +130,100 @@ const formatBlock = (tag: string) => {
   execCommand('formatBlock', `<${tag}>`);
 };
 
+const setFontSize = (event: Event) => {
+  const select = event.target as HTMLSelectElement;
+  const size = select.value;
+  if (!size) return;
+  if (props.disabled || isSourceMode.value) return;
+
+  if (editorRef.value) {
+    editorRef.value.focus();
+  }
+
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    select.value = '';
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  if (range.collapsed) {
+    select.value = '';
+    return;
+  }
+
+  const content = range.extractContents();
+  const span = document.createElement('span');
+  span.style.fontSize = size;
+  span.appendChild(content);
+
+  range.insertNode(span);
+
+  selection.removeAllRanges();
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  selection.addRange(newRange);
+
+  handleInput();
+
+  nextTick(() => {
+    select.value = '';
+  });
+};
+
+const getSelectedAnchor = (): HTMLAnchorElement | null => {
+  const selection = window.getSelection();
+  if (!selection || !selection.anchorNode) return null;
+  let node: Node | null = selection.anchorNode;
+  if (node.nodeType === Node.TEXT_NODE) {
+    node = node.parentNode;
+  }
+  while (node && node !== editorRef.value) {
+    if (node.nodeName === 'A') {
+      return node as HTMLAnchorElement;
+    }
+    node = node.parentNode;
+  }
+  return null;
+};
+
 const insertLink = () => {
   if (props.disabled || isSourceMode.value) return;
-  const url = prompt('Enter the link URL (e.g. https://example.com):');
-  if (url && url.trim()) {
-    execCommand('createLink', url.trim());
+  if (editorRef.value) {
+    editorRef.value.focus();
   }
+
+  const existingAnchor = getSelectedAnchor();
+  const existingHref = existingAnchor ? existingAnchor.getAttribute('href') || '' : '';
+
+  const url = prompt('Enter the link URL (e.g. https://example.com):', existingHref);
+  
+  if (url === null) {
+    return;
+  }
+
+  const trimmed = url.trim();
+  if (!trimmed) {
+    if (existingAnchor) {
+      execCommand('unlink');
+    }
+    return;
+  }
+
+  if (existingAnchor) {
+    existingAnchor.setAttribute('href', trimmed);
+    handleInput();
+  } else {
+    execCommand('createLink', trimmed);
+  }
+};
+
+const removeLink = () => {
+  if (props.disabled || isSourceMode.value) return;
+  if (editorRef.value) {
+    editorRef.value.focus();
+  }
+  execCommand('unlink');
 };
 
 const insertTable = () => {
@@ -243,6 +332,26 @@ const clearFormatting = () => {
             </button>
           </div>
 
+          <!-- Font Size Dropdown -->
+          <div class="flex items-center bg-background/80 border border-border/60 rounded-lg p-0.5">
+            <select
+              @change="setFontSize"
+              title="Font Size"
+              aria-label="Font Size"
+              class="h-7 px-2 bg-transparent text-xs font-semibold text-muted-foreground hover:text-foreground outline-none cursor-pointer rounded"
+            >
+              <option value="" disabled selected>Size</option>
+              <option value="12px">12px</option>
+              <option value="14px">14px</option>
+              <option value="16px">16px</option>
+              <option value="18px">18px</option>
+              <option value="20px">20px</option>
+              <option value="24px">24px</option>
+              <option value="28px">28px</option>
+              <option value="32px">32px</option>
+            </select>
+          </div>
+
           <!-- Headings & Structure -->
           <div class="flex items-center bg-background/80 border border-border/60 rounded-lg p-0.5">
             <button
@@ -332,11 +441,20 @@ const clearFormatting = () => {
             <button
               type="button"
               @click.prevent="insertLink"
-              title="Insert Link"
-              aria-label="Insert Link"
+              title="Insert / Edit Link"
+              aria-label="Insert / Edit Link"
               class="w-7 h-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
             >
               <LinkIcon class="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              @click.prevent="removeLink"
+              title="Remove Link"
+              aria-label="Remove Link"
+              class="w-7 h-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            >
+              <Unlink class="w-3.5 h-3.5" />
             </button>
             <button
               v-if="allowTables"
