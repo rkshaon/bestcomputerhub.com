@@ -171,6 +171,82 @@ const setFontSize = (event: Event) => {
   });
 };
 
+const setTextColor = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const color = input.value;
+  if (!color) return;
+  if (props.disabled || isSourceMode.value) return;
+
+  if (editorRef.value) {
+    editorRef.value.focus();
+  }
+
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+
+  const range = selection.getRangeAt(0);
+  if (range.collapsed) return;
+
+  let container: Node | null = range.commonAncestorContainer;
+  if (container.nodeType === Node.TEXT_NODE) {
+    container = container.parentNode;
+  }
+
+  if (container && container instanceof HTMLElement && container.nodeName === 'SPAN') {
+    container.style.color = color;
+    handleInput();
+  } else {
+    const content = range.extractContents();
+    const span = document.createElement('span');
+    span.style.color = color;
+    span.appendChild(content);
+
+    range.insertNode(span);
+
+    selection.removeAllRanges();
+    const newRange = document.createRange();
+    newRange.selectNodeContents(span);
+    selection.addRange(newRange);
+
+    handleInput();
+  }
+
+  nextTick(() => {
+    input.value = '#000000';
+  });
+};
+
+const resetTextColor = () => {
+  if (props.disabled || isSourceMode.value) return;
+  if (editorRef.value) {
+    editorRef.value.focus();
+  }
+
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+
+  let container: Node | null = selection.anchorNode;
+  if (container && container.nodeType === Node.TEXT_NODE) {
+    container = container.parentNode;
+  }
+
+  while (container && container !== editorRef.value) {
+    if (container instanceof HTMLElement && container.nodeName === 'SPAN') {
+      container.style.removeProperty('color');
+      if (!container.getAttribute('style')?.trim()) {
+        const parent = container.parentNode;
+        while (container.firstChild) {
+          parent?.insertBefore(container.firstChild, container);
+        }
+        parent?.removeChild(container);
+      }
+      handleInput();
+      break;
+    }
+    container = container.parentNode;
+  }
+};
+
 const getSelectedAnchor = (): HTMLAnchorElement | null => {
   const selection = window.getSelection();
   if (!selection || !selection.anchorNode) return null;
@@ -350,6 +426,31 @@ const clearFormatting = () => {
               <option value="28px">28px</option>
               <option value="32px">32px</option>
             </select>
+          </div>
+
+          <!-- Text Color Picker & Reset -->
+          <div class="flex items-center gap-1 bg-background/80 border border-border/60 rounded-lg p-0.5">
+            <label 
+              title="Text Color"
+              aria-label="Text Color"
+              class="w-7 h-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer relative overflow-hidden"
+            >
+              <input
+                type="color"
+                @change="setTextColor"
+                class="absolute -inset-2 w-12 h-12 opacity-0 cursor-pointer"
+              />
+              <span class="text-xs font-bold font-mono">A</span>
+            </label>
+            <button
+              type="button"
+              @click.prevent="resetTextColor"
+              title="Reset Text Color"
+              aria-label="Reset Text Color"
+              class="px-1.5 h-7 flex items-center justify-center rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            >
+              Reset
+            </button>
           </div>
 
           <!-- Headings & Structure -->
