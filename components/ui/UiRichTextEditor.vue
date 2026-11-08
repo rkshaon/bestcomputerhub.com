@@ -544,13 +544,13 @@ const applyFormatPainterToSelection = () => {
     <!-- Editor Outer Container -->
     <div
       :class="cn(
-        'rounded-xl border bg-background overflow-hidden transition-all flex flex-col',
+        'rounded-xl border bg-background relative transition-all flex flex-col',
         error ? 'border-destructive focus-within:ring-2 focus-within:ring-destructive/20' : 'border-input focus-within:ring-2 focus-within:ring-ring/20',
         disabled && 'opacity-60 pointer-events-none'
       )"
     >
       <!-- Editor Toolbar -->
-      <div class="p-1.5 bg-muted/40 border-b border-border flex items-center justify-between gap-1 select-none max-w-full overflow-x-auto scrollbar-none">
+      <div class="sticky top-0 z-20 p-1.5 bg-muted/95 dark:bg-muted/95 backdrop-blur-md border-b border-border flex items-center justify-between gap-1 select-none max-w-full overflow-x-auto scrollbar-none">
         <!-- Formatting Tools (Disabled in Source View) -->
         <div class="flex items-center gap-1 shrink-0 overflow-x-auto scrollbar-none" :class="{ 'opacity-40 pointer-events-none': isSourceMode }">
           <!-- Text Styling Group -->
