@@ -1,6 +1,6 @@
 <!-- File: /components/ui/UiRichTextEditor.vue -->
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick } from 'vue';
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import {
   Bold,
   Italic,
@@ -21,7 +21,8 @@ import {
   RemoveFormatting,
   Eye,
   Plus,
-  Trash2
+  Trash2,
+  Paintbrush
 } from 'lucide-vue-next';
 import { cn } from '@/utils';
 
@@ -83,6 +84,15 @@ const updateEditorContent = (content: string | Record<string, any> | null | unde
 
 onMounted(() => {
   updateEditorContent(props.modelValue);
+  if (typeof window !== 'undefined') {
+    document.addEventListener('keydown', handleFormatPainterEscape);
+  }
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    document.removeEventListener('keydown', handleFormatPainterEscape);
+  }
 });
 
 watch(
@@ -101,7 +111,6 @@ watch(
 const handleInput = () => {
   if (editorRef.value) {
     const html = editorRef.value.innerHTML;
-    // Normalize empty content
     const normalized = html === '<p><br></p>' || html === '<br>' ? '' : html;
     rawHtml.value = normalized;
     emit('update:modelValue', normalized);
@@ -342,6 +351,182 @@ const toggleSourceMode = () => {
 const clearFormatting = () => {
   execCommand('removeFormat');
 };
+
+// Format Painter State & Logic
+interface CapturedFormatting {
+  fontSize: string;
+  color: string;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  strikethrough: boolean;
+}
+
+const isFormatPainterActive = ref(false);
+const capturedFormatting = ref<CapturedFormatting | null>(null);
+
+const toggleFormatPainter = () => {
+  if (props.disabled || isSourceMode.value) return;
+
+  if (isFormatPainterActive.value) {
+    cancelFormatPainter();
+    return;
+  }
+
+  if (editorRef.value) {
+    editorRef.value.focus();
+  }
+
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+    alert('Please select source text with the formatting you want to copy first.');
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  let container: Node | null = range.commonAncestorContainer;
+  if (container.nodeType === Node.TEXT_NODE) {
+    container = container.parentNode;
+  }
+
+  let fontSize = '';
+  let color = '';
+  let bold = false;
+  let italic = false;
+  let underline = false;
+  let strikethrough = false;
+
+  let curr: Node | null = container;
+  while (curr && curr !== editorRef.value) {
+    if (curr instanceof HTMLElement) {
+      if (!fontSize && curr.style.fontSize) fontSize = curr.style.fontSize;
+      if (!color && curr.style.color) color = curr.style.color;
+      if (curr.nodeName === 'B' || curr.nodeName === 'STRONG' || (curr instanceof HTMLElement && curr.style.fontWeight && parseInt(curr.style.fontWeight) >= 600)) {
+        bold = true;
+      }
+      if (curr.nodeName === 'I' || curr.nodeName === 'EM' || (curr instanceof HTMLElement && curr.style.fontStyle === 'italic')) {
+        italic = true;
+      }
+      if (curr.nodeName === 'U' || (curr instanceof HTMLElement && curr.style.textDecoration?.includes('underline'))) {
+        underline = true;
+      }
+      if (curr.nodeName === 'S' || curr.nodeName === 'STRIKE' || curr.nodeName === 'DEL' || (curr instanceof HTMLElement && curr.style.textDecoration?.includes('line-through'))) {
+        strikethrough = true;
+      }
+    }
+    curr = curr.parentNode;
+  }
+
+  if (!bold) bold = document.queryCommandState('bold');
+  if (!italic) italic = document.queryCommandState('italic');
+  if (!underline) underline = document.queryCommandState('underline');
+  if (!strikethrough) strikethrough = document.queryCommandState('strikeThrough');
+
+  capturedFormatting.value = { fontSize, color, bold, italic, underline, strikethrough };
+  isFormatPainterActive.value = true;
+};
+
+const cancelFormatPainter = () => {
+  isFormatPainterActive.value = false;
+  capturedFormatting.value = null;
+};
+
+const handleFormatPainterEscape = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && isFormatPainterActive.value) {
+    cancelFormatPainter();
+  }
+};
+
+const applyFormatPainterToSelection = () => {
+  if (!isFormatPainterActive.value || !capturedFormatting.value) return;
+  if (props.disabled || isSourceMode.value) return;
+
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+
+  const range = selection.getRangeAt(0);
+  
+  if (editorRef.value && !editorRef.value.contains(range.commonAncestorContainer)) {
+    return;
+  }
+
+  const fmt = capturedFormatting.value;
+  const content = range.extractContents();
+
+  const walker = document.createTreeWalker(content, NodeFilter.SHOW_ELEMENT, {
+    acceptNode: (node: Node) => {
+      if (node instanceof HTMLElement) {
+        if (['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL'].includes(node.nodeName)) {
+          return NodeFilter.FILTER_ACCEPT;
+        }
+        if (node.style.fontSize || node.style.color || node.style.fontWeight || node.style.fontStyle || node.style.textDecoration) {
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+      return NodeFilter.FILTER_SKIP;
+    }
+  });
+
+  const nodesToClean: HTMLElement[] = [];
+  let n: Node | null = walker.currentNode;
+  while (n) {
+    if (n instanceof HTMLElement) nodesToClean.push(n);
+    n = walker.nextNode();
+  }
+
+  nodesToClean.forEach(node => {
+    if (['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL'].includes(node.nodeName)) {
+      const parent = node.parentNode;
+      while (node.firstChild) {
+        parent?.insertBefore(node.firstChild, node);
+      }
+      parent?.removeChild(node);
+    } else {
+      node.style.removeProperty('font-size');
+      node.style.removeProperty('color');
+      node.style.removeProperty('font-weight');
+      node.style.removeProperty('font-style');
+      node.style.removeProperty('text-decoration');
+    }
+  });
+
+  let currentFrag: DocumentFragment | HTMLElement = content;
+
+  if (fmt.bold) {
+    const b = document.createElement('strong');
+    b.appendChild(currentFrag);
+    currentFrag = b;
+  }
+  if (fmt.italic) {
+    const i = document.createElement('em');
+    i.appendChild(currentFrag);
+    currentFrag = i;
+  }
+  if (fmt.underline) {
+    const u = document.createElement('u');
+    u.appendChild(currentFrag);
+    currentFrag = u;
+  }
+  if (fmt.strikethrough) {
+    const s = document.createElement('s');
+    s.appendChild(currentFrag);
+    currentFrag = s;
+  }
+
+  const span = document.createElement('span');
+  if (fmt.fontSize) span.style.fontSize = fmt.fontSize;
+  if (fmt.color) span.style.color = fmt.color;
+  span.appendChild(currentFrag);
+
+  range.insertNode(span);
+
+  selection.removeAllRanges();
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  selection.addRange(newRange);
+
+  handleInput();
+};
 </script>
 
 <template>
@@ -541,6 +726,20 @@ const clearFormatting = () => {
           <div class="flex items-center bg-background/80 border border-border/60 rounded-lg p-0.5">
             <button
               type="button"
+              @click.prevent="toggleFormatPainter"
+              :title="isFormatPainterActive ? 'Format Painter Active (Click again or Esc to cancel)' : 'Format Painter (Select source text first)'"
+              :aria-label="isFormatPainterActive ? 'Format Painter Active' : 'Format Painter'"
+              :class="cn(
+                'w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer',
+                isFormatPainterActive
+                  ? 'bg-primary text-primary-foreground shadow-xs animate-pulse'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              )"
+            >
+              <Paintbrush class="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
               @click.prevent="insertLink"
               title="Insert / Edit Link"
               aria-label="Insert / Edit Link"
@@ -617,6 +816,7 @@ const clearFormatting = () => {
             '[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5'
           )"
           @input="handleInput"
+          @mouseup="applyFormatPainterToSelection"
           @focus="isFocused = true; emit('focus')"
           @blur="isFocused = false; emit('blur')"
         ></div>

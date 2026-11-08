@@ -240,7 +240,7 @@ Components are classified using four standard metadata properties:
 - **Purpose**: Rich text WYSIWYG content editor supporting formatting toolbars, HTML source editing mode, sanitization, and live HTML `v-model` binding.
 - **Routes/Pages Used**: Admin Product Create/Edit forms, Admin Blog Post forms, Admin SEO/Content pages.
 - **Main Responsibilities**:
-  - Provide text formatting tools (bold, italic, headers, lists, links, inline font-size selection [12px, 14px, 16px, 18px, 20px, 24px, 28px, 32px], text color picker with custom color support and color reset, alignment, tables, code blocks).
+  - Provide text formatting tools (bold, italic, headers, lists, links, format painter for character-level styling, inline font-size selection, text color picker, alignment, tables, code blocks).
   - Toggle between visual WYSIWYG editor and raw HTML source code editor (`isSourceMode`).
   - Output clean, sanitized HTML via `v-model`.
 - **What It Explicitly Does Not Own**: Image file storage server endpoints (delegates file upload execution to caller).
