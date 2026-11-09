@@ -272,6 +272,7 @@ onUnmounted(() => {
 });
 
 const tableColumns: UiTableColumn<ProductImage>[] = [
+  { key: 'select', label: '', width: '40px', headerClass: 'px-2 py-3 text-center', cellClass: 'px-2 py-2.5 text-center' },
   { key: 'image', label: 'Image', width: '80px', headerClass: 'px-4 py-3 text-center', cellClass: 'px-4 py-2.5 text-center' },
   { key: 'alt_text', label: 'Alt Text', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'resolution', label: 'Resolution', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
@@ -452,6 +453,67 @@ const handleOptimizeImage = async (img: ProductImage) => {
     optimizingId.value = null;
   }
 };
+const selectedImageIds = ref<(string | number)[]>([]);
+const isBulkOptimizing = ref(false);
+
+const toggleImageSelection = (id: string | number) => {
+  const index = selectedImageIds.value.indexOf(id);
+  if (index > -1) {
+    selectedImageIds.value.splice(index, 1);
+  } else {
+    selectedImageIds.value.push(id);
+  }
+};
+
+const isImageSelected = (id: string | number) => {
+  return selectedImageIds.value.includes(id);
+};
+
+const selectAllEligibleHighResImages = () => {
+  const highResIds = images.value
+    .filter(img => isHighResolutionImage(img.image) && img.id !== undefined)
+    .map(img => img.id!);
+  selectedImageIds.value = highResIds;
+};
+
+const clearImageSelection = () => {
+  selectedImageIds.value = [];
+};
+
+const eligibleSelectedImageIds = computed(() => {
+  return images.value
+    .filter(img => img.id !== undefined && selectedImageIds.value.includes(img.id) && isHighResolutionImage(img.image))
+    .map(img => img.id!);
+});
+
+const handleBulkOptimize = async () => {
+  const idsToOptimize = eligibleSelectedImageIds.value;
+  if (idsToOptimize.length === 0) return;
+
+  isBulkOptimizing.value = true;
+  try {
+    const res = await productService.bulkOptimizeProductImages(idsToOptimize);
+    const optimized = res?.optimized ?? idsToOptimize.length;
+    const skipped = res?.skipped ?? 0;
+    const failed = res?.failed ?? 0;
+    const notFound = res?.not_found ?? 0;
+    const total = res?.total ?? idsToOptimize.length;
+
+    toastSuccess(`Bulk optimization complete: ${optimized} optimized, ${skipped} skipped, ${failed} failed, ${notFound} not found (Total: ${total}).`);
+
+    selectedImageIds.value = [];
+    images.value.forEach(img => {
+      if (img.image) {
+        delete imageMetadataCache[img.image];
+      }
+    });
+    await Promise.all([fetchImages(), fetchProductImageSummary()]);
+  } catch (err: any) {
+    handleApiError(err, 'Failed to perform bulk product image optimization.');
+  } finally {
+    isBulkOptimizing.value = false;
+  }
+};
 
 const fetchImages = async () => {
   isFetching.value = true;
@@ -588,8 +650,36 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
     <template #header-actions>
       <div class="flex flex-wrap items-center gap-2">
         <UiButton 
+          v-if="eligibleSelectedImageIds.length > 0"
+          variant="primary" 
+          class="rounded-xl h-9 px-3.5 gap-1.5 font-bold text-xs cursor-pointer"
+          @click="handleBulkOptimize"
+          :disabled="isBulkOptimizing"
+        >
+          <Loader2 v-if="isBulkOptimizing" class="w-3.5 h-3.5 animate-spin" />
+          <Sparkles v-else class="w-3.5 h-3.5" />
+          <span>Bulk Optimize ({{ eligibleSelectedImageIds.length }})</span>
+        </UiButton>
+        <UiButton 
           variant="outline" 
-          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs"
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs cursor-pointer"
+          @click="selectAllEligibleHighResImages"
+          title="Select all high-resolution images on this page"
+        >
+          <Sparkles class="w-3.5 h-3.5 text-blue-500" />
+          <span>Select High-Res</span>
+        </UiButton>
+        <UiButton 
+          v-if="selectedImageIds.length > 0"
+          variant="outline" 
+          class="rounded-xl h-9 px-3 text-xs font-bold text-destructive hover:bg-destructive/10 cursor-pointer"
+          @click="clearImageSelection"
+        >
+          Clear ({{ selectedImageIds.length }})
+        </UiButton>
+        <UiButton 
+          variant="outline" 
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs cursor-pointer"
           @click="handleRefresh"
           :disabled="isFetching || isSummaryLoading"
         >
@@ -1006,6 +1096,15 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                 <div v-if="img.is_default" class="absolute top-2 left-2 flex items-center justify-center w-6 h-6 rounded-full bg-background shadow-xs border border-border text-amber-500 z-10" title="Default Image">
                   <Star class="w-3.5 h-3.5 fill-amber-500" />
                 </div>
+                <div class="absolute top-2 right-2 z-10">
+                  <input
+                    type="checkbox"
+                    :checked="isImageSelected(img.id!)"
+                    @change="toggleImageSelection(img.id!)"
+                    class="w-4 h-4 rounded border-border text-primary focus:ring-ring cursor-pointer bg-background shadow-xs"
+                    title="Select image for bulk optimization"
+                  />
+                </div>
               </div>
               <div class="p-3 flex flex-col gap-1.5 flex-1 justify-between">
                 <p class="text-xs font-semibold text-foreground line-clamp-2 leading-tight" :title="img.alt_text">
@@ -1106,6 +1205,16 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           :empty-description="hasActiveFilters ? 'No images match the current filter criteria. Try adjusting or clearing your active filters.' : 'There are currently no product images in the global registry.'"
           empty-icon="ImageIcon"
         >
+          <template #cell(select)="{ item }">
+            <input
+              type="checkbox"
+              :checked="isImageSelected(item.id!)"
+              @change="toggleImageSelection(item.id!)"
+              class="w-4 h-4 rounded border-border text-primary focus:ring-ring cursor-pointer"
+              title="Select image for bulk optimization"
+            />
+          </template>
+
           <template #cell(image)="{ item }">
             <div class="w-12 h-12 bg-muted/30 border border-border rounded flex items-center justify-center p-1 mx-auto overflow-hidden">
               <img v-if="item.image" :src="item.image" :alt="item.alt_text || 'Product image'" class="w-full h-full object-contain" />

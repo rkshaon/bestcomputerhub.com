@@ -1066,6 +1066,41 @@ export const useProductService = () => {
     }
   };
 
+  const bulkOptimizeProductImages = async (ids: (string | number)[]): Promise<any> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 600));
+      isLoading.value = false;
+      return {
+        total: ids.length,
+        optimized: ids.length,
+        skipped: 0,
+        failed: 0,
+        not_found: 0
+      };
+    }
+
+    try {
+      const qParams = new URLSearchParams();
+      ids.forEach(id => {
+        qParams.append('ids', String(id));
+      });
+      const queryStr = qParams.toString() ? `?${qParams.toString()}` : '';
+
+      const response = await apiClient.request<any>(`/api/v1/product-images/bulk-optimize/${queryStr}`, {
+        method: 'POST'
+      });
+      isLoading.value = false;
+      return response;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not bulk optimize product images.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   // Administrative / Vendor mutation endpoints
   const createProduct = async (payload: CreateProductPayload | Partial<Product>): Promise<Product> => {
     isLoading.value = true;
