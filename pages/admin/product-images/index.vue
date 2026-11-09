@@ -3,7 +3,7 @@ import { ref, computed, watch, reactive, onMounted, onUnmounted } from 'vue';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
-import { toastError } from '@/composables/useToast';
+import { toastError, toastSuccess, toastInfo, handleApiError } from '@/composables/useToast';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useRoute, useRouter } from 'vue-router';
 import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
@@ -422,6 +422,35 @@ const fetchProductImageSummary = async () => {
 
 const handleRefresh = async () => {
   await Promise.all([fetchImages(), fetchProductImageSummary()]);
+};
+
+const optimizingId = ref<string | number | null>(null);
+
+const handleOptimizeImage = async (img: ProductImage) => {
+  if (!img.id) return;
+  optimizingId.value = img.id;
+  try {
+    const res = await productService.optimizeProductImage(img.id);
+    if (res && res.optimized === true) {
+      const dimInfo = res.original_dimensions && res.optimized_dimensions ? ` (${res.original_dimensions} → ${res.optimized_dimensions})` : '';
+      const sizeInfo = res.original_size && res.optimized_size ? ` [${res.original_size} → ${res.optimized_size}]` : '';
+      toastSuccess(`Image optimized successfully${dimInfo}${sizeInfo}!`);
+    } else if (res && res.optimized === false) {
+      toastInfo(res.message || 'Image is already optimized.');
+    } else {
+      toastSuccess('Image optimization completed.');
+    }
+
+    if (img.image) {
+      delete imageMetadataCache[img.image];
+      await fetchImageMetadata(img.image);
+    }
+    await Promise.all([fetchImages(), fetchProductImageSummary()]);
+  } catch (err: any) {
+    handleApiError(err, 'Failed to optimize product image.');
+  } finally {
+    optimizingId.value = null;
+  }
 };
 
 const fetchImages = async () => {
@@ -1036,6 +1065,20 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                     </p>
                   </div>
 
+                  <!-- Always-visible Optimize Image Action for High Resolution Images -->
+                  <UiButton
+                    v-if="isHighResolutionImage(img.image)"
+                    variant="outline"
+                    size="sm"
+                    class="w-full h-7 mt-2 text-[11px] font-bold border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20 hover:border-blue-500 gap-1.5 cursor-pointer justify-center"
+                    :disabled="optimizingId === img.id"
+                    @click="handleOptimizeImage(img)"
+                  >
+                    <Loader2 v-if="optimizingId === img.id" class="w-3.5 h-3.5 animate-spin" />
+                    <Sparkles v-else class="w-3.5 h-3.5" />
+                    <span>{{ optimizingId === img.id ? 'Optimizing...' : 'Optimize image' }}</span>
+                  </UiButton>
+
                   <!-- Always-visible Crop Image Action for Non-Square Images -->
                   <UiButton
                     v-if="isNonSquareImage(img.image)"
@@ -1135,7 +1178,19 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           </template>
 
           <template #cell(actions)="{ item }">
-            <div class="flex items-center justify-end">
+            <div class="flex items-center justify-end gap-1.5">
+              <UiButton
+                v-if="isHighResolutionImage(item.image)"
+                variant="outline"
+                size="sm"
+                class="h-7 px-2.5 text-[11px] font-bold border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20 hover:border-blue-500 gap-1 cursor-pointer"
+                :disabled="optimizingId === item.id"
+                @click="handleOptimizeImage(item)"
+              >
+                <Loader2 v-if="optimizingId === item.id" class="w-3.5 h-3.5 animate-spin" />
+                <Sparkles v-else class="w-3.5 h-3.5" />
+                <span>{{ optimizingId === item.id ? 'Optimizing...' : 'Optimize' }}</span>
+              </UiButton>
               <UiButton
                 v-if="isNonSquareImage(item.image)"
                 variant="outline"
@@ -1146,7 +1201,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                 <Crop class="w-3.5 h-3.5" />
                 <span>Crop image</span>
               </UiButton>
-              <span v-else class="text-xs text-muted-foreground/40">—</span>
+              <span v-if="!isHighResolutionImage(item.image) && !isNonSquareImage(item.image)" class="text-xs text-muted-foreground/40">—</span>
             </div>
           </template>
         </UiTable>

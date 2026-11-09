@@ -1037,6 +1037,35 @@ export const useProductService = () => {
     }
   };
 
+  const optimizeProductImage = async (id: string | number): Promise<any> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      isLoading.value = false;
+      return {
+        optimized: true,
+        original_dimensions: '1920x1080',
+        optimized_dimensions: '500x281',
+        original_size: '2.5 MB',
+        optimized_size: '150 KB'
+      };
+    }
+
+    try {
+      const response = await apiClient.request<any>(`/api/v1/products/images/${id}/optimize/`, {
+        method: 'POST'
+      });
+      isLoading.value = false;
+      return response;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not optimize product image.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   // Administrative / Vendor mutation endpoints
   const createProduct = async (payload: CreateProductPayload | Partial<Product>): Promise<Product> => {
     isLoading.value = true;
@@ -1305,6 +1334,7 @@ export const useProductService = () => {
     getNewArrivals,
     getOnSaleProducts,
     getBestSellers,
-    getBrands
+    getBrands,
+    optimizeProductImage
   };
 };
