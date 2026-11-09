@@ -1054,7 +1054,7 @@ export const useProductService = () => {
     }
 
     try {
-      const response = await apiClient.request<any>(`/api/v1/products/images/${id}/optimize/`, {
+      const response = await apiClient.request<any>(`/api/v1/product-images/${id}/optimize/`, {
         method: 'POST'
       });
       isLoading.value = false;
