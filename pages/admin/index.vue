@@ -152,7 +152,7 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <DashboardStatCard 
             label="Total Revenue"
-            :value="formatCurrency(overview.total_revenue)"
+            :value="formatCurrency(Number(overview.total_revenue))"
             :icon="DollarSign"
             :trend="formatGrowth(comparison.revenue_growth_percentage)"
             color="bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600"
@@ -166,7 +166,7 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
           />
           <DashboardStatCard 
             label="Average Order Value"
-            :value="formatCurrency(overview.average_order_value)"
+            :value="formatCurrency(Number(overview.average_order_value))"
             :icon="TrendingUp"
             color="bg-amber-100 dark:bg-amber-950/30 text-amber-600"
           />
