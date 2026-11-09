@@ -256,12 +256,12 @@ const onDocumentKeydown = (e: KeyboardEvent) => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   if (typeof window !== 'undefined') {
     document.addEventListener('click', onDocumentClick);
     document.addEventListener('keydown', onDocumentKeydown);
   }
-  fetchProductImageSummary();
+  await Promise.all([fetchImages(), fetchProductImageSummary()]);
 });
 
 onUnmounted(() => {
@@ -544,80 +544,48 @@ const fetchImages = async () => {
   }
 };
 
-// Sync URL on state change
-watch(
-  [viewMode, currentPage, itemsPerPage, productsParam, isHighResolutionFilter, isRatioMismatchFilter],
-  (newValues, oldValues) => {
-    const [newView, newPage, newPageSize, newProducts, newHighRes, newRatioMismatch] = newValues;
-    const oldProducts = oldValues ? oldValues[3] : undefined;
-    const oldHighRes = oldValues ? oldValues[4] : undefined;
-    const oldRatioMismatch = oldValues ? oldValues[5] : undefined;
-    const oldPage = oldValues ? oldValues[1] : undefined;
-    const oldPageSize = oldValues ? oldValues[2] : undefined;
+// Sync URL and fetch on state change
+const updateRouteAndFetch = () => {
+  router.replace({
+    query: {
+      ...route.query,
+      view: viewMode.value === 'grid' ? 'grid' : undefined,
+      page: currentPage.value > 1 ? currentPage.value : undefined,
+      pageSize: itemsPerPage.value !== 10 ? itemsPerPage.value : undefined,
+      products: productsParam.value,
+      is_high_resolution: isHighResolutionFilter.value ? 'true' : undefined,
+      is_ratio_mismatch: isRatioMismatchFilter.value ? 'true' : undefined
+    }
+  });
+  fetchImages();
+};
 
-    // Reset pagination to page 1 when any filter changes
-    if (oldValues && (newProducts !== oldProducts || newHighRes !== oldHighRes || newRatioMismatch !== oldRatioMismatch)) {
-      if (currentPage.value !== 1) {
-        currentPage.value = 1;
-        return;
-      }
-    }
+watch(currentPage, () => {
+  updateRouteAndFetch();
+});
 
-    router.replace({
-      query: {
-        ...route.query,
-        view: newView === 'grid' ? 'grid' : undefined,
-        page: newPage > 1 ? newPage : undefined,
-        pageSize: newPageSize !== 10 ? newPageSize : undefined,
-        products: newProducts,
-        is_high_resolution: newHighRes ? 'true' : undefined,
-        is_ratio_mismatch: newRatioMismatch ? 'true' : undefined
-      }
-    });
-
-    if (
-      !oldValues ||
-      newPage !== oldPage ||
-      newPageSize !== oldPageSize ||
-      newProducts !== oldProducts ||
-      newHighRes !== oldHighRes ||
-      newRatioMismatch !== oldRatioMismatch
-    ) {
-      fetchImages();
-    }
-  },
-  { immediate: true }
-);
-
-watch(
-  () => route.query,
-  (newQuery) => {
-    const qHighRes = newQuery.is_high_resolution === 'true';
-    if (isHighResolutionFilter.value !== qHighRes) {
-      isHighResolutionFilter.value = qHighRes;
-    }
-    const qRatioMismatch = newQuery.is_ratio_mismatch === 'true';
-    if (isRatioMismatchFilter.value !== qRatioMismatch) {
-      isRatioMismatchFilter.value = qRatioMismatch;
-    }
-    const qProducts = parseProductsFromQuery(newQuery.products);
-    if (selectedProductIds.value.join(',') !== qProducts.join(',')) {
-      selectedProductIds.value = qProducts;
-    }
-    const qPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
-    if (currentPage.value !== qPage) {
-      currentPage.value = qPage;
-    }
-    const qPageSize = newQuery.pageSize ? parseInt(String(newQuery.pageSize)) || 10 : 10;
-    if (itemsPerPage.value !== qPageSize) {
-      itemsPerPage.value = qPageSize;
-    }
-    const qView = newQuery.view === 'grid' ? 'grid' : 'list';
-    if (viewMode.value !== qView) {
-      viewMode.value = qView;
-    }
+watch([itemsPerPage, productsParam, isHighResolutionFilter, isRatioMismatchFilter], () => {
+  if (currentPage.value !== 1) {
+    currentPage.value = 1;
+  } else {
+    updateRouteAndFetch();
   }
-);
+});
+
+watch(viewMode, async (newMode) => {
+  const query: Record<string, any> = { ...route.query };
+  if (newMode === 'grid') {
+    query.view = 'grid';
+    delete query.page;
+    delete query.pageSize;
+  } else {
+    delete query.view;
+    if (currentPage.value > 1) query.page = currentPage.value;
+    if (itemsPerPage.value !== 10) query.pageSize = itemsPerPage.value;
+  }
+  router.replace({ query });
+  await fetchImages();
+});
 
 const isNonSquareImage = (imageUrl?: string | null): boolean => {
   if (!imageUrl) return false;
