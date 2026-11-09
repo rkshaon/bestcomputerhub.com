@@ -1370,6 +1370,7 @@ export const useProductService = () => {
     getOnSaleProducts,
     getBestSellers,
     getBrands,
-    optimizeProductImage
+    optimizeProductImage,
+    bulkOptimizeProductImages
   };
 };
