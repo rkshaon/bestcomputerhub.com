@@ -10,6 +10,7 @@ import {
   AlertCircle
 } from 'lucide-vue-next';
 import { useSalesService } from '@/composables/useSalesService';
+import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { formatCurrency } from '@/utils';
 import DashboardStatCard from '@/features/admin/components/DashboardStatCard.vue';
 import UiCard from '@/components/ui/UiCard.vue';
@@ -19,6 +20,8 @@ definePageMeta({
 });
 
 const salesService = useSalesService();
+const { hasPermission } = useAdminPermissions();
+const canViewSalesPerformance = computed(() => hasPermission('sale_api.view_sale'));
 
 const performanceDays = ref<number>(90);
 const performanceData = ref<any | null>(null);
@@ -36,6 +39,7 @@ const periods = [
 ];
 
 const fetchPerformance = async () => {
+  if (!canViewSalesPerformance.value) return;
   isPerformanceLoading.value = true;
   performanceError.value = null;
   try {
@@ -49,11 +53,15 @@ const fetchPerformance = async () => {
 };
 
 watch(performanceDays, () => {
-  fetchPerformance();
+  if (canViewSalesPerformance.value) {
+    fetchPerformance();
+  }
 });
 
 onMounted(() => {
-  fetchPerformance();
+  if (canViewSalesPerformance.value) {
+    fetchPerformance();
+  }
 });
 
 const overview = computed(() => performanceData.value?.overview || { total_orders: 0, total_revenue: 0, average_order_value: 0 });
@@ -102,7 +110,7 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
     </div>
 
     <!-- Sales Performance Report Section -->
-    <div class="space-y-6">
+    <div v-if="canViewSalesPerformance" class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-border rounded-2xl p-6 shadow-sm">
         <div>
           <h2 class="text-xl font-display font-black tracking-tight">Sales Performance Report</h2>
@@ -144,7 +152,7 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <DashboardStatCard 
             label="Total Revenue"
-            :value="formatCurrency(overview.total_revenue)"
+            :value="formatCurrency(Number(overview.total_revenue))"
             :icon="DollarSign"
             :trend="formatGrowth(comparison.revenue_growth_percentage)"
             color="bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600"
@@ -158,7 +166,7 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
           />
           <DashboardStatCard 
             label="Average Order Value"
-            :value="formatCurrency(overview.average_order_value)"
+            :value="formatCurrency(Number(overview.average_order_value))"
             :icon="TrendingUp"
             color="bg-amber-100 dark:bg-amber-950/30 text-amber-600"
           />
