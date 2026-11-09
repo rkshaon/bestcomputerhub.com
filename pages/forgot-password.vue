@@ -132,12 +132,7 @@ const handleResetRequest = async () => {
           <NuxtLink to="/support/contact" class="text-primary font-bold hover:underline">Contact security desk</NuxtLink>
         </p>
 
-        <!-- Trust Badge -->
-        <div class="mt-12 flex items-center justify-center gap-8 opacity-40 grayscale contrast-125">
-          <div class="font-display font-extrabold text-xl tracking-tighter">TRUST<span class="text-primary">CORE</span></div>
-          <div class="h-4 w-px bg-muted-foreground"></div>
-          <div class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground leading-none">ISO 27001<br/>Certified</div>
-        </div>
+
       </div>
     </div>
   </div>
