@@ -51,15 +51,17 @@ watch(
 
 const getProductImageUrl = (p: Product): string => {
   if (p.default_image) {
-    if (typeof p.default_image === 'object' && p.default_image.image) {
-      return p.default_image.image;
+    if (typeof p.default_image === 'object' && p.default_image !== null && (p.default_image as any).image) {
+      return (p.default_image as any).image;
     }
     if (typeof p.default_image === 'string') {
       return p.default_image;
     }
   }
-  if (Array.isArray(p.images) && p.images.length > 0) {
-    return typeof p.images[0] === 'string' ? p.images[0] : (p.images[0]?.image || '');
+  const imgs = p.images as any[];
+  if (Array.isArray(imgs) && imgs.length > 0 && imgs[0]) {
+    const first = imgs[0];
+    return typeof first === 'string' ? first : (first?.image || '');
   }
   return 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80';
 };
