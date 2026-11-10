@@ -274,6 +274,7 @@ onUnmounted(() => {
 const tableColumns: UiTableColumn<ProductImage>[] = [
   { key: 'select', label: '', width: '40px', headerClass: 'px-2 py-3 text-center', cellClass: 'px-2 py-2.5 text-center' },
   { key: 'image', label: 'Image', width: '80px', headerClass: 'px-4 py-3 text-center', cellClass: 'px-4 py-2.5 text-center' },
+  { key: 'product', label: 'Product', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'alt_text', label: 'Alt Text', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'resolution', label: 'Resolution', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'size', label: 'Size', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
@@ -537,6 +538,56 @@ watch([isAllPageSelected, isSomePageSelected], () => {
 
 const clearImageSelection = () => {
   selectedImageIds.value = [];
+};
+
+const getProductId = (img: ProductImage): string | number | null => {
+  if (!img.product) return null;
+  if (typeof img.product === 'object') return (img.product as any).id || null;
+  return img.product;
+};
+
+const getProductName = (img: ProductImage): string => {
+  const prodId = getProductId(img);
+  if (prodId) {
+    const found = knownProductsMap[String(prodId)];
+    if (found && found.name) {
+      return decodeHtmlEntities(found.name);
+    }
+  }
+  if (typeof img.product === 'object' && (img.product as any).name) {
+    return decodeHtmlEntities((img.product as any).name);
+  }
+  return img.alt_text || (prodId ? `Product #${prodId}` : 'Product Image');
+};
+
+const resolveImageProductDetails = async () => {
+  for (const img of images.value) {
+    const prodId = getProductId(img);
+    if (prodId && !knownProductsMap[String(prodId)]) {
+      try {
+        const prod = await productService.getProductDetails(String(prodId));
+        if (prod) {
+          if (prod.id) knownProductsMap[String(prod.id)] = prod;
+          if (prod.slug) knownProductsMap[String(prod.slug)] = prod;
+        }
+      } catch {}
+    }
+  }
+};
+
+watch(() => images.value, () => {
+  resolveImageProductDetails();
+}, { immediate: true, deep: true });
+
+const openProductDetailsModal = (productId: string | number) => {
+  if (!productId) return;
+  router.push({
+    path: '/admin/products',
+    query: {
+      modal: 'view',
+      id: String(productId)
+    }
+  });
 };
 
 const eligibleSelectedImageIds = computed(() => {
@@ -1160,9 +1211,23 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                 </div>
               </div>
               <div class="p-3 flex flex-col gap-1.5 flex-1 justify-between">
-                <p class="text-xs font-semibold text-foreground line-clamp-2 leading-tight" :title="img.alt_text">
-                  {{ img.alt_text || 'No Alt Text' }}
-                </p>
+                <div class="flex flex-col gap-0.5">
+                  <button
+                    v-if="getProductId(img)"
+                    type="button"
+                    @click="openProductDetailsModal(getProductId(img)!)"
+                    class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left line-clamp-2 leading-tight cursor-pointer transition-colors"
+                    :title="getProductName(img)"
+                  >
+                    {{ getProductName(img) }}
+                  </button>
+                  <span v-else class="text-xs font-bold text-foreground line-clamp-2 leading-tight">
+                    {{ getProductName(img) }}
+                  </span>
+                  <span v-if="img.alt_text && img.alt_text !== getProductName(img)" class="text-[10px] text-muted-foreground truncate" :title="img.alt_text">
+                    Alt: {{ img.alt_text }}
+                  </span>
+                </div>
                 <div class="flex flex-col gap-2 mt-1 pt-2 border-t border-border/50">
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex flex-col">
@@ -1289,8 +1354,23 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
             </div>
           </template>
           
+          <template #cell(product)="{ item }">
+            <button
+              v-if="getProductId(item)"
+              type="button"
+              @click="openProductDetailsModal(getProductId(item)!)"
+              class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left truncate max-w-[200px] block cursor-pointer transition-colors"
+              :title="getProductName(item)"
+            >
+              {{ getProductName(item) }}
+            </button>
+            <span v-else class="text-xs font-medium text-foreground truncate max-w-[200px] block">
+              {{ getProductName(item) }}
+            </span>
+          </template>
+
           <template #cell(alt_text)="{ item }">
-            <span class="text-sm text-foreground font-medium truncate max-w-[200px] block" :title="item.alt_text">
+            <span class="text-xs text-muted-foreground truncate max-w-[180px] block" :title="item.alt_text">
               {{ item.alt_text || '—' }}
             </span>
           </template>
