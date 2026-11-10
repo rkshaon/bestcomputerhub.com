@@ -9,6 +9,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
 import { decodeHtmlEntities } from '@/utils';
 import ProductImageCropModal from '@/components/admin/ProductImageCropModal.vue';
+import ProductDetailsModal from '@/components/admin/ProductDetailsModal.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import {
   Image as ImageIcon,
@@ -606,15 +607,24 @@ watch(() => images.value, () => {
   resolveImageProductDetails();
 }, { immediate: true, deep: true });
 
+const productDetailsModalState = useAdminModalState<Product>({
+  modalParam: 'product_modal',
+  idParam: 'product_id',
+  getItems: async (id) => {
+    return await productService.getProductDetails(String(id));
+  },
+  onResolveError: (id) => {
+    toastError(`Product #${id} could not be resolved.`);
+    productDetailsModalState.closeModal({ replace: true });
+  }
+});
+
+const viewingProduct = computed(() => productDetailsModalState.activeEntity.value);
+const canEditProductInImages = computed(() => hasPermission(['product_api.change_product', 'change_product']));
+
 const openProductDetailsModal = (productId: string | number) => {
   if (!productId) return;
-  router.push({
-    path: '/admin/products',
-    query: {
-      modal: 'view',
-      id: String(productId)
-    }
-  });
+  productDetailsModalState.openView(productId);
 };
 
 const eligibleSelectedImageIds = computed(() => {
@@ -1498,6 +1508,19 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
         />
       </div>
     </div>
+
+    <!-- Product Details Modal (Reused) -->
+    <ProductDetailsModal
+      :is-open="productDetailsModalState.isView.value"
+      :is-resolving="productDetailsModalState.isResolving.value"
+      :product="viewingProduct"
+      :can-edit="canEditProductInImages"
+      @close="productDetailsModalState.closeModal"
+      @edit="(id) => {
+        productDetailsModalState.closeModal();
+        router.push({ path: '/admin/products', query: { modal: 'edit', id: String(id) } });
+      }"
+    />
 
     <!-- Product Image Crop Modal -->
     <ProductImageCropModal
