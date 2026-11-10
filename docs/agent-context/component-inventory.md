@@ -236,9 +236,21 @@ Components are classified using four standard metadata properties:
 ### `<UiRichTextEditor>`
 - **Exact File Location**: `/components/ui/UiRichTextEditor.vue`
 - **Component Type**: Shared UI / Form component
-- **Scope**: Shared
+- **Scope**: Shared across Admin and Storefront
 - **Purpose**: Rich text WYSIWYG content editor supporting formatting toolbars, HTML source editing mode, sanitization, and live HTML `v-model` binding.
-- **Routes/Pages Used**: Admin Product Create/Edit forms, Admin Blog Post forms, Admin SEO/Content pages.
+- **Total Distinct Routes**: 9 distinct routes (4 admin routes, 5 storefront routes).
+- **Usage Locations & Distinction**:
+  - **Direct Usage in Pages**:
+    - `/pages/admin/blog/posts/index.vue` (Route: `/admin/blog/posts/`) — Admin Blog Post creation and editing.
+    - `/pages/admin/products/[id].vue` (Route: `/admin/products/[id]/`) — Admin Product specification and description editing.
+    - `/pages/index.vue` (Route: `/`) — Homepage overview inline content editing.
+    - `/pages/product/[slug].vue` (Route: `/product/{slug}/`) — Storefront product detail inline content editing.
+    - `/pages/product-category/[...slug].vue` (Route: `/product-category/{slug}/`) — Storefront category inline content editing.
+    - `/pages/brand/[slug].vue` (Route: `/brand/{slug}/`) — Storefront brand inline content editing.
+    - `/pages/blog/[slug].vue` (Route: `/blog/{slug}/`) — Storefront blog post inline content editing.
+  - **Indirect Usage via Feature / Wrapper Components**:
+    - `/pages/admin/categories/index.vue` (Route: `/admin/categories/`) — via wrapper component `/features/admin/categories/components/CategoryFormModal.vue`.
+    - `/pages/admin/products/index.vue` (Route: `/admin/products/`) — via wrapper component `/features/admin/products/components/ProductFormModal.vue` (Short Description, Full Description, Specifications).
 - **Main Responsibilities**:
   - Provide text formatting tools (bold, italic, headers, lists, links, format painter for character-level styling, inline font-size selection, text color picker, alignment, tables, code blocks).
   - Toggle between visual WYSIWYG editor and raw HTML source code editor (`isSourceMode`).
