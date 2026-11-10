@@ -1101,6 +1101,33 @@ export const useProductService = () => {
     }
   };
 
+  const recalculateImageResolutions = async (): Promise<any> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+
+    if (checkMockMode()) {
+      await new Promise(resolve => setTimeout(resolve, 600));
+      isLoading.value = false;
+      return {
+        success: true,
+        recalculated: 12,
+        message: 'Image resolutions recalculated successfully.'
+      };
+    }
+
+    try {
+      const response = await apiClient.request<any>('/api/v1/product-images/recalculate-resolution/', {
+        method: 'POST'
+      });
+      isLoading.value = false;
+      return response;
+    } catch (err: any) {
+      errorMsg.value = err.data?.message || err.message || 'Technical error: Could not recalculate product image resolutions.';
+      isLoading.value = false;
+      throw err;
+    }
+  };
+
   // Administrative / Vendor mutation endpoints
   const createProduct = async (payload: CreateProductPayload | Partial<Product>): Promise<Product> => {
     isLoading.value = true;
@@ -1371,6 +1398,7 @@ export const useProductService = () => {
     getBestSellers,
     getBrands,
     optimizeProductImage,
-    bulkOptimizeProductImages
+    bulkOptimizeProductImages,
+    recalculateImageResolutions
   };
 };

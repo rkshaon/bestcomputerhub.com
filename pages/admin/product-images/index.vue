@@ -9,6 +9,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
 import { decodeHtmlEntities } from '@/utils';
 import ProductImageCropModal from '@/components/admin/ProductImageCropModal.vue';
+import ProductDetailsModal from '@/components/admin/ProductDetailsModal.vue';
 import UiInfiniteScroll from '@/components/ui/UiInfiniteScroll.vue';
 import {
   Image as ImageIcon,
@@ -261,7 +262,7 @@ onMounted(async () => {
     document.addEventListener('click', onDocumentClick);
     document.addEventListener('keydown', onDocumentKeydown);
   }
-  await Promise.all([fetchImages(), fetchProductImageSummary()]);
+  await Promise.all([fetchImages(), fetchProductImageSummary(), productPagination.refresh()]);
 });
 
 onUnmounted(() => {
@@ -274,6 +275,7 @@ onUnmounted(() => {
 const tableColumns: UiTableColumn<ProductImage>[] = [
   { key: 'select', label: '', width: '40px', headerClass: 'px-2 py-3 text-center', cellClass: 'px-2 py-2.5 text-center' },
   { key: 'image', label: 'Image', width: '80px', headerClass: 'px-4 py-3 text-center', cellClass: 'px-4 py-2.5 text-center' },
+  { key: 'product', label: 'Product', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'alt_text', label: 'Alt Text', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'resolution', label: 'Resolution', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'size', label: 'Size', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
@@ -400,6 +402,23 @@ const summaryData = ref<ProductImageSummaryResponse>({
 const isSummaryLoading = ref(false);
 
 const canViewSummary = computed(() => hasPermission('product_api.view_productimage'));
+const canChangeProductImages = computed(() => hasPermission(['product_api.change_productimage', 'change_productimage']));
+const isRecalculating = ref(false);
+
+const handleRecalculateResolutions = async () => {
+  if (isRecalculating.value) return;
+  isRecalculating.value = true;
+  try {
+    const res = await productService.recalculateImageResolutions();
+    const count = res?.recalculated ?? res?.count ?? 0;
+    toastSuccess(res?.message || `Successfully recalculated resolutions for product images${count ? ` (${count})` : ''}.`);
+    await Promise.all([fetchImages(), fetchProductImageSummary()]);
+  } catch (err: any) {
+    handleApiError(err, 'Failed to recalculate product image resolutions.');
+  } finally {
+    isRecalculating.value = false;
+  }
+};
 
 const fetchProductImageSummary = async () => {
   if (!canViewSummary.value) return;
@@ -476,8 +495,136 @@ const selectAllEligibleHighResImages = () => {
   selectedImageIds.value = highResIds;
 };
 
+const selectAllCheckboxRef = ref<HTMLInputElement | null>(null);
+const tableSelectAllCheckboxRef = ref<HTMLInputElement | null>(null);
+
+const selectableImageIds = computed(() => {
+  return images.value.filter(img => img.id !== undefined).map(img => img.id!);
+});
+
+const isAllPageSelected = computed(() => {
+  if (selectableImageIds.value.length === 0) return false;
+  return selectableImageIds.value.every(id => selectedImageIds.value.includes(id));
+});
+
+const isSomePageSelected = computed(() => {
+  if (selectableImageIds.value.length === 0) return false;
+  const count = selectableImageIds.value.filter(id => selectedImageIds.value.includes(id)).length;
+  return count > 0 && count < selectableImageIds.value.length;
+});
+
+const toggleSelectAllPage = () => {
+  if (isAllPageSelected.value) {
+    selectableImageIds.value.forEach(id => {
+      const idx = selectedImageIds.value.indexOf(id);
+      if (idx > -1) selectedImageIds.value.splice(idx, 1);
+    });
+  } else {
+    selectableImageIds.value.forEach(id => {
+      if (!selectedImageIds.value.includes(id)) {
+        selectedImageIds.value.push(id);
+      }
+    });
+  }
+};
+
+watch([isAllPageSelected, isSomePageSelected], () => {
+  if (selectAllCheckboxRef.value) {
+    selectAllCheckboxRef.value.indeterminate = isSomePageSelected.value;
+  }
+  if (tableSelectAllCheckboxRef.value) {
+    tableSelectAllCheckboxRef.value.indeterminate = isSomePageSelected.value;
+  }
+}, { flush: 'post' });
+
 const clearImageSelection = () => {
   selectedImageIds.value = [];
+};
+
+const getProductId = (img: ProductImage): string | number | null => {
+  if (!img) return null;
+  if ((img as any).product_id) return (img as any).product_id;
+  if (img.product !== undefined && img.product !== null && img.product !== '') {
+    if (typeof img.product === 'object' && img.product !== null) {
+      if ((img.product as any).id) return (img.product as any).id;
+      if ((img.product as any).slug) return (img.product as any).slug;
+    }
+    const val = String(img.product).trim();
+    for (const key of Object.keys(knownProductsMap)) {
+      const p = knownProductsMap[key];
+      if (p && (String(p.id) === val || p.slug === val || p.name.toLowerCase() === val.toLowerCase())) {
+        return p.id;
+      }
+    }
+    return val;
+  }
+  if (img.alt_text) {
+    const alt = String(img.alt_text).trim().toLowerCase();
+    for (const key of Object.keys(knownProductsMap)) {
+      const p = knownProductsMap[key];
+      if (p && p.name && p.name.toLowerCase() === alt) {
+        return p.id;
+      }
+    }
+  }
+  const firstKey = Object.keys(knownProductsMap)[0];
+  if (firstKey && knownProductsMap[firstKey]) {
+    return knownProductsMap[firstKey].id;
+  }
+  return '1';
+};
+
+const getProductName = (img: ProductImage): string => {
+  const prodId = getProductId(img);
+  if (prodId) {
+    const found = knownProductsMap[String(prodId)];
+    if (found && found.name) {
+      return decodeHtmlEntities(found.name);
+    }
+  }
+  if (typeof img.product === 'object' && (img.product as any).name) {
+    return decodeHtmlEntities((img.product as any).name);
+  }
+  return img.alt_text || (prodId ? `Product #${prodId}` : 'Product Image');
+};
+
+const resolveImageProductDetails = async () => {
+  for (const img of images.value) {
+    const prodId = getProductId(img);
+    if (prodId && !knownProductsMap[String(prodId)]) {
+      try {
+        const prod = await productService.getProductDetails(String(prodId));
+        if (prod) {
+          if (prod.id) knownProductsMap[String(prod.id)] = prod;
+          if (prod.slug) knownProductsMap[String(prod.slug)] = prod;
+        }
+      } catch {}
+    }
+  }
+};
+
+watch(() => images.value, () => {
+  resolveImageProductDetails();
+}, { immediate: true, deep: true });
+
+const productDetailsModalState = useAdminModalState<Product>({
+  modalParam: 'product_modal',
+  idParam: 'product_id',
+  getItems: async (id) => {
+    return await productService.getProductDetails(String(id));
+  },
+  onResolveError: (id) => {
+    toastError(`Product #${id} could not be resolved.`);
+    productDetailsModalState.closeModal({ replace: true });
+  }
+});
+
+const viewingProduct = computed(() => productDetailsModalState.activeEntity.value);
+const canEditProductInImages = computed(() => hasPermission(['product_api.change_product', 'change_product']));
+
+const openProductDetailsModal = (productId: string | number) => {
+  if (!productId) return;
+  productDetailsModalState.openView(productId);
 };
 
 const eligibleSelectedImageIds = computed(() => {
@@ -646,6 +793,18 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           Clear ({{ selectedImageIds.length }})
         </UiButton>
         <UiButton 
+          v-if="canChangeProductImages"
+          variant="outline" 
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs cursor-pointer"
+          @click="handleRecalculateResolutions"
+          :disabled="isRecalculating || isFetching"
+          title="Recalculate resolution and metadata for all product images"
+        >
+          <Loader2 v-if="isRecalculating" class="w-3.5 h-3.5 animate-spin" />
+          <RefreshCw v-else class="w-3.5 h-3.5 text-primary" />
+          <span>Recalculate Resolutions</span>
+        </UiButton>
+        <UiButton 
           variant="outline" 
           class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs cursor-pointer"
           @click="handleRefresh"
@@ -771,6 +930,20 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
       <div class="bg-card border border-border rounded-xl shadow-xs overflow-hidden flex flex-col">
         <div class="p-3 border-b border-border bg-muted/20 flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2">
+            <!-- Select All Control -->
+            <div class="flex items-center gap-2 pl-1 pr-3 py-1 bg-background border border-input rounded-lg shadow-2xs">
+              <input
+                ref="selectAllCheckboxRef"
+                type="checkbox"
+                :checked="isAllPageSelected"
+                @change="toggleSelectAllPage"
+                class="w-4 h-4 rounded border-border text-primary focus:ring-ring cursor-pointer bg-background shadow-xs"
+                title="Select all images on this page"
+                aria-label="Select all images on this page"
+              />
+              <span class="text-xs font-semibold text-foreground select-none">Select All</span>
+            </div>
+
             <!-- View Toggle Buttons -->
             <div class="flex items-center bg-muted/60 p-1 rounded-lg border border-border/80">
               <button
@@ -1075,9 +1248,23 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                 </div>
               </div>
               <div class="p-3 flex flex-col gap-1.5 flex-1 justify-between">
-                <p class="text-xs font-semibold text-foreground line-clamp-2 leading-tight" :title="img.alt_text">
-                  {{ img.alt_text || 'No Alt Text' }}
-                </p>
+                <div class="flex flex-col gap-0.5">
+                  <button
+                    v-if="getProductId(img)"
+                    type="button"
+                    @click.stop="openProductDetailsModal(getProductId(img)!)"
+                    class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left line-clamp-2 leading-tight cursor-pointer transition-colors relative z-10"
+                    :title="getProductName(img)"
+                  >
+                    {{ getProductName(img) }}
+                  </button>
+                  <span v-else class="text-xs font-bold text-foreground line-clamp-2 leading-tight">
+                    {{ getProductName(img) }}
+                  </span>
+                  <span v-if="img.alt_text && img.alt_text !== getProductName(img)" class="text-[10px] text-muted-foreground truncate" :title="img.alt_text">
+                    Alt: {{ img.alt_text }}
+                  </span>
+                </div>
                 <div class="flex flex-col gap-2 mt-1 pt-2 border-t border-border/50">
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex flex-col">
@@ -1173,6 +1360,20 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           :empty-description="hasActiveFilters ? 'No images match the current filter criteria. Try adjusting or clearing your active filters.' : 'There are currently no product images in the global registry.'"
           empty-icon="ImageIcon"
         >
+          <template #header(select)>
+            <div class="flex items-center justify-center">
+              <input
+                ref="tableSelectAllCheckboxRef"
+                type="checkbox"
+                :checked="isAllPageSelected"
+                @change="toggleSelectAllPage"
+                class="w-4 h-4 rounded border-border text-primary focus:ring-ring cursor-pointer bg-background shadow-xs"
+                title="Select all images on this page"
+                aria-label="Select all images on this page"
+              />
+            </div>
+          </template>
+
           <template #cell(select)="{ item }">
             <input
               type="checkbox"
@@ -1190,8 +1391,23 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
             </div>
           </template>
           
+          <template #cell(product)="{ item }">
+            <button
+              v-if="getProductId(item)"
+              type="button"
+              @click.stop="openProductDetailsModal(getProductId(item)!)"
+              class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left truncate max-w-[200px] block cursor-pointer transition-colors relative z-10"
+              :title="getProductName(item)"
+            >
+              {{ getProductName(item) }}
+            </button>
+            <span v-else class="text-xs font-medium text-foreground truncate max-w-[200px] block">
+              {{ getProductName(item) }}
+            </span>
+          </template>
+
           <template #cell(alt_text)="{ item }">
-            <span class="text-sm text-foreground font-medium truncate max-w-[200px] block" :title="item.alt_text">
+            <span class="text-xs text-muted-foreground truncate max-w-[180px] block" :title="item.alt_text">
               {{ item.alt_text || '—' }}
             </span>
           </template>
@@ -1292,6 +1508,19 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
         />
       </div>
     </div>
+
+    <!-- Product Details Modal (Reused) -->
+    <ProductDetailsModal
+      :is-open="productDetailsModalState.isView.value"
+      :is-resolving="productDetailsModalState.isResolving.value"
+      :product="viewingProduct"
+      :can-edit="canEditProductInImages"
+      @close="productDetailsModalState.closeModal"
+      @edit="(id) => {
+        productDetailsModalState.closeModal();
+        router.push({ path: '/admin/products', query: { modal: 'edit', id: String(id) } });
+      }"
+    />
 
     <!-- Product Image Crop Modal -->
     <ProductImageCropModal
