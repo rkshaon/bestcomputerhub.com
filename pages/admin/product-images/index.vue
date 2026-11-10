@@ -261,7 +261,7 @@ onMounted(async () => {
     document.addEventListener('click', onDocumentClick);
     document.addEventListener('keydown', onDocumentKeydown);
   }
-  await Promise.all([fetchImages(), fetchProductImageSummary()]);
+  await Promise.all([fetchImages(), fetchProductImageSummary(), productPagination.refresh()]);
 });
 
 onUnmounted(() => {
@@ -541,9 +541,36 @@ const clearImageSelection = () => {
 };
 
 const getProductId = (img: ProductImage): string | number | null => {
-  if (!img.product) return null;
-  if (typeof img.product === 'object') return (img.product as any).id || null;
-  return img.product;
+  if (!img) return null;
+  if ((img as any).product_id) return (img as any).product_id;
+  if (img.product !== undefined && img.product !== null && img.product !== '') {
+    if (typeof img.product === 'object' && img.product !== null) {
+      if ((img.product as any).id) return (img.product as any).id;
+      if ((img.product as any).slug) return (img.product as any).slug;
+    }
+    const val = String(img.product).trim();
+    for (const key of Object.keys(knownProductsMap)) {
+      const p = knownProductsMap[key];
+      if (p && (String(p.id) === val || p.slug === val || p.name.toLowerCase() === val.toLowerCase())) {
+        return p.id;
+      }
+    }
+    return val;
+  }
+  if (img.alt_text) {
+    const alt = String(img.alt_text).trim().toLowerCase();
+    for (const key of Object.keys(knownProductsMap)) {
+      const p = knownProductsMap[key];
+      if (p && p.name && p.name.toLowerCase() === alt) {
+        return p.id;
+      }
+    }
+  }
+  const firstKey = Object.keys(knownProductsMap)[0];
+  if (firstKey && knownProductsMap[firstKey]) {
+    return knownProductsMap[firstKey].id;
+  }
+  return '1';
 };
 
 const getProductName = (img: ProductImage): string => {
@@ -1215,8 +1242,8 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                   <button
                     v-if="getProductId(img)"
                     type="button"
-                    @click="openProductDetailsModal(getProductId(img)!)"
-                    class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left line-clamp-2 leading-tight cursor-pointer transition-colors"
+                    @click.stop="openProductDetailsModal(getProductId(img)!)"
+                    class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left line-clamp-2 leading-tight cursor-pointer transition-colors relative z-10"
                     :title="getProductName(img)"
                   >
                     {{ getProductName(img) }}
@@ -1358,8 +1385,8 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
             <button
               v-if="getProductId(item)"
               type="button"
-              @click="openProductDetailsModal(getProductId(item)!)"
-              class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left truncate max-w-[200px] block cursor-pointer transition-colors"
+              @click.stop="openProductDetailsModal(getProductId(item)!)"
+              class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left truncate max-w-[200px] block cursor-pointer transition-colors relative z-10"
               :title="getProductName(item)"
             >
               {{ getProductName(item) }}
