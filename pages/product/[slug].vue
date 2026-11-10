@@ -503,29 +503,26 @@ const isHtmlEquivalent = (h1: string, h2: string): boolean => {
   return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
 };
 
-const isEditConfirmOpen = ref(false);
-const pendingEditField = ref<string | null>(null);
+const isSaveConfirmOpen = ref(false);
+const pendingSaveField = ref<string | null>(null);
 
-const requestStartEditing = (field: 'name' | 'short_description' | 'description' | 'specifications' | 'price') => {
-  if (['short_description', 'description', 'specifications'].includes(field)) {
-    pendingEditField.value = field;
-    isEditConfirmOpen.value = true;
-  } else {
-    startEditing(field);
+const requestSave = (field: string) => {
+  pendingSaveField.value = field;
+  isSaveConfirmOpen.value = true;
+};
+
+const confirmSave = () => {
+  if (pendingSaveField.value) {
+    const field = pendingSaveField.value;
+    pendingSaveField.value = null;
+    isSaveConfirmOpen.value = false;
+    saveField(field as any);
   }
 };
 
-const confirmStartEditing = () => {
-  if (pendingEditField.value) {
-    startEditing(pendingEditField.value as any);
-    pendingEditField.value = null;
-  }
-  isEditConfirmOpen.value = false;
-};
-
-const cancelStartEditing = () => {
-  pendingEditField.value = null;
-  isEditConfirmOpen.value = false;
+const cancelSave = () => {
+  pendingSaveField.value = null;
+  isSaveConfirmOpen.value = false;
 };
 
 const startEditing = (field: 'name' | 'short_description' | 'description' | 'specifications' | 'price') => {
@@ -677,7 +674,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
     return;
   }
   
-  saveField(field);
+  requestSave(field);
 };
 </script>
 
@@ -823,7 +820,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                     v-model="editNameValue"
                     ref="nameInputRef"
                     type="text"
-                    @blur="saveField('name')"
+                    @blur="requestSave('name')"
                     @keydown.enter="saveField('name')"
                     @keydown.esc="cancelEditing"
                     :disabled="isFieldSaving === 'name'"
@@ -895,7 +892,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Short Description</span>
                 <button 
                   v-if="editingField !== 'short_description'"
-                  @click="requestStartEditing('short_description')"
+                  @click="startEditing('short_description')"
                   class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   title="Edit Short Description"
                 >
@@ -954,7 +951,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                       v-model.number="editPriceValue"
                       ref="priceInputRef"
                       type="number"
-                      @blur="saveField('price')"
+                      @blur="requestSave('price')"
                       @keydown.enter="saveField('price')"
                       @keydown.esc="cancelEditing"
                       :disabled="isFieldSaving === 'price'"
@@ -1086,7 +1083,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Description Control</span>
                 <button 
                   v-if="editingField !== 'description'"
-                  @click="requestStartEditing('description')"
+                  @click="startEditing('description')"
                   class="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
                   title="Edit Description"
                 >
@@ -1124,7 +1121,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Specifications Control</span>
                 <button 
                   v-if="editingField !== 'specifications'"
-                  @click="requestStartEditing('specifications')"
+                  @click="startEditing('specifications')"
                   class="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
                   title="Edit Specifications"
                 >
@@ -1255,12 +1252,12 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
       </div>
     </div>
 
-    <!-- Edit Confirmation Modal -->
+    <!-- Save Confirmation Modal -->
     <UiAdminModal
-      :is-open="isEditConfirmOpen"
+      :is-open="isSaveConfirmOpen"
       max-width="max-w-md"
       :show-close-button="false"
-      @close="cancelStartEditing"
+      @close="cancelSave"
     >
       <div class="p-6 space-y-4">
         <div class="flex items-center gap-3">
@@ -1268,24 +1265,24 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
             <Edit2 class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="text-base font-bold text-foreground">Confirm Rich Text Editing</h3>
-            <p class="text-xs text-muted-foreground mt-0.5">Are you sure you want to enable rich text editing for this field?</p>
+            <h3 class="text-base font-bold text-foreground">Confirm Save Changes</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">Are you sure you want to save your edits to this field?</p>
           </div>
         </div>
         <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-border">
           <button 
             type="button" 
-            @click="cancelStartEditing" 
+            @click="cancelSave" 
             class="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
           >
-            Cancel
+            Cancel & Continue Editing
           </button>
           <button 
             type="button" 
-            @click="confirmStartEditing" 
+            @click="confirmSave" 
             class="h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-xs font-bold transition-colors cursor-pointer"
           >
-            Confirm & Edit
+            Confirm & Save
           </button>
         </div>
       </div>

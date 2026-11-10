@@ -340,25 +340,26 @@ const isHtmlEquivalent = (h1: string, h2: string): boolean => {
   return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
 };
 
-const isEditConfirmOpen = ref(false);
-const pendingEditField = ref<'title' | 'seo_description' | 'content' | null>(null);
+const isSaveConfirmOpen = ref(false);
+const pendingSaveField = ref<string | null>(null);
 
-const requestStartEditing = (field: 'title' | 'seo_description' | 'content') => {
-  pendingEditField.value = field;
-  isEditConfirmOpen.value = true;
+const requestSave = (field: string) => {
+  pendingSaveField.value = field;
+  isSaveConfirmOpen.value = true;
 };
 
-const confirmStartEditing = () => {
-  if (pendingEditField.value) {
-    startEditing(pendingEditField.value);
-    pendingEditField.value = null;
+const confirmSave = () => {
+  if (pendingSaveField.value) {
+    const field = pendingSaveField.value;
+    pendingSaveField.value = null;
+    isSaveConfirmOpen.value = false;
+    saveField(field as any);
   }
-  isEditConfirmOpen.value = false;
 };
 
-const cancelStartEditing = () => {
-  pendingEditField.value = null;
-  isEditConfirmOpen.value = false;
+const cancelSave = () => {
+  pendingSaveField.value = null;
+  isSaveConfirmOpen.value = false;
 };
 
 const startEditing = (field: 'title' | 'seo_description' | 'content') => {
@@ -455,7 +456,7 @@ const handleFocusOut = (event: FocusEvent, field: 'content') => {
     return;
   }
   
-  saveField(field);
+  requestSave(field);
 };
 
 onMounted(() => {
@@ -586,7 +587,7 @@ onUnmounted(() => {
                   v-model="editTitleValue"
                   ref="titleInputRef"
                   type="text"
-                  @blur="saveField('title')"
+                  @blur="requestSave('title')"
                   @keydown.enter="saveField('title')"
                   @keydown.esc="cancelEditing"
                   :disabled="isFieldSaving === 'title'"
@@ -602,7 +603,7 @@ onUnmounted(() => {
                 <span>{{ decodeHtmlEntities(post.title) }}</span>
                 <button 
                   v-if="canEditBlogPostFromStorefront" 
-                  @click="requestStartEditing('title')"
+                  @click="startEditing('title')"
                   class="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
                   title="Edit Blog Title"
                 >
@@ -618,7 +619,7 @@ onUnmounted(() => {
               <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Excerpt / SEO Description</span>
               <button 
                 v-if="editingField !== 'seo_description'"
-                @click="requestStartEditing('seo_description')"
+                @click="startEditing('seo_description')"
                 class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 title="Edit SEO Description"
               >
@@ -634,7 +635,7 @@ onUnmounted(() => {
                 v-vmodel="editSeoDescValue"
                 v-model="editSeoDescValue"
                 @keydown.esc="cancelEditing"
-                @blur="saveField('seo_description')"
+                @blur="requestSave('seo_description')"
                 :disabled="isFieldSaving === 'seo_description'"
                 rows="3"
                 class="w-full text-base bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
@@ -778,7 +779,7 @@ onUnmounted(() => {
                 <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Body Content</span>
                 <button 
                   v-if="editingField !== 'content'"
-                  @click="requestStartEditing('content')"
+                  @click="startEditing('content')"
                   class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   title="Edit Body Content"
                 >
@@ -1064,12 +1065,12 @@ onUnmounted(() => {
         </div>
       </section>
     </template>
-    <!-- Edit Confirmation Modal -->
+    <!-- Save Confirmation Modal -->
     <UiAdminModal
-      :is-open="isEditConfirmOpen"
+      :is-open="isSaveConfirmOpen"
       max-width="max-w-md"
       :show-close-button="false"
-      @close="cancelStartEditing"
+      @close="cancelSave"
     >
       <div class="p-6 space-y-4">
         <div class="flex items-center gap-3">
@@ -1077,24 +1078,24 @@ onUnmounted(() => {
             <Edit2 class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="text-base font-bold text-foreground">Confirm Editing Mode</h3>
-            <p class="text-xs text-muted-foreground mt-0.5">Are you sure you want to enable editing for this field?</p>
+            <h3 class="text-base font-bold text-foreground">Confirm Save Changes</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">Are you sure you want to save your edits to this field?</p>
           </div>
         </div>
         <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-border">
           <button 
             type="button" 
-            @click="cancelStartEditing" 
+            @click="cancelSave" 
             class="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
           >
-            Cancel
+            Cancel & Continue Editing
           </button>
           <button 
             type="button" 
-            @click="confirmStartEditing" 
+            @click="confirmSave" 
             class="h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-xs font-bold transition-colors cursor-pointer"
           >
-            Confirm & Edit
+            Confirm & Save
           </button>
         </div>
       </div>
