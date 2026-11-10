@@ -400,6 +400,23 @@ const summaryData = ref<ProductImageSummaryResponse>({
 const isSummaryLoading = ref(false);
 
 const canViewSummary = computed(() => hasPermission('product_api.view_productimage'));
+const canChangeProductImages = computed(() => hasPermission(['product_api.change_productimage', 'change_productimage']));
+const isRecalculating = ref(false);
+
+const handleRecalculateResolutions = async () => {
+  if (isRecalculating.value) return;
+  isRecalculating.value = true;
+  try {
+    const res = await productService.recalculateImageResolutions();
+    const count = res?.recalculated ?? res?.count ?? 0;
+    toastSuccess(res?.message || `Successfully recalculated resolutions for product images${count ? ` (${count})` : ''}.`);
+    await Promise.all([fetchImages(), fetchProductImageSummary()]);
+  } catch (err: any) {
+    handleApiError(err, 'Failed to recalculate product image resolutions.');
+  } finally {
+    isRecalculating.value = false;
+  }
+};
 
 const fetchProductImageSummary = async () => {
   if (!canViewSummary.value) return;
@@ -644,6 +661,18 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           @click="clearImageSelection"
         >
           Clear ({{ selectedImageIds.length }})
+        </UiButton>
+        <UiButton 
+          v-if="canChangeProductImages"
+          variant="outline" 
+          class="rounded-xl h-9 px-3.5 gap-1.5 border-border font-bold text-xs cursor-pointer"
+          @click="handleRecalculateResolutions"
+          :disabled="isRecalculating || isFetching"
+          title="Recalculate resolution and metadata for all product images"
+        >
+          <Loader2 v-if="isRecalculating" class="w-3.5 h-3.5 animate-spin" />
+          <RefreshCw v-else class="w-3.5 h-3.5 text-primary" />
+          <span>Recalculate Resolutions</span>
         </UiButton>
         <UiButton 
           variant="outline" 
