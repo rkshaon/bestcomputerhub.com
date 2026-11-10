@@ -493,6 +493,48 @@ const selectAllEligibleHighResImages = () => {
   selectedImageIds.value = highResIds;
 };
 
+const selectAllCheckboxRef = ref<HTMLInputElement | null>(null);
+const tableSelectAllCheckboxRef = ref<HTMLInputElement | null>(null);
+
+const selectableImageIds = computed(() => {
+  return images.value.filter(img => img.id !== undefined).map(img => img.id!);
+});
+
+const isAllPageSelected = computed(() => {
+  if (selectableImageIds.value.length === 0) return false;
+  return selectableImageIds.value.every(id => selectedImageIds.value.includes(id));
+});
+
+const isSomePageSelected = computed(() => {
+  if (selectableImageIds.value.length === 0) return false;
+  const count = selectableImageIds.value.filter(id => selectedImageIds.value.includes(id)).length;
+  return count > 0 && count < selectableImageIds.value.length;
+});
+
+const toggleSelectAllPage = () => {
+  if (isAllPageSelected.value) {
+    selectableImageIds.value.forEach(id => {
+      const idx = selectedImageIds.value.indexOf(id);
+      if (idx > -1) selectedImageIds.value.splice(idx, 1);
+    });
+  } else {
+    selectableImageIds.value.forEach(id => {
+      if (!selectedImageIds.value.includes(id)) {
+        selectedImageIds.value.push(id);
+      }
+    });
+  }
+};
+
+watch([isAllPageSelected, isSomePageSelected], () => {
+  if (selectAllCheckboxRef.value) {
+    selectAllCheckboxRef.value.indeterminate = isSomePageSelected.value;
+  }
+  if (tableSelectAllCheckboxRef.value) {
+    tableSelectAllCheckboxRef.value.indeterminate = isSomePageSelected.value;
+  }
+}, { flush: 'post' });
+
 const clearImageSelection = () => {
   selectedImageIds.value = [];
 };
@@ -800,6 +842,20 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
       <div class="bg-card border border-border rounded-xl shadow-xs overflow-hidden flex flex-col">
         <div class="p-3 border-b border-border bg-muted/20 flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2">
+            <!-- Select All Control -->
+            <div class="flex items-center gap-2 pl-1 pr-3 py-1 bg-background border border-input rounded-lg shadow-2xs">
+              <input
+                ref="selectAllCheckboxRef"
+                type="checkbox"
+                :checked="isAllPageSelected"
+                @change="toggleSelectAllPage"
+                class="w-4 h-4 rounded border-border text-primary focus:ring-ring cursor-pointer bg-background shadow-xs"
+                title="Select all images on this page"
+                aria-label="Select all images on this page"
+              />
+              <span class="text-xs font-semibold text-foreground select-none">Select All</span>
+            </div>
+
             <!-- View Toggle Buttons -->
             <div class="flex items-center bg-muted/60 p-1 rounded-lg border border-border/80">
               <button
@@ -1202,6 +1258,20 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           :empty-description="hasActiveFilters ? 'No images match the current filter criteria. Try adjusting or clearing your active filters.' : 'There are currently no product images in the global registry.'"
           empty-icon="ImageIcon"
         >
+          <template #header(select)>
+            <div class="flex items-center justify-center">
+              <input
+                ref="tableSelectAllCheckboxRef"
+                type="checkbox"
+                :checked="isAllPageSelected"
+                @change="toggleSelectAllPage"
+                class="w-4 h-4 rounded border-border text-primary focus:ring-ring cursor-pointer bg-background shadow-xs"
+                title="Select all images on this page"
+                aria-label="Select all images on this page"
+              />
+            </div>
+          </template>
+
           <template #cell(select)="{ item }">
             <input
               type="checkbox"
