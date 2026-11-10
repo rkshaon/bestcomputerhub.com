@@ -503,6 +503,31 @@ const isHtmlEquivalent = (h1: string, h2: string): boolean => {
   return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
 };
 
+const isEditConfirmOpen = ref(false);
+const pendingEditField = ref<string | null>(null);
+
+const requestStartEditing = (field: 'name' | 'short_description' | 'description' | 'specifications' | 'price') => {
+  if (['short_description', 'description', 'specifications'].includes(field)) {
+    pendingEditField.value = field;
+    isEditConfirmOpen.value = true;
+  } else {
+    startEditing(field);
+  }
+};
+
+const confirmStartEditing = () => {
+  if (pendingEditField.value) {
+    startEditing(pendingEditField.value as any);
+    pendingEditField.value = null;
+  }
+  isEditConfirmOpen.value = false;
+};
+
+const cancelStartEditing = () => {
+  pendingEditField.value = null;
+  isEditConfirmOpen.value = false;
+};
+
 const startEditing = (field: 'name' | 'short_description' | 'description' | 'specifications' | 'price') => {
   if (!canEditProductFromStorefront.value) return;
   
@@ -870,7 +895,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Short Description</span>
                 <button 
                   v-if="editingField !== 'short_description'"
-                  @click="startEditing('short_description')"
+                  @click="requestStartEditing('short_description')"
                   class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   title="Edit Short Description"
                 >
@@ -1061,7 +1086,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Description Control</span>
                 <button 
                   v-if="editingField !== 'description'"
-                  @click="startEditing('description')"
+                  @click="requestStartEditing('description')"
                   class="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
                   title="Edit Description"
                 >
@@ -1099,7 +1124,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Specifications Control</span>
                 <button 
                   v-if="editingField !== 'specifications'"
-                  @click="startEditing('specifications')"
+                  @click="requestStartEditing('specifications')"
                   class="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
                   title="Edit Specifications"
                 >
@@ -1230,5 +1255,40 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
       </div>
     </div>
 
+    <!-- Edit Confirmation Modal -->
+    <UiAdminModal
+      :is-open="isEditConfirmOpen"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="cancelStartEditing"
+    >
+      <div class="p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Edit2 class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-foreground">Confirm Rich Text Editing</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">Are you sure you want to enable rich text editing for this field?</p>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-border">
+          <button 
+            type="button" 
+            @click="cancelStartEditing" 
+            class="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            @click="confirmStartEditing" 
+            class="h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Confirm & Edit
+          </button>
+        </div>
+      </div>
+    </UiAdminModal>
   </div>
 </template>
