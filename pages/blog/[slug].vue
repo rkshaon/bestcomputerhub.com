@@ -34,6 +34,7 @@ import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
 import UiBadge from '@/components/ui/UiBadge.vue';
 import UiButton from '@/components/ui/Button.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -339,6 +340,27 @@ const isHtmlEquivalent = (h1: string, h2: string): boolean => {
   return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
 };
 
+const isEditConfirmOpen = ref(false);
+const pendingEditField = ref<'title' | 'seo_description' | 'content' | null>(null);
+
+const requestStartEditing = (field: 'title' | 'seo_description' | 'content') => {
+  pendingEditField.value = field;
+  isEditConfirmOpen.value = true;
+};
+
+const confirmStartEditing = () => {
+  if (pendingEditField.value) {
+    startEditing(pendingEditField.value);
+    pendingEditField.value = null;
+  }
+  isEditConfirmOpen.value = false;
+};
+
+const cancelStartEditing = () => {
+  pendingEditField.value = null;
+  isEditConfirmOpen.value = false;
+};
+
 const startEditing = (field: 'title' | 'seo_description' | 'content') => {
   if (!canEditBlogPostFromStorefront.value) return;
   
@@ -580,7 +602,7 @@ onUnmounted(() => {
                 <span>{{ decodeHtmlEntities(post.title) }}</span>
                 <button 
                   v-if="canEditBlogPostFromStorefront" 
-                  @click="startEditing('title')"
+                  @click="requestStartEditing('title')"
                   class="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
                   title="Edit Blog Title"
                 >
@@ -596,7 +618,7 @@ onUnmounted(() => {
               <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Excerpt / SEO Description</span>
               <button 
                 v-if="editingField !== 'seo_description'"
-                @click="startEditing('seo_description')"
+                @click="requestStartEditing('seo_description')"
                 class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 title="Edit SEO Description"
               >
@@ -756,7 +778,7 @@ onUnmounted(() => {
                 <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Body Content</span>
                 <button 
                   v-if="editingField !== 'content'"
-                  @click="startEditing('content')"
+                  @click="requestStartEditing('content')"
                   class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   title="Edit Body Content"
                 >
@@ -1042,5 +1064,40 @@ onUnmounted(() => {
         </div>
       </section>
     </template>
+    <!-- Edit Confirmation Modal -->
+    <UiAdminModal
+      :is-open="isEditConfirmOpen"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="cancelStartEditing"
+    >
+      <div class="p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Edit2 class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-foreground">Confirm Editing Mode</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">Are you sure you want to enable editing for this field?</p>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-border">
+          <button 
+            type="button" 
+            @click="cancelStartEditing" 
+            class="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            @click="confirmStartEditing" 
+            class="h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Confirm & Edit
+          </button>
+        </div>
+      </div>
+    </UiAdminModal>
   </div>
 </template>
