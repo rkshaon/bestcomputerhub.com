@@ -275,8 +275,20 @@ const getSelectedAnchor = (): HTMLAnchorElement | null => {
 
 const isLinkModalOpen = ref(false);
 const linkModalUrl = ref('');
+const linkInputRef = ref<HTMLInputElement | null>(null);
 let savedRange: Range | null = null;
 let targetAnchor: HTMLElement | null = null;
+
+watch(isLinkModalOpen, (isOpen) => {
+  if (isOpen) {
+    nextTick(() => {
+      setTimeout(() => {
+        linkInputRef.value?.focus();
+        linkInputRef.value?.select();
+      }, 50);
+    });
+  }
+});
 
 const insertLink = () => {
   if (props.disabled || isSourceMode.value) return;
@@ -884,13 +896,13 @@ const applyFormatPainterToSelection = () => {
       <div class="space-y-1.5">
         <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Link URL</label>
         <input
+          ref="linkInputRef"
           v-model="linkModalUrl"
           type="url"
           placeholder="https://example.com"
           class="w-full text-xs bg-background border border-input rounded-xl px-3.5 h-10 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
           @keydown.enter.prevent="handleSaveLink"
           @keydown.esc.prevent="handleCancelLink"
-          autofocus
         />
         <p class="text-[11px] text-muted-foreground">Leave empty and save to remove an existing link.</p>
       </div>
