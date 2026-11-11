@@ -848,7 +848,7 @@ const applyFormatPainterToSelection = () => {
           ref="editorRef"
           contenteditable="true"
           :class="cn(
-            'p-3.5 outline-none prose prose-sm prose-slate dark:prose-invert max-w-none text-foreground text-xs leading-relaxed overflow-y-auto',
+            'p-3.5 outline-none prose prose-sm prose-slate dark:prose-invert max-w-none text-foreground text-xs leading-relaxed overflow-y-auto max-h-[400px]',
             minHeight,
             '[&_table]:w-full [&_table]:border-collapse [&_table]:my-2 [&_table]:border [&_table]:border-border',
             '[&_th]:border [&_th]:border-border [&_th]:bg-muted/50 [&_th]:p-2 [&_th]:text-left [&_th]:text-xs [&_th]:font-bold',
@@ -867,7 +867,7 @@ const applyFormatPainterToSelection = () => {
           v-if="isSourceMode"
           :value="rawHtml"
           :class="cn(
-            'w-full p-3.5 bg-muted/20 text-foreground font-mono text-xs leading-relaxed outline-none border-0 resize-y block',
+            'w-full p-3.5 bg-muted/20 text-foreground font-mono text-xs leading-relaxed outline-none border-0 resize-y block max-h-[400px]',
             minHeight
           )"
           placeholder="Enter raw HTML content (e.g. <table>, <p>, <ul>)..."
