@@ -38,6 +38,7 @@ const canEdit = computed(() => canEditInModule('/admin/cms/navigation'));
 const canDelete = computed(() => canDeleteInModule('/admin/cms/navigation'));
 
 const menusList = ref<CmsNavigationMenu[]>([]);
+const filteredMenus = ref<CmsNavigationMenu[]>([]);
 const totalCount = ref(0);
 const totalPages = ref(1);
 const isLoading = ref(false);
@@ -51,7 +52,7 @@ const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.page
 
 const modalState = useAdminModalState<CmsNavigationMenu>({
   getItems: async (id) => {
-    return await cmsService.getNavigationMenu(id);
+    return await cmsService.getNavigationMenuDetail(id);
   },
   onResolveError: (id) => {
     toastError(`Navigation Menu #${id} could not be retrieved.`);
@@ -65,14 +66,19 @@ const fetchMenus = async () => {
   isLoading.value = true;
   fetchError.value = null;
   try {
-    const res = await cmsService.getNavigationMenus({
-      page: currentPage.value,
-      page_size: itemsPerPage.value,
-      search: debouncedSearchQuery.value || undefined
-    });
-    menusList.value = res.results || [];
-    totalCount.value = res.count || 0;
-    totalPages.value = res.pages || Math.ceil(totalCount.value / itemsPerPage.value) || 1;
+    const allMenus = await cmsService.getNavigationMenus();
+    const query = debouncedSearchQuery.value.trim().toLowerCase();
+    const filtered = query 
+      ? allMenus.filter(m => m.name.toLowerCase().includes(query) || m.slug.toLowerCase().includes(query))
+      : allMenus;
+
+    totalCount.value = filtered.length;
+    totalPages.value = Math.ceil(totalCount.value / itemsPerPage.value) || 1;
+
+    const start = (currentPage.value - 1) * itemsPerPage.value;
+    const end = start + itemsPerPage.value;
+    menusList.value = allMenus;
+    filteredMenus.value = filtered.slice(start, end);
   } catch (err: any) {
     fetchError.value = extractErrorMessage(err, 'Failed to retrieve navigation menus.');
   } finally {
@@ -115,7 +121,7 @@ const handleDeleteMenu = async () => {
     await cmsService.deleteNavigationMenu(m.id);
     toastSuccess(`Navigation Menu "${m.name}" deleted.`);
     await modalState.closeModal();
-    if (menusList.value.length === 1 && currentPage.value > 1) currentPage.value--;
+    if (filteredMenus.value.length === 1 && currentPage.value > 1) currentPage.value--;
     await fetchMenus();
   } catch (err: any) {
     toastError(extractErrorMessage(err, 'Failed to delete navigation menu.'));
@@ -125,7 +131,7 @@ const handleDeleteMenu = async () => {
 };
 
 const tableColumns = computed<UiTableColumn<CmsNavigationMenu>[]>(() => [
-  { key: 'name', label: 'Menu Name & Key', width: '320px' },
+  { key: 'name', label: 'Menu Name & Slug', width: '320px' },
   { key: 'items_count', label: 'Items', width: '120px', align: 'center' },
   { key: 'updated_at', label: 'Last Updated', width: '180px' },
   { key: 'actions', label: 'Actions', width: '120px', align: 'right' }
@@ -168,7 +174,7 @@ onMounted(async () => {
 
     <div v-else class="space-y-4 animate-in fade-in duration-500">
       <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
-        <UiSearchInput v-model="searchQuery" placeholder="Search menus by name or key..." class="w-full sm:w-80" />
+        <UiSearchInput v-model="searchQuery" placeholder="Search menus by name or slug..." class="w-full sm:w-80" />
       </div>
 
       <div v-if="fetchError" class="p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between text-destructive">
@@ -180,11 +186,11 @@ onMounted(async () => {
       </div>
 
       <div class="bg-card border border-border rounded-xl shadow-xs overflow-hidden">
-        <UiTable :columns="tableColumns" :data="menusList" :loading="isLoading" key-field="id" empty-text="No navigation menus found">
+        <UiTable :columns="tableColumns" :data="filteredMenus" :loading="isLoading" key-field="id" empty-text="No navigation menus found">
           <template #cell-name="{ item }">
             <div class="space-y-1 py-1">
               <p class="font-bold text-xs text-foreground">{{ item.name }}</p>
-              <span class="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{{ item.key }}</span>
+              <span class="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{{ item.slug }}</span>
             </div>
           </template>
           <template #cell-items_count="{ item }">
@@ -193,7 +199,7 @@ onMounted(async () => {
             </span>
           </template>
           <template #cell-updated_at="{ item }">
-            <span class="text-xs text-muted-foreground font-mono">{{ new Date(item.updated_at).toLocaleString() }}</span>
+            <span class="text-xs text-muted-foreground font-mono">{{ item.updated_at ? new Date(item.updated_at).toLocaleString() : '—' }}</span>
           </template>
           <template #cell-actions="{ item }">
             <div class="flex items-center justify-end gap-1">
@@ -218,7 +224,7 @@ onMounted(async () => {
           <Menu class="w-6 h-6 text-destructive shrink-0" />
           <div>
             <p class="font-bold text-sm text-foreground">{{ selectedMenu.name }}</p>
-            <p class="text-xs text-muted-foreground font-mono">{{ selectedMenu.key }}</p>
+            <p class="text-xs text-muted-foreground font-mono">{{ selectedMenu.slug }}</p>
           </div>
         </div>
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">

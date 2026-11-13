@@ -15,7 +15,7 @@ import { useCmsService } from '@/composables/useCmsService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, extractErrorMessage } from '@/composables/useToast';
-import type { CmsGlobalSection } from '@/types/cms';
+import type { GlobalSection } from '@/types/cms';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiTable from '@/components/ui/UiTable.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
@@ -38,7 +38,7 @@ const canCreate = computed(() => canCreateInModule('/admin/cms/sections'));
 const canEdit = computed(() => canEditInModule('/admin/cms/sections'));
 const canDelete = computed(() => canDeleteInModule('/admin/cms/sections'));
 
-const sectionsList = ref<CmsGlobalSection[]>([]);
+const sectionsList = ref<GlobalSection[]>([]);
 const totalCount = ref(0);
 const totalPages = ref(1);
 const isLoading = ref(false);
@@ -50,9 +50,12 @@ const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 
-const modalState = useAdminModalState<CmsGlobalSection>({
+const modalState = useAdminModalState<GlobalSection>({
   getItems: async (id) => {
-    return await cmsService.getGlobalSection(id);
+    const res = await cmsService.getGlobalSections({ page_size: 100 });
+    const found = (res.results || []).find(s => String(s.id) === String(id));
+    if (!found) throw new Error('Section not found');
+    return found;
   },
   onResolveError: (id) => {
     toastError(`Global Section #${id} could not be retrieved.`);
@@ -125,8 +128,8 @@ const handleDeleteSection = async () => {
   }
 };
 
-const tableColumns = computed<UiTableColumn<CmsGlobalSection>[]>(() => [
-  { key: 'name', label: 'Section Name & Key', width: '300px' },
+const tableColumns = computed<UiTableColumn<GlobalSection>[]>(() => [
+  { key: 'name', label: 'Section Name & Code', width: '300px' },
   { key: 'section_type', label: 'Type', width: '180px' },
   { key: 'updated_at', label: 'Last Updated', width: '180px' },
   { key: 'actions', label: 'Actions', width: '120px', align: 'right' }
@@ -185,7 +188,7 @@ onMounted(async () => {
           <template #cell-name="{ item }">
             <div class="space-y-1 py-1">
               <p class="font-bold text-xs text-foreground">{{ item.name }}</p>
-              <span class="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{{ item.key }}</span>
+              <span class="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{{ item.code }}</span>
             </div>
           </template>
           <template #cell-section_type="{ item }">
@@ -194,7 +197,7 @@ onMounted(async () => {
             </span>
           </template>
           <template #cell-updated_at="{ item }">
-            <span class="text-xs text-muted-foreground font-mono">{{ new Date(item.updated_at).toLocaleString() }}</span>
+            <span class="text-xs text-muted-foreground font-mono">{{ item.updated_at ? new Date(item.updated_at).toLocaleString() : '—' }}</span>
           </template>
           <template #cell-actions="{ item }">
             <div class="flex items-center justify-end gap-1">
@@ -219,7 +222,7 @@ onMounted(async () => {
           <Layers class="w-6 h-6 text-destructive shrink-0" />
           <div>
             <p class="font-bold text-sm text-foreground">{{ selectedSection.name }}</p>
-            <p class="text-xs text-muted-foreground font-mono">{{ selectedSection.key }}</p>
+            <p class="text-xs text-muted-foreground font-mono">{{ selectedSection.code }}</p>
           </div>
         </div>
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">

@@ -52,13 +52,13 @@ const isDeleting = ref(false);
 
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
-const statusFilter = ref<'all' | 'published' | 'draft'>((route.query.status as 'all' | 'published' | 'draft') || 'all');
+const statusFilter = ref<'all' | 'published' | 'draft' | 'archived'>((route.query.status as 'all' | 'published' | 'draft' | 'archived') || 'all');
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 
 const modalState = useAdminModalState<CmsPage>({
   getItems: async (id) => {
-    return await cmsService.getPage(id);
+    return await cmsService.getPageDetail(id);
   },
   onResolveError: (id) => {
     toastError(`CMS Page #${id} could not be retrieved.`);
@@ -72,12 +72,12 @@ const fetchPages = async () => {
   isLoading.value = true;
   fetchError.value = null;
   try {
-    const is_published_param = statusFilter.value === 'published' ? true : statusFilter.value === 'draft' ? false : undefined;
-    const res = await cmsService.getPages({
+    const statusParam = statusFilter.value !== 'all' ? statusFilter.value : undefined;
+    const res = await cmsService.getPagesList({
       page: currentPage.value,
       page_size: itemsPerPage.value,
       search: debouncedSearchQuery.value || undefined,
-      is_published: is_published_param
+      status: statusParam
     });
     pagesList.value = res.results || [];
     totalCount.value = res.count || 0;
@@ -151,7 +151,7 @@ const tableColumns = computed<UiTableColumn<CmsPage>[]>(() => [
   { key: 'actions', label: 'Actions', width: '120px', align: 'right' }
 ]);
 
-const publishedCount = computed(() => pagesList.value.filter(p => p.is_published).length);
+const publishedCount = computed(() => pagesList.value.filter(p => p.status === 'published').length);
 
 onMounted(async () => {
   if (canView.value) {
@@ -243,6 +243,7 @@ onMounted(async () => {
               <option value="all">All Statuses</option>
               <option value="published">Published</option>
               <option value="draft">Draft</option>
+              <option value="archived">Archived</option>
             </select>
           </div>
         </div>
@@ -275,7 +276,7 @@ onMounted(async () => {
               <div class="flex items-center gap-2">
                 <span class="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">/{{ item.slug }}</span>
                 <NuxtLink 
-                  v-if="item.is_published"
+                  v-if="item.status === 'published'"
                   :to="`/${item.slug}/`" 
                   target="_blank"
                   class="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
@@ -295,16 +296,16 @@ onMounted(async () => {
 
           <template #cell-status="{ item }">
             <div class="flex items-center justify-center">
-              <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border', item.is_published ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/50' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200/50']">
-                <span :class="['w-1.5 h-1.5 rounded-full', item.is_published ? 'bg-emerald-500' : 'bg-amber-500']"></span>
-                {{ item.is_published ? 'Published' : 'Draft' }}
+              <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border', item.status === 'published' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/50' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-emerald-200/50']">
+                <span :class="['w-1.5 h-1.5 rounded-full', item.status === 'published' ? 'bg-emerald-500' : 'bg-amber-500']"></span>
+                {{ item.status }}
               </span>
             </div>
           </template>
 
           <template #cell-updated_at="{ item }">
             <span class="text-xs text-muted-foreground font-mono">
-              {{ new Date(item.updated_at).toLocaleString() }}
+              {{ item.updated_at ? new Date(item.updated_at).toLocaleString() : '—' }}
             </span>
           </template>
 

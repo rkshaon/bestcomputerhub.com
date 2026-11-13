@@ -609,6 +609,37 @@ export const useCmsService = () => {
     }
   };
 
+  const createRedirect = async (payload: Partial<CmsRedirect>): Promise<CmsRedirect> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      return await apiClient.request<CmsRedirect>('/api/v1/cms/redirects/', {
+        method: 'POST',
+        body: payload
+      });
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to create redirect.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const deleteRedirect = async (id: number | string): Promise<void> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      await apiClient.request<void>(`/api/v1/cms/redirects/${id}/`, {
+        method: 'DELETE'
+      });
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to delete redirect.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const getSitemap = async (): Promise<CmsSitemapEntry[]> => {
     isLoading.value = true;
     errorMsg.value = null;
@@ -664,6 +695,8 @@ export const useCmsService = () => {
     getPublicGlobalSections,
     getPublicNavigation,
     getRedirects,
+    createRedirect,
+    deleteRedirect,
     getSitemap
   };
 };

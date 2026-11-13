@@ -50,7 +50,10 @@ const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.page
 
 const modalState = useAdminModalState<CmsMedia>({
   getItems: async (id) => {
-    return await cmsService.getMedia(id);
+    const res = await cmsService.getMediaList({ page_size: 100 });
+    const found = (res.results || []).find(m => String(m.id) === String(id));
+    if (!found) throw new Error('Media not found');
+    return found;
   },
   onResolveError: (id) => {
     toastError(`Media item #${id} could not be retrieved.`);
@@ -168,7 +171,7 @@ onMounted(async () => {
 
     <div v-else class="space-y-4 animate-in fade-in duration-500">
       <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
-        <UiSearchInput v-model="searchQuery" placeholder="Search media by title or filename..." class="w-full sm:w-80" />
+        <UiSearchInput v-model="searchQuery" placeholder="Search media by filename..." class="w-full sm:w-80" />
       </div>
 
       <div v-if="fetchError" class="p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between text-destructive">
@@ -183,13 +186,13 @@ onMounted(async () => {
         <UiTable :columns="tableColumns" :data="mediaList" :loading="isLoading" key-field="id" empty-text="No media items found">
           <template #cell-preview="{ item }">
             <div class="w-12 h-12 rounded-lg bg-muted border border-border overflow-hidden flex items-center justify-center">
-              <img v-if="item.file" :src="item.file" :alt="item.title || 'Media'" class="w-full h-full object-cover" />
+              <img v-if="item.file" :src="item.file" :alt="item.alt_text || 'Media'" class="w-full h-full object-cover" />
               <ImageIcon v-else class="w-5 h-5 text-muted-foreground" />
             </div>
           </template>
           <template #cell-title="{ item }">
             <div class="space-y-0.5 py-1">
-              <p class="font-bold text-xs text-foreground">{{ item.title || 'Untitled' }}</p>
+              <p class="font-bold text-xs text-foreground">{{ item.filename || 'Untitled' }}</p>
               <p class="font-mono text-[10px] text-muted-foreground truncate max-w-[240px]">{{ item.file }}</p>
             </div>
           </template>
@@ -197,7 +200,7 @@ onMounted(async () => {
             <span class="text-xs font-mono text-muted-foreground">{{ item.file_size ? `${Math.round(item.file_size / 1024)} KB` : '—' }}</span>
           </template>
           <template #cell-created_at="{ item }">
-            <span class="text-xs text-muted-foreground font-mono">{{ new Date(item.created_at).toLocaleString() }}</span>
+            <span class="text-xs text-muted-foreground font-mono">{{ item.created_at ? new Date(item.created_at).toLocaleString() : '—' }}</span>
           </template>
           <template #cell-actions="{ item }">
             <div class="flex items-center justify-end gap-1">
@@ -221,7 +224,7 @@ onMounted(async () => {
             <ImageIcon v-else class="w-5 h-5 text-muted-foreground" />
           </div>
           <div>
-            <p class="font-bold text-sm text-foreground">{{ selectedMedia.title || 'Untitled' }}</p>
+            <p class="font-bold text-sm text-foreground">{{ selectedMedia.filename || 'Untitled' }}</p>
             <p class="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{{ selectedMedia.file }}</p>
           </div>
         </div>
