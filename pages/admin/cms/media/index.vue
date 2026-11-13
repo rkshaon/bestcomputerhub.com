@@ -6,15 +6,14 @@ import {
   Upload, 
   RefreshCw, 
   Trash2, 
-  AlertCircle,
-  FileText
+  AlertCircle
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useCmsService } from '@/composables/useCmsService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, extractErrorMessage } from '@/composables/useToast';
-import type { CmsMedia } from '@/types/cms';
+import type { CmsMediaImage } from '@/types/cms';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiTable from '@/components/ui/UiTable.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
@@ -36,7 +35,7 @@ const canView = computed(() => canViewModule('/admin/cms/media'));
 const canCreate = computed(() => canCreateInModule('/admin/cms/media'));
 const canDelete = computed(() => canDeleteInModule('/admin/cms/media'));
 
-const mediaList = ref<CmsMedia[]>([]);
+const mediaList = ref<CmsMediaImage[]>([]);
 const totalCount = ref(0);
 const totalPages = ref(1);
 const isLoading = ref(false);
@@ -48,15 +47,15 @@ const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 12 : 12);
 
-const modalState = useAdminModalState<CmsMedia>({
+const modalState = useAdminModalState<CmsMediaImage>({
   getItems: async (id) => {
-    const res = await cmsService.getMediaList({ page_size: 100 });
+    const res = await cmsService.getMediaImagesList({ page_size: 100 });
     const found = (res.results || []).find(m => String(m.id) === String(id));
     if (!found) throw new Error('Media not found');
     return found;
   },
   onResolveError: (id) => {
-    toastError(`Media item #${id} could not be retrieved.`);
+    toastError(`Media image #${id} could not be retrieved.`);
     modalState.closeModal({ replace: true });
   }
 });
@@ -67,7 +66,7 @@ const fetchMedia = async () => {
   isLoading.value = true;
   fetchError.value = null;
   try {
-    const res = await cmsService.getMediaList({
+    const res = await cmsService.getMediaImagesList({
       page: currentPage.value,
       page_size: itemsPerPage.value,
       search: debouncedSearchQuery.value || undefined
@@ -114,22 +113,23 @@ const handleDeleteMedia = async () => {
   }
   isDeleting.value = true;
   try {
-    await cmsService.deleteMedia(m.id);
-    toastSuccess('Media item deleted.');
+    await cmsService.deleteMediaImage(m.id);
+    toastSuccess('Media image deleted.');
     await modalState.closeModal();
     if (mediaList.value.length === 1 && currentPage.value > 1) currentPage.value--;
     await fetchMedia();
   } catch (err: any) {
-    toastError(extractErrorMessage(err, 'Failed to delete media item.'));
+    toastError(extractErrorMessage(err, 'Failed to delete media image.'));
   } finally {
     isDeleting.value = false;
   }
 };
 
-const tableColumns = computed<UiTableColumn<CmsMedia>[]>(() => [
+const tableColumns = computed<UiTableColumn<CmsMediaImage>[]>(() => [
   { key: 'preview', label: 'Preview', width: '100px', align: 'center' },
-  { key: 'title', label: 'Title & Filename', width: '320px' },
-  { key: 'file_size', label: 'Size', width: '120px' },
+  { key: 'title', label: 'Filename & Alt Text', width: '320px' },
+  { key: 'dimensions', label: 'Dimensions', width: '130px' },
+  { key: 'file_size', label: 'Size', width: '100px' },
   { key: 'created_at', label: 'Uploaded At', width: '180px' },
   { key: 'actions', label: 'Actions', width: '100px', align: 'right' }
 ]);
@@ -145,7 +145,7 @@ onMounted(async () => {
       <div class="flex items-center gap-2">
         <span class="text-muted-foreground/40 font-light select-none">/</span>
         <h1 class="text-xl font-display font-extrabold tracking-tight text-foreground">
-          CMS Media Library
+          CMS Media Library (Images)
         </h1>
       </div>
     </template>
@@ -156,9 +156,9 @@ onMounted(async () => {
           <RefreshCw :class="['w-3.5 h-3.5', isLoading && 'animate-spin']" />
           <span>Refresh</span>
         </UiButton>
-        <UiButton v-if="canCreate" class="rounded-xl h-9 px-3.5 gap-1.5 shadow-md shadow-primary/10 bg-primary text-primary-foreground font-bold text-xs" @click="toastSuccess('Upload media modal')">
+        <UiButton v-if="canCreate" class="rounded-xl h-9 px-3.5 gap-1.5 shadow-md shadow-primary/10 bg-primary text-primary-foreground font-bold text-xs" @click="toastSuccess('Upload media image modal')">
           <Upload class="w-3.5 h-3.5" />
-          <span>Upload Media</span>
+          <span>Upload Image</span>
         </UiButton>
       </div>
     </template>
@@ -171,7 +171,7 @@ onMounted(async () => {
 
     <div v-else class="space-y-4 animate-in fade-in duration-500">
       <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
-        <UiSearchInput v-model="searchQuery" placeholder="Search media by filename..." class="w-full sm:w-80" />
+        <UiSearchInput v-model="searchQuery" placeholder="Search media by filename or alt text..." class="w-full sm:w-80" />
       </div>
 
       <div v-if="fetchError" class="p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between text-destructive">
@@ -183,18 +183,22 @@ onMounted(async () => {
       </div>
 
       <div class="bg-card border border-border rounded-xl shadow-xs overflow-hidden">
-        <UiTable :columns="tableColumns" :data="mediaList" :loading="isLoading" key-field="id" empty-text="No media items found">
+        <UiTable :columns="tableColumns" :data="mediaList" :loading="isLoading" key-field="id" empty-text="No media images found">
           <template #cell-preview="{ item }">
             <div class="w-12 h-12 rounded-lg bg-muted border border-border overflow-hidden flex items-center justify-center">
-              <img v-if="item.file" :src="item.file" :alt="item.alt_text || 'Media'" class="w-full h-full object-cover" />
+              <img v-if="item.image" :src="item.image" :alt="item.alt_text || 'Media'" class="w-full h-full object-cover" />
               <ImageIcon v-else class="w-5 h-5 text-muted-foreground" />
             </div>
           </template>
           <template #cell-title="{ item }">
             <div class="space-y-0.5 py-1">
               <p class="font-bold text-xs text-foreground">{{ item.filename || 'Untitled' }}</p>
-              <p class="font-mono text-[10px] text-muted-foreground truncate max-w-[240px]">{{ item.file }}</p>
+              <p v-if="item.alt_text" class="text-[11px] text-muted-foreground">Alt: {{ item.alt_text }}</p>
+              <p class="font-mono text-[10px] text-muted-foreground truncate max-w-[200px]">{{ item.image }}</p>
             </div>
+          </template>
+          <template #cell-dimensions="{ item }">
+            <span class="text-xs font-mono text-muted-foreground">{{ item.width && item.height ? `${item.width} × ${item.height}px` : '—' }}</span>
           </template>
           <template #cell-file_size="{ item }">
             <span class="text-xs font-mono text-muted-foreground">{{ item.file_size ? `${Math.round(item.file_size / 1024)} KB` : '—' }}</span>
@@ -211,21 +215,21 @@ onMounted(async () => {
           </template>
         </UiTable>
         <div v-if="totalCount > 0" class="border-t border-border px-3.5 py-2 bg-card">
-          <UiPagination v-model:current-page="currentPage" :total-pages="totalPages" :total-count="totalCount" :items-per-page="itemsPerPage" item-label="media items" />
+          <UiPagination v-model:current-page="currentPage" :total-pages="totalPages" :total-count="totalCount" :items-per-page="itemsPerPage" item-label="media images" />
         </div>
       </div>
     </div>
 
-    <UiAdminModal :is-open="modalState.isDelete.value" title="Delete Media Item" subtitle="Are you sure you want to delete this media item?" @close="modalState.closeModal()">
+    <UiAdminModal :is-open="modalState.isDelete.value" title="Delete Media Image" subtitle="Are you sure you want to delete this media image?" @close="modalState.closeModal()">
       <div v-if="selectedMedia" class="space-y-4">
         <div class="p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3">
           <div class="w-12 h-12 rounded-lg bg-background border border-border overflow-hidden shrink-0 flex items-center justify-center">
-            <img v-if="selectedMedia.file" :src="selectedMedia.file" class="w-full h-full object-cover" />
+            <img v-if="selectedMedia.image" :src="selectedMedia.image" class="w-full h-full object-cover" />
             <ImageIcon v-else class="w-5 h-5 text-muted-foreground" />
           </div>
           <div>
             <p class="font-bold text-sm text-foreground">{{ selectedMedia.filename || 'Untitled' }}</p>
-            <p class="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{{ selectedMedia.file }}</p>
+            <p class="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{{ selectedMedia.image }}</p>
           </div>
         </div>
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">

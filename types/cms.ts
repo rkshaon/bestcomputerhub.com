@@ -43,6 +43,7 @@ export interface PageSectionItem {
   display_order: number;
   is_active?: boolean;
   content: Record<string, any>;
+  base_revision_id?: number | string;
   created_at?: string;
   updated_at?: string;
 }
@@ -64,7 +65,7 @@ export interface CmsRevision {
 export interface CmsNavigationMenu {
   id: number | string;
   name: string;
-  slug: string;
+  key: string;
   description?: string;
   is_active?: boolean;
   items?: CmsNavigationItem[];
@@ -85,15 +86,24 @@ export interface CmsNavigationItem {
   updated_at?: string;
 }
 
-export interface CmsMedia {
+export interface CmsMediaImage {
   id: number | string;
-  file: string;
-  filename: string;
+  image: string;
+  filename?: string;
   file_size?: number;
-  mime_type?: string;
+  width?: number;
+  height?: number;
   alt_text?: string;
   created_at?: string;
-  updated_at?: string;
+}
+
+export interface CmsMediaDocument {
+  id: number | string;
+  document: string;
+  filename?: string;
+  file_size?: number;
+  mime_type?: string;
+  created_at?: string;
 }
 
 export interface CmsAuditLog {
@@ -147,17 +157,19 @@ export interface AddSectionPayload {
   display_order?: number;
   is_active?: boolean;
   content: Record<string, any>;
+  base_revision_id?: number | string;
 }
 
 export interface UpdateSectionPayload extends Partial<AddSectionPayload> {}
 
 export interface ReorderSectionsPayload {
   section_ids: (number | string)[];
+  base_revision_id?: number | string;
 }
 
 export interface CreateNavigationMenuPayload {
   name: string;
-  slug: string;
+  key: string;
   description?: string;
   is_active?: boolean;
 }
@@ -171,7 +183,11 @@ export interface CreateNavigationItemPayload {
   is_active?: boolean;
 }
 
-export interface UploadMediaPayload {
-  file: File;
+export interface UploadMediaImagePayload {
+  image: File;
   alt_text?: string;
+}
+
+export interface UploadMediaDocumentPayload {
+  document: File;
 }

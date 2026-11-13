@@ -69,7 +69,7 @@ const fetchMenus = async () => {
     const allMenus = await cmsService.getNavigationMenus();
     const query = debouncedSearchQuery.value.trim().toLowerCase();
     const filtered = query 
-      ? allMenus.filter(m => m.name.toLowerCase().includes(query) || m.slug.toLowerCase().includes(query))
+      ? allMenus.filter(m => m.name.toLowerCase().includes(query) || m.key.toLowerCase().includes(query))
       : allMenus;
 
     totalCount.value = filtered.length;
@@ -131,7 +131,7 @@ const handleDeleteMenu = async () => {
 };
 
 const tableColumns = computed<UiTableColumn<CmsNavigationMenu>[]>(() => [
-  { key: 'name', label: 'Menu Name & Slug', width: '320px' },
+  { key: 'name', label: 'Menu Name & Key', width: '320px' },
   { key: 'items_count', label: 'Items', width: '120px', align: 'center' },
   { key: 'updated_at', label: 'Last Updated', width: '180px' },
   { key: 'actions', label: 'Actions', width: '120px', align: 'right' }
@@ -174,7 +174,7 @@ onMounted(async () => {
 
     <div v-else class="space-y-4 animate-in fade-in duration-500">
       <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
-        <UiSearchInput v-model="searchQuery" placeholder="Search menus by name or slug..." class="w-full sm:w-80" />
+        <UiSearchInput v-model="searchQuery" placeholder="Search menus by name or key..." class="w-full sm:w-80" />
       </div>
 
       <div v-if="fetchError" class="p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between text-destructive">
@@ -190,7 +190,7 @@ onMounted(async () => {
           <template #cell-name="{ item }">
             <div class="space-y-1 py-1">
               <p class="font-bold text-xs text-foreground">{{ item.name }}</p>
-              <span class="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{{ item.slug }}</span>
+              <span class="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{{ item.key }}</span>
             </div>
           </template>
           <template #cell-items_count="{ item }">
@@ -224,7 +224,7 @@ onMounted(async () => {
           <Menu class="w-6 h-6 text-destructive shrink-0" />
           <div>
             <p class="font-bold text-sm text-foreground">{{ selectedMenu.name }}</p>
-            <p class="text-xs text-muted-foreground font-mono">{{ selectedMenu.slug }}</p>
+            <p class="text-xs text-muted-foreground font-mono">{{ selectedMenu.key }}</p>
           </div>
         </div>
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">

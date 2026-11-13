@@ -10,7 +10,8 @@ import type {
   CmsRevision,
   CmsNavigationMenu,
   CmsNavigationItem,
-  CmsMedia,
+  CmsMediaImage,
+  CmsMediaDocument,
   CmsAuditLog,
   CmsRedirect,
   CmsSitemapEntry,
@@ -22,7 +23,8 @@ import type {
   ReorderSectionsPayload,
   CreateNavigationMenuPayload,
   CreateNavigationItemPayload,
-  UploadMediaPayload,
+  UploadMediaImagePayload,
+  UploadMediaDocumentPayload,
   PaginatedResponse
 } from '@/types';
 
@@ -48,17 +50,17 @@ export const useCmsService = () => {
     }
   };
 
-  // 2. Global Sections
+  // 2. Sections (/api/v1/cms/sections/)
   const getGlobalSections = async (params: { page?: number; page_size?: number; search?: string } = {}): Promise<PaginatedResponse<GlobalSection>> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<PaginatedResponse<GlobalSection>>('/api/v1/cms/global-sections/', {
+      return await apiClient.request<PaginatedResponse<GlobalSection>>('/api/v1/cms/sections/', {
         method: 'GET',
         query: params
       });
     } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to fetch global sections.';
+      errorMsg.value = err.message || 'Failed to fetch sections.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -69,12 +71,12 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<GlobalSection>('/api/v1/cms/global-sections/', {
+      return await apiClient.request<GlobalSection>('/api/v1/cms/sections/', {
         method: 'POST',
         body: payload
       });
     } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to create global section.';
+      errorMsg.value = err.message || 'Failed to create section.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -85,12 +87,12 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<GlobalSection>(`/api/v1/cms/global-sections/${id}/`, {
+      return await apiClient.request<GlobalSection>(`/api/v1/cms/sections/${id}/`, {
         method: 'PUT',
         body: payload
       });
     } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to update global section.';
+      errorMsg.value = err.message || 'Failed to update section.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -101,11 +103,11 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      await apiClient.request<void>(`/api/v1/cms/global-sections/${id}/`, {
+      await apiClient.request<void>(`/api/v1/cms/sections/${id}/`, {
         method: 'DELETE'
       });
     } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to delete global section.';
+      errorMsg.value = err.message || 'Failed to delete section.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -191,17 +193,17 @@ export const useCmsService = () => {
     }
   };
 
-  // 4. Page Composition & Sections
-  const getPageComposition = async (pageId: number | string): Promise<PageSectionItem[]> => {
+  // 4. Page Sections (/api/v1/cms/pages/{id}/sections/)
+  const getPageSections = async (pageId: number | string): Promise<PageSectionItem[]> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      const res = await apiClient.request<PageSectionItem[] | { results: PageSectionItem[] }>(`/api/v1/cms/pages/${pageId}/composition/`, {
+      const res = await apiClient.request<PageSectionItem[] | { results: PageSectionItem[] }>(`/api/v1/cms/pages/${pageId}/sections/`, {
         method: 'GET'
       });
       return Array.isArray(res) ? res : (res?.results || []);
     } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to fetch page composition.';
+      errorMsg.value = err.message || 'Failed to fetch page sections.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -212,7 +214,7 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<PageSectionItem>(`/api/v1/cms/pages/${pageId}/composition/`, {
+      return await apiClient.request<PageSectionItem>(`/api/v1/cms/pages/${pageId}/sections/`, {
         method: 'POST',
         body: payload
       });
@@ -228,7 +230,7 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<PageSectionItem>(`/api/v1/cms/pages/${pageId}/composition/${sectionId}/`, {
+      return await apiClient.request<PageSectionItem>(`/api/v1/cms/pages/${pageId}/sections/${sectionId}/`, {
         method: 'PUT',
         body: payload
       });
@@ -244,7 +246,7 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      await apiClient.request<void>(`/api/v1/cms/pages/${pageId}/composition/${sectionId}/`, {
+      await apiClient.request<void>(`/api/v1/cms/pages/${pageId}/sections/${sectionId}/`, {
         method: 'DELETE'
       });
     } catch (err: any) {
@@ -259,7 +261,7 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<PageSectionItem[]>(`/api/v1/cms/pages/${pageId}/composition/reorder/`, {
+      return await apiClient.request<PageSectionItem[]>(`/api/v1/cms/pages/${pageId}/sections/reorder/`, {
         method: 'POST',
         body: payload
       });
@@ -349,12 +351,12 @@ export const useCmsService = () => {
     }
   };
 
-  // 7. Navigation
+  // 7. Navigation (/api/v1/cms/navigation/ and /api/v1/cms/navigation/{menuId}/items/)
   const getNavigationMenus = async (): Promise<CmsNavigationMenu[]> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      const res = await apiClient.request<CmsNavigationMenu[] | { results: CmsNavigationMenu[] }>('/api/v1/cms/navigation-menus/', {
+      const res = await apiClient.request<CmsNavigationMenu[] | { results: CmsNavigationMenu[] }>('/api/v1/cms/navigation/', {
         method: 'GET'
       });
       return Array.isArray(res) ? res : (res?.results || []);
@@ -370,7 +372,7 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<CmsNavigationMenu>('/api/v1/cms/navigation-menus/', {
+      return await apiClient.request<CmsNavigationMenu>('/api/v1/cms/navigation/', {
         method: 'POST',
         body: payload
       });
@@ -386,7 +388,7 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<CmsNavigationMenu>(`/api/v1/cms/navigation-menus/${id}/`, {
+      return await apiClient.request<CmsNavigationMenu>(`/api/v1/cms/navigation/${id}/`, {
         method: 'GET'
       });
     } catch (err: any) {
@@ -401,7 +403,7 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<CmsNavigationMenu>(`/api/v1/cms/navigation-menus/${id}/`, {
+      return await apiClient.request<CmsNavigationMenu>(`/api/v1/cms/navigation/${id}/`, {
         method: 'PUT',
         body: payload
       });
@@ -417,7 +419,7 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      await apiClient.request<void>(`/api/v1/cms/navigation-menus/${id}/`, {
+      await apiClient.request<void>(`/api/v1/cms/navigation/${id}/`, {
         method: 'DELETE'
       });
     } catch (err: any) {
@@ -428,11 +430,11 @@ export const useCmsService = () => {
     }
   };
 
-  const addNavigationItem = async (payload: CreateNavigationItemPayload): Promise<CmsNavigationItem> => {
+  const addNavigationItem = async (menuId: number | string, payload: CreateNavigationItemPayload): Promise<CmsNavigationItem> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<CmsNavigationItem>('/api/v1/cms/navigation-items/', {
+      return await apiClient.request<CmsNavigationItem>(`/api/v1/cms/navigation/${menuId}/items/`, {
         method: 'POST',
         body: payload
       });
@@ -444,11 +446,11 @@ export const useCmsService = () => {
     }
   };
 
-  const updateNavigationItem = async (id: number | string, payload: Partial<CmsNavigationItem>): Promise<CmsNavigationItem> => {
+  const updateNavigationItem = async (menuId: number | string, itemId: number | string, payload: Partial<CmsNavigationItem>): Promise<CmsNavigationItem> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<CmsNavigationItem>(`/api/v1/cms/navigation-items/${id}/`, {
+      return await apiClient.request<CmsNavigationItem>(`/api/v1/cms/navigation/${menuId}/items/${itemId}/`, {
         method: 'PUT',
         body: payload
       });
@@ -460,11 +462,11 @@ export const useCmsService = () => {
     }
   };
 
-  const deleteNavigationItem = async (id: number | string): Promise<void> => {
+  const deleteNavigationItem = async (menuId: number | string, itemId: number | string): Promise<void> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      await apiClient.request<void>(`/api/v1/cms/navigation-items/${id}/`, {
+      await apiClient.request<void>(`/api/v1/cms/navigation/${menuId}/items/${itemId}/`, {
         method: 'DELETE'
       });
     } catch (err: any) {
@@ -475,53 +477,102 @@ export const useCmsService = () => {
     }
   };
 
-  // 8. Media
-  const getMediaList = async (params: { page?: number; page_size?: number; search?: string } = {}): Promise<PaginatedResponse<CmsMedia>> => {
+  // 8. Media (/api/v1/cms/media/images/ and /api/v1/cms/media/documents/)
+  const getMediaImagesList = async (params: { page?: number; page_size?: number; search?: string } = {}): Promise<PaginatedResponse<CmsMediaImage>> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<PaginatedResponse<CmsMedia>>('/api/v1/cms/media/', {
+      return await apiClient.request<PaginatedResponse<CmsMediaImage>>('/api/v1/cms/media/images/', {
         method: 'GET',
         query: params
       });
     } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to fetch media list.';
+      errorMsg.value = err.message || 'Failed to fetch media images.';
       throw err;
     } finally {
       isLoading.value = false;
     }
   };
 
-  const uploadMedia = async (payload: UploadMediaPayload): Promise<CmsMedia> => {
+  const uploadMediaImage = async (payload: UploadMediaImagePayload): Promise<CmsMediaImage> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
       const formData = new FormData();
-      formData.append('file', payload.file);
+      formData.append('image', payload.image);
       if (payload.alt_text) {
         formData.append('alt_text', payload.alt_text);
       }
-      return await apiClient.request<CmsMedia>('/api/v1/cms/media/', {
+      return await apiClient.request<CmsMediaImage>('/api/v1/cms/media/images/', {
         method: 'POST',
         body: formData
       });
     } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to upload media.';
+      errorMsg.value = err.message || 'Failed to upload media image.';
       throw err;
     } finally {
       isLoading.value = false;
     }
   };
 
-  const deleteMedia = async (id: number | string): Promise<void> => {
+  const deleteMediaImage = async (id: number | string): Promise<void> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      await apiClient.request<void>(`/api/v1/cms/media/${id}/`, {
+      await apiClient.request<void>(`/api/v1/cms/media/images/${id}/`, {
         method: 'DELETE'
       });
     } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to delete media.';
+      errorMsg.value = err.message || 'Failed to delete media image.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const getMediaDocumentsList = async (params: { page?: number; page_size?: number; search?: string } = {}): Promise<PaginatedResponse<CmsMediaDocument>> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      return await apiClient.request<PaginatedResponse<CmsMediaDocument>>('/api/v1/cms/media/documents/', {
+        method: 'GET',
+        query: params
+      });
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to fetch media documents.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const uploadMediaDocument = async (payload: UploadMediaDocumentPayload): Promise<CmsMediaDocument> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      const formData = new FormData();
+      formData.append('document', payload.document);
+      return await apiClient.request<CmsMediaDocument>('/api/v1/cms/media/documents/', {
+        method: 'POST',
+        body: formData
+      });
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to upload media document.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const deleteMediaDocument = async (id: number | string): Promise<void> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      await apiClient.request<void>(`/api/v1/cms/media/documents/${id}/`, {
+        method: 'DELETE'
+      });
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to delete media document.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -546,53 +597,38 @@ export const useCmsService = () => {
   };
 
   // 10. Public CMS Endpoints
-  const getPublicPageBySlug = async (slug: string): Promise<PublicCmsPage> => {
+  const getPublicPageByPath = async (path: string): Promise<PublicCmsPage> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<PublicCmsPage>(`/api/v1/cms/public/pages/${slug}/`, {
-        method: 'GET'
+      return await apiClient.request<PublicCmsPage>('/api/v1/cms/public/pages/', {
+        method: 'GET',
+        query: { path }
       });
     } catch (err: any) {
-      errorMsg.value = err.message || `Failed to fetch public page for slug: ${slug}`;
+      errorMsg.value = err.message || `Failed to fetch public page for path: ${path}`;
       throw err;
     } finally {
       isLoading.value = false;
     }
   };
 
-  const getPublicGlobalSections = async (): Promise<GlobalSection[]> => {
+  const getPublicNavigation = async (key: string): Promise<CmsNavigationMenu> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      const res = await apiClient.request<GlobalSection[] | { results: GlobalSection[] }>('/api/v1/cms/public/global-sections/', {
+      return await apiClient.request<CmsNavigationMenu>(`/api/v1/cms/public/navigation/${key}/`, {
         method: 'GET'
       });
-      return Array.isArray(res) ? res : (res?.results || []);
     } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to fetch public global sections.';
+      errorMsg.value = err.message || `Failed to fetch public navigation for key: ${key}`;
       throw err;
     } finally {
       isLoading.value = false;
     }
   };
 
-  const getPublicNavigation = async (slug: string): Promise<CmsNavigationMenu> => {
-    isLoading.value = true;
-    errorMsg.value = null;
-    try {
-      return await apiClient.request<CmsNavigationMenu>(`/api/v1/cms/public/navigation/${slug}/`, {
-        method: 'GET'
-      });
-    } catch (err: any) {
-      errorMsg.value = err.message || `Failed to fetch public navigation for slug: ${slug}`;
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  // 11. Redirects & Sitemap
+  // 11. Redirects & Public Sitemap
   const getRedirects = async (): Promise<CmsRedirect[]> => {
     isLoading.value = true;
     errorMsg.value = null;
@@ -640,16 +676,16 @@ export const useCmsService = () => {
     }
   };
 
-  const getSitemap = async (): Promise<CmsSitemapEntry[]> => {
+  const getPublicSitemap = async (): Promise<CmsSitemapEntry[]> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      const res = await apiClient.request<CmsSitemapEntry[] | { results: CmsSitemapEntry[] }>('/api/v1/cms/sitemap/', {
+      const res = await apiClient.request<CmsSitemapEntry[] | { results: CmsSitemapEntry[] }>('/api/v1/cms/public/sitemap/', {
         method: 'GET'
       });
       return Array.isArray(res) ? res : (res?.results || []);
     } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to fetch sitemap.';
+      errorMsg.value = err.message || 'Failed to fetch public sitemap.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -669,7 +705,7 @@ export const useCmsService = () => {
     getPageDetail,
     updatePage,
     deletePage,
-    getPageComposition,
+    getPageSections,
     addPageSection,
     updatePageSection,
     deletePageSection,
@@ -687,16 +723,18 @@ export const useCmsService = () => {
     addNavigationItem,
     updateNavigationItem,
     deleteNavigationItem,
-    getMediaList,
-    uploadMedia,
-    deleteMedia,
+    getMediaImagesList,
+    uploadMediaImage,
+    deleteMediaImage,
+    getMediaDocumentsList,
+    uploadMediaDocument,
+    deleteMediaDocument,
     getAuditLogs,
-    getPublicPageBySlug,
-    getPublicGlobalSections,
+    getPublicPageByPath,
     getPublicNavigation,
     getRedirects,
     createRedirect,
     deleteRedirect,
-    getSitemap
+    getPublicSitemap
   };
 };
