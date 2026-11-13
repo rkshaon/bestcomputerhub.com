@@ -223,6 +223,56 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     name: 'Settings',
     iconKey: 'Settings',
     viewPermission: ['settings.view_setting', 'view_setting', 'settings.change_setting']
+  },
+  cmsPages: {
+    key: 'cmsPages',
+    route: '/admin/cms/pages',
+    name: 'CMS Pages',
+    iconKey: 'FileCode',
+    viewPermission: ['cms.view_cmspage', 'cms_api.view_cmspage', 'view_cmspage'],
+    createPermission: ['cms.add_cmspage', 'cms_api.add_cmspage', 'add_cmspage'],
+    editPermission: ['cms.change_cmspage', 'cms_api.change_cmspage', 'change_cmspage'],
+    deletePermission: ['cms.delete_cmspage', 'cms_api.delete_cmspage', 'delete_cmspage']
+  },
+  cmsSections: {
+    key: 'cmsSections',
+    route: '/admin/cms/sections',
+    name: 'Global Sections',
+    iconKey: 'Layers',
+    viewPermission: ['cms.view_cmsglobalsection', 'cms_api.view_cmsglobalsection', 'view_cmsglobalsection'],
+    createPermission: ['cms.add_cmsglobalsection', 'cms_api.add_cmsglobalsection', 'add_cmsglobalsection'],
+    editPermission: ['cms.change_cmsglobalsection', 'cms_api.change_cmsglobalsection', 'change_cmsglobalsection'],
+    deletePermission: ['cms.delete_cmsglobalsection', 'cms_api.delete_cmsglobalsection', 'delete_cmsglobalsection']
+  },
+  cmsMedia: {
+    key: 'cmsMedia',
+    route: '/admin/cms/media',
+    name: 'CMS Media',
+    iconKey: 'ImageIcon',
+    viewPermission: ['cms.view_cmsmedia', 'cms_api.view_cmsmedia', 'view_cmsmedia'],
+    createPermission: ['cms.add_cmsmedia', 'cms_api.add_cmsmedia', 'add_cmsmedia'],
+    editPermission: ['cms.change_cmsmedia', 'cms_api.change_cmsmedia', 'change_cmsmedia'],
+    deletePermission: ['cms.delete_cmsmedia', 'cms_api.delete_cmsmedia', 'delete_cmsmedia']
+  },
+  cmsNavigation: {
+    key: 'cmsNavigation',
+    route: '/admin/cms/navigation',
+    name: 'Navigation Menus',
+    iconKey: 'Menu',
+    viewPermission: ['cms.view_cmsnavigation', 'cms_api.view_cmsnavigation', 'view_cmsnavigation'],
+    createPermission: ['cms.add_cmsnavigation', 'cms_api.add_cmsnavigation', 'add_cmsnavigation'],
+    editPermission: ['cms.change_cmsnavigation', 'cms_api.change_cmsnavigation', 'change_cmsnavigation'],
+    deletePermission: ['cms.delete_cmsnavigation', 'cms_api.delete_cmsnavigation', 'delete_cmsnavigation']
+  },
+  cmsRedirects: {
+    key: 'cmsRedirects',
+    route: '/admin/cms/redirects',
+    name: 'Redirects',
+    iconKey: 'Globe',
+    viewPermission: ['cms.view_cmsredirect', 'cms_api.view_cmsredirect', 'view_cmsredirect'],
+    createPermission: ['cms.add_cmsredirect', 'cms_api.add_cmsredirect', 'add_cmsredirect'],
+    editPermission: ['cms.change_cmsredirect', 'cms_api.change_cmsredirect', 'change_cmsredirect'],
+    deletePermission: ['cms.delete_cmsredirect', 'cms_api.delete_cmsredirect', 'delete_cmsredirect']
   }
 };
 

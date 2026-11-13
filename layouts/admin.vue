@@ -36,7 +36,8 @@ import {
   FileText,
   Truck,
   Coins,
-  Mail
+  Mail,
+  FileCode
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
@@ -120,6 +121,11 @@ const navigation = [
   { name: 'Users & Staff', iconKey: 'ShieldCheck', href: '/admin/users' },
   { name: 'Roles', iconKey: 'ShieldAlert', href: '/admin/roles' },
   { name: 'Analytics', iconKey: 'BarChart3', href: '/admin/analytics' },
+  { name: 'CMS Pages', iconKey: 'FileCode', href: '/admin/cms/pages' },
+  { name: 'Global Sections', iconKey: 'Layers', href: '/admin/cms/sections' },
+  { name: 'CMS Media', iconKey: 'ImageIcon', href: '/admin/cms/media' },
+  { name: 'Navigation Menus', iconKey: 'Menu', href: '/admin/cms/navigation' },
+  { name: 'CMS Redirects', iconKey: 'Globe', href: '/admin/cms/redirects' },
 ];
 
 const secondaryNavigation = [
@@ -161,7 +167,8 @@ const iconMap = {
   FileText,
   Truck,
   Coins,
-  Mail
+  Mail,
+  FileCode
 };
 
 const toggleSidebar = () => {
