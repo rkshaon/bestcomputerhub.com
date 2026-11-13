@@ -6,7 +6,10 @@ import {
   Upload, 
   RefreshCw, 
   Trash2, 
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  FileUp,
+  X
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useCmsService } from '@/composables/useCmsService';
@@ -41,11 +44,19 @@ const totalPages = ref(1);
 const isLoading = ref(false);
 const fetchError = ref<string | null>(null);
 const isDeleting = ref(false);
+const isSubmitting = ref(false);
+const formError = ref<string | null>(null);
 
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 12 : 12);
+
+// Upload form state
+const selectedFile = ref<File | null>(null);
+const filePreviewUrl = ref<string | null>(null);
+const altText = ref('');
+const fileInputRef = ref<HTMLInputElement | null>(null);
 
 const modalState = useAdminModalState<CmsMediaImage>({
   getItems: async (id) => {
@@ -104,6 +115,63 @@ watch(currentPage, () => {
   updateRouteAndFetch();
 });
 
+watch(() => modalState.isCreate.value, (isCr) => {
+  if (isCr) {
+    selectedFile.value = null;
+    filePreviewUrl.value = null;
+    altText.value = '';
+    formError.value = null;
+  }
+});
+
+const handleFileSelect = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  if (target.files && target.files[0]) {
+    const file = target.files[0];
+    if (!file.type.startsWith('image/')) {
+      formError.value = 'Please select a valid image file.';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      formError.value = 'File size must not exceed 10MB.';
+      return;
+    }
+    formError.value = null;
+    selectedFile.value = file;
+    if (filePreviewUrl.value) URL.revokeObjectURL(filePreviewUrl.value);
+    filePreviewUrl.value = URL.createObjectURL(file);
+  }
+};
+
+const handleUploadImage = async () => {
+  if (!selectedFile.value) {
+    formError.value = 'Please select an image file to upload.';
+    return;
+  }
+  if (!canCreate.value) {
+    toastError('You do not have permission to upload media.');
+    return;
+  }
+
+  isSubmitting.value = true;
+  formError.value = null;
+
+  try {
+    await cmsService.uploadMediaImage({
+      image: selectedFile.value,
+      alt_text: altText.value.trim() || undefined
+    });
+    toastSuccess('Media image successfully uploaded.');
+    modalState.closeModal();
+    await fetchMedia();
+  } catch (err: any) {
+    formError.value = extractErrorMessage(err, 'Failed to upload media image.');
+    toastError(formError.value);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
 const handleDeleteMedia = async () => {
   const m = selectedMedia.value;
   if (!m) return;
@@ -156,7 +224,7 @@ onMounted(async () => {
           <RefreshCw :class="['w-3.5 h-3.5', isLoading && 'animate-spin']" />
           <span>Refresh</span>
         </UiButton>
-        <UiButton v-if="canCreate" class="rounded-xl h-9 px-3.5 gap-1.5 shadow-md shadow-primary/10 bg-primary text-primary-foreground font-bold text-xs" @click="toastSuccess('Upload media image modal')">
+        <UiButton v-if="canCreate" class="rounded-xl h-9 px-3.5 gap-1.5 shadow-md shadow-primary/10 bg-primary text-primary-foreground font-bold text-xs" @click="modalState.openCreate()">
           <Upload class="w-3.5 h-3.5" />
           <span>Upload Image</span>
         </UiButton>
@@ -220,8 +288,70 @@ onMounted(async () => {
       </div>
     </div>
 
+    <!-- Upload Image Modal -->
+    <UiAdminModal
+      :is-open="modalState.isCreate.value"
+      title="Upload Media Image"
+      subtitle="Select an image file and add optional alt text."
+      @close="modalState.closeModal()"
+    >
+      <div class="p-6 space-y-4">
+        <div v-if="formError" class="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive flex items-center gap-2">
+          <AlertCircle class="w-4 h-4 shrink-0" />
+          <span>{{ formError }}</span>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Image File *</label>
+          <div 
+            class="border-2 border-dashed border-border hover:border-primary/50 rounded-2xl p-6 text-center cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 bg-muted/20"
+            @click="fileInputRef?.click()"
+          >
+            <div v-if="filePreviewUrl" class="w-24 h-24 rounded-xl overflow-hidden border border-border shadow-xs">
+              <img :src="filePreviewUrl" class="w-full h-full object-cover" />
+            </div>
+            <div v-else class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+              <FileUp class="w-6 h-6" />
+            </div>
+            <div class="space-y-0.5">
+              <p class="text-xs font-bold text-foreground">
+                {{ selectedFile ? selectedFile.name : 'Click to select image or drag & drop' }}
+              </p>
+              <p class="text-[10px] text-muted-foreground">PNG, JPG, WEBP, SVG up to 10MB</p>
+            </div>
+            <input 
+              ref="fileInputRef" 
+              type="file" 
+              accept="image/*" 
+              class="hidden" 
+              @change="handleFileSelect"
+            />
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Alt Text (Optional)</label>
+          <input 
+            v-model="altText" 
+            type="text" 
+            placeholder="Describe the image for accessibility..." 
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
+          <UiButton variant="outline" class="h-10 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()" :disabled="isSubmitting">Cancel</UiButton>
+          <UiButton class="h-10 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="handleUploadImage" :disabled="isSubmitting || !selectedFile">
+            <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin mr-1.5" />
+            <span>Upload Image</span>
+          </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- Delete Confirmation Modal -->
     <UiAdminModal :is-open="modalState.isDelete.value" title="Delete Media Image" subtitle="Are you sure you want to delete this media image?" @close="modalState.closeModal()">
-      <div v-if="selectedMedia" class="space-y-4">
+      <div v-if="selectedMedia" class="space-y-4 p-6">
         <div class="p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3">
           <div class="w-12 h-12 rounded-lg bg-background border border-border overflow-hidden shrink-0 flex items-center justify-center">
             <img v-if="selectedMedia.image" :src="selectedMedia.image" class="w-full h-full object-cover" />

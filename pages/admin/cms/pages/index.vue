@@ -13,14 +13,15 @@ import {
   Clock, 
   AlertCircle,
   Globe,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useCmsService } from '@/composables/useCmsService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, extractErrorMessage } from '@/composables/useToast';
-import type { CmsPage } from '@/types/cms';
+import type { CmsPage, CreatePagePayload } from '@/types/cms';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiTable from '@/components/ui/UiTable.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
@@ -49,12 +50,24 @@ const totalPages = ref(1);
 const isLoading = ref(false);
 const fetchError = ref<string | null>(null);
 const isDeleting = ref(false);
+const isSubmitting = ref(false);
+const formError = ref<string | null>(null);
 
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const statusFilter = ref<'all' | 'published' | 'draft' | 'archived'>((route.query.status as 'all' | 'published' | 'draft' | 'archived') || 'all');
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
+
+const newPageForm = ref<CreatePagePayload>({
+  title: '',
+  slug: '',
+  status: 'draft',
+  template: 'default',
+  meta_title: '',
+  meta_description: '',
+  is_homepage: false
+});
 
 const modalState = useAdminModalState<CmsPage>({
   getItems: async (id) => {
@@ -119,6 +132,47 @@ watch(statusFilter, () => {
 watch(currentPage, () => {
   updateRouteAndFetch();
 });
+
+watch(() => modalState.isCreate.value, (isCr) => {
+  if (isCr) {
+    newPageForm.value = {
+      title: '',
+      slug: '',
+      status: 'draft',
+      template: 'default',
+      meta_title: '',
+      meta_description: '',
+      is_homepage: false
+    };
+    formError.value = null;
+  }
+});
+
+const handleCreatePage = async () => {
+  if (!newPageForm.value.title.trim() || !newPageForm.value.slug.trim()) {
+    formError.value = 'Title and slug are required fields.';
+    return;
+  }
+  if (!canCreate.value) {
+    toastError('You do not have permission to create CMS pages.');
+    return;
+  }
+
+  isSubmitting.value = true;
+  formError.value = null;
+
+  try {
+    await cmsService.createPage(newPageForm.value);
+    toastSuccess(`CMS Page "${newPageForm.value.title}" successfully created.`);
+    modalState.closeModal();
+    await fetchPages();
+  } catch (err: any) {
+    formError.value = extractErrorMessage(err, 'Failed to create CMS page.');
+    toastError(formError.value);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
 
 const handleDeletePage = async () => {
   const page = selectedPage.value;
@@ -186,7 +240,7 @@ onMounted(async () => {
         <UiButton 
           v-if="canCreate"
           class="rounded-xl h-9 px-3.5 gap-1.5 shadow-md shadow-primary/10 bg-primary text-primary-foreground font-bold text-xs"
-          @click="toastSuccess('Create CMS Page modal coming up in section editor milestone')"
+          @click="modalState.openCreate()"
         >
           <Plus class="w-3.5 h-3.5" />
           <span>New Page</span>
@@ -347,6 +401,98 @@ onMounted(async () => {
       </div>
     </div>
 
+    <!-- Create Page Modal -->
+    <UiAdminModal
+      :is-open="modalState.isCreate.value"
+      title="Create New CMS Page"
+      subtitle="Configure basic metadata and slug for the new page."
+      @close="modalState.closeModal()"
+    >
+      <div class="p-6 space-y-4">
+        <div v-if="formError" class="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive flex items-center gap-2">
+          <AlertCircle class="w-4 h-4 shrink-0" />
+          <span>{{ formError }}</span>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Page Title *</label>
+          <input 
+            v-model="newPageForm.title" 
+            type="text" 
+            placeholder="e.g. About Us" 
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">URL Slug *</label>
+          <input 
+            v-model="newPageForm.slug" 
+            type="text" 
+            placeholder="e.g. about-us" 
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Status</label>
+            <select 
+              v-model="newPageForm.status" 
+              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Template</label>
+            <input 
+              v-model="newPageForm.template" 
+              type="text" 
+              placeholder="default" 
+              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Meta Title</label>
+          <input 
+            v-model="newPageForm.meta_title" 
+            type="text" 
+            placeholder="SEO Meta Title" 
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Meta Description</label>
+          <textarea 
+            v-model="newPageForm.meta_description" 
+            rows="2" 
+            placeholder="SEO Meta Description" 
+            class="w-full p-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <input id="is_homepage" v-model="newPageForm.is_homepage" type="checkbox" class="rounded border-input text-primary focus:ring-primary/20 w-4 h-4" />
+          <label for="is_homepage" class="text-xs font-semibold text-foreground select-none cursor-pointer">Set as Homepage</label>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
+          <UiButton variant="outline" class="h-10 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()" :disabled="isSubmitting">Cancel</UiButton>
+          <UiButton class="h-10 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="handleCreatePage" :disabled="isSubmitting">
+            <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin mr-1.5" />
+            <span>Create Page</span>
+          </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
     <!-- Delete Confirmation Modal -->
     <UiAdminModal
       :is-open="modalState.isDelete.value"
@@ -354,7 +500,7 @@ onMounted(async () => {
       subtitle="Are you sure you want to permanently delete this CMS page?"
       @close="modalState.closeModal()"
     >
-      <div v-if="selectedPage" class="space-y-4">
+      <div v-if="selectedPage" class="space-y-4 p-6">
         <div class="p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3">
           <FileText class="w-6 h-6 text-destructive shrink-0" />
           <div>
