@@ -15,7 +15,7 @@ export interface GlobalSection {
   name: string;
   code: string;
   section_type: SectionTypeKey;
-  content: Record<string, any>;
+  content: Record<string, any>[] | Record<string, any>;
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;

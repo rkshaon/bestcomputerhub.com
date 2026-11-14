@@ -57,7 +57,15 @@ const newSectionForm = ref({
   name: '',
   code: '',
   section_type: 'hero_banner' as SectionTypeKey,
-  contentJson: '{\n  "heading": "Welcome",\n  "subtitle": "Discover our new collection"\n}',
+  contentJson: '[\n  {\n    "title": "Upgrade Your Tech Experience",\n    "subtitle": "Discover the latest computers, laptops and accessories at Best Computer Hub.",\n    "button_text": "Explore Products",\n    "button_url": "/products/",\n    "image": "",\n    "mobile_image": "",\n    "text_alignment": "left"\n  }\n]',
+  is_active: true
+});
+
+const editSectionForm = ref({
+  name: '',
+  code: '',
+  section_type: 'hero_banner' as SectionTypeKey,
+  contentJson: '[]',
   is_active: true
 });
 
@@ -75,6 +83,19 @@ const modalState = useAdminModalState<GlobalSection>({
 });
 
 const selectedSection = computed(() => modalState.activeEntity.value);
+
+watch(selectedSection, (sec) => {
+  if (sec && modalState.isEdit.value) {
+    editSectionForm.value = {
+      name: sec.name || '',
+      code: sec.code || '',
+      section_type: sec.section_type || 'hero_banner',
+      contentJson: JSON.stringify(sec.content || [], null, 2),
+      is_active: sec.is_active !== false
+    };
+    formError.value = null;
+  }
+}, { immediate: true });
 
 const fetchSections = async () => {
   isLoading.value = true;
@@ -124,7 +145,7 @@ watch(() => modalState.isCreate.value, (isCr) => {
       name: '',
       code: '',
       section_type: 'hero_banner',
-      contentJson: '{\n  "heading": "Welcome"\n}',
+      contentJson: '[\n  {\n    "title": "Upgrade Your Tech Experience",\n    "subtitle": "Discover the latest computers, laptops and accessories at Best Computer Hub.",\n    "button_text": "Explore Products",\n    "button_url": "/products/",\n    "image": "",\n    "mobile_image": "",\n    "text_alignment": "left"\n  }\n]',
       is_active: true
     };
     formError.value = null;
@@ -137,11 +158,16 @@ const handleCreateSection = async () => {
     return;
   }
 
-  let parsedContent: Record<string, any> = {};
+  let parsedContent: any;
   try {
-    parsedContent = JSON.parse(newSectionForm.value.contentJson || '{}');
+    parsedContent = JSON.parse(newSectionForm.value.contentJson || '[]');
   } catch {
     formError.value = 'Invalid JSON format in content payload.';
+    return;
+  }
+
+  if (!Array.isArray(parsedContent)) {
+    formError.value = 'Content payload must be a JSON array of objects.';
     return;
   }
 
@@ -166,6 +192,55 @@ const handleCreateSection = async () => {
     await fetchSections();
   } catch (err: any) {
     formError.value = extractErrorMessage(err, 'Failed to create global section.');
+    toastError(formError.value);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const handleUpdateSection = async () => {
+  const sec = selectedSection.value;
+  if (!sec) return;
+
+  if (!editSectionForm.value.name.trim() || !editSectionForm.value.code.trim()) {
+    formError.value = 'Name and code are required fields.';
+    return;
+  }
+
+  let parsedContent: any;
+  try {
+    parsedContent = JSON.parse(editSectionForm.value.contentJson || '[]');
+  } catch {
+    formError.value = 'Invalid JSON format in content payload.';
+    return;
+  }
+
+  if (!Array.isArray(parsedContent)) {
+    formError.value = 'Content payload must be a JSON array of objects.';
+    return;
+  }
+
+  if (!canEdit.value) {
+    toastError('You do not have permission to edit global sections.');
+    return;
+  }
+
+  isSubmitting.value = true;
+  formError.value = null;
+
+  try {
+    await cmsService.updateGlobalSection(sec.id, {
+      name: editSectionForm.value.name,
+      code: editSectionForm.value.code,
+      section_type: editSectionForm.value.section_type,
+      content: parsedContent,
+      is_active: editSectionForm.value.is_active
+    });
+    toastSuccess(`Global Section "${editSectionForm.value.name}" successfully updated.`);
+    modalState.closeModal();
+    await fetchSections();
+  } catch (err: any) {
+    formError.value = extractErrorMessage(err, 'Failed to update global section.');
     toastError(formError.value);
   } finally {
     isSubmitting.value = false;
@@ -266,7 +341,7 @@ onMounted(async () => {
           </template>
           <template #cell-actions="{ item }">
             <div class="flex items-center justify-end gap-1">
-              <UiButton v-if="canEdit" variant="ghost" size="sm" class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Edit" @click="toastSuccess(`Editing ${item.name}`)">
+              <UiButton v-if="canEdit" variant="ghost" size="sm" class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Edit" @click="modalState.openEdit(item.id)">
                 <Edit2 class="w-3.5 h-3.5" />
               </UiButton>
               <UiButton v-if="canDelete" variant="ghost" size="sm" class="h-8 w-8 p-0 text-destructive/80 hover:text-destructive hover:bg-destructive/10 rounded-lg" title="Delete" @click="modalState.openDelete(item.id)">
@@ -348,6 +423,78 @@ onMounted(async () => {
           <UiButton class="h-10 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="handleCreateSection" :disabled="isSubmitting">
             <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin mr-1.5" />
             <span>Create Section</span>
+          </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- Edit Section Modal -->
+    <UiAdminModal
+      :is-open="modalState.isEdit.value"
+      title="Edit Global Section"
+      subtitle="Modify section properties and content array schema."
+      @close="modalState.closeModal()"
+    >
+      <div class="p-6 space-y-4">
+        <div v-if="formError" class="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive flex items-center gap-2">
+          <AlertCircle class="w-4 h-4 shrink-0" />
+          <span>{{ formError }}</span>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Section Name *</label>
+          <input 
+            v-model="editSectionForm.name" 
+            type="text" 
+            placeholder="e.g. Homepage Hero" 
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Section Code *</label>
+          <input 
+            v-model="editSectionForm.code" 
+            type="text" 
+            placeholder="e.g. homepage_hero" 
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Section Type</label>
+          <select 
+            v-model="editSectionForm.section_type" 
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="hero_banner">Hero Banner</option>
+            <option value="rich_text">Rich Text</option>
+            <option value="product_collection">Product Collection</option>
+            <option value="faq">FAQ</option>
+            <option value="image_gallery">Image Gallery</option>
+            <option value="cta">CTA</option>
+          </select>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Content (JSON Array) *</label>
+          <textarea 
+            v-model="editSectionForm.contentJson" 
+            rows="6" 
+            class="w-full p-3 rounded-xl border border-input bg-background font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <input id="edit_section_active" v-model="editSectionForm.is_active" type="checkbox" class="rounded border-input text-primary focus:ring-primary/20 w-4 h-4" />
+          <label for="edit_section_active" class="text-xs font-semibold text-foreground select-none cursor-pointer">Active Section</label>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
+          <UiButton variant="outline" class="h-10 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()" :disabled="isSubmitting">Cancel</UiButton>
+          <UiButton class="h-10 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="handleUpdateSection" :disabled="isSubmitting">
+            <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin mr-1.5" />
+            <span>Save Changes</span>
           </UiButton>
         </div>
       </div>
