@@ -14,14 +14,16 @@ import {
   AlertCircle,
   Globe,
   FileText,
-  Loader2
+  Loader2,
+  Archive,
+  RotateCcw
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useCmsService } from '@/composables/useCmsService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, extractErrorMessage } from '@/composables/useToast';
-import type { CmsPage, CreatePagePayload } from '@/types/cms';
+import type { CmsPage, CreatePagePayload, UpdatePagePayload } from '@/types/cms';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiTable from '@/components/ui/UiTable.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
@@ -69,6 +71,16 @@ const newPageForm = ref<CreatePagePayload>({
   is_homepage: false
 });
 
+const editPageForm = ref<UpdatePagePayload>({
+  title: '',
+  slug: '',
+  status: 'draft',
+  template: 'default',
+  meta_title: '',
+  meta_description: '',
+  is_homepage: false
+});
+
 const modalState = useAdminModalState<CmsPage>({
   getItems: async (id) => {
     return await cmsService.getPageDetail(id);
@@ -80,6 +92,21 @@ const modalState = useAdminModalState<CmsPage>({
 });
 
 const selectedPage = computed(() => modalState.activeEntity.value);
+
+watch(selectedPage, (page) => {
+  if (page && modalState.isEdit.value) {
+    editPageForm.value = {
+      title: page.title || '',
+      slug: page.slug || '',
+      status: page.status || 'draft',
+      template: page.template || 'default',
+      meta_title: page.meta_title || '',
+      meta_description: page.meta_description || '',
+      is_homepage: !!page.is_homepage
+    };
+    formError.value = null;
+  }
+}, { immediate: true });
 
 const fetchPages = async () => {
   isLoading.value = true;
@@ -149,7 +176,7 @@ watch(() => modalState.isCreate.value, (isCr) => {
 });
 
 const handleCreatePage = async () => {
-  if (!newPageForm.value.title.trim() || !newPageForm.value.slug.trim()) {
+  if (!newPageForm.value.title?.trim() || !newPageForm.value.slug?.trim()) {
     formError.value = 'Title and slug are required fields.';
     return;
   }
@@ -171,6 +198,63 @@ const handleCreatePage = async () => {
     toastError(formError.value);
   } finally {
     isSubmitting.value = false;
+  }
+};
+
+const handleUpdatePage = async () => {
+  if (!selectedPage.value) return;
+  if (!editPageForm.value.title?.trim() || !editPageForm.value.slug?.trim()) {
+    formError.value = 'Title and slug are required fields.';
+    return;
+  }
+  if (!canEdit.value) {
+    toastError('You do not have permission to update CMS pages.');
+    return;
+  }
+
+  isSubmitting.value = true;
+  formError.value = null;
+
+  try {
+    await cmsService.updatePage(selectedPage.value.id, editPageForm.value);
+    toastSuccess(`CMS Page "${editPageForm.value.title}" successfully updated.`);
+    modalState.closeModal();
+    await fetchPages();
+  } catch (err: any) {
+    formError.value = extractErrorMessage(err, 'Failed to update CMS page.');
+    toastError(formError.value);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const handleArchivePage = async (page: CmsPage) => {
+  if (!canEdit.value) {
+    toastError('You do not have permission to archive CMS pages.');
+    return;
+  }
+  if (!window.confirm(`Are you sure you want to archive page "${page.title}"?`)) return;
+
+  try {
+    await cmsService.updatePage(page.id, { status: 'archived' });
+    toastSuccess(`CMS Page "${page.title}" has been archived.`);
+    await fetchPages();
+  } catch (err: any) {
+    toastError(extractErrorMessage(err, 'Failed to archive CMS page.'));
+  }
+};
+
+const handleRestorePage = async (page: CmsPage) => {
+  if (!canEdit.value) {
+    toastError('You do not have permission to restore CMS pages.');
+    return;
+  }
+  try {
+    await cmsService.updatePage(page.id, { status: 'draft' });
+    toastSuccess(`CMS Page "${page.title}" has been restored to draft.`);
+    await fetchPages();
+  } catch (err: any) {
+    toastError(extractErrorMessage(err, 'Failed to restore CMS page.'));
   }
 };
 
@@ -202,7 +286,7 @@ const tableColumns = computed<UiTableColumn<CmsPage>[]>(() => [
   { key: 'template', label: 'Template', width: '150px' },
   { key: 'status', label: 'Status', width: '120px', align: 'center' },
   { key: 'updated_at', label: 'Last Updated', width: '180px' },
-  { key: 'actions', label: 'Actions', width: '120px', align: 'right' }
+  { key: 'actions', label: 'Actions', width: '150px', align: 'right' }
 ]);
 
 const publishedCount = computed(() => pagesList.value.filter(p => p.status === 'published').length);
@@ -350,8 +434,8 @@ onMounted(async () => {
 
           <template #cell-status="{ item }">
             <div class="flex items-center justify-center">
-              <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border', item.status === 'published' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/50' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-emerald-200/50']">
-                <span :class="['w-1.5 h-1.5 rounded-full', item.status === 'published' ? 'bg-emerald-500' : 'bg-amber-500']"></span>
+              <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border', item.status === 'published' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/50' : item.status === 'archived' ? 'bg-muted text-muted-foreground border-border' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200/50']">
+                <span :class="['w-1.5 h-1.5 rounded-full', item.status === 'published' ? 'bg-emerald-500' : item.status === 'archived' ? 'bg-muted-foreground' : 'bg-amber-500']"></span>
                 {{ item.status }}
               </span>
             </div>
@@ -366,14 +450,43 @@ onMounted(async () => {
           <template #cell-actions="{ item }">
             <div class="flex items-center justify-end gap-1">
               <UiButton
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
+                title="View Page Details"
+                @click="modalState.openView(item.id)"
+              >
+                <Eye class="w-3.5 h-3.5" />
+              </UiButton>
+              <UiButton
                 v-if="canEdit"
                 variant="ghost"
                 size="sm"
                 class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
                 title="Edit Page"
-                @click="toastSuccess(`Editing page: ${item.title}`)"
+                @click="modalState.openEdit(item.id)"
               >
                 <Edit2 class="w-3.5 h-3.5" />
+              </UiButton>
+              <UiButton
+                v-if="canEdit && item.status !== 'archived'"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 rounded-lg"
+                title="Archive Page"
+                @click="handleArchivePage(item)"
+              >
+                <Archive class="w-3.5 h-3.5" />
+              </UiButton>
+              <UiButton
+                v-if="canEdit && item.status === 'archived'"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 rounded-lg"
+                title="Restore Page"
+                @click="handleRestorePage(item)"
+              >
+                <RotateCcw class="w-3.5 h-3.5" />
               </UiButton>
               <UiButton
                 v-if="canDelete"
@@ -489,6 +602,149 @@ onMounted(async () => {
             <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin mr-1.5" />
             <span>Create Page</span>
           </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- Edit Page Modal -->
+    <UiAdminModal
+      :is-open="modalState.isEdit.value"
+      title="Edit CMS Page"
+      subtitle="Modify page properties, metadata, and status."
+      @close="modalState.closeModal()"
+    >
+      <div class="p-6 space-y-4">
+        <div v-if="formError" class="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive flex items-center gap-2">
+          <AlertCircle class="w-4 h-4 shrink-0" />
+          <span>{{ formError }}</span>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Page Title *</label>
+          <input 
+            v-model="editPageForm.title" 
+            type="text" 
+            placeholder="e.g. About Us" 
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">URL Slug *</label>
+          <input 
+            v-model="editPageForm.slug" 
+            type="text" 
+            placeholder="e.g. about-us" 
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Status</label>
+            <select 
+              v-model="editPageForm.status" 
+              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Template</label>
+            <input 
+              v-model="editPageForm.template" 
+              type="text" 
+              placeholder="default" 
+              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Meta Title</label>
+          <input 
+            v-model="editPageForm.meta_title" 
+            type="text" 
+            placeholder="SEO Meta Title" 
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Meta Description</label>
+          <textarea 
+            v-model="editPageForm.meta_description" 
+            rows="2" 
+            placeholder="SEO Meta Description" 
+            class="w-full p-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <input id="edit_is_homepage" v-model="editPageForm.is_homepage" type="checkbox" class="rounded border-input text-primary focus:ring-primary/20 w-4 h-4" />
+          <label for="edit_is_homepage" class="text-xs font-semibold text-foreground select-none cursor-pointer">Set as Homepage</label>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
+          <UiButton variant="outline" class="h-10 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()" :disabled="isSubmitting">Cancel</UiButton>
+          <UiButton class="h-10 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="handleUpdatePage" :disabled="isSubmitting">
+            <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin mr-1.5" />
+            <span>Save Changes</span>
+          </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- View Details Modal -->
+    <UiAdminModal
+      :is-open="modalState.isView.value"
+      title="CMS Page Details"
+      subtitle="Complete overview of page configuration and metadata."
+      @close="modalState.closeModal()"
+    >
+      <div v-if="selectedPage" class="p-6 space-y-4 text-xs">
+        <div class="grid grid-cols-2 gap-4 bg-muted/30 p-4 rounded-xl border border-border">
+          <div>
+            <p class="text-muted-foreground uppercase font-bold text-[10px]">Title</p>
+            <p class="text-sm font-bold text-foreground mt-0.5">{{ selectedPage.title }}</p>
+          </div>
+          <div>
+            <p class="text-muted-foreground uppercase font-bold text-[10px]">Slug</p>
+            <p class="text-sm font-mono text-primary mt-0.5">/{{ selectedPage.slug }}</p>
+          </div>
+          <div>
+            <p class="text-muted-foreground uppercase font-bold text-[10px]">Status</p>
+            <p class="font-bold text-foreground mt-0.5 capitalize">{{ selectedPage.status }}</p>
+          </div>
+          <div>
+            <p class="text-muted-foreground uppercase font-bold text-[10px]">Template</p>
+            <p class="font-mono text-foreground mt-0.5">{{ selectedPage.template || 'default' }}</p>
+          </div>
+          <div>
+            <p class="text-muted-foreground uppercase font-bold text-[10px]">Homepage</p>
+            <p class="font-bold text-foreground mt-0.5">{{ selectedPage.is_homepage ? 'Yes' : 'No' }}</p>
+          </div>
+          <div>
+            <p class="text-muted-foreground uppercase font-bold text-[10px]">Updated At</p>
+            <p class="font-mono text-foreground mt-0.5">{{ selectedPage.updated_at ? new Date(selectedPage.updated_at).toLocaleString() : '—' }}</p>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <p class="text-muted-foreground uppercase font-bold text-[10px]">Meta Title</p>
+          <p class="p-2.5 rounded-lg bg-background border border-border text-foreground">{{ selectedPage.meta_title || '—' }}</p>
+        </div>
+
+        <div class="space-y-1">
+          <p class="text-muted-foreground uppercase font-bold text-[10px]">Meta Description</p>
+          <p class="p-2.5 rounded-lg bg-background border border-border text-foreground">{{ selectedPage.meta_description || '—' }}</p>
+        </div>
+
+        <div class="flex items-center justify-end pt-4 border-t border-border">
+          <UiButton variant="outline" class="h-9 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()">Close</UiButton>
         </div>
       </div>
     </UiAdminModal>
