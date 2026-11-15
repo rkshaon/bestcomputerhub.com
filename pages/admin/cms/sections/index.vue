@@ -66,6 +66,17 @@ const getDefaultContentJson = (type: string) => {
       }
     ], null, 2);
   }
+  if (type === 'rich_text') {
+    return JSON.stringify([
+      {
+        "type": "rich_text",
+        "value": {
+          "body": "<p>Enter rich text content here...</p>",
+          "alignment": "left"
+        }
+      }
+    ], null, 2);
+  }
   return JSON.stringify([
     {
       "type": type,

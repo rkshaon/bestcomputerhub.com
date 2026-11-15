@@ -165,7 +165,7 @@ const openEditSectionModal = (sec: PageSectionItem) => {
     contentJson: JSON.stringify(sec.content || {}, null, 2)
   };
   if (sec.section_type === 'rich_text') {
-    richTextContent.value = sec.content?.content || '';
+    richTextContent.value = sec.content?.body || sec.content?.content || '';
     richTextAlignment.value = sec.content?.alignment || 'left';
   } else {
     richTextContent.value = '<p>Enter rich text content here...</p>';
@@ -180,7 +180,7 @@ const handleSaveSection = async () => {
 
   if (sectionForm.value.section_type === 'rich_text') {
     sectionForm.value.contentJson = JSON.stringify({
-      content: richTextContent.value,
+      body: richTextContent.value,
       alignment: richTextAlignment.value
     }, null, 2);
   }
@@ -319,7 +319,7 @@ const getDefaultValueForType = (type: SectionTypeKey) => {
     case 'hero_banner':
       return { title: 'Upgrade Your Tech Experience', subtitle: 'Discover the latest technology.', button_text: 'Explore Products', button_url: '/products/', image: '', mobile_image: '', text_alignment: 'left' };
     case 'rich_text':
-      return { content: '<p>Enter rich text content here...</p>', alignment: 'left' };
+      return { body: '<p>Enter rich text content here...</p>', alignment: 'left' };
     case 'product_collection':
       return { title: 'Featured Products', mode: 'ALL', limit: 8 };
     case 'brand_collection':
@@ -499,7 +499,9 @@ const handleCreatePage = async () => {
         content: [
           {
             type: s.section_type,
-            value: s.value
+            value: s.section_type === 'rich_text'
+              ? { body: s.value.body || s.value.content || '', alignment: s.value.alignment || 'left' }
+              : s.value
           }
         ]
       }));
