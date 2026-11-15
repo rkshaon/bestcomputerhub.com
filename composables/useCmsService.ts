@@ -257,6 +257,37 @@ export const useCmsService = () => {
     }
   };
 
+  const duplicatePageSection = async (pageId: number | string, sectionId: number | string): Promise<PageSectionItem> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      return await apiClient.request<PageSectionItem>(`/api/v1/cms/pages/${pageId}/sections/${sectionId}/duplicate/`, {
+        method: 'POST'
+      });
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to duplicate page section.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const patchPageSection = async (pageId: number | string, sectionId: number | string, payload: Partial<UpdateSectionPayload>): Promise<PageSectionItem> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      return await apiClient.request<PageSectionItem>(`/api/v1/cms/pages/${pageId}/sections/${sectionId}/`, {
+        method: 'PATCH',
+        body: payload
+      });
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to patch page section.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const reorderPageSections = async (pageId: number | string, payload: ReorderSectionsPayload): Promise<PageSectionItem[]> => {
     isLoading.value = true;
     errorMsg.value = null;
@@ -710,6 +741,8 @@ export const useCmsService = () => {
     updatePageSection,
     deletePageSection,
     reorderPageSections,
+    duplicatePageSection,
+    patchPageSection,
     getPageRevisions,
     rollbackPageRevision,
     publishPage,

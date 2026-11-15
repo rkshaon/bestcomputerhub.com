@@ -16,14 +16,15 @@ import {
   FileText,
   Loader2,
   Archive,
-  RotateCcw
+  RotateCcw,
+  Copy
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useCmsService } from '@/composables/useCmsService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, extractErrorMessage } from '@/composables/useToast';
-import type { CmsPage, CreatePagePayload, UpdatePagePayload } from '@/types/cms';
+import type { CmsPage, CmsPageDetail, PageSectionItem, SectionTypeKey, CreatePagePayload, UpdatePagePayload } from '@/types/cms';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiTable from '@/components/ui/UiTable.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
@@ -107,6 +108,166 @@ watch(selectedPage, (page) => {
     formError.value = null;
   }
 }, { immediate: true });
+
+const activeCompositionPage = ref<CmsPageDetail | null>(null);
+const compositionSections = ref<PageSectionItem[]>([]);
+const isCompositionOpen = ref(false);
+const compositionError = ref<string | null>(null);
+const isSectionSubmitting = ref(false);
+const sectionFormModalOpen = ref(false);
+const editingSectionId = ref<number | string | null>(null);
+
+const sectionForm = ref({
+  section_type: 'hero_banner' as SectionTypeKey,
+  title: '',
+  display_order: 0,
+  is_active: true,
+  contentJson: '{\n  "title": "Section Title"\n}'
+});
+
+const openComposition = async (page: CmsPage) => {
+  compositionError.value = null;
+  try {
+    const detail = await cmsService.getPageDetail(page.id);
+    activeCompositionPage.value = detail;
+    compositionSections.value = detail.sections || [];
+    isCompositionOpen.value = true;
+  } catch (err: any) {
+    toastError(extractErrorMessage(err, 'Failed to load page composition sections.'));
+  }
+};
+
+const openAddSectionModal = () => {
+  editingSectionId.value = null;
+  sectionForm.value = {
+    section_type: 'hero_banner',
+    title: '',
+    display_order: compositionSections.value.length + 1,
+    is_active: true,
+    contentJson: '{\n  "title": "New Section"\n}'
+  };
+  sectionFormModalOpen.value = true;
+};
+
+const openEditSectionModal = (sec: PageSectionItem) => {
+  editingSectionId.value = sec.id;
+  sectionForm.value = {
+    section_type: sec.section_type || 'hero_banner',
+    title: sec.title || '',
+    display_order: sec.display_order || 0,
+    is_active: sec.is_active !== false,
+    contentJson: JSON.stringify(sec.content || {}, null, 2)
+  };
+  sectionFormModalOpen.value = true;
+};
+
+const handleSaveSection = async () => {
+  const page = activeCompositionPage.value;
+  if (!page) return;
+
+  let parsedContent: Record<string, any> = {};
+  try {
+    parsedContent = JSON.parse(sectionForm.value.contentJson || '{}');
+  } catch {
+    toastError('Invalid JSON format in section content.');
+    return;
+  }
+
+  isSectionSubmitting.value = true;
+  compositionError.value = null;
+
+  try {
+    if (editingSectionId.value) {
+      const updated = await cmsService.updatePageSection(page.id, editingSectionId.value, {
+        section_type: sectionForm.value.section_type,
+        title: sectionForm.value.title,
+        display_order: sectionForm.value.display_order,
+        is_active: sectionForm.value.is_active,
+        content: parsedContent,
+        base_revision_id: page.id
+      });
+      const idx = compositionSections.value.findIndex(s => String(s.id) === String(updated?.id));
+      if (idx !== -1 && updated) compositionSections.value[idx] = updated as PageSectionItem;
+      toastSuccess('Section successfully updated.');
+    } else {
+      const created = await cmsService.addPageSection(page.id, {
+        section_type: sectionForm.value.section_type,
+        title: sectionForm.value.title,
+        display_order: sectionForm.value.display_order,
+        is_active: sectionForm.value.is_active,
+        content: parsedContent
+      });
+      if (created) compositionSections.value.push(created as PageSectionItem);
+      toastSuccess('Section successfully added.');
+    }
+    sectionFormModalOpen.value = false;
+    const fresh = await cmsService.getPageDetail(page.id);
+    activeCompositionPage.value = fresh;
+    compositionSections.value = fresh.sections || [];
+  } catch (err: any) {
+    const status = err.response?.status || err.status;
+    if (status === 409 || (err.message && err.message.includes('409'))) {
+      compositionError.value = 'Revision conflict detected (409): Another user has modified this page. Please refresh to load the latest revision before saving.';
+      toastError('Revision conflict (409) detected.');
+    } else {
+      const msg = extractErrorMessage(err, 'Failed to save section.');
+      compositionError.value = msg;
+      toastError(msg);
+    }
+  } finally {
+    isSectionSubmitting.value = false;
+  }
+};
+
+const handleDeleteSection = async (sec: PageSectionItem) => {
+  const page = activeCompositionPage.value;
+  if (!page) return;
+  if (!confirm(`Are you sure you want to remove section "${sec.title || sec.section_type}"?`)) return;
+
+  try {
+    await cmsService.deletePageSection(page.id, sec.id);
+    compositionSections.value = compositionSections.value.filter(s => String(s.id) !== String(sec.id));
+    toastSuccess('Section removed successfully.');
+  } catch (err: any) {
+    toastError(extractErrorMessage(err, 'Failed to remove section.'));
+  }
+};
+
+const handleDuplicateSection = async (sec: PageSectionItem) => {
+  const page = activeCompositionPage.value;
+  if (!page) return;
+
+  try {
+    const duplicated = await cmsService.duplicatePageSection(page.id, sec.id);
+    if (duplicated) compositionSections.value.push(duplicated as PageSectionItem);
+    toastSuccess('Section duplicated successfully.');
+  } catch (err: any) {
+    toastError(extractErrorMessage(err, 'Failed to duplicate section.'));
+  }
+};
+
+const handleMoveSection = async (index: number, direction: 'up' | 'down') => {
+  const page = activeCompositionPage.value;
+  if (!page) return;
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= compositionSections.value.length) return;
+
+  const temp = compositionSections.value[index]!;
+  compositionSections.value[index] = compositionSections.value[targetIndex]!;
+  compositionSections.value[targetIndex] = temp!;
+
+  const sectionIds = compositionSections.value.map((s, idx) => {
+    s.display_order = idx + 1;
+    return s.id;
+  });
+
+  try {
+    await cmsService.reorderPageSections(page.id, { section_ids: sectionIds });
+    toastSuccess('Sections reordered successfully.');
+  } catch (err: any) {
+    toastError(extractErrorMessage(err, 'Failed to reorder sections.'));
+  }
+};
 
 const fetchPages = async () => {
   isLoading.value = true;
@@ -469,6 +630,16 @@ onMounted(async () => {
                 <Edit2 class="w-3.5 h-3.5" />
               </UiButton>
               <UiButton
+                v-if="canEdit"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0 text-primary hover:text-primary hover:bg-primary/10 rounded-lg"
+                title="Manage Page Composition & Sections"
+                @click="openComposition(item)"
+              >
+                <FileCode class="w-3.5 h-3.5" />
+              </UiButton>
+              <UiButton
                 v-if="canEdit && item.status !== 'archived'"
                 variant="ghost"
                 size="sm"
@@ -745,6 +916,124 @@ onMounted(async () => {
 
         <div class="flex items-center justify-end pt-4 border-t border-border">
           <UiButton variant="outline" class="h-9 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()">Close</UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- Page Composition / Sections Manager Modal -->
+    <UiAdminModal
+      :is-open="isCompositionOpen"
+      :title="activeCompositionPage ? `Manage Sections: ${activeCompositionPage.title}` : 'Page Composition'"
+      subtitle="Configure, order, and edit sections assigned to this CMS page."
+      @close="isCompositionOpen = false"
+    >
+      <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <div v-if="compositionError" class="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <AlertCircle class="w-4 h-4 shrink-0" />
+            <span>{{ compositionError }}</span>
+          </div>
+          <UiButton v-if="compositionError.includes('409')" size="sm" variant="outline" class="h-7 text-xs border-destructive/30" @click="openComposition(activeCompositionPage!)">Refresh</UiButton>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Assigned Sections ({{ compositionSections.length }})</h3>
+          <UiButton class="h-8 px-3 gap-1.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="openAddSectionModal">
+            <Plus class="w-3.5 h-3.5" />
+            <span>Add Section</span>
+          </UiButton>
+        </div>
+
+        <div v-if="compositionSections.length === 0" class="p-8 text-center bg-muted/30 border border-dashed border-border rounded-2xl">
+          <FileCode class="w-10 h-10 text-muted-foreground mx-auto mb-2 opacity-50" />
+          <p class="text-sm font-semibold text-foreground">No sections assigned yet</p>
+          <p class="text-xs text-muted-foreground mt-0.5">Add page-specific sections to compose this page layout.</p>
+        </div>
+
+        <div v-else class="space-y-2.5">
+          <div v-for="(sec, idx) in compositionSections" :key="sec.id" class="p-3.5 bg-card border border-border rounded-xl flex items-center justify-between gap-3 shadow-xs">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="flex flex-col gap-0.5 shrink-0">
+                <button :disabled="idx === 0" class="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground disabled:opacity-30" title="Move Up" @click="handleMoveSection(idx, 'up')">▲</button>
+                <button :disabled="idx === compositionSections.length - 1" class="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground disabled:opacity-30" title="Move Down" @click="handleMoveSection(idx, 'down')">▼</button>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-xs text-foreground truncate">{{ sec.title || `Section #${sec.id}` }}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">{{ sec.section_type }}</span>
+                  <span v-if="sec.is_active === false" class="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground">Inactive</span>
+                </div>
+                <p class="text-[11px] text-muted-foreground font-mono mt-0.5">Order: {{ sec.display_order }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <UiButton variant="ghost" size="sm" class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Edit Section" @click="openEditSectionModal(sec)">
+                <Edit2 class="w-3.5 h-3.5" />
+              </UiButton>
+              <UiButton variant="ghost" size="sm" class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Duplicate Section" @click="handleDuplicateSection(sec)">
+                <Copy class="w-3.5 h-3.5" />
+              </UiButton>
+              <UiButton variant="ghost" size="sm" class="h-8 w-8 p-0 text-destructive/80 hover:text-destructive hover:bg-destructive/10 rounded-lg" title="Remove Section" @click="handleDeleteSection(sec)">
+                <Trash2 class="w-3.5 h-3.5" />
+              </UiButton>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end pt-4 border-t border-border">
+          <UiButton variant="outline" class="h-9 px-4 text-xs font-semibold rounded-xl" @click="isCompositionOpen = false">Close</UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- Section Add/Edit Form Modal -->
+    <UiAdminModal
+      :is-open="sectionFormModalOpen"
+      :title="editingSectionId ? 'Edit Page Section' : 'Add Page Section'"
+      subtitle="Configure section type, title, ordering, and content JSON."
+      @close="sectionFormModalOpen = false"
+    >
+      <div class="p-6 space-y-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Section Type *</label>
+          <select v-model="sectionForm.section_type" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <option value="hero_banner">Hero Banner</option>
+            <option value="rich_text">Rich Text</option>
+            <option value="product_collection">Product Collection</option>
+            <option value="brand_collection">Brand Collection</option>
+            <option value="faq">FAQ</option>
+            <option value="image_gallery">Image Gallery</option>
+            <option value="cta">CTA</option>
+          </select>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Section Title</label>
+          <input v-model="sectionForm.title" type="text" placeholder="e.g. Summer Promo Banner" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Display Order</label>
+            <input v-model.number="sectionForm.display_order" type="number" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+          <div class="flex items-center h-10 pt-5">
+            <input id="sec_active" v-model="sectionForm.is_active" type="checkbox" class="rounded border-input text-primary focus:ring-primary/20 w-4 h-4 mr-2" />
+            <label for="sec_active" class="text-xs font-semibold text-foreground select-none cursor-pointer">Active</label>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Content (JSON) *</label>
+          <textarea v-model="sectionForm.contentJson" rows="6" class="w-full p-3 rounded-xl border border-input bg-background font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
+          <UiButton variant="outline" class="h-10 px-4 text-xs font-semibold rounded-xl" @click="sectionFormModalOpen = false" :disabled="isSectionSubmitting">Cancel</UiButton>
+          <UiButton class="h-10 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="handleSaveSection" :disabled="isSectionSubmitting">
+            <Loader2 v-if="isSectionSubmitting" class="w-3.5 h-3.5 animate-spin mr-1.5" />
+            <span>{{ editingSectionId ? 'Save Changes' : 'Add Section' }}</span>
+          </UiButton>
         </div>
       </div>
     </UiAdminModal>
