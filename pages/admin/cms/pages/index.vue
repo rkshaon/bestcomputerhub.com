@@ -269,6 +269,118 @@ const handleMoveSection = async (index: number, direction: 'up' | 'down') => {
   }
 };
 
+export interface VisualCreateSection {
+  id: string;
+  name: string;
+  section_type: SectionTypeKey;
+  value: Record<string, any>;
+}
+
+const createSections = ref<VisualCreateSection[]>([]);
+const isCreateSectionModalOpen = ref(false);
+const editingCreateSectionIndex = ref<number | null>(null);
+
+const currentCreateSection = ref({
+  name: 'Hero Banner Section',
+  section_type: 'hero_banner' as SectionTypeKey,
+  value: {
+    title: 'Upgrade Your Tech Experience',
+    subtitle: 'Discover the latest technology.',
+    button_text: 'Explore Products',
+    button_url: '/products/',
+    image: '',
+    mobile_image: '',
+    text_alignment: 'left'
+  } as Record<string, any>
+});
+
+const getDefaultValueForType = (type: SectionTypeKey) => {
+  switch (type) {
+    case 'hero_banner':
+      return { title: 'Upgrade Your Tech Experience', subtitle: 'Discover the latest technology.', button_text: 'Explore Products', button_url: '/products/', image: '', mobile_image: '', text_alignment: 'left' };
+    case 'rich_text':
+      return { content: '<p>Enter rich text content here...</p>', alignment: 'left' };
+    case 'product_collection':
+      return { title: 'Featured Products', mode: 'ALL', limit: 8 };
+    case 'brand_collection':
+      return { mode: 'ALL', limit: 8 };
+    case 'faq':
+      return { items: [{ question: 'Sample Question?', answer: 'Sample answer...' }] };
+    case 'image_gallery':
+      return { images: [], columns: 3 };
+    case 'cta':
+      return { headline: 'Ready to upgrade?', description: 'Discover our collection.', button_text: 'Shop Now', button_url: '/shop-now/' };
+    default:
+      return {};
+  }
+};
+
+const handleSectionTypeChange = (newType: SectionTypeKey) => {
+  currentCreateSection.value.value = getDefaultValueForType(newType);
+};
+
+const openAddCreateSectionModal = () => {
+  editingCreateSectionIndex.value = null;
+  currentCreateSection.value = {
+    name: 'Section ' + (createSections.value.length + 1),
+    section_type: 'hero_banner',
+    value: getDefaultValueForType('hero_banner')
+  };
+  isCreateSectionModalOpen.value = true;
+};
+
+const openEditCreateSectionModal = (index: number) => {
+  editingCreateSectionIndex.value = index;
+  const sec = createSections.value[index]!;
+  currentCreateSection.value = {
+    name: sec.name,
+    section_type: sec.section_type,
+    value: JSON.parse(JSON.stringify(sec.value))
+  };
+  isCreateSectionModalOpen.value = true;
+};
+
+const saveCreateSection = () => {
+  if (!currentCreateSection.value.name.trim()) {
+    currentCreateSection.value.name = 'Section';
+  }
+  const payloadItem: VisualCreateSection = {
+    id: Math.random().toString(36).substring(2, 9),
+    name: currentCreateSection.value.name,
+    section_type: currentCreateSection.value.section_type,
+    value: currentCreateSection.value.value
+  };
+
+  if (editingCreateSectionIndex.value !== null) {
+    createSections.value[editingCreateSectionIndex.value] = payloadItem;
+  } else {
+    createSections.value.push(payloadItem);
+  }
+  isCreateSectionModalOpen.value = false;
+};
+
+const removeCreateSection = (index: number) => {
+  createSections.value.splice(index, 1);
+};
+
+const duplicateCreateSection = (index: number) => {
+  const sec = createSections.value[index]!;
+  createSections.value.splice(index + 1, 0, {
+    id: Math.random().toString(36).substring(2, 9),
+    name: sec.name + ' (Copy)',
+    section_type: sec.section_type,
+    value: JSON.parse(JSON.stringify(sec.value))
+  });
+};
+
+const moveCreateSection = (index: number, direction: 'up' | 'down') => {
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= createSections.value.length) return;
+  const temp = createSections.value[index]!;
+  createSections.value[index] = createSections.value[targetIndex]!;
+  createSections.value[targetIndex] = temp!;
+};
+
 const fetchPages = async () => {
   isLoading.value = true;
   fetchError.value = null;
@@ -332,6 +444,7 @@ watch(() => modalState.isCreate.value, (isCr) => {
       meta_description: '',
       is_homepage: false
     };
+    createSections.value = [];
     formError.value = null;
   }
 });
@@ -350,7 +463,31 @@ const handleCreatePage = async () => {
   formError.value = null;
 
   try {
-    await cmsService.createPage(newPageForm.value);
+    const payload: CreatePagePayload = {
+      title: newPageForm.value.title,
+      slug: newPageForm.value.slug,
+      status: newPageForm.value.status,
+      meta_title: newPageForm.value.meta_title,
+      meta_description: newPageForm.value.meta_description,
+      is_homepage: newPageForm.value.is_homepage
+    };
+
+    if (createSections.value.length > 0) {
+      payload.sections = createSections.value.map(s => ({
+        name: s.name || 'Section',
+        global_section: null,
+        content: [
+          {
+            type: s.section_type,
+            value: s.value
+          }
+        ]
+      }));
+    } else {
+      payload.template = newPageForm.value.template || 'default';
+    }
+
+    await cmsService.createPage(payload);
     toastSuccess(`CMS Page "${newPageForm.value.title}" successfully created.`);
     modalState.closeModal();
     await fetchPages();
@@ -767,11 +904,241 @@ onMounted(async () => {
           <label for="is_homepage" class="text-xs font-semibold text-foreground select-none cursor-pointer">Set as Homepage</label>
         </div>
 
+        <!-- Page-Specific Content Sections Builder -->
+        <div class="space-y-3 pt-3 border-t border-border">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">Page Content Sections</h3>
+              <p class="text-[11px] text-muted-foreground">Add custom sections to compose this page layout (leaves template empty).</p>
+            </div>
+            <UiButton type="button" size="sm" class="h-8 px-3 gap-1.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="openAddCreateSectionModal">
+              <Plus class="w-3.5 h-3.5" />
+              <span>Add Content Section</span>
+            </UiButton>
+          </div>
+
+          <div v-if="createSections.length === 0" class="p-4 text-center bg-muted/30 border border-dashed border-border rounded-xl">
+            <p class="text-xs text-muted-foreground">No custom sections added. The selected template default sections will be used.</p>
+          </div>
+
+          <div v-else class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div v-for="(sec, idx) in createSections" :key="sec.id" class="p-2.5 bg-card border border-border rounded-xl flex items-center justify-between gap-2 shadow-xs">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="flex flex-col gap-0.5 shrink-0 text-[10px]">
+                  <button type="button" :disabled="idx === 0" class="hover:text-foreground disabled:opacity-30" @click="moveCreateSection(idx, 'up')">▲</button>
+                  <button type="button" :disabled="idx === createSections.length - 1" class="hover:text-foreground disabled:opacity-30" @click="moveCreateSection(idx, 'down')">▼</button>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-xs text-foreground truncate">{{ sec.name }}</span>
+                    <span class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/20">{{ sec.section_type }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Edit Section" @click="openEditCreateSectionModal(idx)">
+                  <Edit2 class="w-3 h-3" />
+                </UiButton>
+                <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Duplicate Section" @click="duplicateCreateSection(idx)">
+                  <Copy class="w-3 h-3" />
+                </UiButton>
+                <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-destructive/80 hover:text-destructive hover:bg-destructive/10 rounded-lg" title="Remove Section" @click="removeCreateSection(idx)">
+                  <Trash2 class="w-3 h-3" />
+                </UiButton>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
           <UiButton variant="outline" class="h-10 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()" :disabled="isSubmitting">Cancel</UiButton>
           <UiButton class="h-10 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="handleCreatePage" :disabled="isSubmitting">
             <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin mr-1.5" />
             <span>Create Page</span>
+          </UiButton>
+        </div>
+      </div>
+    </UiAdminModal>
+
+    <!-- Add/Edit Visual Create Section Sub-Modal -->
+    <UiAdminModal
+      :is-open="isCreateSectionModalOpen"
+      :title="editingCreateSectionIndex !== null ? 'Configure Section' : 'Add Content Section'"
+      subtitle="Select section type and fill in the visual form fields."
+      @close="isCreateSectionModalOpen = false"
+    >
+      <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Section Name *</label>
+          <input v-model="currentCreateSection.name" type="text" placeholder="e.g. Hero Banner" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20" />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Section Type *</label>
+          <select v-model="currentCreateSection.section_type" @change="handleSectionTypeChange(currentCreateSection.section_type)" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <option value="hero_banner">Hero Banner</option>
+            <option value="rich_text">Rich Text</option>
+            <option value="product_collection">Product Collection</option>
+            <option value="brand_collection">Brand Collection</option>
+            <option value="faq">FAQ</option>
+            <option value="image_gallery">Image Gallery</option>
+            <option value="cta">CTA</option>
+          </select>
+        </div>
+
+        <div class="space-y-3 pt-2 border-t border-border">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Section Configuration</h4>
+
+          <!-- hero_banner -->
+          <template v-if="currentCreateSection.section_type === 'hero_banner'">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Title *</label>
+              <input v-model="currentCreateSection.value.title" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Subtitle</label>
+              <input v-model="currentCreateSection.value.subtitle" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Button Text</label>
+                <input v-model="currentCreateSection.value.button_text" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Button URL</label>
+                <input v-model="currentCreateSection.value.button_url" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Image URL</label>
+              <input v-model="currentCreateSection.value.image" type="text" placeholder="/media/banner.jpg" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Text Alignment</label>
+              <select v-model="currentCreateSection.value.text_alignment" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          </template>
+
+          <!-- rich_text -->
+          <template v-else-if="currentCreateSection.section_type === 'rich_text'">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Content (HTML) *</label>
+              <textarea v-model="currentCreateSection.value.content" rows="4" class="w-full p-3 rounded-xl border border-input bg-background font-mono text-xs text-foreground"></textarea>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Alignment</label>
+              <select v-model="currentCreateSection.value.alignment" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          </template>
+
+          <!-- product_collection -->
+          <template v-else-if="currentCreateSection.section_type === 'product_collection'">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Collection Title</label>
+              <input v-model="currentCreateSection.value.title" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Mode</label>
+                <select v-model="currentCreateSection.value.mode" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground">
+                  <option value="ALL">All Products</option>
+                  <option value="FEATURED">Featured</option>
+                  <option value="CATEGORY">Category</option>
+                </select>
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Limit</label>
+                <input v-model.number="currentCreateSection.value.limit" type="number" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+            </div>
+          </template>
+
+          <!-- brand_collection -->
+          <template v-else-if="currentCreateSection.section_type === 'brand_collection'">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Mode</label>
+                <select v-model="currentCreateSection.value.mode" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground">
+                  <option value="ALL">All Brands</option>
+                  <option value="FEATURED">Featured</option>
+                </select>
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Limit</label>
+                <input v-model.number="currentCreateSection.value.limit" type="number" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+            </div>
+          </template>
+
+          <!-- faq -->
+          <template v-else-if="currentCreateSection.section_type === 'faq'">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-foreground">FAQ Items</label>
+                <UiButton type="button" size="sm" variant="outline" class="h-7 text-xs" @click="currentCreateSection.value.items.push({ question: '', answer: '' })">Add Item</UiButton>
+              </div>
+              <div v-for="(item, i) in currentCreateSection.value.items" :key="i" class="p-3 bg-muted/40 rounded-xl space-y-2 relative">
+                <input v-model="item.question" type="text" placeholder="Question..." class="w-full h-9 px-3 rounded-lg border border-input bg-background text-xs" />
+                <textarea v-model="item.answer" rows="2" placeholder="Answer..." class="w-full p-2.5 rounded-lg border border-input bg-background text-xs"></textarea>
+                <UiButton type="button" variant="ghost" size="sm" class="h-7 text-xs text-destructive hover:bg-destructive/10" @click="currentCreateSection.value.items.splice(i, 1)">Remove</UiButton>
+              </div>
+            </div>
+          </template>
+
+          <!-- image_gallery -->
+          <template v-else-if="currentCreateSection.section_type === 'image_gallery'">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Columns</label>
+              <input v-model.number="currentCreateSection.value.columns" type="number" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="space-y-3 pt-2">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-foreground">Gallery Images</label>
+                <UiButton type="button" size="sm" variant="outline" class="h-7 text-xs" @click="currentCreateSection.value.images.push({ image: '', caption: '' })">Add Image</UiButton>
+              </div>
+              <div v-for="(img, i) in currentCreateSection.value.images" :key="i" class="p-3 bg-muted/40 rounded-xl space-y-2">
+                <input v-model="img.image" type="text" placeholder="Image URL..." class="w-full h-9 px-3 rounded-lg border border-input bg-background text-xs" />
+                <input v-model="img.caption" type="text" placeholder="Caption..." class="w-full h-9 px-3 rounded-lg border border-input bg-background text-xs" />
+                <UiButton type="button" variant="ghost" size="sm" class="h-7 text-xs text-destructive hover:bg-destructive/10" @click="currentCreateSection.value.images.splice(i, 1)">Remove</UiButton>
+              </div>
+            </div>
+          </template>
+
+          <!-- cta -->
+          <template v-else-if="currentCreateSection.section_type === 'cta'">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Headline *</label>
+              <input v-model="currentCreateSection.value.headline" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Description</label>
+              <input v-model="currentCreateSection.value.description" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Button Text *</label>
+                <input v-model="currentCreateSection.value.button_text" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Button URL *</label>
+                <input v-model="currentCreateSection.value.button_url" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
+          <UiButton type="button" variant="outline" class="h-10 px-4 text-xs font-semibold rounded-xl" @click="isCreateSectionModalOpen = false">Cancel</UiButton>
+          <UiButton type="button" class="h-10 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="saveCreateSection">
+            <span>{{ editingCreateSectionIndex !== null ? 'Save Section' : 'Add Section' }}</span>
           </UiButton>
         </div>
       </div>

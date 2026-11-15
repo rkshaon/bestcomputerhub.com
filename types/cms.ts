@@ -144,6 +144,17 @@ export interface PublicCmsPage {
   sections: PageSectionItem[];
 }
 
+export interface CreatePageSectionPayload {
+  name: string;
+  global_section?: null | number | string;
+  content: {
+    type: SectionTypeKey;
+    value: Record<string, any>;
+  }[];
+  archived?: boolean;
+  base_revision_id?: number | string;
+}
+
 export interface CreatePagePayload {
   title: string;
   slug: string;
@@ -152,6 +163,7 @@ export interface CreatePagePayload {
   meta_title?: string;
   meta_description?: string;
   is_homepage?: boolean;
+  sections?: CreatePageSectionPayload[];
 }
 
 export interface UpdatePagePayload extends Partial<CreatePagePayload> {}
