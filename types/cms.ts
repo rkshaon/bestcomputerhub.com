@@ -36,6 +36,7 @@ export interface CmsPage {
   meta_description?: string;
   is_homepage?: boolean;
   published_at?: string | null;
+  sections?: PageSectionItem[];
   created_at?: string;
   updated_at?: string;
 }
@@ -44,9 +45,12 @@ export interface PageSectionItem {
   id: number | string;
   page: number | string;
   section_type: SectionTypeKey;
+  name?: string;
   title?: string;
   display_order: number;
+  sort_order?: number;
   is_active?: boolean;
+  archived_at?: string | null;
   content: Record<string, any>;
   base_revision_id?: number | string;
   created_at?: string;

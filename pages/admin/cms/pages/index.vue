@@ -83,7 +83,7 @@ const editPageForm = ref<UpdatePagePayload>({
   is_homepage: false
 });
 
-const modalState = useAdminModalState<CmsPage>({
+const modalState = useAdminModalState<CmsPageDetail>({
   getItems: async (id) => {
     return await cmsService.getPageDetail(id);
   },
@@ -124,7 +124,7 @@ watch(selectedPage, (page) => {
       formError.value = null;
     }
     activeCompositionPage.value = page as CmsPageDetail;
-    compositionSections.value = (page.sections || []).map(sec => ({
+    compositionSections.value = (page.sections || []).map((sec: PageSectionItem) => ({
       ...sec,
       section_type: getSectionType(sec),
       title: sec.title || sec.name || `Section #${sec.id}`,
@@ -165,7 +165,7 @@ const openComposition = async (page: CmsPage) => {
   try {
     const detail = await cmsService.getPageDetail(page.id);
     activeCompositionPage.value = detail;
-    compositionSections.value = (detail.sections || []).map(sec => ({
+    compositionSections.value = (detail.sections || []).map((sec: PageSectionItem) => ({
       ...sec,
       section_type: getSectionType(sec),
       title: sec.title || sec.name || `Section #${sec.id}`,
