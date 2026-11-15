@@ -123,7 +123,15 @@ const sectionForm = ref({
   title: '',
   display_order: 0,
   is_active: true,
-  contentJson: '{\n  "title": "Section Title"\n}'
+  value: {
+    title: 'Upgrade Your Tech Experience',
+    subtitle: 'Discover the latest technology.',
+    button_text: 'Explore Products',
+    button_url: '/products/',
+    image: '',
+    mobile_image: '',
+    text_alignment: 'left'
+  } as Record<string, any>
 });
 
 const richTextContent = ref('');
@@ -141,6 +149,10 @@ const openComposition = async (page: CmsPage) => {
   }
 };
 
+const handleEditSectionTypeChange = (newType: SectionTypeKey) => {
+  sectionForm.value.value = getDefaultValueForType(newType);
+};
+
 const openAddSectionModal = () => {
   editingSectionId.value = null;
   sectionForm.value = {
@@ -148,7 +160,7 @@ const openAddSectionModal = () => {
     title: '',
     display_order: compositionSections.value.length + 1,
     is_active: true,
-    contentJson: '{\n  "title": "New Section"\n}'
+    value: getDefaultValueForType('hero_banner')
   };
   richTextContent.value = '<p>Enter rich text content here...</p>';
   richTextAlignment.value = 'left';
@@ -162,7 +174,9 @@ const openEditSectionModal = (sec: PageSectionItem) => {
     title: sec.title || '',
     display_order: sec.display_order || 0,
     is_active: sec.is_active !== false,
-    contentJson: JSON.stringify(sec.content || {}, null, 2)
+    value: sec.section_type === 'rich_text'
+      ? { body: sec.content?.body || sec.content?.content || '', alignment: sec.content?.alignment || 'left' }
+      : JSON.parse(JSON.stringify(sec.content || {}))
   };
   if (sec.section_type === 'rich_text') {
     richTextContent.value = sec.content?.body || sec.content?.content || '';
@@ -175,22 +189,17 @@ const openEditSectionModal = (sec: PageSectionItem) => {
 };
 
 const handleSaveSection = async () => {
-  const page = activeCompositionPage.value;
+  const page = activeCompositionPage.value || selectedPage.value;
   if (!page) return;
 
+  let contentObj = {};
   if (sectionForm.value.section_type === 'rich_text') {
-    sectionForm.value.contentJson = JSON.stringify({
+    contentObj = {
       body: richTextContent.value,
       alignment: richTextAlignment.value
-    }, null, 2);
-  }
-
-  let parsedContent: Record<string, any> = {};
-  try {
-    parsedContent = JSON.parse(sectionForm.value.contentJson || '{}');
-  } catch {
-    toastError('Invalid JSON format in section content.');
-    return;
+    };
+  } else {
+    contentObj = sectionForm.value.value;
   }
 
   isSectionSubmitting.value = true;
@@ -203,7 +212,7 @@ const handleSaveSection = async () => {
         title: sectionForm.value.title,
         display_order: sectionForm.value.display_order,
         is_active: sectionForm.value.is_active,
-        content: parsedContent,
+        content: contentObj,
         base_revision_id: page.id
       });
       const idx = compositionSections.value.findIndex(s => String(s.id) === String(updated?.id));
@@ -215,7 +224,8 @@ const handleSaveSection = async () => {
         title: sectionForm.value.title,
         display_order: sectionForm.value.display_order,
         is_active: sectionForm.value.is_active,
-        content: parsedContent
+        content: contentObj,
+        base_revision_id: page.id
       });
       if (created) compositionSections.value.push(created as PageSectionItem);
       toastSuccess('Section successfully added.');
@@ -240,7 +250,7 @@ const handleSaveSection = async () => {
 };
 
 const handleDeleteSection = async (sec: PageSectionItem) => {
-  const page = activeCompositionPage.value;
+  const page = activeCompositionPage.value || selectedPage.value;
   if (!page) return;
   if (!confirm(`Are you sure you want to remove section "${sec.title || sec.section_type}"?`)) return;
 
@@ -254,7 +264,7 @@ const handleDeleteSection = async (sec: PageSectionItem) => {
 };
 
 const handleDuplicateSection = async (sec: PageSectionItem) => {
-  const page = activeCompositionPage.value;
+  const page = activeCompositionPage.value || selectedPage.value;
   if (!page) return;
 
   try {
@@ -267,7 +277,7 @@ const handleDuplicateSection = async (sec: PageSectionItem) => {
 };
 
 const handleMoveSection = async (index: number, direction: 'up' | 'down') => {
-  const page = activeCompositionPage.value;
+  const page = activeCompositionPage.value || selectedPage.value;
   if (!page) return;
   const targetIndex = direction === 'up' ? index - 1 : index + 1;
   if (targetIndex < 0 || targetIndex >= compositionSections.value.length) return;
@@ -282,7 +292,7 @@ const handleMoveSection = async (index: number, direction: 'up' | 'down') => {
   });
 
   try {
-    await cmsService.reorderPageSections(page.id, { section_ids: sectionIds });
+    await cmsService.reorderPageSections(page.id, { section_ids: sectionIds, base_revision_id: page.id });
     toastSuccess('Sections reordered successfully.');
   } catch (err: any) {
     toastError(extractErrorMessage(err, 'Failed to reorder sections.'));
@@ -1248,6 +1258,52 @@ onMounted(async () => {
           <label for="edit_is_homepage" class="text-xs font-semibold text-foreground select-none cursor-pointer">Set as Homepage</label>
         </div>
 
+        <!-- Page-Specific Content Sections Builder in Edit Modal -->
+        <div class="space-y-3 pt-3 border-t border-border">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">Page Content Sections</h3>
+              <p class="text-[11px] text-muted-foreground">Visually manage page content sections.</p>
+            </div>
+            <UiButton type="button" size="sm" class="h-8 px-3 gap-1.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="openAddSectionModal">
+              <Plus class="w-3.5 h-3.5" />
+              <span>Add Content Section</span>
+            </UiButton>
+          </div>
+
+          <div v-if="compositionSections.length === 0" class="p-4 text-center bg-muted/30 border border-dashed border-border rounded-xl">
+            <p class="text-xs text-muted-foreground">No sections assigned yet. Add content sections to build this page.</p>
+          </div>
+
+          <div v-else class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div v-for="(sec, idx) in compositionSections" :key="sec.id" class="p-2.5 bg-card border border-border rounded-xl flex items-center justify-between gap-2 shadow-xs">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="flex flex-col gap-0.5 shrink-0 text-[10px]">
+                  <button type="button" :disabled="idx === 0" class="hover:text-foreground disabled:opacity-30" @click="handleMoveSection(idx, 'up')">▲</button>
+                  <button type="button" :disabled="idx === compositionSections.length - 1" class="hover:text-foreground disabled:opacity-30" @click="handleMoveSection(idx, 'down')">▼</button>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-xs text-foreground truncate">{{ sec.title || sec.section_type }}</span>
+                    <span class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/20">{{ sec.section_type }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Edit Section" @click="openEditSectionModal(sec)">
+                  <Edit2 class="w-3 h-3" />
+                </UiButton>
+                <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Duplicate Section" @click="handleDuplicateSection(sec)">
+                  <Copy class="w-3 h-3" />
+                </UiButton>
+                <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-destructive/80 hover:text-destructive hover:bg-destructive/10 rounded-lg" title="Remove Section" @click="handleDeleteSection(sec)">
+                  <Trash2 class="w-3 h-3" />
+                </UiButton>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
           <UiButton variant="outline" class="h-10 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()" :disabled="isSubmitting">Cancel</UiButton>
           <UiButton class="h-10 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="handleUpdatePage" :disabled="isSubmitting">
@@ -1385,7 +1441,7 @@ onMounted(async () => {
       <div class="p-6 space-y-4">
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-foreground">Section Type *</label>
-          <select v-model="sectionForm.section_type" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
+          <select v-model="sectionForm.section_type" @change="handleEditSectionTypeChange(sectionForm.section_type)" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
             <option value="hero_banner">Hero Banner</option>
             <option value="rich_text">Rich Text</option>
             <option value="product_collection">Product Collection</option>
@@ -1412,21 +1468,153 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="space-y-1.5" v-if="sectionForm.section_type === 'rich_text'">
-          <label class="text-xs font-bold text-foreground">Rich Text Content *</label>
-          <UiRichTextEditor v-model="richTextContent" min-height="min-h-[220px]" placeholder="Enter rich text content..." />
-          <div class="space-y-1.5 pt-2">
-            <label class="text-xs font-bold text-foreground">Alignment</label>
-            <select v-model="richTextAlignment" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
-            </select>
-          </div>
-        </div>
-        <div class="space-y-1.5" v-else>
-          <label class="text-xs font-bold text-foreground">Content (JSON) *</label>
-          <textarea v-model="sectionForm.contentJson" rows="6" class="w-full p-3 rounded-xl border border-input bg-background font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"></textarea>
+        <div class="space-y-3 pt-2 border-t border-border max-h-[50vh] overflow-y-auto pr-1">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Section Configuration</h4>
+
+          <!-- hero_banner -->
+          <template v-if="sectionForm.section_type === 'hero_banner'">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Title *</label>
+              <input v-model="sectionForm.value.title" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Subtitle</label>
+              <input v-model="sectionForm.value.subtitle" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Button Text</label>
+                <input v-model="sectionForm.value.button_text" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Button URL</label>
+                <input v-model="sectionForm.value.button_url" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Image URL</label>
+              <input v-model="sectionForm.value.image" type="text" placeholder="/media/banner.jpg" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Text Alignment</label>
+              <select v-model="sectionForm.value.text_alignment" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          </template>
+
+          <!-- rich_text -->
+          <template v-else-if="sectionForm.section_type === 'rich_text'">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Rich Text Content *</label>
+              <UiRichTextEditor v-model="richTextContent" min-height="min-h-[220px]" placeholder="Enter rich text content..." />
+            </div>
+            <div class="space-y-1.5 pt-2">
+              <label class="text-xs font-bold text-foreground">Alignment</label>
+              <select v-model="richTextAlignment" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          </template>
+
+          <!-- product_collection -->
+          <template v-else-if="sectionForm.section_type === 'product_collection'">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Collection Title</label>
+              <input v-model="sectionForm.value.title" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Mode</label>
+                <select v-model="sectionForm.value.mode" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground">
+                  <option value="ALL">All Products</option>
+                  <option value="FEATURED">Featured</option>
+                  <option value="CATEGORY">Category</option>
+                </select>
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Limit</label>
+                <input v-model.number="sectionForm.value.limit" type="number" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+            </div>
+          </template>
+
+          <!-- brand_collection -->
+          <template v-else-if="sectionForm.section_type === 'brand_collection'">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Mode</label>
+                <select v-model="sectionForm.value.mode" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground">
+                  <option value="ALL">All Brands</option>
+                  <option value="FEATURED">Featured</option>
+                </select>
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Limit</label>
+                <input v-model.number="sectionForm.value.limit" type="number" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+            </div>
+          </template>
+
+          <!-- faq -->
+          <template v-else-if="sectionForm.section_type === 'faq'">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-foreground">FAQ Items</label>
+                <UiButton type="button" size="sm" variant="outline" class="h-7 text-xs" @click="(sectionForm.value.items = sectionForm.value.items || []).push({ question: '', answer: '' })">Add Item</UiButton>
+              </div>
+              <div v-for="(item, i) in (sectionForm.value.items || [])" :key="i" class="p-3 bg-muted/40 rounded-xl space-y-2 relative">
+                <input v-model="item.question" type="text" placeholder="Question..." class="w-full h-9 px-3 rounded-lg border border-input bg-background text-xs" />
+                <textarea v-model="item.answer" rows="2" placeholder="Answer..." class="w-full p-2.5 rounded-lg border border-input bg-background text-xs"></textarea>
+                <UiButton type="button" variant="ghost" size="sm" class="h-7 text-xs text-destructive hover:bg-destructive/10" @click="sectionForm.value.items.splice(i, 1)">Remove</UiButton>
+              </div>
+            </div>
+          </template>
+
+          <!-- image_gallery -->
+          <template v-else-if="sectionForm.section_type === 'image_gallery'">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Columns</label>
+              <input v-model.number="sectionForm.value.columns" type="number" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="space-y-3 pt-2">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-foreground">Gallery Images</label>
+                <UiButton type="button" size="sm" variant="outline" class="h-7 text-xs" @click="(sectionForm.value.images = sectionForm.value.images || []).push({ image: '', caption: '' })">Add Image</UiButton>
+              </div>
+              <div v-for="(img, i) in (sectionForm.value.images || [])" :key="i" class="p-3 bg-muted/40 rounded-xl space-y-2">
+                <input v-model="img.image" type="text" placeholder="Image URL..." class="w-full h-9 px-3 rounded-lg border border-input bg-background text-xs" />
+                <input v-model="img.caption" type="text" placeholder="Caption..." class="w-full h-9 px-3 rounded-lg border border-input bg-background text-xs" />
+                <UiButton type="button" variant="ghost" size="sm" class="h-7 text-xs text-destructive hover:bg-destructive/10" @click="sectionForm.value.images.splice(i, 1)">Remove</UiButton>
+              </div>
+            </div>
+          </template>
+
+          <!-- cta -->
+          <template v-else-if="sectionForm.section_type === 'cta'">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Headline *</label>
+              <input v-model="sectionForm.value.headline" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-foreground">Description</label>
+              <input v-model="sectionForm.value.description" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Button Text *</label>
+                <input v-model="sectionForm.value.button_text" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-foreground">Button URL *</label>
+                <input v-model="sectionForm.value.button_url" type="text" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground" />
+              </div>
+            </div>
+          </template>
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
