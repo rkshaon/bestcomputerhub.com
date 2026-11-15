@@ -32,6 +32,7 @@ import UiSearchInput from '@/components/ui/UiSearchInput.vue';
 import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 import UiButton from '@/components/ui/Button.vue';
 import UiCard from '@/components/ui/UiCard.vue';
+import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
 
 definePageMeta({
   layout: false
@@ -125,6 +126,9 @@ const sectionForm = ref({
   contentJson: '{\n  "title": "Section Title"\n}'
 });
 
+const richTextContent = ref('');
+const richTextAlignment = ref('left');
+
 const openComposition = async (page: CmsPage) => {
   compositionError.value = null;
   try {
@@ -146,6 +150,8 @@ const openAddSectionModal = () => {
     is_active: true,
     contentJson: '{\n  "title": "New Section"\n}'
   };
+  richTextContent.value = '<p>Enter rich text content here...</p>';
+  richTextAlignment.value = 'left';
   sectionFormModalOpen.value = true;
 };
 
@@ -158,12 +164,26 @@ const openEditSectionModal = (sec: PageSectionItem) => {
     is_active: sec.is_active !== false,
     contentJson: JSON.stringify(sec.content || {}, null, 2)
   };
+  if (sec.section_type === 'rich_text') {
+    richTextContent.value = sec.content?.content || '';
+    richTextAlignment.value = sec.content?.alignment || 'left';
+  } else {
+    richTextContent.value = '<p>Enter rich text content here...</p>';
+    richTextAlignment.value = 'left';
+  }
   sectionFormModalOpen.value = true;
 };
 
 const handleSaveSection = async () => {
   const page = activeCompositionPage.value;
   if (!page) return;
+
+  if (sectionForm.value.section_type === 'rich_text') {
+    sectionForm.value.contentJson = JSON.stringify({
+      content: richTextContent.value,
+      alignment: richTextAlignment.value
+    }, null, 2);
+  }
 
   let parsedContent: Record<string, any> = {};
   try {
@@ -1026,12 +1046,12 @@ onMounted(async () => {
           <!-- rich_text -->
           <template v-else-if="currentCreateSection.section_type === 'rich_text'">
             <div class="space-y-1.5">
-              <label class="text-xs font-bold text-foreground">Content (HTML) *</label>
-              <textarea v-model="currentCreateSection.value.content" rows="4" class="w-full p-3 rounded-xl border border-input bg-background font-mono text-xs text-foreground"></textarea>
+              <label class="text-xs font-bold text-foreground">Rich Text Content *</label>
+              <UiRichTextEditor v-model="currentCreateSection.value.content" min-height="min-h-[220px]" placeholder="Enter rich text content..." />
             </div>
-            <div class="space-y-1.5">
+            <div class="space-y-1.5 pt-2">
               <label class="text-xs font-bold text-foreground">Alignment</label>
-              <select v-model="currentCreateSection.value.alignment" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground">
+              <select v-model="currentCreateSection.value.alignment" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
                 <option value="left">Left</option>
                 <option value="center">Center</option>
                 <option value="right">Right</option>
@@ -1390,7 +1410,19 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="space-y-1.5">
+        <div class="space-y-1.5" v-if="sectionForm.section_type === 'rich_text'">
+          <label class="text-xs font-bold text-foreground">Rich Text Content *</label>
+          <UiRichTextEditor v-model="richTextContent" min-height="min-h-[220px]" placeholder="Enter rich text content..." />
+          <div class="space-y-1.5 pt-2">
+            <label class="text-xs font-bold text-foreground">Alignment</label>
+            <select v-model="richTextAlignment" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+        </div>
+        <div class="space-y-1.5" v-else>
           <label class="text-xs font-bold text-foreground">Content (JSON) *</label>
           <textarea v-model="sectionForm.contentJson" rows="6" class="w-full p-3 rounded-xl border border-input bg-background font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"></textarea>
         </div>
