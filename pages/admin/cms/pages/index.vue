@@ -93,20 +93,43 @@ const modalState = useAdminModalState<CmsPage>({
   }
 });
 
+const getSectionType = (sec: any): SectionTypeKey => {
+  if (Array.isArray(sec?.content) && sec.content.length > 0) {
+    return (sec.content[0].type as SectionTypeKey) || sec?.section_type || 'hero_banner';
+  }
+  return (sec?.section_type as SectionTypeKey) || 'hero_banner';
+};
+
+const getSectionBlockValue = (sec: any): Record<string, any> => {
+  if (Array.isArray(sec?.content) && sec.content.length > 0) {
+    return sec.content[0].value || {};
+  }
+  return sec?.content || {};
+};
+
 const selectedPage = computed(() => modalState.activeEntity.value);
 
 watch(selectedPage, (page) => {
-  if (page && modalState.isEdit.value) {
-    editPageForm.value = {
-      title: page.title || '',
-      slug: page.slug || '',
-      status: page.status || 'draft',
-      template: page.template || 'default',
-      meta_title: page.meta_title || '',
-      meta_description: page.meta_description || '',
-      is_homepage: !!page.is_homepage
-    };
-    formError.value = null;
+  if (page) {
+    if (modalState.isEdit.value) {
+      editPageForm.value = {
+        title: page.title || '',
+        slug: page.slug || '',
+        status: page.status || 'draft',
+        template: page.template || 'default',
+        meta_title: page.meta_title || '',
+        meta_description: page.meta_description || '',
+        is_homepage: !!page.is_homepage
+      };
+      formError.value = null;
+    }
+    activeCompositionPage.value = page as CmsPageDetail;
+    compositionSections.value = (page.sections || []).map(sec => ({
+      ...sec,
+      section_type: getSectionType(sec),
+      title: sec.title || sec.name || `Section #${sec.id}`,
+      display_order: sec.display_order ?? sec.sort_order ?? 0
+    }));
   }
 }, { immediate: true });
 
@@ -142,7 +165,12 @@ const openComposition = async (page: CmsPage) => {
   try {
     const detail = await cmsService.getPageDetail(page.id);
     activeCompositionPage.value = detail;
-    compositionSections.value = detail.sections || [];
+    compositionSections.value = (detail.sections || []).map(sec => ({
+      ...sec,
+      section_type: getSectionType(sec),
+      title: sec.title || sec.name || `Section #${sec.id}`,
+      display_order: sec.display_order ?? sec.sort_order ?? 0
+    }));
     isCompositionOpen.value = true;
   } catch (err: any) {
     toastError(extractErrorMessage(err, 'Failed to load page composition sections.'));
@@ -169,18 +197,21 @@ const openAddSectionModal = () => {
 
 const openEditSectionModal = (sec: PageSectionItem) => {
   editingSectionId.value = sec.id;
+  const sectionType = getSectionType(sec);
+  const sectionVal = getSectionBlockValue(sec);
+
   sectionForm.value = {
-    section_type: sec.section_type || 'hero_banner',
-    title: sec.title || '',
-    display_order: sec.display_order || 0,
-    is_active: sec.is_active !== false,
-    value: sec.section_type === 'rich_text'
-      ? { body: sec.content?.body || sec.content?.content || '', alignment: sec.content?.alignment || 'left' }
-      : JSON.parse(JSON.stringify(sec.content || {}))
+    section_type: sectionType,
+    title: sec.title || sec.name || '',
+    display_order: sec.display_order ?? sec.sort_order ?? 0,
+    is_active: sec.is_active !== false && !sec.archived_at,
+    value: sectionType === 'rich_text'
+      ? { body: sectionVal?.body || sectionVal?.content || '', alignment: sectionVal?.alignment || 'left' }
+      : JSON.parse(JSON.stringify(sectionVal || {}))
   };
-  if (sec.section_type === 'rich_text') {
-    richTextContent.value = sec.content?.body || sec.content?.content || '';
-    richTextAlignment.value = sec.content?.alignment || 'left';
+  if (sectionType === 'rich_text') {
+    richTextContent.value = sectionVal?.body || sectionVal?.content || '<p>Enter rich text content here...</p>';
+    richTextAlignment.value = sectionVal?.alignment || 'left';
   } else {
     richTextContent.value = '<p>Enter rich text content here...</p>';
     richTextAlignment.value = 'left';
@@ -1357,6 +1388,32 @@ onMounted(async () => {
         <div class="space-y-1">
           <p class="text-muted-foreground uppercase font-bold text-[10px]">Meta Description</p>
           <p class="p-2.5 rounded-lg bg-background border border-border text-foreground">{{ selectedPage.meta_description || '—' }}</p>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-border">
+          <p class="text-muted-foreground uppercase font-bold text-[10px]">Content Sections ({{ selectedPage.sections?.length || 0 }})</p>
+          <div v-if="!selectedPage.sections || selectedPage.sections.length === 0" class="text-muted-foreground italic text-xs">
+            No sections assigned.
+          </div>
+          <div v-else class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <div v-for="sec in selectedPage.sections" :key="sec.id" class="p-3 bg-muted/30 rounded-xl border border-border space-y-1.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-foreground">{{ sec.title || sec.name || `Section #${sec.id}` }}</span>
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/25">{{ getSectionType(sec) }}</span>
+                </div>
+                <span class="font-mono text-[10px] text-muted-foreground">Order: {{ sec.display_order ?? sec.sort_order ?? 0 }}</span>
+              </div>
+              <div class="text-foreground text-[11px] bg-background p-2 rounded-lg border border-border/50 max-h-32 overflow-y-auto">
+                <template v-if="getSectionType(sec) === 'rich_text'">
+                  <div class="prose dark:prose-invert text-xs" v-html="getSectionBlockValue(sec).body || getSectionBlockValue(sec).content || '—'"></div>
+                </template>
+                <template v-else>
+                  <pre class="font-mono text-[10px] whitespace-pre-wrap">{{ JSON.stringify(getSectionBlockValue(sec), null, 2) }}</pre>
+                </template>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="flex items-center justify-end pt-4 border-t border-border">
