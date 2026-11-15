@@ -1,7 +1,12 @@
 // File: /types/cms.ts
 import type { PaginatedResponse } from './api';
 
-export type SectionTypeKey = 'hero_banner' | 'rich_text' | 'product_collection' | 'faq' | 'image_gallery' | 'cta';
+export type SectionTypeKey = 'hero_banner' | 'rich_text' | 'product_collection' | 'faq' | 'image_gallery' | 'cta' | 'brand_collection';
+
+export interface CmsContentBlock {
+  type: string;
+  value: Record<string, any>;
+}
 
 export interface SectionTypeDefinition {
   type: SectionTypeKey;
@@ -15,7 +20,7 @@ export interface GlobalSection {
   name: string;
   code: string;
   section_type: SectionTypeKey;
-  content: Record<string, any>[] | Record<string, any>;
+  content: CmsContentBlock[];
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;

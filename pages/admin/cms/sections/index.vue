@@ -53,11 +53,40 @@ const debouncedSearchQuery = refDebounced(searchQuery, 300);
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 
+const getDefaultContentJson = (type: string) => {
+  if (type === 'brand_collection') {
+    return JSON.stringify([
+      {
+        "type": "brand_collection",
+        "value": {
+          "mode": "ALL",
+          "brands": [],
+          "limit": 8
+        }
+      }
+    ], null, 2);
+  }
+  return JSON.stringify([
+    {
+      "type": type,
+      "value": {
+        "title": "Upgrade Your Tech Experience",
+        "subtitle": "Discover the latest computers, laptops and accessories at Best Computer Hub.",
+        "button_text": "Explore Products",
+        "button_url": "/products/",
+        "image": "",
+        "mobile_image": "",
+        "text_alignment": "left"
+      }
+    }
+  ], null, 2);
+};
+
 const newSectionForm = ref({
   name: '',
   code: '',
   section_type: 'hero_banner' as SectionTypeKey,
-  contentJson: '[\n  {\n    "title": "Upgrade Your Tech Experience",\n    "subtitle": "Discover the latest computers, laptops and accessories at Best Computer Hub.",\n    "button_text": "Explore Products",\n    "button_url": "/products/",\n    "image": "",\n    "mobile_image": "",\n    "text_alignment": "left"\n  }\n]',
+  contentJson: getDefaultContentJson('hero_banner'),
   is_active: true
 });
 
@@ -145,10 +174,16 @@ watch(() => modalState.isCreate.value, (isCr) => {
       name: '',
       code: '',
       section_type: 'hero_banner',
-      contentJson: '[\n  {\n    "title": "Upgrade Your Tech Experience",\n    "subtitle": "Discover the latest computers, laptops and accessories at Best Computer Hub.",\n    "button_text": "Explore Products",\n    "button_url": "/products/",\n    "image": "",\n    "mobile_image": "",\n    "text_alignment": "left"\n  }\n]',
+      contentJson: getDefaultContentJson('hero_banner'),
       is_active: true
     };
     formError.value = null;
+  }
+});
+
+watch(() => newSectionForm.value.section_type, (newType) => {
+  if (modalState.isCreate.value) {
+    newSectionForm.value.contentJson = getDefaultContentJson(newType);
   }
 });
 
@@ -167,8 +202,15 @@ const handleCreateSection = async () => {
   }
 
   if (!Array.isArray(parsedContent)) {
-    formError.value = 'Content payload must be a JSON array of objects.';
+    formError.value = 'Content must be an array of typed content blocks.';
     return;
+  }
+
+  for (const block of parsedContent) {
+    if (!block || typeof block !== 'object' || !block.type || !block.value || typeof block.value !== 'object') {
+      formError.value = 'Each content block must contain a "type" string and a "value" object.';
+      return;
+    }
   }
 
   if (!canCreate.value) {
@@ -216,8 +258,15 @@ const handleUpdateSection = async () => {
   }
 
   if (!Array.isArray(parsedContent)) {
-    formError.value = 'Content payload must be a JSON array of objects.';
+    formError.value = 'Content must be an array of typed content blocks.';
     return;
+  }
+
+  for (const block of parsedContent) {
+    if (!block || typeof block !== 'object' || !block.type || !block.value || typeof block.value !== 'object') {
+      formError.value = 'Each content block must contain a "type" string and a "value" object.';
+      return;
+    }
   }
 
   if (!canEdit.value) {
@@ -398,6 +447,7 @@ onMounted(async () => {
             <option value="hero_banner">Hero Banner</option>
             <option value="rich_text">Rich Text</option>
             <option value="product_collection">Product Collection</option>
+            <option value="brand_collection">Brand Collection</option>
             <option value="faq">FAQ</option>
             <option value="image_gallery">Image Gallery</option>
             <option value="cta">CTA</option>
@@ -470,6 +520,7 @@ onMounted(async () => {
             <option value="hero_banner">Hero Banner</option>
             <option value="rich_text">Rich Text</option>
             <option value="product_collection">Product Collection</option>
+            <option value="brand_collection">Brand Collection</option>
             <option value="faq">FAQ</option>
             <option value="image_gallery">Image Gallery</option>
             <option value="cta">CTA</option>
