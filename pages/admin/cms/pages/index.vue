@@ -94,20 +94,56 @@ const modalState = useAdminModalState<CmsPageDetail>({
 });
 
 const getSectionType = (sec: any): SectionTypeKey => {
-  if (Array.isArray(sec?.content) && sec.content.length > 0) {
-    return (sec.content[0].type as SectionTypeKey) || sec?.section_type || 'hero_banner';
+  if (Array.isArray(sec?.content) && sec.content.length > 0 && sec.content[0]?.type) {
+    return (sec.content[0].type as SectionTypeKey);
   }
-  return (sec?.section_type as SectionTypeKey) || 'hero_banner';
+  if (sec?.section_type) {
+    return (sec.section_type as SectionTypeKey);
+  }
+  if (sec?.type) {
+    return (sec.type as SectionTypeKey);
+  }
+  return 'hero_banner';
 };
 
 const getSectionBlockValue = (sec: any): Record<string, any> => {
-  if (Array.isArray(sec?.content) && sec.content.length > 0) {
-    return sec.content[0].value || {};
+  if (sec?.value && typeof sec.value === 'object') {
+    return sec.value;
   }
-  return sec?.content || {};
+  if (Array.isArray(sec?.content) && sec.content.length > 0) {
+    return sec.content[0]?.value || sec.content[0] || {};
+  }
+  if (sec?.content && typeof sec.content === 'object') {
+    return sec.content;
+  }
+  return {};
+};
+
+const getSectionTypeLabel = (type: SectionTypeKey | string): string => {
+  const map: Record<string, string> = {
+    hero_banner: 'Hero Banner',
+    rich_text: 'Rich Text',
+    product_collection: 'Product Collection',
+    brand_collection: 'Brand Collection',
+    faq: 'FAQ',
+    image_gallery: 'Image Gallery',
+    cta: 'Call To Action'
+  };
+  return map[type] || type;
 };
 
 const selectedPage = computed(() => modalState.activeEntity.value);
+
+const viewSections = computed<PageSectionItem[]>(() => {
+  if (!selectedPage.value?.sections || !Array.isArray(selectedPage.value.sections)) {
+    return [];
+  }
+  return [...selectedPage.value.sections].sort((a, b) => {
+    const orderA = a.display_order ?? (a as any).sort_order ?? 0;
+    const orderB = b.display_order ?? (b as any).sort_order ?? 0;
+    return orderA - orderB;
+  });
+});
 
 watch(selectedPage, (page) => {
   if (page) {
@@ -1348,76 +1384,305 @@ onMounted(async () => {
     <!-- View Details Modal -->
     <UiAdminModal
       :is-open="modalState.isView.value"
-      title="CMS Page Details"
-      subtitle="Complete overview of page configuration and metadata."
+      title="CMS Page Preview & Details"
+      subtitle="Complete preview of page content and configuration."
+      max-width="max-w-4xl"
       @close="modalState.closeModal()"
     >
-      <div v-if="selectedPage" class="p-6 space-y-4 text-xs">
-        <div class="grid grid-cols-2 gap-4 bg-muted/30 p-4 rounded-xl border border-border">
+      <div v-if="selectedPage" class="p-6 space-y-5 text-xs max-h-[80vh] overflow-y-auto">
+        <!-- Page Overview Header -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/20 p-4 rounded-2xl border border-border">
           <div>
-            <p class="text-muted-foreground uppercase font-bold text-[10px]">Title</p>
-            <p class="text-sm font-bold text-foreground mt-0.5">{{ selectedPage.title }}</p>
+            <p class="text-muted-foreground uppercase font-bold text-[10px]">Page Title</p>
+            <p class="text-xs font-bold text-foreground mt-0.5 truncate">{{ selectedPage.title }}</p>
           </div>
           <div>
-            <p class="text-muted-foreground uppercase font-bold text-[10px]">Slug</p>
-            <p class="text-sm font-mono text-primary mt-0.5">/{{ selectedPage.slug }}</p>
+            <p class="text-muted-foreground uppercase font-bold text-[10px]">Public URL</p>
+            <p class="text-xs font-mono text-primary mt-0.5 truncate">/{{ selectedPage.slug }}/</p>
           </div>
           <div>
             <p class="text-muted-foreground uppercase font-bold text-[10px]">Status</p>
-            <p class="font-bold text-foreground mt-0.5 capitalize">{{ selectedPage.status }}</p>
+            <div class="mt-0.5">
+              <span 
+                class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold capitalize"
+                :class="selectedPage.status === 'published' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : selectedPage.status === 'archived' ? 'bg-muted text-muted-foreground' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'"
+              >
+                {{ selectedPage.status }}
+              </span>
+            </div>
           </div>
           <div>
             <p class="text-muted-foreground uppercase font-bold text-[10px]">Template</p>
-            <p class="font-mono text-foreground mt-0.5">{{ selectedPage.template || 'default' }}</p>
-          </div>
-          <div>
-            <p class="text-muted-foreground uppercase font-bold text-[10px]">Homepage</p>
-            <p class="font-bold text-foreground mt-0.5">{{ selectedPage.is_homepage ? 'Yes' : 'No' }}</p>
-          </div>
-          <div>
-            <p class="text-muted-foreground uppercase font-bold text-[10px]">Updated At</p>
-            <p class="font-mono text-foreground mt-0.5">{{ selectedPage.updated_at ? new Date(selectedPage.updated_at).toLocaleString() : '—' }}</p>
+            <p class="font-mono text-xs text-foreground mt-0.5">{{ selectedPage.template || 'default' }}</p>
           </div>
         </div>
 
-        <div class="space-y-1">
-          <p class="text-muted-foreground uppercase font-bold text-[10px]">Meta Title</p>
-          <p class="p-2.5 rounded-lg bg-background border border-border text-foreground">{{ selectedPage.meta_title || '—' }}</p>
+        <!-- SEO Metadata Info if available -->
+        <div v-if="selectedPage.meta_title || selectedPage.meta_description" class="p-3 bg-muted/10 rounded-xl border border-border/60 text-xs space-y-1">
+          <p v-if="selectedPage.meta_title" class="text-foreground text-[11px]"><strong class="text-muted-foreground font-semibold">Meta Title:</strong> {{ selectedPage.meta_title }}</p>
+          <p v-if="selectedPage.meta_description" class="text-muted-foreground text-[11px]"><strong class="text-muted-foreground font-semibold">Meta Description:</strong> {{ selectedPage.meta_description }}</p>
         </div>
 
-        <div class="space-y-1">
-          <p class="text-muted-foreground uppercase font-bold text-[10px]">Meta Description</p>
-          <p class="p-2.5 rounded-lg bg-background border border-border text-foreground">{{ selectedPage.meta_description || '—' }}</p>
-        </div>
-
-        <div class="space-y-2 pt-2 border-t border-border">
-          <p class="text-muted-foreground uppercase font-bold text-[10px]">Content Sections ({{ selectedPage.sections?.length || 0 }})</p>
-          <div v-if="!selectedPage.sections || selectedPage.sections.length === 0" class="text-muted-foreground italic text-xs">
-            No sections assigned.
+        <!-- Page Content Preview Header -->
+        <div class="pt-2 border-t border-border">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">Page Content Sections</h3>
+              <p class="text-[11px] text-muted-foreground">Preview of saved sections in presentation order.</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-muted text-muted-foreground border border-border">
+              {{ viewSections.length }} {{ viewSections.length === 1 ? 'Section' : 'Sections' }}
+            </span>
           </div>
-          <div v-else class="space-y-2 max-h-60 overflow-y-auto pr-1">
-            <div v-for="sec in selectedPage.sections" :key="sec.id" class="p-3 bg-muted/30 rounded-xl border border-border space-y-1.5">
-              <div class="flex items-center justify-between">
+
+          <!-- Empty State -->
+          <div v-if="viewSections.length === 0" class="py-12 px-6 text-center bg-muted/20 border border-dashed border-border rounded-2xl my-2">
+            <FileText class="w-10 h-10 text-muted-foreground/50 mx-auto mb-2" />
+            <h4 class="text-sm font-bold text-foreground">No content sections saved</h4>
+            <p class="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+              This page currently has no page-specific sections. You can add sections by editing the page.
+            </p>
+            <UiButton v-if="canEdit" class="mt-4 h-8 px-3.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-xs gap-1.5" @click="modalState.openEdit(selectedPage.id)">
+              <Edit2 class="w-3 h-3" />
+              <span>Edit Page Content</span>
+            </UiButton>
+          </div>
+
+          <!-- Section Previews List -->
+          <div v-else class="space-y-4">
+            <div 
+              v-for="(sec, idx) in viewSections" 
+              :key="sec.id" 
+              class="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-xs space-y-3"
+            >
+              <!-- Section Label Header -->
+              <div class="flex items-center justify-between text-xs pb-2.5 border-b border-border/50">
                 <div class="flex items-center gap-2">
-                  <span class="font-bold text-foreground">{{ sec.title || sec.name || `Section #${sec.id}` }}</span>
-                  <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/25">{{ getSectionType(sec) }}</span>
+                  <span class="w-5 h-5 rounded-full bg-primary/10 text-primary font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
+                    {{ idx + 1 }}
+                  </span>
+                  <h4 class="font-bold text-foreground text-xs truncate">
+                    {{ sec.title || sec.name || getSectionTypeLabel(getSectionType(sec)) }}
+                  </h4>
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
+                    {{ getSectionTypeLabel(getSectionType(sec)) }}
+                  </span>
+                  <span v-if="sec.is_active === false" class="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                    Inactive
+                  </span>
                 </div>
-                <span class="font-mono text-[10px] text-muted-foreground">Order: {{ sec.display_order ?? sec.sort_order ?? 0 }}</span>
               </div>
-              <div class="text-foreground text-[11px] bg-background p-2 rounded-lg border border-border/50 max-h-32 overflow-y-auto">
-                <template v-if="getSectionType(sec) === 'rich_text'">
-                  <div class="prose dark:prose-invert text-xs" v-html="getSectionBlockValue(sec).body || getSectionBlockValue(sec).content || '—'"></div>
+
+              <!-- Content Preview by Type -->
+              <div class="pt-1">
+                <!-- 1. hero_banner -->
+                <template v-if="getSectionType(sec) === 'hero_banner'">
+                  <div 
+                    :class="[
+                      'rounded-xl border border-border/80 p-6 bg-gradient-to-br from-card via-muted/20 to-muted/40 relative overflow-hidden',
+                      getSectionBlockValue(sec).text_alignment === 'center' ? 'text-center' : getSectionBlockValue(sec).text_alignment === 'right' ? 'text-right' : 'text-left'
+                    ]"
+                  >
+                    <div v-if="getSectionBlockValue(sec).image" class="mb-4 overflow-hidden rounded-xl border border-border max-h-64 bg-black/5">
+                      <img :src="getSectionBlockValue(sec).image" :alt="getSectionBlockValue(sec).title || 'Hero Banner'" class="w-full h-full max-h-64 object-cover" />
+                    </div>
+                    <h3 class="text-xl sm:text-2xl font-display font-extrabold text-foreground tracking-tight">
+                      {{ getSectionBlockValue(sec).title || 'Untitled Banner' }}
+                    </h3>
+                    <p v-if="getSectionBlockValue(sec).subtitle" class="text-xs sm:text-sm text-muted-foreground mt-2 max-w-xl leading-relaxed" :class="getSectionBlockValue(sec).text_alignment === 'center' ? 'mx-auto' : getSectionBlockValue(sec).text_alignment === 'right' ? 'ml-auto' : ''">
+                      {{ getSectionBlockValue(sec).subtitle }}
+                    </p>
+                    <div v-if="getSectionBlockValue(sec).button_text" class="mt-4 flex items-center gap-2 flex-wrap" :class="getSectionBlockValue(sec).text_alignment === 'center' ? 'justify-center' : getSectionBlockValue(sec).text_alignment === 'right' ? 'justify-end' : 'justify-start'">
+                      <span class="inline-flex items-center px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs">
+                        {{ getSectionBlockValue(sec).button_text }}
+                      </span>
+                      <span v-if="getSectionBlockValue(sec).button_url" class="text-[11px] font-mono text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border/60">
+                        {{ getSectionBlockValue(sec).button_url }}
+                      </span>
+                    </div>
+                  </div>
                 </template>
+
+                <!-- 2. rich_text -->
+                <template v-else-if="getSectionType(sec) === 'rich_text'">
+                  <div 
+                    :class="[
+                      'p-5 bg-background rounded-xl border border-border/80 text-foreground',
+                      getSectionBlockValue(sec).alignment === 'center' ? 'text-center' : getSectionBlockValue(sec).alignment === 'right' ? 'text-right' : 'text-left'
+                    ]"
+                  >
+                    <div 
+                      class="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed" 
+                      v-html="getSectionBlockValue(sec).body || getSectionBlockValue(sec).content || '<p class=\'text-muted-foreground italic\'>No rich text content.</p>'"
+                    ></div>
+                  </div>
+                </template>
+
+                <!-- 3. product_collection -->
+                <template v-else-if="getSectionType(sec) === 'product_collection'">
+                  <div class="p-5 bg-muted/20 rounded-xl border border-border/80 space-y-3">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <h4 class="font-bold text-sm text-foreground">{{ getSectionBlockValue(sec).title || 'Product Collection' }}</h4>
+                        <p class="text-[11px] text-muted-foreground mt-0.5">
+                          Displaying up to {{ getSectionBlockValue(sec).limit || 8 }} products
+                          <span v-if="getSectionBlockValue(sec).mode === 'CATEGORY' && getSectionBlockValue(sec).category_id"> from category #{{ getSectionBlockValue(sec).category_id }}</span>
+                        </p>
+                      </div>
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                        Mode: {{ getSectionBlockValue(sec).mode || 'ALL' }}
+                      </span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                      <div v-for="n in Math.min(Number(getSectionBlockValue(sec).limit) || 4, 4)" :key="n" class="p-3 rounded-xl border border-border bg-card flex flex-col justify-between h-28 shadow-2xs">
+                        <div class="w-full h-12 bg-muted/50 rounded-lg flex items-center justify-center text-muted-foreground/50 text-[10px] font-medium">
+                          Product Item
+                        </div>
+                        <div>
+                          <div class="h-2.5 w-3/4 bg-foreground/20 rounded mt-1.5"></div>
+                          <div class="h-2 w-1/2 bg-primary/30 rounded mt-1"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- 4. brand_collection -->
+                <template v-else-if="getSectionType(sec) === 'brand_collection'">
+                  <div class="p-5 bg-muted/20 rounded-xl border border-border/80 space-y-3">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <h4 class="font-bold text-sm text-foreground">Brand Showcase</h4>
+                        <p class="text-[11px] text-muted-foreground mt-0.5">
+                          Featured brands (Limit: {{ getSectionBlockValue(sec).limit || 8 }})
+                        </p>
+                      </div>
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                        Mode: {{ getSectionBlockValue(sec).mode || 'ALL' }}
+                      </span>
+                    </div>
+                    <div v-if="getSectionBlockValue(sec).brands && getSectionBlockValue(sec).brands.length > 0" class="flex flex-wrap gap-1.5 pt-1">
+                      <span v-for="b in getSectionBlockValue(sec).brands" :key="b" class="px-2 py-0.5 rounded-md text-[10px] font-mono bg-background text-foreground border border-border">
+                        Brand #{{ b }}
+                      </span>
+                    </div>
+                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-1">
+                      <div v-for="n in Math.min(Number(getSectionBlockValue(sec).limit) || 6, 6)" :key="n" class="h-12 rounded-xl border border-border bg-card flex items-center justify-center text-muted-foreground/60 text-[10px] font-bold shadow-2xs">
+                        Brand {{ n }}
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- 5. faq -->
+                <template v-else-if="getSectionType(sec) === 'faq'">
+                  <div class="p-5 bg-card rounded-xl border border-border/80 space-y-3">
+                    <h4 class="font-bold text-sm text-foreground">Frequently Asked Questions</h4>
+                    <div v-if="!getSectionBlockValue(sec).items || getSectionBlockValue(sec).items.length === 0" class="text-xs text-muted-foreground italic py-1">
+                      No FAQ items configured.
+                    </div>
+                    <div v-else class="space-y-2">
+                      <div v-for="(item, i) in getSectionBlockValue(sec).items" :key="i" class="p-3.5 bg-muted/30 rounded-xl border border-border/60 space-y-1.5">
+                        <div class="font-bold text-xs text-foreground flex items-start gap-2">
+                          <span class="w-4 h-4 rounded-full bg-primary/15 text-primary text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">Q</span>
+                          <span>{{ item.question || 'Untitled Question' }}</span>
+                        </div>
+                        <div class="text-xs text-muted-foreground pl-6 leading-relaxed">
+                          {{ item.answer || 'No answer provided.' }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- 6. image_gallery -->
+                <template v-else-if="getSectionType(sec) === 'image_gallery'">
+                  <div class="p-5 bg-card rounded-xl border border-border/80 space-y-3">
+                    <div class="flex items-center justify-between">
+                      <h4 class="font-bold text-sm text-foreground">Image Gallery</h4>
+                      <span class="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border/50">
+                        {{ (getSectionBlockValue(sec).images || []).length }} images ({{ getSectionBlockValue(sec).columns || 3 }} cols)
+                      </span>
+                    </div>
+                    <div v-if="!getSectionBlockValue(sec).images || getSectionBlockValue(sec).images.length === 0" class="text-xs text-muted-foreground italic py-1">
+                      No gallery images uploaded.
+                    </div>
+                    <div 
+                      v-else 
+                      class="grid gap-2.5 pt-1" 
+                      :style="{ gridTemplateColumns: `repeat(${Math.min(Math.max(Number(getSectionBlockValue(sec).columns) || 3, 1), 6)}, minmax(0, 1fr))` }"
+                    >
+                      <div v-for="(img, imgIdx) in getSectionBlockValue(sec).images" :key="imgIdx" class="rounded-xl overflow-hidden border border-border bg-muted/20 flex flex-col shadow-2xs">
+                        <img 
+                          v-if="img.image || typeof img === 'string'" 
+                          :src="img.image || img" 
+                          :alt="img.caption || `Gallery Image ${Number(imgIdx) + 1}`" 
+                          class="w-full h-32 object-cover" 
+                        />
+                        <div v-else class="w-full h-32 bg-muted/50 flex items-center justify-center text-muted-foreground text-[10px]">
+                          No Image URL
+                        </div>
+                        <p v-if="img.caption" class="p-2 text-[10px] text-muted-foreground text-center truncate bg-card border-t border-border/50">
+                          {{ img.caption }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- 7. cta -->
+                <template v-else-if="getSectionType(sec) === 'cta'">
+                  <div 
+                    class="p-6 rounded-2xl border border-primary/20 bg-primary/5 text-center space-y-2 relative overflow-hidden"
+                    :style="getSectionBlockValue(sec).background_color ? { backgroundColor: getSectionBlockValue(sec).background_color } : {}"
+                  >
+                    <h4 class="text-lg font-display font-extrabold text-foreground tracking-tight">
+                      {{ getSectionBlockValue(sec).headline || 'Call to Action' }}
+                    </h4>
+                    <p v-if="getSectionBlockValue(sec).description" class="text-xs text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                      {{ getSectionBlockValue(sec).description }}
+                    </p>
+                    <div v-if="getSectionBlockValue(sec).button_text" class="pt-2">
+                      <span class="inline-flex items-center px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs">
+                        {{ getSectionBlockValue(sec).button_text }}
+                      </span>
+                      <p v-if="getSectionBlockValue(sec).button_url" class="text-[10px] text-muted-foreground font-mono mt-1.5">
+                        {{ getSectionBlockValue(sec).button_url }}
+                      </p>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- Fallback for unknown section type -->
                 <template v-else>
-                  <pre class="font-mono text-[10px] whitespace-pre-wrap">{{ JSON.stringify(getSectionBlockValue(sec), null, 2) }}</pre>
+                  <div class="p-4 bg-muted/20 rounded-xl border border-border">
+                    <pre class="font-mono text-[10px] text-muted-foreground whitespace-pre-wrap overflow-x-auto">{{ JSON.stringify(getSectionBlockValue(sec), null, 2) }}</pre>
+                  </div>
                 </template>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="flex items-center justify-end pt-4 border-t border-border">
-          <UiButton variant="outline" class="h-9 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()">Close</UiButton>
+        <div class="flex items-center justify-between pt-4 border-t border-border mt-2">
+          <div class="flex items-center gap-2">
+            <NuxtLink
+              v-if="selectedPage.status === 'published'"
+              :to="`/${selectedPage.slug}/`"
+              target="_blank"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline px-3 py-1.5 rounded-xl hover:bg-primary/5"
+            >
+              <Globe class="w-3.5 h-3.5" />
+              <span>Open Public Page</span>
+            </NuxtLink>
+          </div>
+          <div class="flex items-center gap-2">
+            <UiButton variant="outline" class="h-9 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()">Close</UiButton>
+            <UiButton v-if="canEdit" class="h-9 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-xs gap-1.5" @click="modalState.openEdit(selectedPage.id)">
+              <Edit2 class="w-3.5 h-3.5" />
+              <span>Edit Page</span>
+            </UiButton>
+          </div>
         </div>
       </div>
     </UiAdminModal>
