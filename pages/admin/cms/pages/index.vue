@@ -1147,7 +1147,7 @@ onMounted(async () => {
           <template v-else-if="currentCreateSection.section_type === 'rich_text'">
             <div class="space-y-1.5">
               <label class="text-xs font-bold text-foreground">Rich Text Content *</label>
-              <UiRichTextEditor v-model="currentCreateSection.value.content" min-height="min-h-[220px]" placeholder="Enter rich text content..." />
+              <UiRichTextEditor v-model="currentCreateSection.value.body" min-height="min-h-[220px]" placeholder="Enter rich text content..." />
             </div>
             <div class="space-y-1.5 pt-2">
               <label class="text-xs font-bold text-foreground">Alignment</label>
