@@ -145,12 +145,43 @@ export interface CmsSitemapEntry {
   priority?: number;
 }
 
+export interface RichTextBlockValue {
+  body: string;
+  alignment?: 'left' | 'center' | 'right' | string;
+  [key: string]: any;
+}
+
+export interface PublicCmsContentBlock {
+  type: SectionTypeKey | string;
+  value: RichTextBlockValue | Record<string, any>;
+}
+
+export interface PublicPageSection {
+  name: string;
+  source: string;
+  global_section?: number | string | null;
+  content: PublicCmsContentBlock[];
+}
+
+export type PublicPageSectionItem = PublicPageSection;
+
 export interface PublicCmsPage {
+  id?: number | string;
   title: string;
   slug: string;
+  url_path?: string;
+  seo_title?: string;
+  seo_description?: string;
+  meta_keywords?: string;
+  og_title?: string;
+  og_description?: string;
+  canonical_url?: string;
+  seo_noindex?: boolean;
+  seo_nofollow?: boolean;
+  og_image?: number | string | null;
   meta_title?: string;
   meta_description?: string;
-  sections: PageSectionItem[];
+  sections: PublicPageSection[];
 }
 
 export interface CreatePageSectionPayload {

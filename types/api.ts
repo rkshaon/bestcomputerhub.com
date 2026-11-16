@@ -8,3 +8,13 @@ export interface PaginatedResponse<T> {
   next?: string | null;
   previous?: string | null;
 }
+
+export interface ApiRequestOptions {
+  method?: string;
+  headers?: any;
+  query?: Record<string, any>;
+  params?: Record<string, any>;
+  body?: any;
+  isPublic?: boolean;
+  [key: string]: any;
+}

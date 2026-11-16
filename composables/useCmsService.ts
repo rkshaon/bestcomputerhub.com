@@ -1,6 +1,7 @@
 // File: /composables/useCmsService.ts
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
+import { normalizeCmsPath } from '@/utils/cms';
 import type {
   SectionTypeDefinition,
   GlobalSection,
@@ -646,9 +647,11 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
+      const normalizedPath = normalizeCmsPath(path);
       return await apiClient.request<PublicCmsPage>('/api/v1/cms/public/pages/', {
         method: 'GET',
-        query: { path }
+        query: { path: normalizedPath },
+        isPublic: true
       });
     } catch (err: any) {
       errorMsg.value = err.message || `Failed to fetch public page for path: ${path}`;
@@ -663,7 +666,8 @@ export const useCmsService = () => {
     errorMsg.value = null;
     try {
       return await apiClient.request<CmsNavigationMenu>(`/api/v1/cms/public/navigation/${key}/`, {
-        method: 'GET'
+        method: 'GET',
+        isPublic: true
       });
     } catch (err: any) {
       errorMsg.value = err.message || `Failed to fetch public navigation for key: ${key}`;
@@ -726,7 +730,8 @@ export const useCmsService = () => {
     errorMsg.value = null;
     try {
       const res = await apiClient.request<CmsSitemapEntry[] | { results: CmsSitemapEntry[] }>('/api/v1/cms/public/sitemap/', {
-        method: 'GET'
+        method: 'GET',
+        isPublic: true
       });
       return Array.isArray(res) ? res : (res?.results || []);
     } catch (err: any) {
