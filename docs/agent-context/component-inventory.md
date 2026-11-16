@@ -787,14 +787,15 @@ Components are classified using four standard metadata properties:
 - **Routes/Pages Used**: Storefront dynamic CMS pages (`/pages/[slug].vue`).
 - **Main Responsibilities**:
   - Accept `body: string` and optional `alignment: 'left' | 'center' | 'right' | string`.
-  - Isomorphic HTML sanitization via `sanitizeCmsHtml` (`isomorphic-dompurify`) to strip executable scripts, dangerous tags, inline event handlers, and unsafe URI schemes consistently in both SSR and client environments.
+  - Isomorphic HTML sanitization via `sanitizeCmsHtml` (`isomorphic-dompurify` with strict tag/attribute allowlists, SVG/MathML exclusion, and `data:`/`javascript:` rejection) to neutralize unsafe markup consistently in both SSR and client environments.
+  - Resolves relative `/media/` image URLs against configured `runtimeConfig.public.mediaBase` or `runtimeConfig.public.apiBase` origin while preserving external absolute URLs.
   - Render sanitized HTML inside a dedicated `.cms-prose` wrapper styled with semantic design tokens and the standardized H1–H4 scale.
   - Support alignment classes (`text-left mr-auto`, `text-center mx-auto`, `text-right ml-auto`).
   - Handle null, undefined, or empty content gracefully without rendering empty DOM wrappers.
 - **What It Explicitly Does Not Own**: Data fetching, API requests, routing, breadcrumbs, layout chrome, or SEO metadata.
-- **State Owned**: None (computed views over props).
+- **State Owned**: None (computed views over props and runtime config).
 - **Calls API**: No.
-- **Related Composables/Services**: `sanitizeCmsHtml` (`/utils/cms.ts`), `.cms-prose` (`/assets/css/main.css`).
+- **Related Composables/Services**: `sanitizeCmsHtml`, `resolveOriginFromUrl` (`/utils/cms.ts`), `.cms-prose` (`/assets/css/main.css`).
 - **Responsive Responsibility**: Responsive image constraints (`max-w-full h-auto`), table formatting, and fluid typography spacing.
 - **Reusability Level**: High
 - **Important Behavior to Preserve**: Must sanitize all content before rendering through `v-html`; must preserve `.cms-prose` typography styling and semantic tokens.

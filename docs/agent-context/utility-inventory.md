@@ -234,24 +234,26 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
-### `buildSectionContentBlock`, `getRichTextBlockValue`, `normalizeCmsPath` & `sanitizeCmsHtml`
+### `buildSectionContentBlock`, `getRichTextBlockValue`, `normalizeCmsPath`, `resolveOriginFromUrl` & `sanitizeCmsHtml`
 - **File Location**: `/utils/cms.ts`
 - **Category**: Mapper / Security & Pure utility
 - **Scope**: Admin CMS pages, sections, URL normalization & storefront rich text sanitization
-- **Purpose**: `buildSectionContentBlock(type, value)` wraps a section's field values into the backend's required `CmsPageSection.content` shape — a one-item array of `{ type, value }` (DRF/Wagtail `StreamField`, validated by `SectionContentField` and rejecting anything that isn't a list). `getRichTextBlockValue(value)` normalizes a `rich_text` block's stored value (`{ body, alignment }`, tolerating the legacy `content` key) to a consistent shape for both reading and writing. `normalizeCmsPath(path)` ensures a storefront/CMS path has both leading and trailing slashes (per AGENTS.md §9). `sanitizeCmsHtml(rawHtml)` purifies backend-expanded Wagtail HTML using isomorphic DOMPurify, stripping dangerous tags (`<script>`, `<iframe>`), executable attributes (`onclick`, `onerror`), and unsafe protocols (`javascript:`) while preserving semantic formatting across both SSR and client rendering.
+- **Purpose**: `buildSectionContentBlock(type, value)` wraps a section's field values into the backend's required `CmsPageSection.content` shape — a one-item array of `{ type, value }` (DRF/Wagtail `StreamField`, validated by `SectionContentField` and rejecting anything that isn't a list). `getRichTextBlockValue(value)` normalizes a `rich_text` block's stored value (`{ body, alignment }`, tolerating the legacy `content` key) to a consistent shape for both reading and writing. `normalizeCmsPath(path)` ensures a storefront/CMS path has both leading and trailing slashes (per AGENTS.md §9). `resolveOriginFromUrl(urlStr)` safely extracts the `http:`/`https:` origin from a URL string. `sanitizeCmsHtml(rawHtml, options)` purifies backend-expanded Wagtail HTML using isomorphic DOMPurify with strict tag/attribute allowlists (`ALLOW_DATA_ATTR: false`), rejects scriptable SVG/MathML, forms, `data:` URLs, protocol-relative `//` URLs, and unsafe URI schemes (`javascript:`, `vbscript:`), hardens external `target="_blank"` links (`rel="noopener noreferrer"`), and resolves relative `/media/` image `src` attributes against `options.mediaOrigin` when provided.
 - **Parameters & Return Value**:
   - `buildSectionContentBlock(type: SectionTypeKey, value: Record<string, any>): CmsContentBlock[]`
   - `getRichTextBlockValue(value?: RichTextBlockValue | Record<string, any> | null): { body: string; alignment: string }`
   - `normalizeCmsPath(path?: string | null): string`
-  - `sanitizeCmsHtml(rawHtml?: string | null): string`
+  - `resolveOriginFromUrl(urlStr?: string | null): string`
+  - `sanitizeCmsHtml(rawHtml?: string | null, options?: SanitizeCmsHtmlOptions): string`
 - **Example Usage**:
   ```ts
-  import { buildSectionContentBlock, getRichTextBlockValue, normalizeCmsPath, sanitizeCmsHtml } from '@/utils/cms';
+  import { buildSectionContentBlock, getRichTextBlockValue, normalizeCmsPath, resolveOriginFromUrl, sanitizeCmsHtml } from '@/utils/cms';
 
-  const cleanHtml = sanitizeCmsHtml(section.value.body);
+  const mediaOrigin = resolveOriginFromUrl(config.public.apiBase);
+  const cleanHtml = sanitizeCmsHtml(section.value.body, { mediaOrigin });
   const normalized = normalizeCmsPath('about-us'); // '/about-us/'
   ```
-- **Files or Features Currently Using It**: `/pages/admin/cms/pages/index.vue`, `/composables/useCmsService.ts` (`getPublicPageByPath`), `/components/cms/CmsRichTextSection.vue`.
+- **Files or Features Currently Using It**: `/pages/admin/cms/pages/index.vue`, `/composables/useCmsService.ts` (`getPublicPageByPath`), `/components/cms/CmsRichTextSection.vue`, `/pages/[slug].vue`.
 - **Side Effects**: None (Pure functions).
 - **Accesses Browser State**: No.
 - **Performs Network Work**: No.
