@@ -17,13 +17,16 @@ import {
   Loader2,
   Archive,
   RotateCcw,
-  Copy
+  Copy,
+  Send,
+  EyeOff
 } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { useCmsService } from '@/composables/useCmsService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, extractErrorMessage } from '@/composables/useToast';
+import { buildSectionContentBlock, getRichTextBlockValue } from '@/utils/cms';
 import type { CmsPage, CmsPageDetail, PageSectionItem, SectionTypeKey, CreatePagePayload, UpdatePagePayload } from '@/types/cms';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiTable from '@/components/ui/UiTable.vue';
@@ -59,28 +62,23 @@ const formError = ref<string | null>(null);
 
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
-const statusFilter = ref<'all' | 'published' | 'draft' | 'archived'>((route.query.status as 'all' | 'published' | 'draft' | 'archived') || 'all');
+const statusFilter = ref<'all' | 'active' | 'archived'>((route.query.status as 'all' | 'active' | 'archived') || 'all');
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 
 const newPageForm = ref<CreatePagePayload>({
   title: '',
   slug: '',
-  status: 'draft',
-  template: 'default',
-  meta_title: '',
-  meta_description: '',
-  is_homepage: false
+  template_key: 'blank',
+  seo_title: '',
+  seo_description: ''
 });
 
 const editPageForm = ref<UpdatePagePayload>({
   title: '',
   slug: '',
-  status: 'draft',
-  template: 'default',
-  meta_title: '',
-  meta_description: '',
-  is_homepage: false
+  seo_title: '',
+  seo_description: ''
 });
 
 const modalState = useAdminModalState<CmsPageDetail>({
@@ -132,6 +130,18 @@ const getSectionTypeLabel = (type: SectionTypeKey | string): string => {
   return map[type] || type;
 };
 
+const getPageStatusKey = (page: Pick<CmsPage, 'live' | 'archived_at'>): 'draft' | 'published' | 'archived' => {
+  if (page.archived_at) return 'archived';
+  if (page.live) return 'published';
+  return 'draft';
+};
+
+const getPageStatusLabel = (page: Pick<CmsPage, 'live' | 'archived_at' | 'has_unpublished_changes'>): string => {
+  const key = getPageStatusKey(page);
+  if (key === 'published' && page.has_unpublished_changes) return 'Published (edited)';
+  return key.charAt(0).toUpperCase() + key.slice(1);
+};
+
 const selectedPage = computed(() => modalState.activeEntity.value);
 
 const viewSections = computed<PageSectionItem[]>(() => {
@@ -151,11 +161,8 @@ watch(selectedPage, (page) => {
       editPageForm.value = {
         title: page.title || '',
         slug: page.slug || '',
-        status: page.status || 'draft',
-        template: page.template || 'default',
-        meta_title: page.meta_title || '',
-        meta_description: page.meta_description || '',
-        is_homepage: !!page.is_homepage
+        seo_title: page.seo_title || '',
+        seo_description: page.seo_description || ''
       };
       formError.value = null;
     }
@@ -180,7 +187,6 @@ const editingSectionId = ref<number | string | null>(null);
 const sectionForm = ref({
   section_type: 'hero_banner' as SectionTypeKey,
   title: '',
-  display_order: 0,
   is_active: true,
   value: {
     title: 'Upgrade Your Tech Experience',
@@ -222,7 +228,6 @@ const openAddSectionModal = () => {
   sectionForm.value = {
     section_type: 'hero_banner',
     title: '',
-    display_order: compositionSections.value.length + 1,
     is_active: true,
     value: getDefaultValueForType('hero_banner')
   };
@@ -239,15 +244,15 @@ const openEditSectionModal = (sec: PageSectionItem) => {
   sectionForm.value = {
     section_type: sectionType,
     title: sec.title || sec.name || '',
-    display_order: sec.display_order ?? sec.sort_order ?? 0,
-    is_active: sec.is_active !== false && !sec.archived_at,
+    is_active: !sec.archived_at,
     value: sectionType === 'rich_text'
-      ? { body: sectionVal?.body || sectionVal?.content || '', alignment: sectionVal?.alignment || 'left' }
+      ? getRichTextBlockValue(sectionVal)
       : JSON.parse(JSON.stringify(sectionVal || {}))
   };
   if (sectionType === 'rich_text') {
-    richTextContent.value = sectionVal?.body || sectionVal?.content || '<p>Enter rich text content here...</p>';
-    richTextAlignment.value = sectionVal?.alignment || 'left';
+    const richValue = getRichTextBlockValue(sectionVal);
+    richTextContent.value = richValue.body || '<p>Enter rich text content here...</p>';
+    richTextAlignment.value = richValue.alignment;
   } else {
     richTextContent.value = '<p>Enter rich text content here...</p>';
     richTextAlignment.value = 'left';
@@ -259,15 +264,9 @@ const handleSaveSection = async () => {
   const page = activeCompositionPage.value || selectedPage.value;
   if (!page) return;
 
-  let contentObj = {};
-  if (sectionForm.value.section_type === 'rich_text') {
-    contentObj = {
-      body: richTextContent.value,
-      alignment: richTextAlignment.value
-    };
-  } else {
-    contentObj = sectionForm.value.value;
-  }
+  const contentObj = sectionForm.value.section_type === 'rich_text'
+    ? { body: richTextContent.value, alignment: richTextAlignment.value }
+    : sectionForm.value.value;
 
   isSectionSubmitting.value = true;
   compositionError.value = null;
@@ -275,24 +274,20 @@ const handleSaveSection = async () => {
   try {
     if (editingSectionId.value) {
       const updated = await cmsService.updatePageSection(page.id, editingSectionId.value, {
-        section_type: sectionForm.value.section_type,
-        title: sectionForm.value.title,
-        display_order: sectionForm.value.display_order,
-        is_active: sectionForm.value.is_active,
-        content: contentObj,
-        base_revision_id: page.id
+        name: sectionForm.value.title,
+        content: buildSectionContentBlock(sectionForm.value.section_type, contentObj),
+        archived: !sectionForm.value.is_active,
+        base_revision_id: (page as CmsPageDetail).latest_revision_id
       });
       const idx = compositionSections.value.findIndex(s => String(s.id) === String(updated?.id));
       if (idx !== -1 && updated) compositionSections.value[idx] = updated as PageSectionItem;
       toastSuccess('Section successfully updated.');
     } else {
       const created = await cmsService.addPageSection(page.id, {
-        section_type: sectionForm.value.section_type,
-        title: sectionForm.value.title,
-        display_order: sectionForm.value.display_order,
-        is_active: sectionForm.value.is_active,
-        content: contentObj,
-        base_revision_id: page.id
+        name: sectionForm.value.title,
+        content: buildSectionContentBlock(sectionForm.value.section_type, contentObj),
+        archived: !sectionForm.value.is_active,
+        base_revision_id: (page as CmsPageDetail).latest_revision_id
       });
       if (created) compositionSections.value.push(created as PageSectionItem);
       toastSuccess('Section successfully added.');
@@ -359,7 +354,7 @@ const handleMoveSection = async (index: number, direction: 'up' | 'down') => {
   });
 
   try {
-    await cmsService.reorderPageSections(page.id, { section_ids: sectionIds, base_revision_id: page.id });
+    await cmsService.reorderPageSections(page.id, { order: sectionIds, base_revision_id: (page as CmsPageDetail).latest_revision_id });
     toastSuccess('Sections reordered successfully.');
   } catch (err: any) {
     toastError(extractErrorMessage(err, 'Failed to reorder sections.'));
@@ -482,12 +477,11 @@ const fetchPages = async () => {
   isLoading.value = true;
   fetchError.value = null;
   try {
-    const statusParam = statusFilter.value !== 'all' ? statusFilter.value : undefined;
     const res = await cmsService.getPagesList({
       page: currentPage.value,
       page_size: itemsPerPage.value,
       search: debouncedSearchQuery.value || undefined,
-      status: statusParam
+      archived: statusFilter.value === 'archived' ? true : undefined
     });
     pagesList.value = res.results || [];
     totalCount.value = res.count || 0;
@@ -535,11 +529,9 @@ watch(() => modalState.isCreate.value, (isCr) => {
     newPageForm.value = {
       title: '',
       slug: '',
-      status: 'draft',
-      template: 'default',
-      meta_title: '',
-      meta_description: '',
-      is_homepage: false
+      template_key: 'blank',
+      seo_title: '',
+      seo_description: ''
     };
     createSections.value = [];
     formError.value = null;
@@ -563,27 +555,21 @@ const handleCreatePage = async () => {
     const payload: CreatePagePayload = {
       title: newPageForm.value.title,
       slug: newPageForm.value.slug,
-      status: newPageForm.value.status,
-      meta_title: newPageForm.value.meta_title,
-      meta_description: newPageForm.value.meta_description,
-      is_homepage: newPageForm.value.is_homepage
+      seo_title: newPageForm.value.seo_title,
+      seo_description: newPageForm.value.seo_description
     };
 
     if (createSections.value.length > 0) {
       payload.sections = createSections.value.map(s => ({
         name: s.name || 'Section',
         global_section: null,
-        content: [
-          {
-            type: s.section_type,
-            value: s.section_type === 'rich_text'
-              ? { body: s.value.body || s.value.content || '', alignment: s.value.alignment || 'left' }
-              : s.value
-          }
-        ]
+        content: buildSectionContentBlock(
+          s.section_type,
+          s.section_type === 'rich_text' ? getRichTextBlockValue(s.value) : s.value
+        )
       }));
     } else {
-      payload.template = newPageForm.value.template || 'default';
+      payload.template_key = newPageForm.value.template_key || 'blank';
     }
 
     await cmsService.createPage(payload);
@@ -625,6 +611,36 @@ const handleUpdatePage = async () => {
   }
 };
 
+const handlePublishPage = async (page: CmsPage) => {
+  if (!canEdit.value) {
+    toastError('You do not have permission to publish CMS pages.');
+    return;
+  }
+  try {
+    await cmsService.publishPage(page.id);
+    toastSuccess(`CMS Page "${page.title}" has been published.`);
+    await fetchPages();
+    if (modalState.isView.value || modalState.isEdit.value) await modalState.resolveEntity();
+  } catch (err: any) {
+    toastError(extractErrorMessage(err, 'Failed to publish CMS page.'));
+  }
+};
+
+const handleUnpublishPage = async (page: CmsPage) => {
+  if (!canEdit.value) {
+    toastError('You do not have permission to unpublish CMS pages.');
+    return;
+  }
+  try {
+    await cmsService.unpublishPage(page.id);
+    toastSuccess(`CMS Page "${page.title}" has been unpublished.`);
+    await fetchPages();
+    if (modalState.isView.value || modalState.isEdit.value) await modalState.resolveEntity();
+  } catch (err: any) {
+    toastError(extractErrorMessage(err, 'Failed to unpublish CMS page.'));
+  }
+};
+
 const handleArchivePage = async (page: CmsPage) => {
   if (!canEdit.value) {
     toastError('You do not have permission to archive CMS pages.');
@@ -633,7 +649,7 @@ const handleArchivePage = async (page: CmsPage) => {
   if (!window.confirm(`Are you sure you want to archive page "${page.title}"?`)) return;
 
   try {
-    await cmsService.updatePage(page.id, { status: 'archived' });
+    await cmsService.archivePage(page.id);
     toastSuccess(`CMS Page "${page.title}" has been archived.`);
     await fetchPages();
   } catch (err: any) {
@@ -647,8 +663,8 @@ const handleRestorePage = async (page: CmsPage) => {
     return;
   }
   try {
-    await cmsService.updatePage(page.id, { status: 'draft' });
-    toastSuccess(`CMS Page "${page.title}" has been restored to draft.`);
+    await cmsService.restorePage(page.id);
+    toastSuccess(`CMS Page "${page.title}" has been restored.`);
     await fetchPages();
   } catch (err: any) {
     toastError(extractErrorMessage(err, 'Failed to restore CMS page.'));
@@ -686,7 +702,7 @@ const tableColumns = computed<UiTableColumn<CmsPage>[]>(() => [
   { key: 'actions', label: 'Actions', width: '150px', align: 'right' }
 ]);
 
-const publishedCount = computed(() => pagesList.value.filter(p => p.status === 'published').length);
+const publishedCount = computed(() => pagesList.value.filter(p => getPageStatusKey(p) === 'published').length);
 
 onMounted(async () => {
   if (canView.value) {
@@ -775,9 +791,8 @@ onMounted(async () => {
               v-model="statusFilter"
               class="h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/25 cursor-pointer w-full sm:w-36"
             >
-              <option value="all">All Statuses</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
+              <option value="all">All Pages</option>
+              <option value="active">Active</option>
               <option value="archived">Archived</option>
             </select>
           </div>
@@ -810,9 +825,9 @@ onMounted(async () => {
               <p class="font-bold text-xs text-foreground">{{ item.title }}</p>
               <div class="flex items-center gap-2">
                 <span class="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">/{{ item.slug }}</span>
-                <NuxtLink 
-                  v-if="item.status === 'published'"
-                  :to="`/${item.slug}/`" 
+                <NuxtLink
+                  v-if="getPageStatusKey(item) === 'published'"
+                  :to="`/${item.slug}/`"
                   target="_blank"
                   class="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
                 >
@@ -825,15 +840,15 @@ onMounted(async () => {
 
           <template #cell-template="{ item }">
             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-muted text-foreground border border-border">
-              {{ item.template || 'default' }}
+              {{ item.template_key || 'blank' }}
             </span>
           </template>
 
           <template #cell-status="{ item }">
             <div class="flex items-center justify-center">
-              <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border', item.status === 'published' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/50' : item.status === 'archived' ? 'bg-muted text-muted-foreground border-border' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200/50']">
-                <span :class="['w-1.5 h-1.5 rounded-full', item.status === 'published' ? 'bg-emerald-500' : item.status === 'archived' ? 'bg-muted-foreground' : 'bg-amber-500']"></span>
-                {{ item.status }}
+              <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border', getPageStatusKey(item) === 'published' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/50' : getPageStatusKey(item) === 'archived' ? 'bg-muted text-muted-foreground border-border' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200/50']">
+                <span :class="['w-1.5 h-1.5 rounded-full', getPageStatusKey(item) === 'published' ? 'bg-emerald-500' : getPageStatusKey(item) === 'archived' ? 'bg-muted-foreground' : 'bg-amber-500']"></span>
+                {{ getPageStatusLabel(item) }}
               </span>
             </div>
           </template>
@@ -876,7 +891,27 @@ onMounted(async () => {
                 <FileCode class="w-3.5 h-3.5" />
               </UiButton>
               <UiButton
-                v-if="canEdit && item.status !== 'archived'"
+                v-if="canEdit && !item.archived_at && !item.live"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 rounded-lg"
+                title="Publish Page"
+                @click="handlePublishPage(item)"
+              >
+                <Send class="w-3.5 h-3.5" />
+              </UiButton>
+              <UiButton
+                v-if="canEdit && !item.archived_at && item.live"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
+                title="Unpublish Page"
+                @click="handleUnpublishPage(item)"
+              >
+                <EyeOff class="w-3.5 h-3.5" />
+              </UiButton>
+              <UiButton
+                v-if="canEdit && !item.archived_at"
                 variant="ghost"
                 size="sm"
                 class="h-8 w-8 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 rounded-lg"
@@ -886,7 +921,7 @@ onMounted(async () => {
                 <Archive class="w-3.5 h-3.5" />
               </UiButton>
               <UiButton
-                v-if="canEdit && item.status === 'archived'"
+                v-if="canEdit && item.archived_at"
                 variant="ghost"
                 size="sm"
                 class="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 rounded-lg"
@@ -954,53 +989,39 @@ onMounted(async () => {
           />
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold text-foreground">Status</label>
-            <select 
-              v-model="newPageForm.status" 
-              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
-
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold text-foreground">Template</label>
-            <input 
-              v-model="newPageForm.template" 
-              type="text" 
-              placeholder="default" 
-              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-foreground">Template</label>
+          <select
+            v-model="newPageForm.template_key"
+            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="blank">Blank</option>
+            <option value="landing">Landing</option>
+            <option value="about">About</option>
+            <option value="contact">Contact</option>
+            <option value="campaign">Campaign</option>
+          </select>
+          <p class="text-[11px] text-muted-foreground">Seeds initial sections only; ignored if you add sections below. New pages are created as drafts — publish from the page list once ready.</p>
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-foreground">Meta Title</label>
-          <input 
-            v-model="newPageForm.meta_title" 
-            type="text" 
-            placeholder="SEO Meta Title" 
+          <label class="text-xs font-bold text-foreground">SEO Title</label>
+          <input
+            v-model="newPageForm.seo_title"
+            type="text"
+            placeholder="SEO Title"
             class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-foreground">Meta Description</label>
-          <textarea 
-            v-model="newPageForm.meta_description" 
-            rows="2" 
-            placeholder="SEO Meta Description" 
+          <label class="text-xs font-bold text-foreground">SEO Description</label>
+          <textarea
+            v-model="newPageForm.seo_description"
+            rows="2"
+            placeholder="SEO Description"
             class="w-full p-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
           ></textarea>
-        </div>
-
-        <div class="flex items-center gap-2 pt-1">
-          <input id="is_homepage" v-model="newPageForm.is_homepage" type="checkbox" class="rounded border-input text-primary focus:ring-primary/20 w-4 h-4" />
-          <label for="is_homepage" class="text-xs font-semibold text-foreground select-none cursor-pointer">Set as Homepage</label>
         </div>
 
         <!-- Page-Specific Content Sections Builder -->
@@ -1279,50 +1300,44 @@ onMounted(async () => {
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-foreground">Status</label>
-            <select 
-              v-model="editPageForm.status" 
-              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="archived">Archived</option>
-            </select>
+            <div class="h-10 flex items-center gap-2">
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold capitalize"
+                :class="selectedPage && getPageStatusKey(selectedPage) === 'published' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : selectedPage && getPageStatusKey(selectedPage) === 'archived' ? 'bg-muted text-muted-foreground' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'"
+              >
+                {{ selectedPage ? getPageStatusLabel(selectedPage) : '—' }}
+              </span>
+              <UiButton v-if="selectedPage && !selectedPage.archived_at && !selectedPage.live" size="sm" variant="outline" class="h-7 px-2 text-[11px]" @click="handlePublishPage(selectedPage)">Publish</UiButton>
+              <UiButton v-if="selectedPage && !selectedPage.archived_at && selectedPage.live" size="sm" variant="outline" class="h-7 px-2 text-[11px]" @click="handleUnpublishPage(selectedPage)">Unpublish</UiButton>
+            </div>
           </div>
 
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-foreground">Template</label>
-            <input 
-              v-model="editPageForm.template" 
-              type="text" 
-              placeholder="default" 
-              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
+            <p class="h-10 flex items-center font-mono text-xs text-muted-foreground px-3 rounded-xl border border-input bg-muted/30">
+              {{ selectedPage?.template_key || 'blank' }}
+            </p>
           </div>
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-foreground">Meta Title</label>
-          <input 
-            v-model="editPageForm.meta_title" 
-            type="text" 
-            placeholder="SEO Meta Title" 
+          <label class="text-xs font-bold text-foreground">SEO Title</label>
+          <input
+            v-model="editPageForm.seo_title"
+            type="text"
+            placeholder="SEO Title"
             class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-foreground">Meta Description</label>
-          <textarea 
-            v-model="editPageForm.meta_description" 
-            rows="2" 
-            placeholder="SEO Meta Description" 
+          <label class="text-xs font-bold text-foreground">SEO Description</label>
+          <textarea
+            v-model="editPageForm.seo_description"
+            rows="2"
+            placeholder="SEO Description"
             class="w-full p-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
           ></textarea>
-        </div>
-
-        <div class="flex items-center gap-2 pt-1">
-          <input id="edit_is_homepage" v-model="editPageForm.is_homepage" type="checkbox" class="rounded border-input text-primary focus:ring-primary/20 w-4 h-4" />
-          <label for="edit_is_homepage" class="text-xs font-semibold text-foreground select-none cursor-pointer">Set as Homepage</label>
         </div>
 
         <!-- Page-Specific Content Sections Builder in Edit Modal -->
@@ -1403,24 +1418,24 @@ onMounted(async () => {
           <div>
             <p class="text-muted-foreground uppercase font-bold text-[10px]">Status</p>
             <div class="mt-0.5">
-              <span 
+              <span
                 class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold capitalize"
-                :class="selectedPage.status === 'published' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : selectedPage.status === 'archived' ? 'bg-muted text-muted-foreground' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'"
+                :class="getPageStatusKey(selectedPage) === 'published' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : getPageStatusKey(selectedPage) === 'archived' ? 'bg-muted text-muted-foreground' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'"
               >
-                {{ selectedPage.status }}
+                {{ getPageStatusLabel(selectedPage) }}
               </span>
             </div>
           </div>
           <div>
             <p class="text-muted-foreground uppercase font-bold text-[10px]">Template</p>
-            <p class="font-mono text-xs text-foreground mt-0.5">{{ selectedPage.template || 'default' }}</p>
+            <p class="font-mono text-xs text-foreground mt-0.5">{{ selectedPage.template_key || 'blank' }}</p>
           </div>
         </div>
 
         <!-- SEO Metadata Info if available -->
-        <div v-if="selectedPage.meta_title || selectedPage.meta_description" class="p-3 bg-muted/10 rounded-xl border border-border/60 text-xs space-y-1">
-          <p v-if="selectedPage.meta_title" class="text-foreground text-[11px]"><strong class="text-muted-foreground font-semibold">Meta Title:</strong> {{ selectedPage.meta_title }}</p>
-          <p v-if="selectedPage.meta_description" class="text-muted-foreground text-[11px]"><strong class="text-muted-foreground font-semibold">Meta Description:</strong> {{ selectedPage.meta_description }}</p>
+        <div v-if="selectedPage.seo_title || selectedPage.seo_description" class="p-3 bg-muted/10 rounded-xl border border-border/60 text-xs space-y-1">
+          <p v-if="selectedPage.seo_title" class="text-foreground text-[11px]"><strong class="text-muted-foreground font-semibold">SEO Title:</strong> {{ selectedPage.seo_title }}</p>
+          <p v-if="selectedPage.seo_description" class="text-muted-foreground text-[11px]"><strong class="text-muted-foreground font-semibold">SEO Description:</strong> {{ selectedPage.seo_description }}</p>
         </div>
 
         <!-- Page Content Preview Header -->
@@ -1467,7 +1482,7 @@ onMounted(async () => {
                   <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
                     {{ getSectionTypeLabel(getSectionType(sec)) }}
                   </span>
-                  <span v-if="sec.is_active === false" class="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                  <span v-if="sec.archived_at" class="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/10 text-amber-600 border border-amber-500/20">
                     Inactive
                   </span>
                 </div>
@@ -1667,7 +1682,7 @@ onMounted(async () => {
         <div class="flex items-center justify-between pt-4 border-t border-border mt-2">
           <div class="flex items-center gap-2">
             <NuxtLink
-              v-if="selectedPage.status === 'published'"
+              v-if="getPageStatusKey(selectedPage) === 'published'"
               :to="`/${selectedPage.slug}/`"
               target="_blank"
               class="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline px-3 py-1.5 rounded-xl hover:bg-primary/5"
@@ -1677,6 +1692,14 @@ onMounted(async () => {
             </NuxtLink>
           </div>
           <div class="flex items-center gap-2">
+            <UiButton v-if="canEdit && !selectedPage.archived_at && !selectedPage.live" variant="outline" class="h-9 px-4 text-xs font-bold rounded-xl gap-1.5" @click="handlePublishPage(selectedPage)">
+              <Send class="w-3.5 h-3.5" />
+              <span>Publish</span>
+            </UiButton>
+            <UiButton v-if="canEdit && !selectedPage.archived_at && selectedPage.live" variant="outline" class="h-9 px-4 text-xs font-bold rounded-xl gap-1.5" @click="handleUnpublishPage(selectedPage)">
+              <EyeOff class="w-3.5 h-3.5" />
+              <span>Unpublish</span>
+            </UiButton>
             <UiButton variant="outline" class="h-9 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()">Close</UiButton>
             <UiButton v-if="canEdit" class="h-9 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-xs gap-1.5" @click="modalState.openEdit(selectedPage.id)">
               <Edit2 class="w-3.5 h-3.5" />
@@ -1728,9 +1751,9 @@ onMounted(async () => {
                 <div class="flex items-center gap-2">
                   <span class="font-bold text-xs text-foreground truncate">{{ sec.title || `Section #${sec.id}` }}</span>
                   <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">{{ sec.section_type }}</span>
-                  <span v-if="sec.is_active === false" class="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground">Inactive</span>
+                  <span v-if="sec.archived_at" class="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground">Inactive</span>
                 </div>
-                <p class="text-[11px] text-muted-foreground font-mono mt-0.5">Order: {{ sec.display_order }}</p>
+                <p class="text-[11px] text-muted-foreground font-mono mt-0.5">Order: {{ sec.sort_order ?? sec.display_order }}</p>
               </div>
             </div>
             <div class="flex items-center gap-1 shrink-0">
@@ -1779,15 +1802,9 @@ onMounted(async () => {
           <input v-model="sectionForm.title" type="text" placeholder="e.g. Summer Promo Banner" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold text-foreground">Display Order</label>
-            <input v-model.number="sectionForm.display_order" type="number" class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20" />
-          </div>
-          <div class="flex items-center h-10 pt-5">
-            <input id="sec_active" v-model="sectionForm.is_active" type="checkbox" class="rounded border-input text-primary focus:ring-primary/20 w-4 h-4 mr-2" />
-            <label for="sec_active" class="text-xs font-semibold text-foreground select-none cursor-pointer">Active</label>
-          </div>
+        <div class="flex items-center h-10">
+          <input id="sec_active" v-model="sectionForm.is_active" type="checkbox" class="rounded border-input text-primary focus:ring-primary/20 w-4 h-4 mr-2" />
+          <label for="sec_active" class="text-xs font-semibold text-foreground select-none cursor-pointer">Active</label>
         </div>
 
         <div class="space-y-3 pt-2 border-t border-border max-h-[50vh] overflow-y-auto pr-1">

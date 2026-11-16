@@ -4,7 +4,7 @@ import type { PaginatedResponse } from './api';
 export type SectionTypeKey = 'hero_banner' | 'rich_text' | 'product_collection' | 'faq' | 'image_gallery' | 'cta' | 'brand_collection';
 
 export interface CmsContentBlock {
-  type: string;
+  type: SectionTypeKey;
   value: Record<string, any>;
 }
 
@@ -26,16 +26,18 @@ export interface GlobalSection {
   updated_at?: string;
 }
 
+export type PageTemplateKey = 'blank' | 'landing' | 'about' | 'contact' | 'campaign';
+
 export interface CmsPage {
   id: number | string;
   title: string;
   slug: string;
-  status: 'draft' | 'published' | 'archived';
-  template?: string;
-  meta_title?: string;
-  meta_description?: string;
-  is_homepage?: boolean;
-  published_at?: string | null;
+  url_path?: string;
+  template_key?: PageTemplateKey;
+  live?: boolean;
+  has_unpublished_changes?: boolean;
+  archived_at?: string | null;
+  last_published_at?: string | null;
   sections?: PageSectionItem[];
   created_at?: string;
   updated_at?: string;
@@ -59,6 +61,9 @@ export interface PageSectionItem {
 
 export interface CmsPageDetail extends CmsPage {
   sections?: PageSectionItem[];
+  seo_title?: string;
+  seo_description?: string;
+  latest_revision_id?: number | string;
 }
 
 export interface CmsRevision {
@@ -151,10 +156,7 @@ export interface PublicCmsPage {
 export interface CreatePageSectionPayload {
   name: string;
   global_section?: null | number | string;
-  content: {
-    type: SectionTypeKey;
-    value: Record<string, any>;
-  }[];
+  content: CmsContentBlock[];
   archived?: boolean;
   base_revision_id?: number | string;
 }
@@ -162,29 +164,33 @@ export interface CreatePageSectionPayload {
 export interface CreatePagePayload {
   title: string;
   slug: string;
-  status?: 'draft' | 'published' | 'archived';
-  template?: string;
-  meta_title?: string;
-  meta_description?: string;
-  is_homepage?: boolean;
+  template_key?: PageTemplateKey;
+  seo_title?: string;
+  seo_description?: string;
   sections?: CreatePageSectionPayload[];
 }
 
-export interface UpdatePagePayload extends Partial<CreatePagePayload> {}
+export interface UpdatePagePayload {
+  title?: string;
+  slug?: string;
+  seo_title?: string;
+  seo_description?: string;
+  sections?: CreatePageSectionPayload[];
+  base_revision_id?: number | string;
+}
 
 export interface AddSectionPayload {
-  section_type: SectionTypeKey;
-  title?: string;
-  display_order?: number;
-  is_active?: boolean;
-  content: Record<string, any>;
+  name?: string;
+  global_section?: null | number | string;
+  content?: CmsContentBlock[];
+  archived?: boolean;
   base_revision_id?: number | string;
 }
 
 export interface UpdateSectionPayload extends Partial<AddSectionPayload> {}
 
 export interface ReorderSectionsPayload {
-  section_ids: (number | string)[];
+  order: (number | string)[];
   base_revision_id?: number | string;
 }
 

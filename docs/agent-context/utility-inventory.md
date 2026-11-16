@@ -234,6 +234,34 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `buildSectionContentBlock` & `getRichTextBlockValue`
+- **File Location**: `/utils/cms.ts`
+- **Category**: Mapper / Pure utility
+- **Scope**: Admin CMS pages & sections
+- **Purpose**: `buildSectionContentBlock(type, value)` wraps a section's field values into the backend's required `CmsPageSection.content` shape — a one-item array of `{ type, value }` (DRF/Wagtail `StreamField`, validated by `SectionContentField` and rejecting anything that isn't a list). `getRichTextBlockValue(value)` normalizes a `rich_text` block's stored value (`{ body, alignment }`, tolerating the legacy `content` key) to a consistent shape for both reading and writing.
+- **Parameters & Return Value**:
+  - `buildSectionContentBlock(type: SectionTypeKey, value: Record<string, any>): CmsContentBlock[]`
+  - `getRichTextBlockValue(value?: Record<string, any> | null): { body: string; alignment: string }`
+- **Example Usage**:
+  ```ts
+  import { buildSectionContentBlock, getRichTextBlockValue } from '@/utils/cms';
+
+  await cmsService.updatePageSection(page.id, sectionId, {
+    name: title,
+    content: buildSectionContentBlock(sectionType, contentValue),
+    archived: !isActive
+  });
+  ```
+- **Files or Features Currently Using It**: `/pages/admin/cms/pages/index.vue` (page-create section composer and the page-edit modal's add/edit-section form).
+- **Side Effects**: None (Pure functions).
+- **Accesses Browser State**: No.
+- **Performs Network Work**: No.
+- **Related Utilities**: `CmsContentBlock` / `SectionTypeKey` (`/types/cms.ts`), `useCmsService`.
+- **What It Explicitly Does Not Do**: Does not validate block field schemas per type (the backend's `SectionContentField` is authoritative) or issue API requests.
+- **Reusability Level**: High (mandatory for any code building a `CmsPageSection`/`CmsSection` write payload).
+
+---
+
 ## 2. Central HTTP Transport & Network Helpers
 
 ### `useApiClient`

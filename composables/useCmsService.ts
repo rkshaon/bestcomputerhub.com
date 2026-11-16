@@ -115,7 +115,7 @@ export const useCmsService = () => {
   };
 
   // 3. Pages
-  const getPagesList = async (params: { page?: number; page_size?: number; search?: string; status?: string } = {}): Promise<PaginatedResponse<CmsPage>> => {
+  const getPagesList = async (params: { page?: number; page_size?: number; search?: string; archived?: boolean } = {}): Promise<PaginatedResponse<CmsPage>> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
@@ -272,28 +272,12 @@ export const useCmsService = () => {
     }
   };
 
-  const patchPageSection = async (pageId: number | string, sectionId: number | string, payload: Partial<UpdateSectionPayload>): Promise<PageSectionItem> => {
-    isLoading.value = true;
-    errorMsg.value = null;
-    try {
-      return await apiClient.request<PageSectionItem>(`/api/v1/cms/pages/${pageId}/sections/${sectionId}/`, {
-        method: 'PATCH',
-        body: payload
-      });
-    } catch (err: any) {
-      errorMsg.value = err.message || 'Failed to patch page section.';
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
   const reorderPageSections = async (pageId: number | string, payload: ReorderSectionsPayload): Promise<PageSectionItem[]> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
       return await apiClient.request<PageSectionItem[]>(`/api/v1/cms/pages/${pageId}/sections/reorder/`, {
-        method: 'POST',
+        method: 'PUT',
         body: payload
       });
     } catch (err: any) {
@@ -361,6 +345,36 @@ export const useCmsService = () => {
       });
     } catch (err: any) {
       errorMsg.value = err.message || 'Failed to unpublish page.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const archivePage = async (pageId: number | string): Promise<CmsPageDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      return await apiClient.request<CmsPageDetail>(`/api/v1/cms/pages/${pageId}/archive/`, {
+        method: 'POST'
+      });
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to archive page.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const restorePage = async (pageId: number | string): Promise<CmsPageDetail> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      return await apiClient.request<CmsPageDetail>(`/api/v1/cms/pages/${pageId}/restore/`, {
+        method: 'POST'
+      });
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to restore page.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -742,11 +756,12 @@ export const useCmsService = () => {
     deletePageSection,
     reorderPageSections,
     duplicatePageSection,
-    patchPageSection,
     getPageRevisions,
     rollbackPageRevision,
     publishPage,
     unpublishPage,
+    archivePage,
+    restorePage,
     previewPage,
     getNavigationMenus,
     createNavigationMenu,
