@@ -1,4 +1,5 @@
 import type { CmsContentBlock, SectionTypeKey, RichTextBlockValue } from '@/types/cms';
+import DOMPurify from 'isomorphic-dompurify';
 
 export function buildSectionContentBlock(type: SectionTypeKey, value: Record<string, any>): CmsContentBlock[] {
   return [{ type, value }];
@@ -31,4 +32,24 @@ export function normalizeCmsPath(path: string | null | undefined): string {
   if (!clean.startsWith('/')) clean = `/${clean}`;
   if (!clean.endsWith('/')) clean = `${clean}/`;
   return clean;
+}
+
+/**
+ * Sanitizes rich text HTML using isomorphic DOMPurify (compatible with Node.js SSR and client DOM).
+ * Preserves semantic Wagtail formatting, tables, images, safe external/internal links,
+ * while eliminating dangerous executable tags (script, iframe, object, embed), inline event handlers (onerror, onclick),
+ * and unsafe URL schemes (javascript:, vbscript:, data:text/html).
+ */
+export function sanitizeCmsHtml(rawHtml: string | null | undefined): string {
+  if (!rawHtml || typeof rawHtml !== 'string') {
+    return '';
+  }
+  const trimmed = rawHtml.trim();
+  if (!trimmed) {
+    return '';
+  }
+  return DOMPurify.sanitize(trimmed, {
+    USE_PROFILES: { html: true },
+    ADD_ATTR: ['target', 'rel']
+  });
 }

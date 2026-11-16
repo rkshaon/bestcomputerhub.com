@@ -234,34 +234,30 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
-### `buildSectionContentBlock` & `getRichTextBlockValue`
+### `buildSectionContentBlock`, `getRichTextBlockValue`, `normalizeCmsPath` & `sanitizeCmsHtml`
 - **File Location**: `/utils/cms.ts`
-- **Category**: Mapper / Pure utility
-- **Scope**: Admin CMS pages, sections, and storefront CMS URL normalization
-- **Purpose**: `buildSectionContentBlock(type, value)` wraps a section's field values into the backend's required `CmsPageSection.content` shape — a one-item array of `{ type, value }` (DRF/Wagtail `StreamField`, validated by `SectionContentField` and rejecting anything that isn't a list). `getRichTextBlockValue(value)` normalizes a `rich_text` block's stored value (`{ body, alignment }`, tolerating the legacy `content` key) to a consistent shape for both reading and writing. `normalizeCmsPath(path)` ensures a storefront/CMS path has both leading and trailing slashes (per AGENTS.md §9).
+- **Category**: Mapper / Security & Pure utility
+- **Scope**: Admin CMS pages, sections, URL normalization & storefront rich text sanitization
+- **Purpose**: `buildSectionContentBlock(type, value)` wraps a section's field values into the backend's required `CmsPageSection.content` shape — a one-item array of `{ type, value }` (DRF/Wagtail `StreamField`, validated by `SectionContentField` and rejecting anything that isn't a list). `getRichTextBlockValue(value)` normalizes a `rich_text` block's stored value (`{ body, alignment }`, tolerating the legacy `content` key) to a consistent shape for both reading and writing. `normalizeCmsPath(path)` ensures a storefront/CMS path has both leading and trailing slashes (per AGENTS.md §9). `sanitizeCmsHtml(rawHtml)` purifies backend-expanded Wagtail HTML using isomorphic DOMPurify, stripping dangerous tags (`<script>`, `<iframe>`), executable attributes (`onclick`, `onerror`), and unsafe protocols (`javascript:`) while preserving semantic formatting across both SSR and client rendering.
 - **Parameters & Return Value**:
   - `buildSectionContentBlock(type: SectionTypeKey, value: Record<string, any>): CmsContentBlock[]`
-  - `getRichTextBlockValue(value?: RichTextBlockValue | Record<string, any> | null): RichTextBlockValue`
+  - `getRichTextBlockValue(value?: RichTextBlockValue | Record<string, any> | null): { body: string; alignment: string }`
   - `normalizeCmsPath(path?: string | null): string`
+  - `sanitizeCmsHtml(rawHtml?: string | null): string`
 - **Example Usage**:
   ```ts
-  import { buildSectionContentBlock, getRichTextBlockValue, normalizeCmsPath } from '@/utils/cms';
+  import { buildSectionContentBlock, getRichTextBlockValue, normalizeCmsPath, sanitizeCmsHtml } from '@/utils/cms';
 
+  const cleanHtml = sanitizeCmsHtml(section.value.body);
   const normalized = normalizeCmsPath('about-us'); // '/about-us/'
-
-  await cmsService.updatePageSection(page.id, sectionId, {
-    name: title,
-    content: buildSectionContentBlock(sectionType, contentValue),
-    archived: !isActive
-  });
   ```
-- **Files or Features Currently Using It**: `/pages/admin/cms/pages/index.vue`, `/composables/useCmsService.ts` (`getPublicPageByPath`).
+- **Files or Features Currently Using It**: `/pages/admin/cms/pages/index.vue`, `/composables/useCmsService.ts` (`getPublicPageByPath`), `/components/cms/CmsRichTextSection.vue`.
 - **Side Effects**: None (Pure functions).
 - **Accesses Browser State**: No.
 - **Performs Network Work**: No.
-- **Related Utilities**: `CmsContentBlock` / `SectionTypeKey` / `RichTextBlockValue` (`/types/cms.ts`), `useCmsService`.
+- **Related Utilities**: `CmsContentBlock` / `SectionTypeKey` / `RichTextBlockValue` (`/types/cms.ts`), `useCmsService`, `CmsRichTextSection`.
 - **What It Explicitly Does Not Do**: Does not validate block field schemas per type (the backend's `SectionContentField` is authoritative) or issue API requests.
-- **Reusability Level**: High (mandatory for any code building a `CmsPageSection`/`CmsSection` write payload or resolving CMS paths).
+- **Reusability Level**: High (mandatory for any code building a `CmsPageSection`/`CmsSection` write payload, resolving CMS paths, or rendering CMS rich text).
 
 ---
 
