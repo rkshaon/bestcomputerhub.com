@@ -231,7 +231,7 @@ export const useCmsService = () => {
     errorMsg.value = null;
     try {
       return await apiClient.request<PageSectionItem>(`/api/v1/cms/pages/${pageId}/sections/${sectionId}/`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: payload
       });
     } catch (err: any) {
