@@ -43,17 +43,6 @@ const COLLECTION_CHANGEFREQ: Record<keyof SitemapUrlsResponse, SitemapUrlObject[
   blogs: 'monthly'
 };
 
-type ValidChangefreq = NonNullable<SitemapUrlObject['changefreq']>;
-const VALID_CHANGEFREQ = new Set<ValidChangefreq>([
-  'always',
-  'hourly',
-  'daily',
-  'weekly',
-  'monthly',
-  'yearly',
-  'never'
-]);
-
 // A single path segment: letters (with combining marks, e.g. Bengali vowel
 // signs), digits, `-`, `_`, or an already percent-encoded byte (legacy
 // WordPress slugs such as `27%e2%80%b3`).
@@ -89,30 +78,6 @@ const toLastmod = (value: unknown): string | undefined => {
   if (typeof value !== 'string' || !value.trim()) return undefined;
   const time = Date.parse(value);
   return Number.isFinite(time) ? new Date(time).toISOString() : undefined;
-};
-
-const toChangefreq = (value: unknown): ValidChangefreq | undefined => {
-  if (typeof value !== 'string') return undefined;
-  const normalized = value.trim().toLowerCase() as ValidChangefreq;
-  return VALID_CHANGEFREQ.has(normalized) ? normalized : undefined;
-};
-
-const toPriority = (value: unknown): SitemapUrlObject['priority'] | undefined => {
-  if (typeof value === 'number') {
-    if (Number.isFinite(value) && value >= 0 && value <= 1) {
-      return value as SitemapUrlObject['priority'];
-    }
-    return undefined;
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (!trimmed) return undefined;
-    const parsed = Number(trimmed);
-    if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 1) {
-      return parsed as SitemapUrlObject['priority'];
-    }
-  }
-  return undefined;
 };
 
 const resolveAllowedHosts = (config: ReturnType<typeof useRuntimeConfig>): Set<string> => {
@@ -208,11 +173,7 @@ const isSitemapUrlsResponse = (data: unknown): data is SitemapUrlsResponse => {
 };
 
 const extractCmsSitemapArray = (data: unknown): unknown[] | null => {
-  if (Array.isArray(data)) return data;
-  if (data && typeof data === 'object' && Array.isArray((data as { results?: unknown }).results)) {
-    return (data as { results: unknown[] }).results;
-  }
-  return null;
+  return Array.isArray(data) ? data : null;
 };
 
 const buildCatalogEntries = (data: SitemapUrlsResponse): SitemapUrlInput[] => {
@@ -256,31 +217,29 @@ const buildCmsEntries = (records: unknown[], allowedHosts: Set<string>): Sitemap
 
   for (const record of records) {
     if (!record || typeof record !== 'object') continue;
-    const recordFlags = record as Record<string, unknown>;
+    const candidate = record as Partial<CmsSitemapEntry> & {
+      live?: unknown;
+      archived_at?: unknown;
+    };
+
     if (
-      recordFlags.live === false ||
-      Boolean(recordFlags.archived_at) ||
-      recordFlags.seo_noindex === true ||
-      recordFlags.noindex === true
+      candidate.seo_noindex === true ||
+      candidate.live === false ||
+      Boolean(candidate.archived_at)
     ) {
       continue;
     }
-    const { loc: rawLoc, lastmod, changefreq, priority } = record as Partial<CmsSitemapEntry>;
 
-    const loc = normalizeCmsLoc(rawLoc, allowedHosts);
+    const loc = normalizeCmsLoc(candidate.path, allowedHosts);
     if (!loc || seen.has(loc)) continue;
     seen.add(loc);
 
-    const entryLastmod = toLastmod(lastmod);
-    const entryChangefreq = toChangefreq(changefreq);
-    const entryPriority = toPriority(priority);
+    const entryLastmod = toLastmod(candidate.lastmod);
 
     entries.push({
       loc,
       _encoded: true,
-      ...(entryLastmod ? { lastmod: entryLastmod } : {}),
-      ...(entryChangefreq ? { changefreq: entryChangefreq } : {}),
-      ...(entryPriority !== undefined ? { priority: entryPriority } : {})
+      ...(entryLastmod ? { lastmod: entryLastmod } : {})
     });
   }
 

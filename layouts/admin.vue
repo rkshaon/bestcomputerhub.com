@@ -168,7 +168,8 @@ const iconMap = {
   Truck,
   Coins,
   Mail,
-  FileCode
+  FileCode,
+  Menu
 };
 
 const toggleSidebar = () => {

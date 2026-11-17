@@ -148,10 +148,12 @@ export interface CmsRedirect {
 }
 
 export interface CmsSitemapEntry {
-  loc: string;
-  lastmod?: string;
-  changefreq?: string;
-  priority?: number;
+  id: number;
+  title: string;
+  slug: string;
+  path: string;
+  seo_noindex: boolean;
+  lastmod?: string | null;
 }
 
 export interface RichTextBlockValue {

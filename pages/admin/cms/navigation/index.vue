@@ -890,6 +890,7 @@ const openCreateItemModal = async (parentId: number | null = null) => {
 
   editingItem.value = null;
   itemFormError.value = null;
+  pageSearchQuery.value = '';
   itemForm.value = {
     label: '',
     parent: parentId,
@@ -913,6 +914,7 @@ const openEditItemModal = async (item: NavigationTreeItem) => {
 
   editingItem.value = item;
   itemFormError.value = null;
+  pageSearchQuery.value = '';
   itemForm.value = {
     label: item.label,
     parent: item.parent ?? null,
@@ -950,6 +952,9 @@ const openEditItemModal = async (item: NavigationTreeItem) => {
   } catch (err: any) {
     toastError(extractErrorMessage(err, 'Failed to load navigation item details.'));
     isItemModalOpen.value = false;
+    editingItem.value = null;
+    isPagePickerOpen.value = false;
+    pageSearchQuery.value = '';
   } finally {
     isLoadingEditItem.value = false;
   }
@@ -961,6 +966,7 @@ const closeItemModal = () => {
   editingItem.value = null;
   itemFormError.value = null;
   isPagePickerOpen.value = false;
+  pageSearchQuery.value = '';
 };
 
 const isValidHttpUrl = (value: string): boolean => {
@@ -1020,6 +1026,7 @@ const handleSubmitItem = async () => {
 
   try {
     if (isEditMode && editingItem.value) {
+      const linkTypeChanged = editingItem.value.link_type !== itemForm.value.link_type;
       const payload: UpdateNavigationItemPayload =
         itemForm.value.link_type === 'PAGE'
           ? {
@@ -1027,6 +1034,7 @@ const handleSubmitItem = async () => {
               parent: itemForm.value.parent ?? null,
               link_type: 'PAGE',
               page: Number(itemForm.value.page),
+              ...(linkTypeChanged ? { external_url: null } : {}),
               is_visible: itemForm.value.is_visible,
               open_in_new_tab: itemForm.value.open_in_new_tab
             }
@@ -1035,6 +1043,7 @@ const handleSubmitItem = async () => {
               parent: itemForm.value.parent ?? null,
               link_type: 'EXTERNAL',
               external_url: itemForm.value.external_url.trim(),
+              ...(linkTypeChanged ? { page: null } : {}),
               is_visible: itemForm.value.is_visible,
               open_in_new_tab: itemForm.value.open_in_new_tab
             };
@@ -1071,6 +1080,8 @@ const handleSubmitItem = async () => {
 
     isItemModalOpen.value = false;
     editingItem.value = null;
+    isPagePickerOpen.value = false;
+    pageSearchQuery.value = '';
     await loadSelectedMenuDetail(menuId, { silent: true });
   } catch (err: any) {
     itemFormError.value = extractErrorMessage(

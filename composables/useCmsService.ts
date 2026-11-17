@@ -766,11 +766,11 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      const res = await apiClient.request<CmsSitemapEntry[] | { results: CmsSitemapEntry[] }>('/api/v1/cms/public/sitemap/', {
+      const res = await apiClient.request<CmsSitemapEntry[]>('/api/v1/cms/public/sitemap/', {
         method: 'GET',
         isPublic: true
       });
-      return Array.isArray(res) ? res : (res?.results || []);
+      return Array.isArray(res) ? res : [];
     } catch (err: any) {
       errorMsg.value = err.message || 'Failed to fetch public sitemap.';
       throw err;
