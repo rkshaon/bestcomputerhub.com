@@ -11,6 +11,7 @@ import type {
   CmsRevision,
   CmsNavigationMenu,
   CmsNavigationItem,
+  PublicCmsNavigationItem,
   CmsMediaImage,
   CmsMediaDocument,
   CmsAuditLog,
@@ -23,7 +24,10 @@ import type {
   UpdateSectionPayload,
   ReorderSectionsPayload,
   CreateNavigationMenuPayload,
+  UpdateNavigationMenuPayload,
   CreateNavigationItemPayload,
+  UpdateNavigationItemPayload,
+  ReorderNavigationItemsPayload,
   UploadMediaImagePayload,
   UploadMediaDocumentPayload,
   PaginatedResponse
@@ -445,12 +449,12 @@ export const useCmsService = () => {
     }
   };
 
-  const updateNavigationMenu = async (id: number | string, payload: Partial<CmsNavigationMenu>): Promise<CmsNavigationMenu> => {
+  const updateNavigationMenu = async (id: number | string, payload: UpdateNavigationMenuPayload): Promise<CmsNavigationMenu> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
       return await apiClient.request<CmsNavigationMenu>(`/api/v1/cms/navigation/${id}/`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: payload
       });
     } catch (err: any) {
@@ -476,6 +480,21 @@ export const useCmsService = () => {
     }
   };
 
+  const getNavigationItem = async (menuId: number | string, itemId: number | string): Promise<CmsNavigationItem> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      return await apiClient.request<CmsNavigationItem>(`/api/v1/cms/navigation/${menuId}/items/${itemId}/`, {
+        method: 'GET'
+      });
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to fetch navigation item.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const addNavigationItem = async (menuId: number | string, payload: CreateNavigationItemPayload): Promise<CmsNavigationItem> => {
     isLoading.value = true;
     errorMsg.value = null;
@@ -492,12 +511,12 @@ export const useCmsService = () => {
     }
   };
 
-  const updateNavigationItem = async (menuId: number | string, itemId: number | string, payload: Partial<CmsNavigationItem>): Promise<CmsNavigationItem> => {
+  const updateNavigationItem = async (menuId: number | string, itemId: number | string, payload: UpdateNavigationItemPayload): Promise<CmsNavigationItem> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
       return await apiClient.request<CmsNavigationItem>(`/api/v1/cms/navigation/${menuId}/items/${itemId}/`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: payload
       });
     } catch (err: any) {
@@ -517,6 +536,23 @@ export const useCmsService = () => {
       });
     } catch (err: any) {
       errorMsg.value = err.message || 'Failed to delete navigation item.';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const reorderNavigationItems = async (menuId: number | string, payload: ReorderNavigationItemsPayload): Promise<CmsNavigationItem[]> => {
+    isLoading.value = true;
+    errorMsg.value = null;
+    try {
+      const res = await apiClient.request<CmsNavigationItem[] | { items?: CmsNavigationItem[]; results?: CmsNavigationItem[] }>(`/api/v1/cms/navigation/${menuId}/items/reorder/`, {
+        method: 'PUT',
+        body: payload
+      });
+      return Array.isArray(res) ? res : (res?.items || res?.results || []);
+    } catch (err: any) {
+      errorMsg.value = err.message || 'Failed to reorder navigation items.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -661,14 +697,15 @@ export const useCmsService = () => {
     }
   };
 
-  const getPublicNavigation = async (key: string): Promise<CmsNavigationMenu> => {
+  const getPublicNavigation = async (key: string): Promise<PublicCmsNavigationItem[]> => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      return await apiClient.request<CmsNavigationMenu>(`/api/v1/cms/public/navigation/${key}/`, {
+      const res = await apiClient.request<PublicCmsNavigationItem[]>(`/api/v1/cms/public/navigation/${key}/`, {
         method: 'GET',
         isPublic: true
       });
+      return Array.isArray(res) ? res : [];
     } catch (err: any) {
       errorMsg.value = err.message || `Failed to fetch public navigation for key: ${key}`;
       throw err;
@@ -773,9 +810,11 @@ export const useCmsService = () => {
     getNavigationMenuDetail,
     updateNavigationMenu,
     deleteNavigationMenu,
+    getNavigationItem,
     addNavigationItem,
     updateNavigationItem,
     deleteNavigationItem,
+    reorderNavigationItems,
     getMediaImagesList,
     uploadMediaImage,
     deleteMediaImage,

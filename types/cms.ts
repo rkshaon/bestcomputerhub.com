@@ -76,28 +76,37 @@ export interface CmsRevision {
   created_at?: string;
 }
 
+export type NavigationLinkType = 'PAGE' | 'EXTERNAL';
+
 export interface CmsNavigationMenu {
-  id: number | string;
+  id: number;
   name: string;
   key: string;
-  description?: string;
-  is_active?: boolean;
+  is_active: boolean;
   items?: CmsNavigationItem[];
   created_at?: string;
   updated_at?: string;
 }
 
 export interface CmsNavigationItem {
-  id: number | string;
-  menu: number | string;
-  parent?: number | string | null;
-  title: string;
+  id: number;
+  menu: number;
+  parent: number | null;
+  label: string;
+  link_type: NavigationLinkType;
+  page: number | null;
+  external_url: string | null;
+  is_visible: boolean;
+  open_in_new_tab: boolean;
+  sort_order: number;
+}
+
+export interface PublicCmsNavigationItem {
+  id: number;
+  label: string;
   url: string;
-  display_order: number;
-  is_active?: boolean;
-  children?: CmsNavigationItem[];
-  created_at?: string;
-  updated_at?: string;
+  open_in_new_tab: boolean;
+  children: PublicCmsNavigationItem[];
 }
 
 export interface CmsMediaImage {
@@ -228,17 +237,50 @@ export interface ReorderSectionsPayload {
 export interface CreateNavigationMenuPayload {
   name: string;
   key: string;
-  description?: string;
-  is_active?: boolean;
 }
 
-export interface CreateNavigationItemPayload {
-  menu: number | string;
-  parent?: number | string | null;
-  title: string;
-  url: string;
-  display_order?: number;
-  is_active?: boolean;
+export interface UpdateNavigationMenuPayload {
+  name?: string;
+  key?: string;
+}
+
+export interface CreateNavigationPageItemPayload {
+  label: string;
+  link_type: 'PAGE';
+  page: number;
+  external_url?: null | '';
+  parent?: number | null;
+  is_visible?: boolean;
+  open_in_new_tab?: boolean;
+}
+
+export interface CreateNavigationExternalItemPayload {
+  label: string;
+  link_type: 'EXTERNAL';
+  external_url: string;
+  page?: null;
+  parent?: number | null;
+  is_visible?: boolean;
+  open_in_new_tab?: boolean;
+}
+
+export type CreateNavigationItemPayload =
+  | CreateNavigationPageItemPayload
+  | CreateNavigationExternalItemPayload;
+
+export interface UpdateNavigationItemPayload {
+  label?: string;
+  link_type?: NavigationLinkType;
+  page?: number | null;
+  external_url?: string | null;
+  parent?: number | null;
+  is_visible?: boolean;
+  open_in_new_tab?: boolean;
+}
+
+export interface ReorderNavigationItemsPayload {
+  parent?: number | null;
+  order: number[];
 }
 
 export interface UploadMediaImagePayload {
