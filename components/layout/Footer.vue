@@ -1,7 +1,18 @@
 <!-- File: /components/layout/Footer.vue -->
 <script setup lang="ts">
 // TEMPORARILY DISABLED: Newsletter Icons (Mail, ArrowRight)
+import { computed } from 'vue';
 import { Facebook, Twitter, Linkedin, Youtube, Instagram, Phone, Mail, MapPin } from 'lucide-vue-next';
+import { useCmsService } from '@/composables/useCmsService';
+import type { PublicCmsNavigationItem } from '@/types/cms';
+import FooterNavList, { type FooterNavLinkItem } from '@/components/layout/FooterNavList.vue';
+
+interface FooterSectionColumn {
+  id: string | number;
+  title: string;
+  alignClass: 'text-left' | 'text-center' | 'text-right';
+  links: FooterNavLinkItem[];
+}
 
 const currentYear = new Date().getFullYear();
 const route = useRoute();
@@ -9,7 +20,6 @@ const isAuthRoute = computed(() => {
   const p = route.path;
   return p === '/login' || p === '/login/' || p === '/signup' || p === '/signup/';
 });
-
 
 const socialLinks = [
   { 
@@ -48,6 +58,119 @@ const socialLinks = [
     brandBorder: 'border-[#FF0000]'
   }
 ];
+
+const FALLBACK_FOOTER_SECTIONS: FooterSectionColumn[] = [
+  {
+    id: 'fallback-information',
+    title: 'Information',
+    alignClass: 'text-center',
+    links: [
+      { id: 'info-about', label: 'About Us', url: '/about-us/', open_in_new_tab: false, children: [] },
+      { id: 'info-contact', label: 'Contact Us', url: null, open_in_new_tab: false, children: [] },
+      { id: 'info-affiliation', label: 'Affiliation', url: null, open_in_new_tab: false, children: [] },
+      { id: 'info-emi', label: 'EMI Information', url: '/emi-information/', open_in_new_tab: false, children: [] },
+      { id: 'info-shop', label: 'Shop Now', url: '/shop-now/', open_in_new_tab: false, children: [] },
+      { id: 'info-blog', label: 'Blog', url: '/blog/', open_in_new_tab: false, children: [] },
+      { id: 'info-repair', label: 'Repair Hub', url: null, open_in_new_tab: false, children: [] }
+    ]
+  },
+  {
+    id: 'fallback-policy',
+    title: 'Policy',
+    alignClass: 'text-center',
+    links: [
+      { id: 'policy-disclaimer', label: 'Disclaimer', url: '/disclaimer/', open_in_new_tab: false, children: [] },
+      { id: 'policy-privacy', label: 'Privacy Policy', url: '/privacy-policy/', open_in_new_tab: false, children: [] },
+      { id: 'policy-warranty', label: 'Warranty Policy', url: '/warranty-policy/', open_in_new_tab: false, children: [] },
+      { id: 'policy-return', label: 'Return, Refund & After-Sales Policy', url: '/return-refund-after-sales-policy/', open_in_new_tab: false, children: [] },
+      { id: 'policy-delivery', label: 'Delivery Policy', url: '/delivery-policy/', open_in_new_tab: false, children: [] },
+      { id: 'policy-terms', label: 'Terms & Conditions', url: null, open_in_new_tab: false, children: [] },
+      { id: 'policy-dcg', label: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: '/digital-commerce-guidelines/', open_in_new_tab: false, children: [] }
+    ]
+  },
+  {
+    id: 'fallback-support-hub',
+    title: 'Support Hub',
+    alignClass: 'text-right',
+    links: [
+      { id: 'support-account', label: 'My account', url: '/my-account/', open_in_new_tab: false, children: [] },
+      { id: 'support-cart', label: 'Cart', url: null, open_in_new_tab: false, children: [] },
+      { id: 'support-compare', label: 'Compare', url: null, open_in_new_tab: false, children: [] },
+      { id: 'support-wishlist', label: 'Wishlist', url: null, open_in_new_tab: false, children: [] },
+      { id: 'support-checkout', label: 'Checkout', url: null, open_in_new_tab: false, children: [] },
+      { id: 'support-track', label: 'Track Your Order', url: null, open_in_new_tab: false, children: [] }
+    ]
+  }
+];
+
+const normalizeNavNode = (
+  raw: unknown,
+  visited: Set<string | number>
+): FooterNavLinkItem | null => {
+  if (!raw || typeof raw !== 'object') return null;
+  const candidate = raw as Partial<PublicCmsNavigationItem>;
+  if (candidate.id === undefined || candidate.id === null) return null;
+  if (typeof candidate.label !== 'string' || !candidate.label.trim()) return null;
+  if (visited.has(candidate.id)) return null;
+
+  const nextVisited = new Set(visited);
+  nextVisited.add(candidate.id);
+
+  const rawChildren = Array.isArray(candidate.children) ? candidate.children : [];
+  const children = rawChildren
+    .map(child => normalizeNavNode(child, nextVisited))
+    .filter((child): child is FooterNavLinkItem => child !== null);
+
+  return {
+    id: candidate.id,
+    label: candidate.label.trim(),
+    url: typeof candidate.url === 'string' && candidate.url.trim() ? candidate.url.trim() : null,
+    open_in_new_tab: Boolean(candidate.open_in_new_tab),
+    children
+  };
+};
+
+const cmsService = useCmsService();
+
+const { data: footerNavItems } = await useAsyncData<PublicCmsNavigationItem[]>(
+  'storefront-footer-navigation',
+  async () => {
+    try {
+      const items = await cmsService.getPublicNavigation('footer');
+      return Array.isArray(items) ? items : [];
+    } catch {
+      return [];
+    }
+  },
+  {
+    lazy: false,
+    default: () => [],
+    getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] || nuxtApp.static.data[key]
+  }
+);
+
+const footerSections = computed<FooterSectionColumn[]>(() => {
+  const raw = footerNavItems.value;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return FALLBACK_FOOTER_SECTIONS;
+  }
+
+  const visited = new Set<string | number>();
+  const normalizedTopLevel = raw
+    .map(node => normalizeNavNode(node, visited))
+    .filter((node): node is FooterNavLinkItem => node !== null);
+
+  if (normalizedTopLevel.length === 0) {
+    return FALLBACK_FOOTER_SECTIONS;
+  }
+
+  return normalizedTopLevel.map((col, idx) => ({
+    id: col.id,
+    title: col.label,
+    alignClass: idx >= 2 && idx === normalizedTopLevel.length - 1 ? 'text-right' : 'text-center',
+    links: col.children
+  }));
+});
 </script>
 
 <template>
@@ -100,53 +223,17 @@ const socialLinks = [
         </div>
 
         <!-- Links Grid -->
-        <div v-for="section in [
-          { 
-            title: 'Information', 
-            alignClass: 'text-center',
-            links: [
-              { name: 'About Us', url: '/about-us/' },
-              { name: 'Contact Us', url: null },
-              { name: 'Affiliation', url: null },
-              { name: 'EMI Information', url: '/emi-information/' },
-              { name: 'Shop Now', url: '/shop-now/' },
-              { name: 'Blog', url: '/blog/' },
-              { name: 'Repair Hub', url: null }
-            ] 
-          },
-          { 
-            title: 'Policy', 
-            alignClass: 'text-center',
-            links: [
-              { name: 'Disclaimer', url: '/disclaimer/' },
-              { name: 'Privacy Policy', url: '/privacy-policy/' },
-              { name: 'Warranty Policy', url: '/warranty-policy/' },
-              { name: 'Return, Refund & After-Sales Policy', url: '/return-refund-after-sales-policy/' },
-              { name: 'Delivery Policy', url: '/delivery-policy/' },
-              { name: 'Terms & Conditions', url: null },
-              { name: 'ডিজিটাল কমার্স নির্দেশিকা ২০২১', url: '/digital-commerce-guidelines/' }
-            ] 
-          },
-          { 
-            title: 'Support Hub', 
-            alignClass: 'text-right',
-            links: [
-              { name: 'My account', url: '/my-account/' },
-              { name: 'Cart', url: null },
-              { name: 'Compare', url: null },
-              { name: 'Wishlist', url: null },
-              { name: 'Checkout', url: null },
-              { name: 'Track Your Order', url: null }
-            ] 
-          }
-        ]" :key="section.title" :class="['space-y-3 sm:space-y-4 px-0', section.alignClass]">
+        <div
+          v-for="section in footerSections"
+          :key="section.id"
+          :class="['space-y-3 sm:space-y-4 px-0', section.alignClass]"
+        >
           <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-header-foreground px-0 mx-0">{{ section.title }}</h4>
-          <ul class="space-y-2.5 sm:space-y-3 px-0 mx-0 list-none">
-            <li v-for="link in section.links" :key="link.name" class="px-0 mx-0">
-              <NuxtLink v-if="link.url" :to="link.url" class="inline-block text-xs sm:text-sm text-header-muted-foreground hover:text-header-primary transition-colors px-0 mx-0">{{ link.name }}</NuxtLink>
-              <span v-else class="inline-block text-xs sm:text-sm text-header-muted-foreground px-0 mx-0">{{ link.name }}</span>
-            </li>
-          </ul>
+          <FooterNavList
+            v-if="section.links.length > 0"
+            :items="section.links"
+            :align-class="section.alignClass"
+          />
         </div>
       </div>
 

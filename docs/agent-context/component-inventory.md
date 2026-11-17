@@ -393,16 +393,37 @@ Components are classified using four standard metadata properties:
 - **Exact File Location**: `/components/layout/Footer.vue`
 - **Component Type**: Layout component
 - **Scope**: Storefront
-- **Purpose**: Master Storefront footer section.
+- **Purpose**: Master Storefront footer section combining static contact/social info with dynamic CMS navigation columns (`footer` menu key) and resilient static fallback sections.
 - **Routes/Pages Used**: Rendered on all Storefront pages via `/layouts/default.vue`.
-- **Main Responsibilities**: Render brand description, category quick links, customer support info, payment badge icons, copyright notice, social media links.
-- **What It Explicitly Does Not Own**: Page routing logic.
-- **State Owned**: None.
-- **Calls API**: No
-- **Related Composables/Services**: None.
+- **Main Responsibilities**:
+  - Render static Column 1 (`We're Here to Help`) with contact details and social media links, plus copyright bar.
+  - Fetch public CMS `footer` navigation menu via SSR-safe `useAsyncData` (`cmsService.getPublicNavigation('footer')`) with payload caching to avoid repeated requests.
+  - Render dynamic columns using top-level labels as column headings and `<FooterNavList>` for recursive child links, falling back cleanly to hardcoded `Information`, `Policy`, and `Support Hub` sections if the API fails or returns empty/invalid data.
+- **What It Explicitly Does Not Own**: Page routing logic or admin navigation editing.
+- **State Owned**: Cached `footerNavItems` async data and computed normalized `footerSections`.
+- **Calls API**: Yes (`cmsService.getPublicNavigation('footer')`, `isPublic: true`).
+- **Related Composables/Services**: `useCmsService`, `<FooterNavList>`.
 - **Responsive Responsibility**: 4-column balanced responsive grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`) occupying 90% width centered horizontally on desktop (`w-full lg:w-[90%] mx-auto`) with compact navigation columns and full width on smaller screens.
 - **Reusability Level**: High (Singleton layout component)
-- **Important Behavior to Preserve**: Trailing slash storefront URL targets on footer navigation links.
+- **Important Behavior to Preserve**: Trailing slash storefront URL targets, exact fallback columns on API error/empty response, and unchanged static Column 1 layout.
+- **Known Architectural Risks**: None.
+
+---
+
+### `<FooterNavList>`
+- **Exact File Location**: `/components/layout/FooterNavList.vue`
+- **Component Type**: Layout / Navigation helper
+- **Scope**: Storefront
+- **Purpose**: Recursive navigation link list renderer for `<LayoutFooter>` columns supporting internal `<NuxtLink>` routes, external `<a>` targets, `open_in_new_tab`, non-linked `<span>` labels, and bounded nested children.
+- **Routes/Pages Used**: Storefront default layout via `/components/layout/Footer.vue`.
+- **Main Responsibilities**: Validate URL schemes (`http(s)`, `mailto`, `tel`, relative `/`), apply `target="_blank"` + `rel="noopener noreferrer"` when `open_in_new_tab` is enabled, and recursively render nested `children` (capped at depth 5) while matching column text alignment.
+- **What It Explicitly Does Not Own**: Data fetching, fallback definitions, or column heading typography.
+- **State Owned**: Computed alignment/list classes.
+- **Calls API**: No.
+- **Related Composables/Services**: None.
+- **Responsive Responsibility**: Preserves existing compact vertical spacing and typography scale (`text-xs sm:text-sm` for root links, `text-[11px] sm:text-xs` for nested children).
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: Safe URL validation and `rel="noopener noreferrer"` on `open_in_new_tab`.
 - **Known Architectural Risks**: None.
 
 ---
