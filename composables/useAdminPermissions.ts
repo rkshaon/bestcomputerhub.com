@@ -259,10 +259,10 @@ export const ADMIN_MODULES: Record<string, AdminModuleConfig> = {
     route: '/admin/cms/navigation',
     name: 'Navigation Menus',
     iconKey: 'Menu',
-    viewPermission: ['cms.view_cmsnavigation', 'cms_api.view_cmsnavigation', 'view_cmsnavigation'],
-    createPermission: ['cms.add_cmsnavigation', 'cms_api.add_cmsnavigation', 'add_cmsnavigation'],
-    editPermission: ['cms.change_cmsnavigation', 'cms_api.change_cmsnavigation', 'change_cmsnavigation'],
-    deletePermission: ['cms.delete_cmsnavigation', 'cms_api.delete_cmsnavigation', 'delete_cmsnavigation']
+    viewPermission: ['cms.manage_cms_navigation', 'cms_api.manage_cms_navigation', 'manage_cms_navigation'],
+    createPermission: ['cms.manage_cms_navigation', 'cms_api.manage_cms_navigation', 'manage_cms_navigation'],
+    editPermission: ['cms.manage_cms_navigation', 'cms_api.manage_cms_navigation', 'manage_cms_navigation'],
+    deletePermission: ['cms.manage_cms_navigation', 'cms_api.manage_cms_navigation', 'manage_cms_navigation']
   },
   cmsRedirects: {
     key: 'cmsRedirects',

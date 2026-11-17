@@ -848,6 +848,28 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<NavigationTreeNode>`
+- **Exact File Location**: `/components/admin/NavigationTreeNode.vue`
+- **Component Type**: Domain / Feature component
+- **Scope**: Admin
+- **Purpose**: Recursive hierarchical CMS navigation item row renderer supporting expand/collapse, target type/URL preview, visibility toggle, sibling-only drag-and-drop and up/down reordering, and permission-gated CRUD actions.
+- **Routes/Pages Used**: Admin CMS Navigation Page (`/admin/cms/navigation/`).
+- **Main Responsibilities**:
+  - Render drag handle, expand/collapse chevron, item label, link-type pill (`Page` vs `External`), resolved target summary, `Hidden` and `New tab` badges, and child counts.
+  - Provide permission-gated actions (`move-sibling`, `toggle-visibility`, `add-child`, `edit`, `delete`) with accessible `aria-label` and `title` attributes.
+  - Handle sibling-only HTML5 drag-and-drop events via `draggedNavItem` / `dragOverNavItemId` injections.
+  - Recursively render nested `children` branches.
+- **What It Explicitly Does Not Own**: Flat-to-tree assembly, API requests, modal state, or permission checks (receives computed flags and emits events to parent page).
+- **State Owned**: Computed target summary, sibling move eligibility, drag-hover highlight injection.
+- **Calls API**: No.
+- **Related Composables/Services**: `cn` utility (`/utils/index.ts`).
+- **Responsive Responsibility**: Responsive depth indentation (`clamp(...)`), stacks action buttons cleanly on small screens.
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: Sibling-only drop guard (`source.parent === target.parent`) and reordering disablement when search filtering is active or reordering is in-flight.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<ProductImageGallery>`
 - **Exact File Location**: `/components/admin/ProductImageGallery.vue`
 - **Component Type**: Domain / Feature component / Image Management
