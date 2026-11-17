@@ -256,6 +256,15 @@ const buildCmsEntries = (records: unknown[], allowedHosts: Set<string>): Sitemap
 
   for (const record of records) {
     if (!record || typeof record !== 'object') continue;
+    const recordFlags = record as Record<string, unknown>;
+    if (
+      recordFlags.live === false ||
+      Boolean(recordFlags.archived_at) ||
+      recordFlags.seo_noindex === true ||
+      recordFlags.noindex === true
+    ) {
+      continue;
+    }
     const { loc: rawLoc, lastmod, changefreq, priority } = record as Partial<CmsSitemapEntry>;
 
     const loc = normalizeCmsLoc(rawLoc, allowedHosts);

@@ -76,7 +76,9 @@ export default defineNuxtConfig({
       { loc: '/return-refund-after-sales-policy/', priority: 0.4, changefreq: 'yearly' },
       { loc: '/warranty-policy/', priority: 0.4, changefreq: 'yearly' },
       { loc: '/disclaimer/', priority: 0.3, changefreq: 'yearly' },
-      { loc: '/digital-commerce-guidelines/', priority: 0.3, changefreq: 'yearly' }
+      { loc: '/digital-commerce-guidelines/', priority: 0.3, changefreq: 'yearly' },
+      { loc: '/emi-information/', priority: 0.4, changefreq: 'yearly' },
+      { loc: '/delivery-policy/', priority: 0.4, changefreq: 'yearly' }
     ],
     // Products, categories, brands and blog posts from the backend,
     // fetched at request time (see server/api/__sitemap__/urls.ts).
