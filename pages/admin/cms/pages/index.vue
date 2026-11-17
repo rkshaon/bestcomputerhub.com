@@ -1,6 +1,6 @@
 <!-- File: /pages/admin/cms/pages/index.vue -->
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { 
   FileCode, 
   Plus, 
@@ -59,6 +59,7 @@ const fetchError = ref<string | null>(null);
 const isDeleting = ref(false);
 const isSubmitting = ref(false);
 const formError = ref<string | null>(null);
+const createModalBodyRef = ref<HTMLElement | null>(null);
 
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
@@ -538,9 +539,18 @@ watch(() => modalState.isCreate.value, (isCr) => {
   }
 });
 
+const scrollCreateModalToTop = () => {
+  nextTick(() => {
+    createModalBodyRef.value?.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+};
+
 const handleCreatePage = async () => {
+  if (isSubmitting.value) return;
+
   if (!newPageForm.value.title?.trim() || !newPageForm.value.slug?.trim()) {
     formError.value = 'Title and slug are required fields.';
+    scrollCreateModalToTop();
     return;
   }
   if (!canCreate.value) {
@@ -579,6 +589,7 @@ const handleCreatePage = async () => {
   } catch (err: any) {
     formError.value = extractErrorMessage(err, 'Failed to create CMS page.');
     toastError(formError.value);
+    scrollCreateModalToTop();
   } finally {
     isSubmitting.value = false;
   }
@@ -963,114 +974,116 @@ onMounted(async () => {
       subtitle="Configure basic metadata and slug for the new page."
       @close="modalState.closeModal()"
     >
-      <div class="p-6 space-y-4">
-        <div v-if="formError" class="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive flex items-center gap-2">
-          <AlertCircle class="w-4 h-4 shrink-0" />
-          <span>{{ formError }}</span>
-        </div>
+      <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div ref="createModalBodyRef" class="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+          <div v-if="formError" class="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive flex items-center gap-2">
+            <AlertCircle class="w-4 h-4 shrink-0" />
+            <span>{{ formError }}</span>
+          </div>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-bold text-foreground">Page Title *</label>
-          <input 
-            v-model="newPageForm.title" 
-            type="text" 
-            placeholder="e.g. About Us" 
-            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Page Title *</label>
+            <input 
+              v-model="newPageForm.title" 
+              type="text" 
+              placeholder="e.g. About Us" 
+              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-bold text-foreground">URL Slug *</label>
-          <input 
-            v-model="newPageForm.slug" 
-            type="text" 
-            placeholder="e.g. about-us" 
-            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">URL Slug *</label>
+            <input 
+              v-model="newPageForm.slug" 
+              type="text" 
+              placeholder="e.g. about-us" 
+              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-bold text-foreground">Template</label>
-          <select
-            v-model="newPageForm.template_key"
-            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="blank">Blank</option>
-            <option value="landing">Landing</option>
-            <option value="about">About</option>
-            <option value="contact">Contact</option>
-            <option value="campaign">Campaign</option>
-          </select>
-          <p class="text-[11px] text-muted-foreground">Seeds initial sections only; ignored if you add sections below. New pages are created as drafts — publish from the page list once ready.</p>
-        </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">Template</label>
+            <select
+              v-model="newPageForm.template_key"
+              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="blank">Blank</option>
+              <option value="landing">Landing</option>
+              <option value="about">About</option>
+              <option value="contact">Contact</option>
+              <option value="campaign">Campaign</option>
+            </select>
+            <p class="text-[11px] text-muted-foreground">Seeds initial sections only; ignored if you add sections below. New pages are created as drafts — publish from the page list once ready.</p>
+          </div>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-bold text-foreground">SEO Title</label>
-          <input
-            v-model="newPageForm.seo_title"
-            type="text"
-            placeholder="SEO Title"
-            class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">SEO Title</label>
+            <input
+              v-model="newPageForm.seo_title"
+              type="text"
+              placeholder="SEO Title"
+              class="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-bold text-foreground">SEO Description</label>
-          <textarea
-            v-model="newPageForm.seo_description"
-            rows="2"
-            placeholder="SEO Description"
-            class="w-full p-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-          ></textarea>
-        </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-foreground">SEO Description</label>
+            <textarea
+              v-model="newPageForm.seo_description"
+              rows="2"
+              placeholder="SEO Description"
+              class="w-full p-3 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            ></textarea>
+          </div>
 
-        <!-- Page-Specific Content Sections Builder -->
-        <div class="space-y-3 pt-3 border-t border-border">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">Page Content Sections</h3>
-              <p class="text-[11px] text-muted-foreground">Add custom sections to compose this page layout (leaves template empty).</p>
+          <!-- Page-Specific Content Sections Builder -->
+          <div class="space-y-3 pt-3 border-t border-border">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">Page Content Sections</h3>
+                <p class="text-[11px] text-muted-foreground">Add custom sections to compose this page layout (leaves template empty).</p>
+              </div>
+              <UiButton type="button" size="sm" class="h-8 px-3 gap-1.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="openAddCreateSectionModal">
+                <Plus class="w-3.5 h-3.5" />
+                <span>Add Content Section</span>
+              </UiButton>
             </div>
-            <UiButton type="button" size="sm" class="h-8 px-3 gap-1.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="openAddCreateSectionModal">
-              <Plus class="w-3.5 h-3.5" />
-              <span>Add Content Section</span>
-            </UiButton>
-          </div>
 
-          <div v-if="createSections.length === 0" class="p-4 text-center bg-muted/30 border border-dashed border-border rounded-xl">
-            <p class="text-xs text-muted-foreground">No custom sections added. The selected template default sections will be used.</p>
-          </div>
+            <div v-if="createSections.length === 0" class="p-4 text-center bg-muted/30 border border-dashed border-border rounded-xl">
+              <p class="text-xs text-muted-foreground">No custom sections added. The selected template default sections will be used.</p>
+            </div>
 
-          <div v-else class="space-y-2 max-h-48 overflow-y-auto pr-1">
-            <div v-for="(sec, idx) in createSections" :key="sec.id" class="p-2.5 bg-card border border-border rounded-xl flex items-center justify-between gap-2 shadow-xs">
-              <div class="flex items-center gap-2 min-w-0">
-                <div class="flex flex-col gap-0.5 shrink-0 text-[10px]">
-                  <button type="button" :disabled="idx === 0" class="hover:text-foreground disabled:opacity-30" @click="moveCreateSection(idx, 'up')">▲</button>
-                  <button type="button" :disabled="idx === createSections.length - 1" class="hover:text-foreground disabled:opacity-30" @click="moveCreateSection(idx, 'down')">▼</button>
-                </div>
-                <div class="min-w-0">
-                  <div class="flex items-center gap-1.5">
-                    <span class="font-bold text-xs text-foreground truncate">{{ sec.name }}</span>
-                    <span class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/20">{{ sec.section_type }}</span>
+            <div v-else class="space-y-2 max-h-48 overflow-y-auto pr-1">
+              <div v-for="(sec, idx) in createSections" :key="sec.id" class="p-2.5 bg-card border border-border rounded-xl flex items-center justify-between gap-2 shadow-xs">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div class="flex flex-col gap-0.5 shrink-0 text-[10px]">
+                    <button type="button" :disabled="idx === 0" class="hover:text-foreground disabled:opacity-30" @click="moveCreateSection(idx, 'up')">▲</button>
+                    <button type="button" :disabled="idx === createSections.length - 1" class="hover:text-foreground disabled:opacity-30" @click="moveCreateSection(idx, 'down')">▼</button>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-bold text-xs text-foreground truncate">{{ sec.name }}</span>
+                      <span class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/20">{{ sec.section_type }}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="flex items-center gap-1 shrink-0">
-                <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Edit Section" @click="openEditCreateSectionModal(idx)">
-                  <Edit2 class="w-3 h-3" />
-                </UiButton>
-                <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Duplicate Section" @click="duplicateCreateSection(idx)">
-                  <Copy class="w-3 h-3" />
-                </UiButton>
-                <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-destructive/80 hover:text-destructive hover:bg-destructive/10 rounded-lg" title="Remove Section" @click="removeCreateSection(idx)">
-                  <Trash2 class="w-3 h-3" />
-                </UiButton>
+                <div class="flex items-center gap-1 shrink-0">
+                  <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Edit Section" @click="openEditCreateSectionModal(idx)">
+                    <Edit2 class="w-3 h-3" />
+                  </UiButton>
+                  <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Duplicate Section" @click="duplicateCreateSection(idx)">
+                    <Copy class="w-3 h-3" />
+                  </UiButton>
+                  <UiButton type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 text-destructive/80 hover:text-destructive hover:bg-destructive/10 rounded-lg" title="Remove Section" @click="removeCreateSection(idx)">
+                    <Trash2 class="w-3 h-3" />
+                  </UiButton>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
+        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-card shrink-0">
           <UiButton variant="outline" class="h-10 px-4 text-xs font-semibold rounded-xl" @click="modalState.closeModal()" :disabled="isSubmitting">Cancel</UiButton>
           <UiButton class="h-10 px-4 text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-sm" @click="handleCreatePage" :disabled="isSubmitting">
             <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin mr-1.5" />
