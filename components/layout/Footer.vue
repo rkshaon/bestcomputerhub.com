@@ -1,7 +1,7 @@
 <!-- File: /components/layout/Footer.vue -->
 <script setup lang="ts">
 // TEMPORARILY DISABLED: Newsletter Icons (Mail, ArrowRight)
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { Facebook, Twitter, Linkedin, Youtube, Instagram, Phone, Mail, MapPin } from 'lucide-vue-next';
 import { useCmsService } from '@/composables/useCmsService';
 import type { PublicCmsNavigationItem } from '@/types/cms';
@@ -132,22 +132,23 @@ const normalizeNavNode = (
 
 const cmsService = useCmsService();
 
-const { data: footerNavItems } = await useAsyncData<PublicCmsNavigationItem[]>(
+const { data: footerNavItems, error: footerNavError, refresh: refreshFooterNav } = await useAsyncData<PublicCmsNavigationItem[]>(
   'storefront-footer-navigation',
   async () => {
-    try {
-      const items = await cmsService.getPublicNavigation('footer');
-      return Array.isArray(items) ? items : [];
-    } catch {
-      return [];
-    }
+    const items = await cmsService.getPublicNavigation('footer');
+    return Array.isArray(items) ? items : [];
   },
   {
     lazy: false,
-    default: () => [],
-    getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] || nuxtApp.static.data[key]
+    default: () => []
   }
 );
+
+onMounted(() => {
+  if (footerNavError.value) {
+    void refreshFooterNav();
+  }
+});
 
 const footerSections = computed<FooterSectionColumn[]>(() => {
   const raw = footerNavItems.value;
