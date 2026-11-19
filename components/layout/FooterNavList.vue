@@ -1,14 +1,12 @@
 <!-- File: /components/layout/FooterNavList.vue -->
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { NavigationLinkType } from '@/types/cms';
 import { normalizeCmsPath } from '@/utils/cms';
 
 export interface FooterNavLinkItem {
   id: string | number;
   label: string;
   url: string | null;
-  link_type?: NavigationLinkType;
   slug?: string | null;
   open_in_new_tab: boolean;
   children: FooterNavLinkItem[];
@@ -45,16 +43,38 @@ const itemTextClass = computed(() => {
   return 'inline-block text-[11px] sm:text-xs text-header-muted-foreground/85 transition-colors px-0 mx-0';
 });
 
+const getSafeSlugPath = (rawSlug: string | null | undefined): string | null => {
+  if (typeof rawSlug !== 'string') return null;
+  const trimmed = rawSlug.trim();
+  if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('\\')) return null;
+  const cleaned = trimmed.replace(/^\/+|\/+$/g, '');
+  if (!cleaned) return null;
+  const collapsed = cleaned.replace(/[\u0000-\u0020]+/g, '').toLowerCase();
+  if (/^[a-z][a-z0-9+.-]*:/.test(collapsed)) return null;
+  return normalizeCmsPath(cleaned);
+};
+
 const getSafeUrl = (rawUrl: string | null | undefined): string | null => {
   if (!rawUrl || typeof rawUrl !== 'string') return null;
   const trimmed = rawUrl.trim();
   if (!trimmed || trimmed === '#') return null;
-  if (trimmed.startsWith('//')) return null;
 
   const collapsed = trimmed.replace(/[\u0000-\u0020]+/g, '').toLowerCase();
-  const schemeMatch = collapsed.match(/^([a-z][a-z0-9+.-]*):/);
-  if (schemeMatch && schemeMatch[1] && !['http', 'https', 'mailto', 'tel'].includes(schemeMatch[1])) {
+  if (
+    collapsed.startsWith('//') ||
+    collapsed.startsWith('/\\') ||
+    collapsed.startsWith('\\')
+  ) {
     return null;
+  }
+
+  const schemeMatch = collapsed.match(/^([a-z][a-z0-9+.-]*):/);
+  if (schemeMatch && schemeMatch[1]) {
+    return ['http', 'https', 'mailto', 'tel'].includes(schemeMatch[1]) ? trimmed : null;
+  }
+
+  if (!trimmed.startsWith('/') && !trimmed.startsWith('?') && !trimmed.startsWith('#')) {
+    return `/${trimmed}`;
   }
 
   return trimmed;
@@ -65,25 +85,9 @@ const isExternalUrl = (url: string): boolean => {
 };
 
 const getResolvedLink = (item: FooterNavLinkItem): { href: string; external: boolean } | null => {
-  if (item.link_type === 'PAGE') {
-    if (typeof item.slug === 'string' && item.slug.trim()) {
-      return { href: normalizeCmsPath(item.slug), external: false };
-    }
-    const safeUrl = getSafeUrl(item.url);
-    if (safeUrl && !isExternalUrl(safeUrl)) {
-      return { href: safeUrl, external: false };
-    }
-    return null;
-  }
-
-  if (item.link_type === 'EXTERNAL') {
-    const safeUrl = getSafeUrl(item.url);
-    if (!safeUrl) return null;
-    return { href: safeUrl, external: isExternalUrl(safeUrl) };
-  }
-
-  if (typeof item.slug === 'string' && item.slug.trim()) {
-    return { href: normalizeCmsPath(item.slug), external: false };
+  const slugPath = getSafeSlugPath(item.slug);
+  if (slugPath) {
+    return { href: slugPath, external: false };
   }
 
   const safeUrl = getSafeUrl(item.url);
