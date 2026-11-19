@@ -33,6 +33,16 @@ import type {
   PaginatedResponse
 } from '@/types';
 
+const PUBLIC_PAGE_INDEX_TTL_MS = 120 * 1000;
+
+interface PublicPageIndexCacheEntry {
+  entries: CmsSitemapEntry[];
+  expiresAt: number;
+}
+
+let publicPageIndexCache: PublicPageIndexCacheEntry | null = null;
+let publicPageIndexInFlight: Promise<CmsSitemapEntry[]> | null = null;
+
 export const useCmsService = () => {
   const apiClient = useApiClient();
   const isLoading = ref(false);
@@ -697,6 +707,41 @@ export const useCmsService = () => {
     }
   };
 
+  const getPublicPageIndex = async (): Promise<CmsSitemapEntry[]> => {
+    if (publicPageIndexCache && Date.now() < publicPageIndexCache.expiresAt) {
+      return publicPageIndexCache.entries;
+    }
+
+    if (publicPageIndexInFlight) {
+      return publicPageIndexInFlight;
+    }
+
+    let requestPromise: Promise<CmsSitemapEntry[]> | null = null;
+    requestPromise = (async (): Promise<CmsSitemapEntry[]> => {
+      try {
+        const res = await apiClient.request<CmsSitemapEntry[]>('/api/v1/cms/public/pages/', {
+          method: 'GET',
+          isPublic: true
+        });
+        if (!Array.isArray(res)) {
+          throw new Error('Malformed public CMS pages response.');
+        }
+        publicPageIndexCache = {
+          entries: res,
+          expiresAt: Date.now() + PUBLIC_PAGE_INDEX_TTL_MS
+        };
+        return res;
+      } finally {
+        if (publicPageIndexInFlight === requestPromise) {
+          publicPageIndexInFlight = null;
+        }
+      }
+    })();
+
+    publicPageIndexInFlight = requestPromise;
+    return requestPromise;
+  };
+
   const getPublicPageBySlug = async (slug: string): Promise<PublicCmsPage> => {
     isLoading.value = true;
     errorMsg.value = null;
@@ -715,14 +760,7 @@ export const useCmsService = () => {
         // Keep raw slug when percent-decoding is invalid
       }
 
-      const entries = await apiClient.request<CmsSitemapEntry[]>('/api/v1/cms/public/pages/', {
-        method: 'GET',
-        isPublic: true
-      });
-
-      if (!Array.isArray(entries)) {
-        throw new Error('Malformed public CMS pages response.');
-      }
+      const entries = await getPublicPageIndex();
 
       const targetVariants = new Set([cleanSlug.toLowerCase(), decodedSlug.toLowerCase()]);
       const matches = entries.filter(
