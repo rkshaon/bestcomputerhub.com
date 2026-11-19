@@ -1,11 +1,15 @@
 <!-- File: /components/layout/FooterNavList.vue -->
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { NavigationLinkType } from '@/types/cms';
+import { normalizeCmsPath } from '@/utils/cms';
 
 export interface FooterNavLinkItem {
   id: string | number;
   label: string;
   url: string | null;
+  link_type?: NavigationLinkType;
+  slug?: string | null;
   open_in_new_tab: boolean;
   children: FooterNavLinkItem[];
 }
@@ -59,15 +63,42 @@ const getSafeUrl = (rawUrl: string | null | undefined): string | null => {
 const isExternalUrl = (url: string): boolean => {
   return /^(https?:|mailto:|tel:)/i.test(url);
 };
+
+const getResolvedLink = (item: FooterNavLinkItem): { href: string; external: boolean } | null => {
+  if (item.link_type === 'PAGE') {
+    if (typeof item.slug === 'string' && item.slug.trim()) {
+      return { href: normalizeCmsPath(item.slug), external: false };
+    }
+    const safeUrl = getSafeUrl(item.url);
+    if (safeUrl && !isExternalUrl(safeUrl)) {
+      return { href: safeUrl, external: false };
+    }
+    return null;
+  }
+
+  if (item.link_type === 'EXTERNAL') {
+    const safeUrl = getSafeUrl(item.url);
+    if (!safeUrl) return null;
+    return { href: safeUrl, external: isExternalUrl(safeUrl) };
+  }
+
+  if (typeof item.slug === 'string' && item.slug.trim()) {
+    return { href: normalizeCmsPath(item.slug), external: false };
+  }
+
+  const safeUrl = getSafeUrl(item.url);
+  if (!safeUrl) return null;
+  return { href: safeUrl, external: isExternalUrl(safeUrl) };
+};
 </script>
 
 <template>
   <ul :class="listClass">
     <li v-for="item in items" :key="item.id" class="px-0 mx-0">
-      <template v-if="getSafeUrl(item.url)">
+      <template v-if="getResolvedLink(item)">
         <a
-          v-if="isExternalUrl(getSafeUrl(item.url)!)"
-          :href="getSafeUrl(item.url)!"
+          v-if="getResolvedLink(item)!.external"
+          :href="getResolvedLink(item)!.href"
           :target="item.open_in_new_tab ? '_blank' : undefined"
           :rel="item.open_in_new_tab ? 'noopener noreferrer' : undefined"
           :class="[itemTextClass, 'hover:text-header-primary']"
@@ -76,7 +107,7 @@ const isExternalUrl = (url: string): boolean => {
         </a>
         <NuxtLink
           v-else
-          :to="getSafeUrl(item.url)!"
+          :to="getResolvedLink(item)!.href"
           :target="item.open_in_new_tab ? '_blank' : undefined"
           :rel="item.open_in_new_tab ? 'noopener noreferrer' : undefined"
           :class="[itemTextClass, 'hover:text-header-primary']"

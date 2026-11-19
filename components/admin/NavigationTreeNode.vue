@@ -19,6 +19,7 @@ import {
 } from 'lucide-vue-next';
 import type { CmsNavigationItem, CmsPage } from '@/types/cms';
 import { cn } from '@/utils';
+import { normalizeCmsPath } from '@/utils/cms';
 
 export interface NavigationTreeItem extends CmsNavigationItem {
   children: NavigationTreeItem[];
@@ -30,7 +31,7 @@ const props = withDefaults(defineProps<{
   siblingIndex: number;
   siblingCount: number;
   expandedIds: number[];
-  pageLookup?: Record<number, Pick<CmsPage, 'id' | 'title' | 'slug' | 'url_path'>>;
+  pageLookup?: Record<number, Pick<CmsPage, 'id' | 'title' | 'slug'>>;
   canCreate?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
@@ -72,7 +73,7 @@ const targetSummary = computed(() => {
     if (!props.node.page) return 'No CMS page assigned';
     const pageInfo = props.pageLookup[props.node.page];
     if (pageInfo) {
-      const slugPath = pageInfo.url_path || (pageInfo.slug ? `/${pageInfo.slug}/` : '');
+      const slugPath = pageInfo.slug?.trim() ? normalizeCmsPath(pageInfo.slug) : '';
       return slugPath ? `${pageInfo.title} (${slugPath})` : pageInfo.title;
     }
     return `CMS Page #${props.node.page}`;

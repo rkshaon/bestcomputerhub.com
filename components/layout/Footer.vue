@@ -4,7 +4,8 @@
 import { computed, onMounted } from 'vue';
 import { Facebook, Twitter, Linkedin, Youtube, Instagram, Phone, Mail, MapPin } from 'lucide-vue-next';
 import { useCmsService } from '@/composables/useCmsService';
-import type { PublicCmsNavigationItem } from '@/types/cms';
+import type { NavigationLinkType, PublicCmsNavigationItem } from '@/types/cms';
+import { normalizeCmsPath } from '@/utils/cms';
 import FooterNavList, { type FooterNavLinkItem } from '@/components/layout/FooterNavList.vue';
 
 interface FooterSectionColumn {
@@ -121,10 +122,44 @@ const normalizeNavNode = (
     .map(child => normalizeNavNode(child, nextVisited))
     .filter((child): child is FooterNavLinkItem => child !== null);
 
+  const rawSlug = typeof candidate.slug === 'string' && candidate.slug.trim() ? candidate.slug.trim() : null;
+  const rawExternalUrl =
+    typeof candidate.external_url === 'string' && candidate.external_url.trim()
+      ? candidate.external_url.trim()
+      : null;
+  const rawUrl = typeof candidate.url === 'string' && candidate.url.trim() ? candidate.url.trim() : null;
+
+  let linkType: NavigationLinkType | undefined =
+    candidate.link_type === 'PAGE' || candidate.link_type === 'EXTERNAL'
+      ? candidate.link_type
+      : undefined;
+
+  let resolvedUrl: string | null = null;
+  let resolvedSlug: string | null = null;
+
+  if (linkType === 'PAGE') {
+    if (rawSlug) {
+      resolvedSlug = rawSlug;
+      resolvedUrl = normalizeCmsPath(rawSlug);
+    } else if (rawUrl && !/^(https?:|mailto:|tel:|\/\/)/i.test(rawUrl)) {
+      resolvedUrl = normalizeCmsPath(rawUrl);
+    }
+  } else if (linkType === 'EXTERNAL') {
+    resolvedUrl = rawExternalUrl || rawUrl;
+  } else if (rawSlug && !rawExternalUrl && !(rawUrl && /^(https?:|mailto:|tel:)/i.test(rawUrl))) {
+    linkType = 'PAGE';
+    resolvedSlug = rawSlug;
+    resolvedUrl = normalizeCmsPath(rawSlug);
+  } else {
+    resolvedUrl = rawUrl || rawExternalUrl;
+  }
+
   return {
     id: candidate.id,
     label: candidate.label.trim(),
-    url: typeof candidate.url === 'string' && candidate.url.trim() ? candidate.url.trim() : null,
+    url: resolvedUrl,
+    link_type: linkType,
+    slug: resolvedSlug,
     open_in_new_tab: Boolean(candidate.open_in_new_tab),
     children
   };

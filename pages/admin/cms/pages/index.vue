@@ -26,7 +26,7 @@ import { useCmsService } from '@/composables/useCmsService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { toastSuccess, toastError, extractErrorMessage } from '@/composables/useToast';
-import { buildSectionContentBlock, getRichTextBlockValue } from '@/utils/cms';
+import { buildSectionContentBlock, getRichTextBlockValue, normalizeCmsPath } from '@/utils/cms';
 import type { CmsPage, CmsPageDetail, PageSectionItem, SectionTypeKey, CreatePagePayload, UpdatePagePayload } from '@/types/cms';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiTable from '@/components/ui/UiTable.vue';
@@ -141,6 +141,10 @@ const getPageStatusLabel = (page: Pick<CmsPage, 'live' | 'archived_at' | 'has_un
   const key = getPageStatusKey(page);
   if (key === 'published' && page.has_unpublished_changes) return 'Published (edited)';
   return key.charAt(0).toUpperCase() + key.slice(1);
+};
+
+const formatPageSlugPath = (slug: string | null | undefined): string => {
+  return slug?.trim() ? normalizeCmsPath(slug) : '';
 };
 
 const selectedPage = computed(() => modalState.activeEntity.value);
@@ -835,10 +839,10 @@ onMounted(async () => {
             <div class="space-y-1 py-1">
               <p class="font-bold text-xs text-foreground">{{ item.title }}</p>
               <div class="flex items-center gap-2">
-                <span class="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">/{{ item.slug }}</span>
+                <span class="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{{ formatPageSlugPath(item.slug) || '—' }}</span>
                 <NuxtLink
-                  v-if="getPageStatusKey(item) === 'published'"
-                  :to="`/${item.slug}/`"
+                  v-if="getPageStatusKey(item) === 'published' && formatPageSlugPath(item.slug)"
+                  :to="formatPageSlugPath(item.slug)"
                   target="_blank"
                   class="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
                 >
@@ -1426,7 +1430,7 @@ onMounted(async () => {
           </div>
           <div>
             <p class="text-muted-foreground uppercase font-bold text-[10px]">Public URL</p>
-            <p class="text-xs font-mono text-primary mt-0.5 truncate">/{{ selectedPage.slug }}/</p>
+            <p class="text-xs font-mono text-primary mt-0.5 truncate">{{ formatPageSlugPath(selectedPage.slug) || '—' }}</p>
           </div>
           <div>
             <p class="text-muted-foreground uppercase font-bold text-[10px]">Status</p>
@@ -1695,8 +1699,8 @@ onMounted(async () => {
         <div class="flex items-center justify-between pt-4 border-t border-border mt-2">
           <div class="flex items-center gap-2">
             <NuxtLink
-              v-if="getPageStatusKey(selectedPage) === 'published'"
-              :to="`/${selectedPage.slug}/`"
+              v-if="getPageStatusKey(selectedPage) === 'published' && formatPageSlugPath(selectedPage.slug)"
+              :to="formatPageSlugPath(selectedPage.slug)"
               target="_blank"
               class="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline px-3 py-1.5 rounded-xl hover:bg-primary/5"
             >
@@ -1991,7 +1995,7 @@ onMounted(async () => {
           <FileText class="w-6 h-6 text-destructive shrink-0" />
           <div>
             <p class="font-bold text-sm text-foreground">{{ selectedPage.title }}</p>
-            <p class="text-xs text-muted-foreground font-mono">/{{ selectedPage.slug }}</p>
+            <p class="text-xs text-muted-foreground font-mono">{{ formatPageSlugPath(selectedPage.slug) || '—' }}</p>
           </div>
         </div>
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">

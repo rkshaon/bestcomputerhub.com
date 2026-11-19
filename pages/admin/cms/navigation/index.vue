@@ -26,6 +26,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { toastSuccess, toastError, extractErrorMessage, handleApiError } from '@/composables/useToast';
+import { normalizeCmsPath } from '@/utils/cms';
 import type {
   CmsNavigationMenu,
   CmsNavigationItem,
@@ -536,6 +537,8 @@ const loadSelectedMenuDetail = async (menuId: number, options: { silent?: boolea
     // Keep menusList item count synced cleanly
     menusList.value = menusList.value.map(m => (m.id === detail.id ? { ...m, ...detail } : m));
 
+    await resolveMenuAssignedPages(detail.items || []);
+
     if (options.autoExpandRoots) {
       const parentIdsWithChildren = new Set<number>();
       for (const item of detail.items || []) {
@@ -699,7 +702,8 @@ const handleToggleVisibility = async (item: NavigationTreeItem) => {
 // ---------------------------------------------------------------------------
 const pageSearchQuery = ref('');
 const hasLoadedPagesOnce = ref(false);
-const resolvedPageCache = ref<Record<number, Pick<CmsPage, 'id' | 'title' | 'slug' | 'url_path'>>>({});
+const resolvedPageCache = ref<Record<number, Pick<CmsPage, 'id' | 'title' | 'slug'>>>({});
+const inFlightPageResolutions = new Set<number>();
 
 const pagePagination = useInfinitePagination<CmsPage>({
   fetcher: async (params) => {
@@ -724,8 +728,7 @@ watch(() => pagePagination.items.value, (list) => {
       nextCache[numId] = {
         id: numId,
         title: p.title,
-        slug: p.slug,
-        url_path: p.url_path
+        slug: p.slug
       };
     }
   }
@@ -845,8 +848,7 @@ const selectCmsPageOption = (page: CmsPage) => {
     [numId]: {
       id: numId,
       title: page.title,
-      slug: page.slug,
-      url_path: page.url_path
+      slug: page.slug
     }
   };
   itemForm.value.page = numId;
@@ -861,7 +863,8 @@ const clearSelectedCmsPage = async () => {
 };
 
 const resolveAssignedPageSummary = async (pageId: number) => {
-  if (resolvedPageCache.value[pageId]) return;
+  if (resolvedPageCache.value[pageId] || inFlightPageResolutions.has(pageId)) return;
+  inFlightPageResolutions.add(pageId);
   try {
     const detail = await cmsService.getPageDetail(pageId);
     const numId = Number(detail.id);
@@ -871,14 +874,78 @@ const resolveAssignedPageSummary = async (pageId: number) => {
         [numId]: {
           id: numId,
           title: detail.title,
-          slug: detail.slug,
-          url_path: detail.url_path
+          slug: detail.slug
         }
       };
     }
   } catch {
     // Non-fatal fallback: tree/form renders "CMS Page #{pageId}"
+  } finally {
+    inFlightPageResolutions.delete(pageId);
   }
+};
+
+const resolveMenuAssignedPages = async (items: CmsNavigationItem[]) => {
+  const missingPageIds = Array.from(
+    new Set(
+      items
+        .filter((item): item is CmsNavigationItem & { page: number } =>
+          item.link_type === 'PAGE' && typeof item.page === 'number' && !Number.isNaN(item.page)
+        )
+        .map(item => item.page)
+        .filter(pageId => !resolvedPageCache.value[pageId] && !inFlightPageResolutions.has(pageId))
+    )
+  );
+  if (missingPageIds.length === 0) return;
+
+  missingPageIds.forEach(id => inFlightPageResolutions.add(id));
+  try {
+    const nextCache = { ...resolvedPageCache.value };
+    let hasUpdates = false;
+    const batchSize = 8;
+
+    for (let i = 0; i < missingPageIds.length; i += batchSize) {
+      const batch = missingPageIds.slice(i, i + batchSize);
+      const results = await Promise.allSettled(batch.map(id => cmsService.getPageDetail(id)));
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+          const detail = result.value;
+          const numId = Number(detail.id);
+          if (!Number.isNaN(numId)) {
+            nextCache[numId] = {
+              id: numId,
+              title: detail.title,
+              slug: detail.slug
+            };
+            hasUpdates = true;
+          }
+        }
+      }
+    }
+
+    if (hasUpdates) {
+      resolvedPageCache.value = nextCache;
+    }
+  } finally {
+    missingPageIds.forEach(id => inFlightPageResolutions.delete(id));
+  }
+};
+
+const formatPageSlugPath = (slug: string | null | undefined): string => {
+  return slug?.trim() ? normalizeCmsPath(slug) : '';
+};
+
+const formatDeletingItemTarget = (item: NavigationTreeItem): string => {
+  if (item.link_type === 'PAGE') {
+    if (!item.page) return 'No CMS page assigned';
+    const pageInfo = resolvedPageCache.value[item.page];
+    if (pageInfo) {
+      const slugPath = formatPageSlugPath(pageInfo.slug);
+      return slugPath ? `${pageInfo.title} (${slugPath})` : pageInfo.title;
+    }
+    return `CMS Page #${item.page}`;
+  }
+  return item.external_url || 'No URL specified';
 };
 
 const openCreateItemModal = async (parentId: number | null = null) => {
@@ -1829,7 +1896,7 @@ onMounted(async () => {
                   {{ selectedPageSummary ? selectedPageSummary.title : `CMS Page #${itemForm.page}` }}
                 </p>
                 <p v-if="selectedPageSummary" class="text-[11px] font-mono text-muted-foreground truncate">
-                  {{ selectedPageSummary.url_path || `/${selectedPageSummary.slug}/` }}
+                  {{ formatPageSlugPath(selectedPageSummary.slug) || '—' }}
                 </p>
               </div>
               <button
@@ -1898,7 +1965,7 @@ onMounted(async () => {
                         </span>
                       </div>
                       <p class="text-[11px] font-mono text-muted-foreground truncate mt-0.5">
-                        {{ page.url_path || `/${page.slug}/` }}
+                        {{ formatPageSlugPath(page.slug) || '—' }}
                       </p>
                     </div>
                     <Check
@@ -2001,7 +2068,7 @@ onMounted(async () => {
           <div class="p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl space-y-1">
             <p class="font-bold text-sm text-foreground">{{ deletingItem.label }}</p>
             <p class="text-xs text-muted-foreground font-mono">
-              {{ deletingItem.link_type === 'PAGE' ? `CMS Page #${deletingItem.page}` : deletingItem.external_url }}
+              {{ formatDeletingItemTarget(deletingItem) }}
             </p>
           </div>
 

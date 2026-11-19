@@ -160,8 +160,8 @@ const cmsPage = computed<PublicCmsPage | null>(() =>
 );
 
 const normalizedPagePath = computed(() => {
-  if (cmsPage.value?.url_path?.trim()) {
-    return normalizeCmsPath(cmsPage.value.url_path);
+  if (cmsPage.value?.slug?.trim()) {
+    return normalizeCmsPath(cmsPage.value.slug);
   }
   return cmsPath.value;
 });

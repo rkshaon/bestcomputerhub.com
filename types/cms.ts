@@ -32,7 +32,6 @@ export interface CmsPage {
   id: number | string;
   title: string;
   slug: string;
-  url_path?: string;
   template_key?: PageTemplateKey;
   live?: boolean;
   has_unpublished_changes?: boolean;
@@ -104,7 +103,10 @@ export interface CmsNavigationItem {
 export interface PublicCmsNavigationItem {
   id: number;
   label: string;
-  url: string;
+  url: string | null;
+  link_type?: NavigationLinkType;
+  slug?: string | null;
+  external_url?: string | null;
   open_in_new_tab: boolean;
   children: PublicCmsNavigationItem[];
 }
@@ -180,7 +182,8 @@ export interface PublicCmsPage {
   id?: number | string;
   title: string;
   slug: string;
-  url_path?: string;
+  path?: string;
+  template_key?: PageTemplateKey;
   seo_title?: string;
   seo_description?: string;
   meta_keywords?: string;
