@@ -71,7 +71,7 @@ const { data: resolved, error: asyncError } = await useAsyncData<SlugResolution>
   `public-slug-${slug.value}`,
   async () => {
     try {
-      const page = await cmsService.getPublicPageByPath(cmsPath.value);
+      const page = await cmsService.getPublicPageBySlug(slug.value);
       const pageMeta = page as Record<string, any>;
       if (!page || pageMeta.live === false || Boolean(pageMeta.archived_at)) {
         return { status: 'not_found' };

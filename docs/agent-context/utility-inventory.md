@@ -253,7 +253,7 @@ When selecting or implementing helper functions, agents must respect these struc
   const cleanHtml = sanitizeCmsHtml(section.value.body, { mediaOrigin });
   const normalized = normalizeCmsPath('about-us'); // '/about-us/'
   ```
-- **Files or Features Currently Using It**: `/pages/admin/cms/pages/index.vue`, `/composables/useCmsService.ts` (`getPublicPageByPath`), `/components/cms/CmsRichTextSection.vue`, `/pages/[slug].vue`.
+- **Files or Features Currently Using It**: `/pages/admin/cms/pages/index.vue`, `/composables/useCmsService.ts` (`getPublicPageByPath`, `getPublicPageBySlug`), `/components/cms/CmsRichTextSection.vue`, `/pages/[slug].vue`.
 - **Side Effects**: None (Pure functions).
 - **Accesses Browser State**: No.
 - **Performs Network Work**: No.
