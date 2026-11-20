@@ -33,16 +33,6 @@ import type {
   PaginatedResponse
 } from '@/types';
 
-const PUBLIC_PAGE_INDEX_TTL_MS = 120 * 1000;
-
-interface PublicPageIndexCacheEntry {
-  entries: CmsSitemapEntry[];
-  expiresAt: number;
-}
-
-let publicPageIndexCache: PublicPageIndexCacheEntry | null = null;
-let publicPageIndexInFlight: Promise<CmsSitemapEntry[]> | null = null;
-
 export const useCmsService = () => {
   const apiClient = useApiClient();
   const isLoading = ref(false);
@@ -707,41 +697,6 @@ export const useCmsService = () => {
     }
   };
 
-  const getPublicPageIndex = async (): Promise<CmsSitemapEntry[]> => {
-    if (publicPageIndexCache && Date.now() < publicPageIndexCache.expiresAt) {
-      return publicPageIndexCache.entries;
-    }
-
-    if (publicPageIndexInFlight) {
-      return publicPageIndexInFlight;
-    }
-
-    let requestPromise: Promise<CmsSitemapEntry[]> | null = null;
-    requestPromise = (async (): Promise<CmsSitemapEntry[]> => {
-      try {
-        const res = await apiClient.request<CmsSitemapEntry[]>('/api/v1/cms/public/pages/', {
-          method: 'GET',
-          isPublic: true
-        });
-        if (!Array.isArray(res)) {
-          throw new Error('Malformed public CMS pages response.');
-        }
-        publicPageIndexCache = {
-          entries: res,
-          expiresAt: Date.now() + PUBLIC_PAGE_INDEX_TTL_MS
-        };
-        return res;
-      } finally {
-        if (publicPageIndexInFlight === requestPromise) {
-          publicPageIndexInFlight = null;
-        }
-      }
-    })();
-
-    publicPageIndexInFlight = requestPromise;
-    return requestPromise;
-  };
-
   const getPublicPageBySlug = async (slug: string): Promise<PublicCmsPage> => {
     isLoading.value = true;
     errorMsg.value = null;
@@ -760,32 +715,17 @@ export const useCmsService = () => {
         // Keep raw slug when percent-decoding is invalid
       }
 
-      const entries = await getPublicPageIndex();
-
-      const targetVariants = new Set([cleanSlug.toLowerCase(), decodedSlug.toLowerCase()]);
-      const matches = entries.filter(
-        (entry) => typeof entry?.slug === 'string' && targetVariants.has(entry.slug.trim().toLowerCase())
-      );
-
-      if (matches.length === 0) {
-        const notFoundErr = new Error(`Failed to fetch public page for slug: ${cleanSlug}`) as Error & {
+      if (!decodedSlug || decodedSlug === '.' || decodedSlug === '..') {
+        const err = new Error(`Failed to fetch public page for slug: ${cleanSlug}`) as Error & {
           statusCode: number;
         };
-        notFoundErr.statusCode = 404;
-        throw notFoundErr;
+        err.statusCode = 404;
+        throw err;
       }
 
-      const exactMatches = matches.filter(
-        (entry) => entry.slug.trim() === cleanSlug || entry.slug.trim() === decodedSlug
-      );
-      const pool = exactMatches.length > 0 ? exactMatches : matches;
-      const rootPath = normalizeCmsPath(cleanSlug);
-      const matched = pool.find((entry) => entry.path && normalizeCmsPath(entry.path) === rootPath) ?? pool[0]!;
-
-      const targetPath = matched.path?.trim() ? normalizeCmsPath(matched.path) : rootPath;
-      return await apiClient.request<PublicCmsPage>('/api/v1/cms/public/pages/', {
+      const encodedSlug = encodeURIComponent(decodedSlug);
+      return await apiClient.request<PublicCmsPage>(`/api/v1/cms/pages/${encodedSlug}/`, {
         method: 'GET',
-        query: { path: targetPath },
         isPublic: true
       });
     } catch (err: any) {
