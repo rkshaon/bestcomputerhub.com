@@ -19,6 +19,7 @@ import {
 } from 'lucide-vue-next';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { useProductImageReplace } from '@/composables/useProductImageReplace';
 import { toastSuccess, toastError, handleApiError } from '@/composables/useToast';
 import { isNonSquareAspect, isExceedingResolution } from '@/utils/imageValidation';
 import { cn } from '@/utils';
@@ -86,8 +87,27 @@ const canSetDefaultImageComputed = computed(() => {
   return hasPermission('product_api.change_productimage');
 });
 
-const canReplaceImageComputed = computed(() => {
-  return hasPermission('product_api.change_productimage');
+const {
+  canReplaceImage: canReplaceImageComputed,
+  isReplacingImage,
+  replacingImageId,
+  replaceFileInput,
+  triggerReplaceImage,
+  onReplaceFileChange,
+  handleReplaceProductImage
+} = useProductImageReplace({
+  onSuccess: async () => {
+    emit('gallery-updated');
+
+    // After a successful replacement, re-fetch: GET /api/v1/products/{productId}/product-images/
+    // Treat the refreshed list response as the source of truth.
+    const targetProductId = props.productId ?? props.product?.id;
+    if (targetProductId) {
+      await fetchProductImages(targetProductId);
+    } else if (props.product?.slug) {
+      await fetchProductImages(props.product.slug);
+    }
+  }
 });
 
 const canManageComputed = computed(() => {
@@ -805,84 +825,7 @@ const handleSetDefaultImage = async (img: ProductImage) => {
   }
 };
 
-// Replace Image State & Handlers
-const isReplacingImage = ref(false);
-const replacingImageId = ref<string | number | null>(null);
-const targetReplaceImageId = ref<string | number | null>(null);
-const replaceFileInput = ref<HTMLInputElement | null>(null);
-
-const triggerReplaceImage = (img: ProductImage) => {
-  if (!canReplaceImageComputed.value) {
-    toastError('You do not have permission to replace product images.');
-    return;
-  }
-  if (isReplacingImage.value || img.id === undefined || img.id === null) {
-    return;
-  }
-  targetReplaceImageId.value = img.id;
-  if (replaceFileInput.value) {
-    replaceFileInput.value.value = '';
-    replaceFileInput.value.click();
-  }
-};
-
-const onReplaceFileChange = async (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target?.files?.[0];
-  const targetId = targetReplaceImageId.value;
-
-  if (!file || targetId === null || targetId === undefined) {
-    targetReplaceImageId.value = null;
-    return;
-  }
-
-  if (!file.type.startsWith('image/')) {
-    toastError('Please select a valid image file (JPEG, PNG, WebP, GIF).');
-    targetReplaceImageId.value = null;
-    if (replaceFileInput.value) replaceFileInput.value.value = '';
-    return;
-  }
-
-  await handleReplaceProductImage(targetId, file);
-};
-
-const handleReplaceProductImage = async (imageId: string | number, file: File) => {
-  if (!hasPermission('product_api.change_productimage')) {
-    toastError('You do not have permission to replace product images.');
-    return;
-  }
-  if (isReplacingImage.value || imageId === undefined || imageId === null) {
-    return;
-  }
-
-  const targetProductId = props.productId ?? props.product?.id;
-  isReplacingImage.value = true;
-  replacingImageId.value = imageId;
-
-  try {
-    // Exact endpoint POST /api/v1/product-images/{id}/replace-image/
-    await productService.replaceProductImage(imageId, file);
-    toastSuccess('Product image replaced successfully.');
-    emit('gallery-updated');
-
-    // After a successful replacement, re-fetch: GET /api/v1/products/{productId}/product-images/
-    // Treat the refreshed list response as the source of truth.
-    if (targetProductId) {
-      await fetchProductImages(targetProductId);
-    } else if (props.product?.slug) {
-      await fetchProductImages(props.product.slug);
-    }
-  } catch (error: any) {
-    handleApiError(error, 'Failed to replace product image');
-  } finally {
-    isReplacingImage.value = false;
-    replacingImageId.value = null;
-    targetReplaceImageId.value = null;
-    if (replaceFileInput.value) {
-      replaceFileInput.value.value = '';
-    }
-  }
-};
+// Replace Image State & Handlers are provided by useProductImageReplace composable above.
 
 // Crop & Replace Sub-Modal State & Handlers
 const imageToCrop = ref<ProductImage | null>(null);
