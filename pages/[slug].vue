@@ -159,6 +159,10 @@ const cmsPage = computed<PublicCmsPage | null>(() =>
   resolved.value?.status === 'cms' ? resolved.value.page : null
 );
 
+if (import.meta.client && cmsPage.value) {
+  cmsService.seedPublicPageCache(slug.value, cmsPage.value);
+}
+
 const normalizedPagePath = computed(() => {
   if (cmsPage.value?.slug?.trim()) {
     return normalizeCmsPath(cmsPage.value.slug);

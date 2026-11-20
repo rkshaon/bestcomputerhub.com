@@ -263,6 +263,26 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `normalizePublicCmsSlug`, `isCacheablePublicCmsPage`, `clonePublicCmsPage` & `createPublicCmsPageCache`
+- **File Location**: `/utils/cmsPageCache.ts`
+- **Category**: Cache / Normalizer utility
+- **Scope**: Storefront public CMS pages (client-side only)
+- **Purpose**: Provides an in-memory 1-hour (`PUBLIC_CMS_PAGE_CACHE_TTL_MS = 3,600,000` ms) TTL cache with normalized slug keys, deep-clone isolation, expired-entry cleanup, and concurrent in-flight request deduplication for `useCmsService.getPublicPageBySlug`.
+- **Parameters & Return Value**:
+  - `normalizePublicCmsSlug(slug: string): string` — Strips whitespace and leading/trailing slashes, safely percent-decodes, and rejects empty or traversal (`.`, `..`) slugs with a 404-tagged `Error`.
+  - `isCacheablePublicCmsPage(page: unknown): page is PublicCmsPage` — Ensures non-object, `live === false`, or archived (`archived_at`) payloads are never cached.
+  - `clonePublicCmsPage<T extends PublicCmsPage>(page: T): T` — Deep-clones entries on write and read to prevent accidental consumer mutations or Vue proxy leakage.
+  - `createPublicCmsPageCache(options?: PublicCmsPageCacheOptions)` — Returns `{ get, set, seed, getOrFetch, clear, size, inFlightSize }` (default TTL 1 hour).
+- **Files or Features Currently Using It**: `/composables/useCmsService.ts` (`getPublicPageBySlug`, `seedPublicPageCache`), `/pages/[slug].vue` (seeds hydrated SSR CMS page on client).
+- **Side Effects**: Stores cached `PublicCmsPage` snapshots strictly in client in-memory `Map` (guarded by `import.meta.client` in `useCmsService.ts`; never shared across SSR requests and never uses `localStorage`, `sessionStorage`, cookies, or IndexedDB).
+- **Accesses Browser State**: No persistent storage (in-memory JS `Map` on client runtime only).
+- **Performs Network Work**: Delegates cache-miss fetching to caller-provided `fetcher`.
+- **Related Utilities**: `normalizeCmsPath` (`/utils/cms.ts`), `useCmsService`.
+- **What It Explicitly Does Not Do**: Does not cache SSR server requests, 404/error responses, non-live/archived pages, or unrelated endpoints.
+- **Reusability Level**: Medium (Public CMS page caching).
+
+---
+
 ## 2. Central HTTP Transport & Network Helpers
 
 ### `useApiClient`
@@ -619,6 +639,7 @@ When selecting or implementing helper functions, agents must respect these struc
 | `useOrderService` | Customer Orders | `/api/v1/orders/`, `/api/v1/orders/{id}/`, `/api/v1/orders/{id}/cancel/` | Unpaginated own-order list (`mapOrderSummary`), order detail (`mapOrderDetail`), cancel (returns `{ id, status, message }`; callers refetch the order). |
 | `useShippingService` | Shipping Configuration & Storefront Options | `/api/v1/shipping/methods/`, `/api/v1/shipping/zones/`, `/api/v1/shipping/zones/available/`, `/api/v1/shipping/rates/`, `/api/v1/shipping/options/` | Admin CRUD for methods, zones and rates; storefront `getAvailableZones()` (active delivery areas, unpaginated `AvailableShippingZone[]`) and `getShippingOptions(addressId)` (typed `ShippingOptionsResponse`: resolved `zone`, `cart_subtotal`, priced `options[]` — all charges computed by the backend; throws on 400 so the backend message can be shown). |
 | `useOrderNotificationService` | Order Notification Recipients (admin) | `/api/v1/email/order-notification-recipients/` | Paginated recipient list (`search`, `is_active`, `page`, `page_size`), create, PATCH update (incl. pause/resume via `is_active`), delete (backend soft delete). The backend decides when alerts are sent (sale created on any channel; customer or staff cancellation). Typed by `/types/order-notification.ts`. |
+| `useCmsService` | Public & Admin CMS Operations | `/api/v1/cms/pages/`, `/api/v1/cms/pages/{slug}/`, `/api/v1/cms/public/navigation/{key}/`, `/api/v1/cms/*` | Direct public CMS page lookup (`getPublicPageBySlug`, `isPublic: true`) backed by a client-only 1-hour (3,600,000 ms) in-memory cache (`/utils/cmsPageCache.ts`) with in-flight deduplication and SSR hydration seeding (`seedPublicPageCache`), plus public navigation, sections, revisions, media, redirects, and sitemap operations. |
 
 ---
 

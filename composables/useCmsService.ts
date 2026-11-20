@@ -2,6 +2,11 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { normalizeCmsPath } from '@/utils/cms';
+import {
+  PUBLIC_CMS_PAGE_CACHE_TTL_MS,
+  createPublicCmsPageCache,
+  normalizePublicCmsSlug,
+} from '@/utils/cmsPageCache';
 import type {
   SectionTypeDefinition,
   GlobalSection,
@@ -32,6 +37,10 @@ import type {
   UploadMediaDocumentPayload,
   PaginatedResponse
 } from '@/types';
+
+const clientPublicCmsPageCache = createPublicCmsPageCache({
+  ttlMs: PUBLIC_CMS_PAGE_CACHE_TTL_MS,
+});
 
 export const useCmsService = () => {
   const apiClient = useApiClient();
@@ -701,38 +710,38 @@ export const useCmsService = () => {
     isLoading.value = true;
     errorMsg.value = null;
     try {
-      const cleanSlug = slug.trim().replace(/^\/+|\/+$/g, '');
-      if (!cleanSlug) {
-        const err = new Error('CMS page slug is required.') as Error & { statusCode: number };
-        err.statusCode = 404;
-        throw err;
+      const normalizedSlug = normalizePublicCmsSlug(slug);
+      const encodedSlug = encodeURIComponent(normalizedSlug);
+
+      const fetchPage = () =>
+        apiClient.request<PublicCmsPage>(`/api/v1/cms/pages/${encodedSlug}/`, {
+          method: 'GET',
+          isPublic: true
+        });
+
+      // Keep the 1-hour in-memory cache strictly client-side to prevent cross-request SSR leakage
+      if (import.meta.client) {
+        return await clientPublicCmsPageCache.getOrFetch(normalizedSlug, fetchPage);
       }
 
-      let decodedSlug = cleanSlug;
-      try {
-        decodedSlug = decodeURIComponent(cleanSlug);
-      } catch {
-        // Keep raw slug when percent-decoding is invalid
-      }
-
-      if (!decodedSlug || decodedSlug === '.' || decodedSlug === '..') {
-        const err = new Error(`Failed to fetch public page for slug: ${cleanSlug}`) as Error & {
-          statusCode: number;
-        };
-        err.statusCode = 404;
-        throw err;
-      }
-
-      const encodedSlug = encodeURIComponent(decodedSlug);
-      return await apiClient.request<PublicCmsPage>(`/api/v1/cms/pages/${encodedSlug}/`, {
-        method: 'GET',
-        isPublic: true
-      });
+      return await fetchPage();
     } catch (err: any) {
       errorMsg.value = err.message || `Failed to fetch public page for slug: ${slug}`;
       throw err;
     } finally {
       isLoading.value = false;
+    }
+  };
+
+  const seedPublicPageCache = (slug: string, page: PublicCmsPage): void => {
+    if (!import.meta.client) {
+      return;
+    }
+    try {
+      const normalizedSlug = normalizePublicCmsSlug(slug);
+      clientPublicCmsPageCache.seed(normalizedSlug, page);
+    } catch {
+      // Ignore invalid slugs when passively seeding hydrated SSR data
     }
   };
 
@@ -863,6 +872,7 @@ export const useCmsService = () => {
     getAuditLogs,
     getPublicPageByPath,
     getPublicPageBySlug,
+    seedPublicPageCache,
     getPublicNavigation,
     getRedirects,
     createRedirect,
