@@ -13,7 +13,8 @@ import type {
   LoginPayload,
   LoginResponse,
   TokenRefreshPayload,
-  TokenRefreshResponse
+  TokenRefreshResponse,
+  ApiRequestOptions
 } from '@/types';
 
 // Mock DB configuration for local storage persistence
@@ -99,6 +100,7 @@ let refreshPromise: Promise<string> | null = null;
 export const useApiClient = () => {
   const config = useRuntimeConfig();
   const apiBase = config.public?.apiBase || '';
+  const normalizedApiBase = String(apiBase || '').replace(/\/+$/, '');
   
   const accessTokenCookie = useCookie<string | null>('access_token', { maxAge: 60 * 60 * 24 * 7, path: '/' });
   const refreshTokenCookie = useCookie<string | null>('refresh_token', { maxAge: 60 * 60 * 24 * 30, path: '/' });
@@ -123,7 +125,7 @@ export const useApiClient = () => {
     const isSuccess = ref(false);
 
     // Reusable request helper that automatically attaches Bearer access token and handles 401 Refresh
-    const request = async <T>(url: string, options: any = {}): Promise<T> => {
+    const request = async <T>(url: string, options: ApiRequestOptions = {}): Promise<T> => {
       isLoading.value = true;
       errorMsg.value = null;
       isSuccess.value = false;
@@ -141,67 +143,81 @@ export const useApiClient = () => {
         return simulateApiCall<T>(url, options);
       }
 
-      const fullUrl = url.startsWith('http') ? url : `${apiBase}${url}`;
+      const fullUrl = url.startsWith('http') ? url : `${normalizedApiBase}${url}`;
 
       // Ensure headers exist
       const headers: Record<string, string> = {};
       if (options.headers) {
-        if (typeof options.headers.forEach === 'function') {
-          options.headers.forEach((value: string, key: string) => {
+        if (typeof (options.headers as any).forEach === 'function' && typeof (options.headers as any).get === 'function') {
+          (options.headers as any).forEach((value: string, key: string) => {
             headers[key] = value;
           });
+        } else if (Array.isArray(options.headers)) {
+          for (const [key, value] of options.headers) {
+            headers[key] = value;
+          }
         } else {
           Object.assign(headers, options.headers);
         }
       }
       
-      // Auto-attach Bearer token dynamically at request execution time
-      const currentAccessToken = headers['Authorization'] || headers['authorization'] || accessTokenCookie.value;
-    if (currentAccessToken) {
-      const bearerVal = currentAccessToken.startsWith('Bearer ') ? currentAccessToken : `Bearer ${currentAccessToken}`;
-      headers['Authorization'] = bearerVal;
-    }
+      const isPublic = Boolean(options.isPublic);
 
-    try {
-      const response = await $fetch<T>(fullUrl, {
-        ...options,
-        headers
-      });
-
-      isSuccess.value = true;
-      isLoading.value = false;
-      return response as T;
-    } catch (err: any) {
-      const status = err.status || err.statusCode || err.response?.status;
-      
-      // Token refresh logic on 401 Unauthorized
-      if (status === 401) {
-        // Prevent recursive intercept logic if refresh endpoint itself fails or already retried
-        if (url.includes('/api/v1/auth/refresh')) {
-          accessTokenCookie.value = null;
-          refreshTokenCookie.value = null;
-          authUserCookie.value = null;
-          toastError('Security credential negotiation failed. Please sign in again.');
-          navigateTo(getLoginRedirectUrl());
-          isLoading.value = false;
-          throw err;
+      // Auto-attach Bearer token dynamically at request execution time for protected endpoints
+      if (!isPublic) {
+        const currentAccessToken = headers['Authorization'] || headers['authorization'] || accessTokenCookie.value;
+        if (currentAccessToken) {
+          const bearerVal = currentAccessToken.startsWith('Bearer ') ? currentAccessToken : `Bearer ${currentAccessToken}`;
+          headers['Authorization'] = bearerVal;
         }
+      } else {
+        // Explicitly omit stored credentials for public requests
+        delete headers['Authorization'];
+        delete headers['authorization'];
+      }
 
-        if (options._retry) {
-          accessTokenCookie.value = null;
-          refreshTokenCookie.value = null;
-          authUserCookie.value = null;
-          toastError('Your secure session was invalidated. Please re-authenticate.');
-          navigateTo(getLoginRedirectUrl());
-          isLoading.value = false;
-          throw err;
-        }
+      const { isPublic: _isPublic, ...fetchOptions } = options;
 
-        if (refreshTokenCookie.value) {
-          if (!refreshPromise) {
-            refreshPromise = (async () => {
-              try {
-                const refreshUrl = `${apiBase}/api/v1/auth/refresh/`;
+      try {
+        const response = (await ($fetch as any)(fullUrl, {
+          ...fetchOptions,
+          headers
+        })) as T;
+
+        isSuccess.value = true;
+        isLoading.value = false;
+        return response as T;
+      } catch (err: any) {
+        const status = err.status || err.statusCode || err.response?.status;
+        
+        // Token refresh logic on 401 Unauthorized (protected requests only)
+        if (status === 401 && !isPublic) {
+          // Prevent recursive intercept logic if refresh endpoint itself fails or already retried
+          if (url.includes('/api/v1/auth/refresh')) {
+            accessTokenCookie.value = null;
+            refreshTokenCookie.value = null;
+            authUserCookie.value = null;
+            toastError('Security credential negotiation failed. Please sign in again.');
+            navigateTo(getLoginRedirectUrl());
+            isLoading.value = false;
+            throw err;
+          }
+
+          if (options._retry) {
+            accessTokenCookie.value = null;
+            refreshTokenCookie.value = null;
+            authUserCookie.value = null;
+            toastError('Your secure session was invalidated. Please re-authenticate.');
+            navigateTo(getLoginRedirectUrl());
+            isLoading.value = false;
+            throw err;
+          }
+
+          if (refreshTokenCookie.value) {
+            if (!refreshPromise) {
+              refreshPromise = (async () => {
+                try {
+                  const refreshUrl = `${normalizedApiBase}/api/v1/auth/refresh/`;
                 const refreshRes = await $fetch<TokenRefreshResponse>(refreshUrl, {
                   method: 'POST',
                   body: {
@@ -255,7 +271,7 @@ export const useApiClient = () => {
               _retry: true
             };
 
-            const retryResponse = await $fetch<T>(fullUrl, retryOpts);
+            const retryResponse = (await ($fetch as any)(fullUrl, retryOpts)) as T;
             isSuccess.value = true;
             isLoading.value = false;
             return retryResponse as T;

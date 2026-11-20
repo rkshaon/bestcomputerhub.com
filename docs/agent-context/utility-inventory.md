@@ -234,16 +234,65 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `buildSectionContentBlock`, `getRichTextBlockValue`, `normalizeCmsPath`, `resolveOriginFromUrl` & `sanitizeCmsHtml`
+- **File Location**: `/utils/cms.ts`
+- **Category**: Mapper / Security & Pure utility
+- **Scope**: Admin CMS pages, sections, URL normalization & storefront rich text sanitization
+- **Purpose**: `buildSectionContentBlock(type, value)` wraps a section's field values into the backend's required `CmsPageSection.content` shape — a one-item array of `{ type, value }` (DRF/Wagtail `StreamField`, validated by `SectionContentField` and rejecting anything that isn't a list). `getRichTextBlockValue(value)` normalizes a `rich_text` block's stored value (`{ body, alignment }`, tolerating the legacy `content` key) to a consistent shape for both reading and writing. `normalizeCmsPath(path)` ensures a storefront/CMS path has both leading and trailing slashes (per AGENTS.md §9). `resolveOriginFromUrl(urlStr)` safely extracts the `http:`/`https:` origin from a URL string. `sanitizeCmsHtml(rawHtml, options)` purifies backend-expanded Wagtail HTML using isomorphic DOMPurify with strict tag/attribute allowlists (`ALLOW_DATA_ATTR: false`), rejects scriptable SVG/MathML, forms, `data:` URLs, protocol-relative `//` URLs, and unsafe URI schemes (`javascript:`, `vbscript:`), hardens external `target="_blank"` links (`rel="noopener noreferrer"`), and resolves relative `/media/` image `src` attributes against `options.mediaOrigin` when provided.
+- **Parameters & Return Value**:
+  - `buildSectionContentBlock(type: SectionTypeKey, value: Record<string, any>): CmsContentBlock[]`
+  - `getRichTextBlockValue(value?: RichTextBlockValue | Record<string, any> | null): { body: string; alignment: string }`
+  - `normalizeCmsPath(path?: string | null): string`
+  - `resolveOriginFromUrl(urlStr?: string | null): string`
+  - `sanitizeCmsHtml(rawHtml?: string | null, options?: SanitizeCmsHtmlOptions): string`
+- **Example Usage**:
+  ```ts
+  import { buildSectionContentBlock, getRichTextBlockValue, normalizeCmsPath, resolveOriginFromUrl, sanitizeCmsHtml } from '@/utils/cms';
+
+  const mediaOrigin = resolveOriginFromUrl(config.public.apiBase);
+  const cleanHtml = sanitizeCmsHtml(section.value.body, { mediaOrigin });
+  const normalized = normalizeCmsPath('about-us'); // '/about-us/'
+  ```
+- **Files or Features Currently Using It**: `/pages/admin/cms/pages/index.vue`, `/composables/useCmsService.ts` (`getPublicPageByPath`, `getPublicPageBySlug`), `/components/cms/CmsRichTextSection.vue`, `/pages/[slug].vue`.
+- **Side Effects**: None (Pure functions).
+- **Accesses Browser State**: No.
+- **Performs Network Work**: No.
+- **Related Utilities**: `CmsContentBlock` / `SectionTypeKey` / `RichTextBlockValue` (`/types/cms.ts`), `useCmsService`, `CmsRichTextSection`.
+- **What It Explicitly Does Not Do**: Does not validate block field schemas per type (the backend's `SectionContentField` is authoritative) or issue API requests.
+- **Reusability Level**: High (mandatory for any code building a `CmsPageSection`/`CmsSection` write payload, resolving CMS paths, or rendering CMS rich text).
+
+---
+
+### `normalizePublicCmsSlug`, `isCacheablePublicCmsPage`, `clonePublicCmsPage` & `createPublicCmsPageCache`
+- **File Location**: `/utils/cmsPageCache.ts`
+- **Category**: Cache / Normalizer utility
+- **Scope**: Storefront public CMS pages (client-side only)
+- **Purpose**: Provides an in-memory 1-hour (`PUBLIC_CMS_PAGE_CACHE_TTL_MS = 3,600,000` ms) TTL cache with normalized slug keys, deep-clone isolation, expired-entry cleanup, and concurrent in-flight request deduplication for `useCmsService.getPublicPageBySlug`.
+- **Parameters & Return Value**:
+  - `normalizePublicCmsSlug(slug: string): string` — Strips whitespace and leading/trailing slashes, safely percent-decodes, and rejects empty or traversal (`.`, `..`) slugs with a 404-tagged `Error`.
+  - `isCacheablePublicCmsPage(page: unknown): page is PublicCmsPage` — Ensures non-object, `live === false`, or archived (`archived_at`) payloads are never cached.
+  - `clonePublicCmsPage<T extends PublicCmsPage>(page: T): T` — Deep-clones entries on write and read to prevent accidental consumer mutations or Vue proxy leakage.
+  - `createPublicCmsPageCache(options?: PublicCmsPageCacheOptions)` — Returns `{ get, set, seed, getOrFetch, clear, size, inFlightSize }` (default TTL 1 hour).
+- **Files or Features Currently Using It**: `/composables/useCmsService.ts` (`getPublicPageBySlug`, `seedPublicPageCache`), `/pages/[slug].vue` (seeds hydrated SSR CMS page on client).
+- **Side Effects**: Stores cached `PublicCmsPage` snapshots strictly in client in-memory `Map` (guarded by `import.meta.client` in `useCmsService.ts`; never shared across SSR requests and never uses `localStorage`, `sessionStorage`, cookies, or IndexedDB).
+- **Accesses Browser State**: No persistent storage (in-memory JS `Map` on client runtime only).
+- **Performs Network Work**: Delegates cache-miss fetching to caller-provided `fetcher`.
+- **Related Utilities**: `normalizeCmsPath` (`/utils/cms.ts`), `useCmsService`.
+- **What It Explicitly Does Not Do**: Does not cache SSR server requests, 404/error responses, non-live/archived pages, or unrelated endpoints.
+- **Reusability Level**: Medium (Public CMS page caching).
+
+---
+
 ## 2. Central HTTP Transport & Network Helpers
 
 ### `useApiClient`
 - **File Location**: `/composables/useApiClient.ts`
 - **Category**: API/service helper
 - **Scope**: Shared
-- **Purpose**: Provides the central HTTP client instance wrapping Nuxt's `$fetch`. Handles relative URL construction with `apiBase`, dynamic `Bearer` access token injection, automatic 401 token refresh interceptors with single-promise deduplication, session invalidation redirects, and mock mode simulation.
+- **Purpose**: Provides the central HTTP client instance wrapping Nuxt's `$fetch`. Handles relative URL construction with `apiBase`, dynamic `Bearer` access token injection, automatic 401 token refresh interceptors with single-promise deduplication, session invalidation redirects, and mock mode simulation. Supports `options.isPublic: true` to explicitly omit credentials and bypass 401 refresh/redirect logic for public endpoints (such as public CMS pages, sitemaps, and navigation).
 - **Parameters & Return Value**:
   - Composable hook returning object:
-    - `request<T>(url: string, options?: FetchOptions): Promise<T>` — Generic request execution helper.
+    - `request<T>(url: string, options?: ApiRequestOptions): Promise<T>` — Generic request execution helper (supports `isPublic?: boolean`).
     - `isLoading: Ref<boolean>` — Reactive request pending state.
     - `errorMsg: Ref<string | null>` — Reactive error message state.
     - `isSuccess: Ref<boolean>` — Reactive request completion flag.
@@ -533,41 +582,6 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
-### `useVersionCheck`
-- **File Location**: `/composables/useVersionCheck.ts`
-- **Category**: Composable / System Lifecycle Helper
-- **Scope**: Shared (Storefront & Admin)
-- **Purpose**: Detects frontend deployment version updates by periodically fetching and comparing deployed `/version.json` against the currently loaded application runtime version. Handles non-intrusive update notification state, background polling, tab visibility revalidation, cleanup, and full browser refresh.
-- **Parameters & Return Value**:
-  - Composable hook returning:
-    - `currentVersion: Readonly<Ref<string>>` — Current client-loaded application build version.
-    - `latestVersion: Readonly<Ref<string>>` — Latest version detected from deployed `/version.json`.
-    - `latestBuildTime: Readonly<Ref<string>>` — Build timestamp of detected deployment.
-    - `hasUpdate: Readonly<Ref<boolean>>` — True when a newer deployed version is available and not dismissed.
-    - `isChecking: Readonly<Ref<boolean>>` — True when a version check request is in-flight.
-    - `lastChecked: Readonly<Ref<Date | null>>` — Timestamp of the last successful version check.
-    - `checkForUpdates(): Promise<boolean>` — Fetches `/version.json` with cache-busting headers to check for updates.
-    - `refreshApp(): void` — Executes full browser window reload (`window.location.reload()`) to load new Vue components, layouts, CSS, and JS chunks.
-    - `dismissUpdate(): void` — Dismisses the update banner for the current detected version string to prevent repeated popups.
-    - `startPeriodicCheck(intervalMs?: number): () => void` — Starts periodic interval check (default 60s) and tab `visibilitychange` listener; returns cleanup function.
-- **Example Usage**:
-  ```ts
-  const { hasUpdate, refreshApp, dismissUpdate, startPeriodicCheck } = useVersionCheck();
-  onMounted(() => {
-    const cleanup = startPeriodicCheck(60000);
-    onBeforeUnmount(cleanup);
-  });
-  ```
-- **Files or Features Currently Using It**: `<LayoutUpdateNotification>`, `/app.vue`.
-- **Side Effects**: Sets module-scoped reactive refs (`hasUpdate`, `latestVersion`, `lastChecked`).
-- **Accesses Browser State**: `document.visibilityState`, `window.location.reload()`, `fetch()`.
-- **Performs Network Work**: Yes (`fetch('/version.json')` with anti-cache query param and headers).
-- **Related Utilities**: `server/routes/version.json.ts`, `public/version.json`.
-- **What It Explicitly Does Not Do**: Does not force unexpected automatic reloads in admin or storefront (reloads only on explicit user interaction).
-- **Reusability Level**: High (Global application lifecycle).
-
----
-
 ### `useAnalytics`
 - **File Location**: `/composables/useAnalytics.ts`
 - **Category**: Composable / Analytics
@@ -625,6 +639,7 @@ When selecting or implementing helper functions, agents must respect these struc
 | `useOrderService` | Customer Orders | `/api/v1/orders/`, `/api/v1/orders/{id}/`, `/api/v1/orders/{id}/cancel/` | Unpaginated own-order list (`mapOrderSummary`), order detail (`mapOrderDetail`), cancel (returns `{ id, status, message }`; callers refetch the order). |
 | `useShippingService` | Shipping Configuration & Storefront Options | `/api/v1/shipping/methods/`, `/api/v1/shipping/zones/`, `/api/v1/shipping/zones/available/`, `/api/v1/shipping/rates/`, `/api/v1/shipping/options/` | Admin CRUD for methods, zones and rates; storefront `getAvailableZones()` (active delivery areas, unpaginated `AvailableShippingZone[]`) and `getShippingOptions(addressId)` (typed `ShippingOptionsResponse`: resolved `zone`, `cart_subtotal`, priced `options[]` — all charges computed by the backend; throws on 400 so the backend message can be shown). |
 | `useOrderNotificationService` | Order Notification Recipients (admin) | `/api/v1/email/order-notification-recipients/` | Paginated recipient list (`search`, `is_active`, `page`, `page_size`), create, PATCH update (incl. pause/resume via `is_active`), delete (backend soft delete). The backend decides when alerts are sent (sale created on any channel; customer or staff cancellation). Typed by `/types/order-notification.ts`. |
+| `useCmsService` | Public & Admin CMS Operations | `/api/v1/cms/pages/`, `/api/v1/cms/pages/{slug}/`, `/api/v1/cms/public/navigation/{key}/`, `/api/v1/cms/*` | Direct public CMS page lookup (`getPublicPageBySlug`, `isPublic: true`) backed by a client-only 1-hour (3,600,000 ms) in-memory cache (`/utils/cmsPageCache.ts`) with in-flight deduplication and SSR hydration seeding (`seedPublicPageCache`), plus public navigation, sections, revisions, media, redirects, and sitemap operations. |
 
 ---
 

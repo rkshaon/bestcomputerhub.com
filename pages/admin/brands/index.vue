@@ -648,7 +648,7 @@ const getTableRowAttrs = (brand: Brand) => ({
       
       <!-- Active Analytics row -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <UiCard class="flex items-center gap-3.5 p-3.5">
+        <UiCard class="flex items-center gap-3.5 p-3.5 rounded-xl">
           <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
             <Tag class="w-5 h-5" />
           </div>
@@ -657,7 +657,7 @@ const getTableRowAttrs = (brand: Brand) => ({
             <p class="text-2xl font-display font-extrabold tracking-tight text-foreground leading-tight">{{ totalBrandsCount }}</p>
           </div>
         </UiCard>
-        <UiCard class="flex items-center gap-3.5 p-3.5">
+        <UiCard class="flex items-center gap-3.5 p-3.5 rounded-xl">
           <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
             <ShieldCheck class="w-5 h-5" />
           </div>
@@ -666,7 +666,7 @@ const getTableRowAttrs = (brand: Brand) => ({
             <p class="text-2xl font-display font-extrabold tracking-tight text-foreground leading-tight">{{ activeBrandsCount }}</p>
           </div>
         </UiCard>
-        <UiCard class="flex items-center gap-3.5 p-3.5">
+        <UiCard class="flex items-center gap-3.5 p-3.5 rounded-xl">
           <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
             <AlertCircle class="w-5 h-5" />
           </div>

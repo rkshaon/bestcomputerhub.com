@@ -87,6 +87,69 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<UiLoader>`
+- **Exact File Location**: `/components/ui/UiLoader.vue`
+- **Component Type**: Shared UI
+- **Scope**: Shared (Storefront & Admin)
+- **Purpose**: Generic reusable loading indicator displaying the round brand logo (`/favicon.svg`) with continuous CSS rotation around its center, adaptive sizing, `prefers-reduced-motion` support, and optional accessible status label.
+- **Routes/Pages Used**: Mounted for storefront page navigation via `/components/layout/NavigationLoader.vue` (inside `/layouts/default.vue`), and available globally via Nuxt auto-import (`<UiLoader />`) across Storefront and Admin contexts.
+- **Main Responsibilities**:
+  - Render `/favicon.svg` directly as an aspect-ratio-preserved square image (`width="200"`, `height="200"`, `aspect-square`, `object-contain`) with no decorative clipping or background overlays.
+  - Animate smooth CSS rotation (`1.4s linear infinite`, `transform-origin: center`) without JavaScript timers; stops rotation automatically under `prefers-reduced-motion: reduce`.
+  - Support adaptive default sizing (`size="auto"` scales via `clamp(1.75rem, 3.5vw, 3rem)` bounded by `max-w-full max-h-full`), preset sizes (`xs` `16px`, `sm` `20px`, `md` `32px`, `lg` `48px`, `xl` `64px`), Tailwind dimension class overrides (e.g. `w-10 h-10`), and numeric/CSS-length overrides (`:size="24"`, `size="2.5rem"`).
+  - Support container centering via `centered` (`flex w-full h-full items-center justify-center`) while keeping the default inline (`inline-flex`) so parents control layout, dimensions, and overlays.
+  - Provide accessible `role="status"` / `aria-live="polite"` labeling (`label` defaults to `'Loading...'`; screen-reader-only by default, or visibly rendered below the logo when `showLabel` is `true`; pass `label=""` inside buttons with their own status text).
+- **Props & Defaults**:
+  - `size?: 'auto' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | number | string` (default: `'auto'`)
+  - `centered?: boolean` (default: `false`)
+  - `label?: string` (default: `'Loading...'`)
+  - `showLabel?: boolean` (default: `false`)
+  - `class?: string` (default: `''`)
+- **Usage Examples**:
+  - **Full-page loading** (parent controls container height/overlay):
+    ```vue
+    <div class="min-h-[60vh] w-full flex items-center justify-center">
+      <UiLoader size="xl" show-label label="Loading page..." />
+    </div>
+    ```
+  - **Page or section loading**:
+    ```vue
+    <section class="py-16 flex items-center justify-center">
+      <UiLoader size="lg" show-label label="Loading section..." />
+    </section>
+    ```
+  - **Card or widget loading**:
+    ```vue
+    <UiCard padding="lg" class="h-48">
+      <UiLoader size="md" centered label="Loading widget..." />
+    </UiCard>
+    ```
+  - **Modal loading**:
+    ```vue
+    <UiAdminModal v-model="isOpen" title="Details">
+      <div class="py-10 flex items-center justify-center">
+        <UiLoader size="md" show-label label="Loading details..." />
+      </div>
+    </UiAdminModal>
+    ```
+  - **Inline / button loading**:
+    ```vue
+    <UiButton :disabled="isSubmitting" class="gap-2">
+      <UiLoader v-if="isSubmitting" size="xs" label="" />
+      <span>{{ isSubmitting ? 'Saving...' : 'Save' }}</span>
+    </UiButton>
+    ```
+- **What It Explicitly Does Not Own**: Fixed viewport positioning, full-screen backdrop overlays, or asynchronous request/loading state management.
+- **State Owned**: Computed size and label presentation state only (zero animation timers).
+- **Calls API**: No
+- **Related Composables/Services**: Uses `cn` utility (`/utils/index.ts`).
+- **Responsive Responsibility**: Adaptive default clamp scaling (`28px`–`48px`), `max-w-full max-h-full` containment, and `aspect-square` lock to prevent layout shifts.
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Pure CSS rotation of `/favicon.svg`, `prefers-reduced-motion` compliance, no forced overlay/fixed positioning, and valid `<span>` markup for inline/button contexts.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<UiBreadcrumbs>`
 - **Exact File Location**: `/components/ui/UiBreadcrumbs.vue`
 - **Component Type**: Shared UI / Navigation
@@ -236,9 +299,21 @@ Components are classified using four standard metadata properties:
 ### `<UiRichTextEditor>`
 - **Exact File Location**: `/components/ui/UiRichTextEditor.vue`
 - **Component Type**: Shared UI / Form component
-- **Scope**: Shared
+- **Scope**: Shared across Admin and Storefront
 - **Purpose**: Rich text WYSIWYG content editor supporting formatting toolbars, HTML source editing mode, sanitization, and live HTML `v-model` binding.
-- **Routes/Pages Used**: Admin Product Create/Edit forms, Admin Blog Post forms, Admin SEO/Content pages.
+- **Total Distinct Routes**: 9 distinct routes (4 admin routes, 5 storefront routes).
+- **Usage Locations & Distinction**:
+  - **Direct Usage in Pages**:
+    - `/pages/admin/blog/posts/index.vue` (Route: `/admin/blog/posts/`) — Admin Blog Post creation and editing.
+    - `/pages/admin/products/[id].vue` (Route: `/admin/products/[id]/`) — Admin Product specification and description editing.
+    - `/pages/index.vue` (Route: `/`) — Homepage overview inline content editing.
+    - `/pages/product/[slug].vue` (Route: `/product/{slug}/`) — Storefront product detail inline content editing.
+    - `/pages/product-category/[...slug].vue` (Route: `/product-category/{slug}/`) — Storefront category inline content editing.
+    - `/pages/brand/[slug].vue` (Route: `/brand/{slug}/`) — Storefront brand inline content editing.
+    - `/pages/blog/[slug].vue` (Route: `/blog/{slug}/`) — Storefront blog post inline content editing.
+  - **Indirect Usage via Feature / Wrapper Components**:
+    - `/pages/admin/categories/index.vue` (Route: `/admin/categories/`) — via wrapper component `/features/admin/categories/components/CategoryFormModal.vue`.
+    - `/pages/admin/products/index.vue` (Route: `/admin/products/`) — via wrapper component `/features/admin/products/components/ProductFormModal.vue` (Short Description, Full Description, Specifications).
 - **Main Responsibilities**:
   - Provide text formatting tools (bold, italic, headers, lists, links, format painter for character-level styling, inline font-size selection, text color picker, alignment, tables, code blocks).
   - Toggle between visual WYSIWYG editor and raw HTML source code editor (`isSourceMode`).
@@ -381,16 +456,37 @@ Components are classified using four standard metadata properties:
 - **Exact File Location**: `/components/layout/Footer.vue`
 - **Component Type**: Layout component
 - **Scope**: Storefront
-- **Purpose**: Master Storefront footer section.
+- **Purpose**: Master Storefront footer section combining static contact/social info with dynamic CMS navigation columns (`footer` menu key) and resilient static fallback sections.
 - **Routes/Pages Used**: Rendered on all Storefront pages via `/layouts/default.vue`.
-- **Main Responsibilities**: Render brand description, category quick links, customer support info, payment badge icons, copyright notice, social media links.
-- **What It Explicitly Does Not Own**: Page routing logic.
-- **State Owned**: None.
-- **Calls API**: No
-- **Related Composables/Services**: None.
+- **Main Responsibilities**:
+  - Render static Column 1 (`We're Here to Help`) with contact details and social media links, plus copyright bar.
+  - Fetch public CMS `footer` navigation menu via SSR-safe `useAsyncData` (`cmsService.getPublicNavigation('footer')`) with payload caching to avoid repeated requests.
+  - Render dynamic columns using top-level labels as column headings and `<FooterNavList>` for recursive child links, falling back cleanly to hardcoded `Information`, `Policy`, and `Support Hub` sections if the API fails or returns empty/invalid data.
+- **What It Explicitly Does Not Own**: Page routing logic or admin navigation editing.
+- **State Owned**: Cached `footerNavItems` async data and computed normalized `footerSections`.
+- **Calls API**: Yes (`cmsService.getPublicNavigation('footer')`, `isPublic: true`).
+- **Related Composables/Services**: `useCmsService`, `<FooterNavList>`.
 - **Responsive Responsibility**: 4-column balanced responsive grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`) occupying 90% width centered horizontally on desktop (`w-full lg:w-[90%] mx-auto`) with compact navigation columns and full width on smaller screens.
 - **Reusability Level**: High (Singleton layout component)
-- **Important Behavior to Preserve**: Trailing slash storefront URL targets on footer navigation links.
+- **Important Behavior to Preserve**: Trailing slash storefront URL targets, exact fallback columns on API error/empty response, and unchanged static Column 1 layout.
+- **Known Architectural Risks**: None.
+
+---
+
+### `<FooterNavList>`
+- **Exact File Location**: `/components/layout/FooterNavList.vue`
+- **Component Type**: Layout / Navigation helper
+- **Scope**: Storefront
+- **Purpose**: Recursive navigation link list renderer for `<LayoutFooter>` columns supporting internal `<NuxtLink>` routes, external `<a>` targets, `open_in_new_tab`, non-linked `<span>` labels, and bounded nested children.
+- **Routes/Pages Used**: Storefront default layout via `/components/layout/Footer.vue`.
+- **Main Responsibilities**: Validate URL schemes (`http(s)`, `mailto`, `tel`, relative `/`), apply `target="_blank"` + `rel="noopener noreferrer"` when `open_in_new_tab` is enabled, and recursively render nested `children` (capped at depth 5) while matching column text alignment.
+- **What It Explicitly Does Not Own**: Data fetching, fallback definitions, or column heading typography.
+- **State Owned**: Computed alignment/list classes.
+- **Calls API**: No.
+- **Related Composables/Services**: None.
+- **Responsive Responsibility**: Preserves existing compact vertical spacing and typography scale (`text-xs sm:text-sm` for root links, `text-[11px] sm:text-xs` for nested children).
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: Safe URL validation and `rel="noopener noreferrer"` on `open_in_new_tab`.
 - **Known Architectural Risks**: None.
 
 ---
@@ -454,20 +550,23 @@ Components are classified using four standard metadata properties:
 
 ---
 
-### `<UpdateNotification>`
-- **Exact File Location**: `/components/layout/UpdateNotification.vue`
-- **Component Type**: Layout UI helper / Notification
-- **Scope**: Shared
-- **Purpose**: Non-intrusive floating toast alert notifying users when a new deployment build version is available.
-- **Routes/Pages Used**: Storefront and Admin default layouts.
-- **Main Responsibilities**: Monitor deployment version via `useVersionCheck` and prompt user to refresh for the latest release.
-- **What It Explicitly Does Not Own**: Deployment building or version calculation logic.
-- **State Owned**: None (delegates to `useVersionCheck`).
-- **Calls API**: Indirectly checks `/version.json` via `useVersionCheck`.
-- **Related Composables/Services**: `useVersionCheck`.
-- **Responsive Responsibility**: Floating alert positioning (`top-4 left-4 right-4 sm:left-auto sm:right-6`).
-- **Reusability Level**: High
-- **Important Behavior to Preserve**: Non-intrusive dismissal and explicit user-driven reload trigger (`refreshApp`).
+### `<LayoutNavigationLoader>`
+- **Exact File Location**: `/components/layout/NavigationLoader.vue`
+- **Component Type**: Layout / Navigation helper
+- **Scope**: Storefront
+- **Purpose**: Non-blocking storefront page-navigation loading indicator displaying `<UiLoader>` while destination routes (including async CMS pages at `/pages/[slug].vue`) resolve during client-side navigation.
+- **Routes/Pages Used**: All Storefront routes via `/layouts/default.vue` (and `/error.vue`).
+- **Main Responsibilities**:
+  - Subscribe to Nuxt's built-in navigation loading lifecycle via `useLoadingIndicator({ throttle: 0, hideDelay: 0, resetDelay: 0 })` (`page:loading:start`, `page:loading:end`, `vue:error`) plus `app:error` / `app:error:cleared` safety hooks.
+  - Render `<UiLoader size="sm" label="" />` inside a compact, non-blocking (`pointer-events-none`), fixed viewport-centered pill with zero layout shift and accessible `role="status"` / `aria-live="polite"` status text.
+  - Disappear immediately when navigation completes, redirects, cancels (`aborted`/`duplicated`), or errors.
+- **What It Explicitly Does Not Own**: Custom router state machines, button/card/modal API loading states, or duplicated progress bars (`<NuxtLoadingIndicator />` is not used).
+- **State Owned**: Reads `isLoading` from Nuxt's `useLoadingIndicator` singleton.
+- **Calls API**: No.
+- **Related Composables/Services**: `#app` (`useLoadingIndicator`, `useNuxtApp`), `<UiLoader>`.
+- **Responsive Responsibility**: Fixed centered non-blocking pill (`fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none`) clear of header, mobile bottom bar, and floating actions.
+- **Reusability Level**: High (Layout singleton).
+- **Important Behavior to Preserve**: Zero artificial throttle/hide delays, `pointer-events-none` non-blocking behavior, SSR/hydration safety, and immediate cleanup on errors/cancellations.
 - **Known Architectural Risks**: None.
 
 ---
@@ -767,6 +866,30 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<CmsRichTextSection>`
+- **Exact File Location**: `/components/cms/CmsRichTextSection.vue`
+- **Component Type**: Domain component / Content presentation
+- **Scope**: Storefront
+- **Purpose**: Pure presentational renderer for public CMS `rich_text` sections. Sanitizes backend-expanded Wagtail Rich Text HTML and displays it with configurable alignment and standardized typography.
+- **Routes/Pages Used**: Storefront dynamic CMS pages (`/pages/[slug].vue`).
+- **Main Responsibilities**:
+  - Accept `body: string` and optional `alignment: 'left' | 'center' | 'right' | string`.
+  - Isomorphic HTML sanitization via `sanitizeCmsHtml` (`isomorphic-dompurify` with strict tag/attribute allowlists, SVG/MathML exclusion, and `data:`/`javascript:` rejection) to neutralize unsafe markup consistently in both SSR and client environments.
+  - Resolves relative `/media/` image URLs against configured `runtimeConfig.public.mediaBase` or `runtimeConfig.public.apiBase` origin while preserving external absolute URLs.
+  - Render sanitized HTML inside a dedicated `.cms-prose` wrapper styled with semantic design tokens and the standardized H1–H4 scale.
+  - Support alignment classes (`text-left mr-auto`, `text-center mx-auto`, `text-right ml-auto`).
+  - Handle null, undefined, or empty content gracefully without rendering empty DOM wrappers.
+- **What It Explicitly Does Not Own**: Data fetching, API requests, routing, breadcrumbs, layout chrome, or SEO metadata.
+- **State Owned**: None (computed views over props and runtime config).
+- **Calls API**: No.
+- **Related Composables/Services**: `sanitizeCmsHtml`, `resolveOriginFromUrl` (`/utils/cms.ts`), `.cms-prose` (`/assets/css/main.css`).
+- **Responsive Responsibility**: Responsive image constraints (`max-w-full h-auto`), table formatting, and fluid typography spacing.
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Must sanitize all content before rendering through `v-html`; must preserve `.cms-prose` typography styling and semantic tokens.
+- **Known Architectural Risks**: None.
+
+---
+
 ## 4. Admin Management & CRUD Components (`/components/admin/` & `/features/admin/`)
 
 ### `<CategoryTreeAdmin>`
@@ -809,6 +932,28 @@ Components are classified using four standard metadata properties:
 - **Reusability Level**: Medium
 - **Important Behavior to Preserve**: Responsive depth mathematical calculation and HTML entity decoding in category name.
 - **Known Architectural Risks**: Recursive component tree requires careful depth calculation to avoid visual overflow.
+
+---
+
+### `<NavigationTreeNode>`
+- **Exact File Location**: `/components/admin/NavigationTreeNode.vue`
+- **Component Type**: Domain / Feature component
+- **Scope**: Admin
+- **Purpose**: Recursive hierarchical CMS navigation item row renderer supporting expand/collapse, target type/URL preview, visibility toggle, sibling-only drag-and-drop and up/down reordering, and permission-gated CRUD actions.
+- **Routes/Pages Used**: Admin CMS Navigation Page (`/admin/cms/navigation/`).
+- **Main Responsibilities**:
+  - Render drag handle, expand/collapse chevron, item label, link-type pill (`Page` vs `External`), resolved target summary, `Hidden` and `New tab` badges, and child counts.
+  - Provide permission-gated actions (`move-sibling`, `toggle-visibility`, `add-child`, `edit`, `delete`) with accessible `aria-label` and `title` attributes.
+  - Handle sibling-only HTML5 drag-and-drop events via `draggedNavItem` / `dragOverNavItemId` injections.
+  - Recursively render nested `children` branches.
+- **What It Explicitly Does Not Own**: Flat-to-tree assembly, API requests, modal state, or permission checks (receives computed flags and emits events to parent page).
+- **State Owned**: Computed target summary, sibling move eligibility, drag-hover highlight injection.
+- **Calls API**: No.
+- **Related Composables/Services**: `cn` utility (`/utils/index.ts`).
+- **Responsive Responsibility**: Responsive depth indentation (`clamp(...)`), stacks action buttons cleanly on small screens.
+- **Reusability Level**: Medium
+- **Important Behavior to Preserve**: Sibling-only drop guard (`source.parent === target.parent`) and reordering disablement when search filtering is active or reordering is in-flight.
+- **Known Architectural Risks**: None.
 
 ---
 

@@ -25,6 +25,7 @@ import {
   Paintbrush
 } from 'lucide-vue-next';
 import { cn } from '@/utils';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 
 interface Props {
   modelValue?: string | Record<string, any> | null;
@@ -272,35 +273,75 @@ const getSelectedAnchor = (): HTMLAnchorElement | null => {
   return null;
 };
 
+const isLinkModalOpen = ref(false);
+const linkModalUrl = ref('');
+const linkInputRef = ref<HTMLInputElement | null>(null);
+let savedRange: Range | null = null;
+let targetAnchor: HTMLElement | null = null;
+
+watch(isLinkModalOpen, (isOpen) => {
+  if (isOpen) {
+    nextTick(() => {
+      setTimeout(() => {
+        linkInputRef.value?.focus();
+        linkInputRef.value?.select();
+      }, 50);
+    });
+  }
+});
+
 const insertLink = () => {
   if (props.disabled || isSourceMode.value) return;
   if (editorRef.value) {
     editorRef.value.focus();
   }
 
-  const existingAnchor = getSelectedAnchor();
-  const existingHref = existingAnchor ? existingAnchor.getAttribute('href') || '' : '';
+  targetAnchor = getSelectedAnchor();
+  const existingHref = targetAnchor ? targetAnchor.getAttribute('href') || '' : '';
+  linkModalUrl.value = existingHref;
 
-  const url = prompt('Enter the link URL (e.g. https://example.com):', existingHref);
-  
-  if (url === null) {
-    return;
+  const selection = window.getSelection();
+  if (selection && selection.rangeCount > 0) {
+    savedRange = selection.getRangeAt(0);
+  } else {
+    savedRange = null;
   }
 
-  const trimmed = url.trim();
+  isLinkModalOpen.value = true;
+};
+
+const handleSaveLink = () => {
+  if (savedRange) {
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+      selection.addRange(savedRange);
+    }
+  }
+
+  const trimmed = linkModalUrl.value.trim();
   if (!trimmed) {
-    if (existingAnchor) {
+    if (targetAnchor) {
       execCommand('unlink');
     }
-    return;
+  } else {
+    if (targetAnchor) {
+      targetAnchor.setAttribute('href', trimmed);
+      handleInput();
+    } else {
+      execCommand('createLink', trimmed);
+    }
   }
 
-  if (existingAnchor) {
-    existingAnchor.setAttribute('href', trimmed);
-    handleInput();
-  } else {
-    execCommand('createLink', trimmed);
-  }
+  isLinkModalOpen.value = false;
+  targetAnchor = null;
+  savedRange = null;
+};
+
+const handleCancelLink = () => {
+  isLinkModalOpen.value = false;
+  targetAnchor = null;
+  savedRange = null;
 };
 
 const removeLink = () => {
@@ -807,7 +848,7 @@ const applyFormatPainterToSelection = () => {
           ref="editorRef"
           contenteditable="true"
           :class="cn(
-            'p-3.5 outline-none prose prose-sm prose-slate dark:prose-invert max-w-none text-foreground text-xs leading-relaxed overflow-y-auto',
+            'p-3.5 outline-none prose prose-sm prose-slate dark:prose-invert max-w-none text-foreground text-xs leading-relaxed overflow-y-auto max-h-[400px]',
             minHeight,
             '[&_table]:w-full [&_table]:border-collapse [&_table]:my-2 [&_table]:border [&_table]:border-border',
             '[&_th]:border [&_th]:border-border [&_th]:bg-muted/50 [&_th]:p-2 [&_th]:text-left [&_th]:text-xs [&_th]:font-bold',
@@ -826,7 +867,7 @@ const applyFormatPainterToSelection = () => {
           v-if="isSourceMode"
           :value="rawHtml"
           :class="cn(
-            'w-full p-3.5 bg-muted/20 text-foreground font-mono text-xs leading-relaxed outline-none border-0 resize-y block',
+            'w-full p-3.5 bg-muted/20 text-foreground font-mono text-xs leading-relaxed outline-none border-0 resize-y block max-h-[400px]',
             minHeight
           )"
           placeholder="Enter raw HTML content (e.g. <table>, <p>, <ul>)..."
@@ -842,4 +883,46 @@ const applyFormatPainterToSelection = () => {
       {{ helperText }}
     </p>
   </div>
+
+  <!-- Link Insertion/Editing Modal -->
+  <UiAdminModal
+    :is-open="isLinkModalOpen"
+    maxWidth="max-w-md"
+    title="Insert or Edit Link"
+    subtitle="Enter the destination URL for the selected text."
+    @close="handleCancelLink"
+  >
+    <div class="p-6 space-y-4">
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Link URL</label>
+        <input
+          ref="linkInputRef"
+          v-model="linkModalUrl"
+          type="url"
+          placeholder="https://example.com"
+          class="w-full text-xs bg-background border border-input rounded-xl px-3.5 h-10 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
+          @keydown.enter.prevent="handleSaveLink"
+          @keydown.esc.prevent="handleCancelLink"
+        />
+        <p class="text-[11px] text-muted-foreground">Leave empty and save to remove an existing link.</p>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
+        <button
+          type="button"
+          @click="handleCancelLink"
+          class="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          @click="handleSaveLink"
+          class="h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+        >
+          Save Link
+        </button>
+      </div>
+    </div>
+  </UiAdminModal>
 </template>

@@ -1184,7 +1184,7 @@ watch(viewMode, () => {
       
       <!-- Active Analytics row -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-      <UiCard class="flex items-center gap-3 p-3">
+      <UiCard class="flex items-center gap-3 p-3 rounded-xl">
         <div class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
           <Layers class="w-4 h-4" />
         </div>
@@ -1193,7 +1193,7 @@ watch(viewMode, () => {
           <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ categorySummary.total_categories }}</p>
         </div>
       </UiCard>
-      <UiCard class="flex items-center gap-3 p-3">
+      <UiCard class="flex items-center gap-3 p-3 rounded-xl">
         <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
           <FolderOpen class="w-4 h-4" />
         </div>
@@ -1202,7 +1202,7 @@ watch(viewMode, () => {
           <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ categorySummary.root_categories }}</p>
         </div>
       </UiCard>
-      <UiCard class="flex items-center gap-3 p-3">
+      <UiCard class="flex items-center gap-3 p-3 rounded-xl">
         <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
           <ChevronDown class="w-4 h-4" />
         </div>
@@ -1211,7 +1211,7 @@ watch(viewMode, () => {
           <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ categorySummary.sub_categories }}</p>
         </div>
       </UiCard>
-      <UiCard class="flex items-center gap-3 p-3">
+      <UiCard class="flex items-center gap-3 p-3 rounded-xl">
         <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
           <Menu class="w-4 h-4" />
         </div>
@@ -1220,7 +1220,7 @@ watch(viewMode, () => {
           <p class="text-xl font-display font-bold tracking-tight text-foreground leading-tight">{{ categorySummary.menu_categories ?? 0 }}</p>
         </div>
       </UiCard>
-      <UiCard class="flex items-center gap-3 p-3">
+      <UiCard class="flex items-center gap-3 p-3 rounded-xl">
         <div class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 shadow-inner">
           <ListTree class="w-4 h-4" />
         </div>

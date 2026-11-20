@@ -4,14 +4,20 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { 
   DollarSign, 
   ShoppingBag, 
+  ShoppingCart,
   TrendingUp,
   Download,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Receipt,
+  Calendar,
+  User,
+  Mail
 } from 'lucide-vue-next';
 import { useSalesService } from '@/composables/useSalesService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
-import { formatCurrency } from '@/utils';
+import { formatCurrency, formatDate } from '@/utils';
+import type { SalesPerformanceReport, SalesPerformanceLastOrder } from '@/types';
 import DashboardStatCard from '@/features/admin/components/DashboardStatCard.vue';
 import UiCard from '@/components/ui/UiCard.vue';
 
@@ -24,7 +30,7 @@ const { hasPermission } = useAdminPermissions();
 const canViewSalesPerformance = computed(() => hasPermission('sale_api.view_sale'));
 
 const performanceDays = ref<number>(90);
-const performanceData = ref<any | null>(null);
+const performanceData = ref<SalesPerformanceReport | null>(null);
 const isPerformanceLoading = ref(false);
 const performanceError = ref<string | null>(null);
 const activeTrendMetric = ref<'revenue' | 'orders'>('revenue');
@@ -67,6 +73,28 @@ onMounted(() => {
 const overview = computed(() => performanceData.value?.overview || { total_orders: 0, total_revenue: 0, average_order_value: 0 });
 const comparison = computed(() => performanceData.value?.comparison || { order_growth_percentage: 0, revenue_growth_percentage: 0 });
 const dailyTrend = computed(() => performanceData.value?.daily_trend || []);
+const todayOrders = computed<number>(() => {
+  const raw = performanceData.value?.today_orders;
+  if (raw === null || raw === undefined) return 0;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+});
+const lastOrder = computed<SalesPerformanceLastOrder | null>(() => performanceData.value?.last_order ?? null);
+
+const formatSaleDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'N/A';
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString.trim());
+  if (dateOnlyMatch) {
+    const localDate = new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]));
+    if (!isNaN(localDate.getTime())) {
+      const day = localDate.getDate();
+      const month = localDate.toLocaleString('en-US', { month: 'short' });
+      const year = localDate.getFullYear();
+      return `${day} ${month}, ${year}`;
+    }
+  }
+  return formatDate(dateString);
+};
 
 const formatGrowth = (val: number | null | undefined) => {
   if (val === null || val === undefined) return undefined;
@@ -88,6 +116,14 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
     const y = height - ((val - min) / range) * (height - 20) - 10;
     return `${x},${y}`;
   }).join(' ');
+};
+
+const kpiCardLayoutClasses = {
+  cardClass: 'p-5 sm:p-6 xl:p-3 rounded-xl',
+  iconBoxClass: 'w-12 h-12 xl:w-9 xl:h-9 rounded-xl',
+  iconClass: 'w-6 h-6 xl:w-5 xl:h-5',
+  valueClass: 'text-2xl sm:text-3xl xl:text-xl',
+  sparklineClass: 'hidden sm:block xl:hidden',
 };
 </script>
 
@@ -148,14 +184,15 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
 
       <!-- Performance Content -->
       <template v-else>
-        <!-- Summary Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Summary & Overview Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.4fr)] gap-3">
           <DashboardStatCard 
             label="Total Revenue"
             :value="formatCurrency(Number(overview.total_revenue))"
             :icon="DollarSign"
             :trend="formatGrowth(comparison.revenue_growth_percentage)"
             color="bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600"
+            v-bind="kpiCardLayoutClasses"
           />
           <DashboardStatCard 
             label="Total Orders"
@@ -163,13 +200,69 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
             :icon="ShoppingBag"
             :trend="formatGrowth(comparison.order_growth_percentage)"
             color="bg-blue-100 dark:bg-blue-950/30 text-blue-600"
+            v-bind="kpiCardLayoutClasses"
           />
           <DashboardStatCard 
             label="Average Order Value"
             :value="formatCurrency(Number(overview.average_order_value))"
             :icon="TrendingUp"
             color="bg-amber-100 dark:bg-amber-950/30 text-amber-600"
+            v-bind="kpiCardLayoutClasses"
           />
+          <DashboardStatCard
+            label="Today's Orders"
+            :value="todayOrders.toLocaleString('en-US')"
+            :icon="ShoppingCart"
+            color="bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600"
+            v-bind="kpiCardLayoutClasses"
+          />
+
+          <UiCard class="sm:col-span-2 xl:col-span-1 p-5 sm:p-6 xl:p-3 rounded-xl flex flex-col justify-center">
+            <div class="flex items-start gap-3">
+              <div class="w-11 h-11 xl:w-9 xl:h-9 rounded-xl flex items-center justify-center shrink-0 bg-violet-100 dark:bg-violet-950/30 text-violet-600">
+                <Receipt class="w-5 h-5" />
+              </div>
+
+              <div v-if="lastOrder" class="flex-1 min-w-0 space-y-1.5">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Last Order</p>
+                  <span class="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground shrink-0">
+                    <Calendar class="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span>{{ formatSaleDate(lastOrder.sale_date) }}</span>
+                  </span>
+                </div>
+
+                <div class="flex items-baseline justify-between gap-2 flex-wrap">
+                  <NuxtLink
+                    :to="`/admin/orders/${lastOrder.id}`"
+                    class="text-xl sm:text-2xl xl:text-lg font-display font-black tracking-tight text-foreground hover:text-primary transition-colors"
+                  >
+                    #{{ lastOrder.id }}
+                  </NuxtLink>
+                  <p class="text-xl sm:text-2xl xl:text-lg font-display font-black tracking-tight text-foreground">
+                    {{ formatCurrency(Number(lastOrder.total_amount ?? 0)) }}
+                  </p>
+                </div>
+
+                <div class="pt-1.5 border-t border-border/70 flex flex-col sm:flex-row sm:items-center xl:flex-col xl:items-stretch gap-1 sm:gap-4 xl:gap-0.5 text-[11px] text-muted-foreground">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <User class="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span class="font-semibold text-foreground truncate">{{ lastOrder.customer_name || 'Guest Customer' }}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <Mail class="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span class="truncate">{{ lastOrder.customer_email || 'No email provided' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="flex-1 min-w-0">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Last Order</p>
+                <p class="text-sm font-display font-bold text-foreground">No orders yet</p>
+                <p class="text-[11px] text-muted-foreground mt-0.5 leading-snug">Most recent order details will appear here.</p>
+              </div>
+            </div>
+          </UiCard>
         </div>
 
         <!-- Daily Trend Visualization -->

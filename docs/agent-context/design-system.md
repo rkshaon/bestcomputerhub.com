@@ -1099,7 +1099,7 @@ All administrative pages displaying tabular data must use `<UiTable />` from `/c
 
 - **Mandatory Reusable Primitive**: `<UiTable />` is the sole standard table primitive for all Admin dataset tables. Future and existing Admin pages displaying tabular data must first look for and reuse `<UiTable />` rather than creating raw custom table markup or duplicate table components.
 - **Presentation & Visual Responsibilities**:
-  - Table container/wrapper with responsive horizontal scroll handling (`overflow-x-auto`).
+  - Table container/wrapper with **`rounded-xl` (12px)** outer corner radius and responsive horizontal scroll handling (`overflow-x-auto`). Any Admin table wrapper or custom table container must also use **`rounded-xl`** on its outer surface.
   - Standard header rendering (`<thead>`, `<th>`) driven by a clean column definition prop.
   - Standard row (`<tr>`) and cell (`<td>`) styling enforcing consistent padding, typography, alignment, hover states, and semantic design tokens (`bg-card`, `text-card-foreground`, `border-border`, etc.).
   - Built-in empty state display when data collection is empty.
@@ -1134,6 +1134,7 @@ Administrative workflows prioritize operational efficiency and visibility of act
 
 - **Viewport Content Maximization**: Maximize the amount of useful data, metrics, and interactive controls visible above the fold by reducing excessive vertical padding and margins between major page sections.
 - **Container Padding Reduction**: Prefer compact container margins and card padding (e.g. `p-3` or `p-3.5` instead of `p-6` or `p-8` for summary metrics and toolbars).
+- **Corner Radius Standard (`rounded-xl`)**: All Admin KPI, statistic, and summary metric cards must use a consistent **`rounded-xl` (12px)** outer corner radius (applying a `rounded-xl` class override when using shared `<UiCard />`, without altering `<UiCard />`'s storefront defaults).
 - **Whitespace Over Font Shrinking**: Increase information density primarily by removing unnecessary outer whitespace, section gaps, and tall padding — NOT by reducing font sizes or interactive control touch targets below WCAG AA accessibility guidelines.
 - **Visual Balance**: Maintain distinct section boundaries, semantic borders, and clear typographic hierarchy so dense interfaces remain easily scannable and comfortable to navigate.
 

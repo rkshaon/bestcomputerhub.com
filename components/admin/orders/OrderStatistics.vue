@@ -58,7 +58,7 @@ onMounted(() => fetchData());
     {{ error }}
   </div>
   <div v-else class="flex overflow-x-auto pb-4 gap-3 animate-in fade-in duration-500 lg:grid lg:grid-cols-9 lg:overflow-visible lg:pb-0">
-    <UiCard v-for="(status, index) in statuses" :key="status.value" class="flex items-center gap-3 p-3 min-w-[160px] lg:min-w-0 dark:bg-slate-900 dark:border-slate-800">
+    <UiCard v-for="(status, index) in statuses" :key="status.value" class="flex items-center gap-3 p-3 min-w-[160px] lg:min-w-0 dark:bg-slate-900 dark:border-slate-800 rounded-xl">
       <div :class="['w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-inner', getStatusConfig(status.value)?.bg, getStatusConfig(status.value)?.color]">
         <component :is="getStatusConfig(status.value)?.icon" class="w-4 h-4" />
       </div>

@@ -116,7 +116,7 @@ function handleMouseLeave() {
 
     <!-- Quick Stats Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <UiCard v-for="stat in stats" :key="stat.label" class="p-6 relative overflow-hidden group hover:border-primary/20 transition-all duration-500">
+      <UiCard v-for="stat in stats" :key="stat.label" class="p-6 rounded-xl relative overflow-hidden group hover:border-primary/20 transition-all duration-500">
         <div class="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700">
            <component :is="stat.icon" class="w-32 h-32" />
         </div>
@@ -297,7 +297,7 @@ function handleMouseLeave() {
     <!-- Bottom Secondary Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- High-Performance Assets Table -->
-      <UiCard class="p-0 overflow-hidden border-slate-200 dark:border-slate-800">
+      <UiCard class="p-0 rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
         <div class="p-8 border-b border-slate-50 dark:border-slate-900 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
           <h3 class="text-sm font-black uppercase tracking-[0.2em]">Alpha Product Performance</h3>
           <UiButton variant="ghost" size="sm" class="text-[10px] font-bold p-0 hover:bg-transparent">VIEW ALL</UiButton>
@@ -350,7 +350,7 @@ function handleMouseLeave() {
         </div>
 
         <div class="grid grid-cols-2 gap-6">
-          <UiCard class="p-6 bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900/50">
+          <UiCard class="p-6 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900/50">
             <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center mb-4">
               <Users class="w-5 h-5" />
             </div>
@@ -358,7 +358,7 @@ function handleMouseLeave() {
             <p class="text-xl font-display font-black tracking-tighter text-emerald-900 dark:text-emerald-300">88.2%</p>
           </UiCard>
           
-          <UiCard class="p-6 bg-slate-900 text-white border-none relative overflow-hidden">
+          <UiCard class="p-6 rounded-xl bg-slate-900 text-white border-none relative overflow-hidden">
              <div class="absolute top-0 right-0 p-3">
                <div class="w-2 h-2 rounded-full bg-primary animate-ping"></div>
              </div>

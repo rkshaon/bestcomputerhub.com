@@ -34,6 +34,7 @@ import UiBreadcrumbs from '@/components/ui/UiBreadcrumbs.vue';
 import UiBadge from '@/components/ui/UiBadge.vue';
 import UiButton from '@/components/ui/Button.vue';
 import UiRichTextEditor from '@/components/ui/UiRichTextEditor.vue';
+import UiAdminModal from '@/components/ui/UiAdminModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -339,6 +340,28 @@ const isHtmlEquivalent = (h1: string, h2: string): boolean => {
   return cleanHtmlForComparison(h1) === cleanHtmlForComparison(h2);
 };
 
+const isSaveConfirmOpen = ref(false);
+const pendingSaveField = ref<string | null>(null);
+
+const requestSave = (field: string) => {
+  pendingSaveField.value = field;
+  isSaveConfirmOpen.value = true;
+};
+
+const confirmSave = () => {
+  if (pendingSaveField.value) {
+    const field = pendingSaveField.value;
+    pendingSaveField.value = null;
+    isSaveConfirmOpen.value = false;
+    saveField(field as any);
+  }
+};
+
+const cancelSave = () => {
+  pendingSaveField.value = null;
+  isSaveConfirmOpen.value = false;
+};
+
 const startEditing = (field: 'title' | 'seo_description' | 'content') => {
   if (!canEditBlogPostFromStorefront.value) return;
   
@@ -433,7 +456,7 @@ const handleFocusOut = (event: FocusEvent, field: 'content') => {
     return;
   }
   
-  saveField(field);
+  requestSave(field);
 };
 
 onMounted(() => {
@@ -564,7 +587,7 @@ onUnmounted(() => {
                   v-model="editTitleValue"
                   ref="titleInputRef"
                   type="text"
-                  @blur="saveField('title')"
+                  @blur="requestSave('title')"
                   @keydown.enter="saveField('title')"
                   @keydown.esc="cancelEditing"
                   :disabled="isFieldSaving === 'title'"
@@ -612,7 +635,7 @@ onUnmounted(() => {
                 v-vmodel="editSeoDescValue"
                 v-model="editSeoDescValue"
                 @keydown.esc="cancelEditing"
-                @blur="saveField('seo_description')"
+                @blur="requestSave('seo_description')"
                 :disabled="isFieldSaving === 'seo_description'"
                 rows="3"
                 class="w-full text-base bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
@@ -1042,5 +1065,40 @@ onUnmounted(() => {
         </div>
       </section>
     </template>
+    <!-- Save Confirmation Modal -->
+    <UiAdminModal
+      :is-open="isSaveConfirmOpen"
+      max-width="max-w-md"
+      :show-close-button="false"
+      @close="cancelSave"
+    >
+      <div class="p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Edit2 class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-foreground">Confirm Save Changes</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">Are you sure you want to save your edits to this field?</p>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-border">
+          <button 
+            type="button" 
+            @click="cancelSave" 
+            class="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Cancel & Continue Editing
+          </button>
+          <button 
+            type="button" 
+            @click="confirmSave" 
+            class="h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Confirm & Save
+          </button>
+        </div>
+      </div>
+    </UiAdminModal>
   </div>
 </template>

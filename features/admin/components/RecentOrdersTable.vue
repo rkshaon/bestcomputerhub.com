@@ -22,7 +22,7 @@ const statusColors: Record<string, any> = {
 </script>
 
 <template>
-  <UiCard padding="none" class="overflow-hidden">
+  <UiCard padding="none" class="overflow-hidden rounded-xl">
     <div class="px-8 py-6 border-b border-border flex items-center justify-between">
       <div>
         <h3 class="text-lg font-display font-bold">Transaction Ledger</h3>

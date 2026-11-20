@@ -155,7 +155,7 @@ const formatTime = (log: RequestLog) => {
     </div>
 
     <!-- Main Table Container -->
-    <div class="bg-card border border-border rounded-2xl shadow-xs overflow-hidden">
+    <div class="bg-card border border-border rounded-xl shadow-xs overflow-hidden">
       <!-- Search & Filters Bar -->
       <div class="p-3.5 border-b border-border bg-muted/20 flex flex-col md:flex-row gap-3 items-center justify-between">
         <div class="flex-1 w-full relative">
