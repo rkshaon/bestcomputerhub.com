@@ -4,14 +4,20 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { 
   DollarSign, 
   ShoppingBag, 
+  ShoppingCart,
   TrendingUp,
   Download,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Receipt,
+  Calendar,
+  User,
+  Mail
 } from 'lucide-vue-next';
 import { useSalesService } from '@/composables/useSalesService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
-import { formatCurrency } from '@/utils';
+import { formatCurrency, formatDate } from '@/utils';
+import type { SalesPerformanceReport, SalesPerformanceLastOrder } from '@/types';
 import DashboardStatCard from '@/features/admin/components/DashboardStatCard.vue';
 import UiCard from '@/components/ui/UiCard.vue';
 
@@ -24,7 +30,7 @@ const { hasPermission } = useAdminPermissions();
 const canViewSalesPerformance = computed(() => hasPermission('sale_api.view_sale'));
 
 const performanceDays = ref<number>(90);
-const performanceData = ref<any | null>(null);
+const performanceData = ref<SalesPerformanceReport | null>(null);
 const isPerformanceLoading = ref(false);
 const performanceError = ref<string | null>(null);
 const activeTrendMetric = ref<'revenue' | 'orders'>('revenue');
@@ -67,6 +73,28 @@ onMounted(() => {
 const overview = computed(() => performanceData.value?.overview || { total_orders: 0, total_revenue: 0, average_order_value: 0 });
 const comparison = computed(() => performanceData.value?.comparison || { order_growth_percentage: 0, revenue_growth_percentage: 0 });
 const dailyTrend = computed(() => performanceData.value?.daily_trend || []);
+const todayOrders = computed<number>(() => {
+  const raw = performanceData.value?.today_orders;
+  if (raw === null || raw === undefined) return 0;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+});
+const lastOrder = computed<SalesPerformanceLastOrder | null>(() => performanceData.value?.last_order ?? null);
+
+const formatSaleDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'N/A';
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString.trim());
+  if (dateOnlyMatch) {
+    const localDate = new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]));
+    if (!isNaN(localDate.getTime())) {
+      const day = localDate.getDate();
+      const month = localDate.toLocaleString('en-US', { month: 'short' });
+      const year = localDate.getFullYear();
+      return `${day} ${month}, ${year}`;
+    }
+  }
+  return formatDate(dateString);
+};
 
 const formatGrowth = (val: number | null | undefined) => {
   if (val === null || val === undefined) return undefined;
@@ -170,6 +198,68 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
             :icon="TrendingUp"
             color="bg-amber-100 dark:bg-amber-950/30 text-amber-600"
           />
+        </div>
+
+        <!-- Today's Orders & Last Order Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <DashboardStatCard
+            label="Today's Orders"
+            :value="todayOrders.toLocaleString('en-US')"
+            :icon="ShoppingCart"
+            color="bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600"
+          />
+
+          <UiCard class="md:col-span-2 p-6 sm:p-8 flex flex-col justify-center">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6">
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-violet-100 dark:bg-violet-950/30 text-violet-600">
+                <Receipt class="w-7 h-7" />
+              </div>
+
+              <div v-if="lastOrder" class="flex-1 min-w-0 space-y-3">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1">Last Order</p>
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                      <NuxtLink
+                        :to="`/admin/orders/${lastOrder.id}`"
+                        class="text-2xl sm:text-3xl font-display font-black tracking-tight text-foreground hover:text-primary transition-colors"
+                      >
+                        #{{ lastOrder.id }}
+                      </NuxtLink>
+                      <span class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-lg border border-border/60">
+                        <Calendar class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span>{{ formatSaleDate(lastOrder.sale_date) }}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="sm:text-right shrink-0">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1">Total Amount</p>
+                    <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-foreground">
+                      {{ formatCurrency(Number(lastOrder.total_amount ?? 0)) }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 pt-3 border-t border-border/70 text-xs text-muted-foreground">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <User class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span class="font-semibold text-foreground truncate">{{ lastOrder.customer_name || 'Guest Customer' }}</span>
+                  </div>
+                  <div class="flex items-center gap-2 min-w-0">
+                    <Mail class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span class="truncate">{{ lastOrder.customer_email || 'No email provided' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="flex-1 min-w-0">
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1">Last Order</p>
+                <p class="text-base font-display font-bold text-foreground">No orders yet</p>
+                <p class="text-xs text-muted-foreground mt-0.5">Details of the most recent order will appear here once an order is placed.</p>
+              </div>
+            </div>
+          </UiCard>
         </div>
 
         <!-- Daily Trend Visualization -->
