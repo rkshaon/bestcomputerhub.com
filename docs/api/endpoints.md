@@ -420,9 +420,6 @@ This document serves as the authoritative inventory of all API operations for th
 - **Response Structure**: `CategoryChildrenApiItem[]` or `{ results: CategoryChildrenApiItem[] }`
 - **Normalization**: Maps backend item to frontend `Category` model.
 
-### Local-Only / Browser-Side Logic
-- `useVersionCheck.ts`: Does not call internal backend API; performs `GET /version.json` check against the deployment host (frontend static file) to detect version changes.
-
 ## 4. Type Coverage Analysis
 - Most operations are strongly typed via interfaces in `/types/`.
 - **Inadequate Type Coverage (Requires Backend Schema Verification)**:

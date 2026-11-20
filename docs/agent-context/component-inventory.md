@@ -487,24 +487,6 @@ Components are classified using four standard metadata properties:
 
 ---
 
-### `<UpdateNotification>`
-- **Exact File Location**: `/components/layout/UpdateNotification.vue`
-- **Component Type**: Layout UI helper / Notification
-- **Scope**: Shared
-- **Purpose**: Non-intrusive floating toast alert notifying users when a new deployment build version is available.
-- **Routes/Pages Used**: Storefront and Admin default layouts.
-- **Main Responsibilities**: Monitor deployment version via `useVersionCheck` and prompt user to refresh for the latest release.
-- **What It Explicitly Does Not Own**: Deployment building or version calculation logic.
-- **State Owned**: None (delegates to `useVersionCheck`).
-- **Calls API**: Indirectly checks `/version.json` via `useVersionCheck`.
-- **Related Composables/Services**: `useVersionCheck`.
-- **Responsive Responsibility**: Floating alert positioning (`top-4 left-4 right-4 sm:left-auto sm:right-6`).
-- **Reusability Level**: High
-- **Important Behavior to Preserve**: Non-intrusive dismissal and explicit user-driven reload trigger (`refreshApp`).
-- **Known Architectural Risks**: None.
-
----
-
 ### Admin Layout Shell (`/layouts/admin.vue`)
 - **Exact File Location**: `/layouts/admin.vue`
 - **Component Type**: Layout

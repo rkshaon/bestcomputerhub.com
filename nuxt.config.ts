@@ -1,9 +1,6 @@
 // File: /nuxt.config.ts
 import { defineNuxtConfig } from 'nuxt/config'
 
-const buildTime = new Date().toISOString()
-const appVersion = process.env.APP_VERSION || process.env.npm_package_version || `v-${Date.now()}`
-
 export default defineNuxtConfig({
   srcDir: '.',
   devServer: {
@@ -124,28 +121,7 @@ export default defineNuxtConfig({
       appUrl: '',
       apiBase: '',
       // Google Tag Manager container ID (NUXT_PUBLIC_GTM_ID). Empty disables tracking.
-      gtmId: '',
-      appVersion,
-      buildTime
-    }
-  },
-  hooks: {
-    'build:before': async () => {
-      try {
-        const fs = await import('node:fs')
-        const path = await import('node:path')
-        const publicDir = path.resolve(process.cwd(), 'public')
-        if (!fs.existsSync(publicDir)) {
-          fs.mkdirSync(publicDir, { recursive: true })
-        }
-        fs.writeFileSync(
-          path.join(publicDir, 'version.json'),
-          JSON.stringify({ version: appVersion, buildTime }, null, 2),
-          'utf-8'
-        )
-      } catch {
-        // Ignore fallback if filesystem is read-only
-      }
+      gtmId: ''
     }
   },
   compatibilityDate: '2025-11-01',
