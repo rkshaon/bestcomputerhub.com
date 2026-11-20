@@ -117,6 +117,14 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
     return `${x},${y}`;
   }).join(' ');
 };
+
+const kpiCardLayoutClasses = {
+  cardClass: 'p-5 sm:p-6 xl:p-3 rounded-xl',
+  iconBoxClass: 'w-12 h-12 xl:w-9 xl:h-9 rounded-xl',
+  iconClass: 'w-6 h-6 xl:w-5 xl:h-5',
+  valueClass: 'text-2xl sm:text-3xl xl:text-xl',
+  sparklineClass: 'hidden sm:block xl:hidden',
+};
 </script>
 
 <template>
@@ -176,14 +184,15 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
 
       <!-- Performance Content -->
       <template v-else>
-        <!-- Summary Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Summary & Overview Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.4fr)] gap-3">
           <DashboardStatCard 
             label="Total Revenue"
             :value="formatCurrency(Number(overview.total_revenue))"
             :icon="DollarSign"
             :trend="formatGrowth(comparison.revenue_growth_percentage)"
             color="bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600"
+            v-bind="kpiCardLayoutClasses"
           />
           <DashboardStatCard 
             label="Total Orders"
@@ -191,72 +200,66 @@ const getTrendPoints = (metric: 'revenue' | 'orders') => {
             :icon="ShoppingBag"
             :trend="formatGrowth(comparison.order_growth_percentage)"
             color="bg-blue-100 dark:bg-blue-950/30 text-blue-600"
+            v-bind="kpiCardLayoutClasses"
           />
           <DashboardStatCard 
             label="Average Order Value"
             :value="formatCurrency(Number(overview.average_order_value))"
             :icon="TrendingUp"
             color="bg-amber-100 dark:bg-amber-950/30 text-amber-600"
+            v-bind="kpiCardLayoutClasses"
           />
-        </div>
-
-        <!-- Today's Orders & Last Order Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <DashboardStatCard
             label="Today's Orders"
             :value="todayOrders.toLocaleString('en-US')"
             :icon="ShoppingCart"
             color="bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600"
+            v-bind="kpiCardLayoutClasses"
           />
 
-          <UiCard class="md:col-span-2 p-6 sm:p-8 flex flex-col justify-center">
-            <div class="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6">
-              <div class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-violet-100 dark:bg-violet-950/30 text-violet-600">
-                <Receipt class="w-7 h-7" />
+          <UiCard class="sm:col-span-2 xl:col-span-1 p-5 sm:p-6 xl:p-3 rounded-xl flex flex-col justify-center">
+            <div class="flex items-start gap-3">
+              <div class="w-11 h-11 xl:w-9 xl:h-9 rounded-xl flex items-center justify-center shrink-0 bg-violet-100 dark:bg-violet-950/30 text-violet-600">
+                <Receipt class="w-5 h-5" />
               </div>
 
-              <div v-if="lastOrder" class="flex-1 min-w-0 space-y-3">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1">Last Order</p>
-                    <div class="flex items-center gap-2.5 flex-wrap">
-                      <NuxtLink
-                        :to="`/admin/orders/${lastOrder.id}`"
-                        class="text-2xl sm:text-3xl font-display font-black tracking-tight text-foreground hover:text-primary transition-colors"
-                      >
-                        #{{ lastOrder.id }}
-                      </NuxtLink>
-                      <span class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-lg border border-border/60">
-                        <Calendar class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                        <span>{{ formatSaleDate(lastOrder.sale_date) }}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="sm:text-right shrink-0">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1">Total Amount</p>
-                    <p class="text-2xl sm:text-3xl font-display font-black tracking-tight text-foreground">
-                      {{ formatCurrency(Number(lastOrder.total_amount ?? 0)) }}
-                    </p>
-                  </div>
+              <div v-if="lastOrder" class="flex-1 min-w-0 space-y-1.5">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Last Order</p>
+                  <span class="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground shrink-0">
+                    <Calendar class="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span>{{ formatSaleDate(lastOrder.sale_date) }}</span>
+                  </span>
                 </div>
 
-                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 pt-3 border-t border-border/70 text-xs text-muted-foreground">
-                  <div class="flex items-center gap-2 min-w-0">
-                    <User class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <div class="flex items-baseline justify-between gap-2 flex-wrap">
+                  <NuxtLink
+                    :to="`/admin/orders/${lastOrder.id}`"
+                    class="text-xl sm:text-2xl xl:text-lg font-display font-black tracking-tight text-foreground hover:text-primary transition-colors"
+                  >
+                    #{{ lastOrder.id }}
+                  </NuxtLink>
+                  <p class="text-xl sm:text-2xl xl:text-lg font-display font-black tracking-tight text-foreground">
+                    {{ formatCurrency(Number(lastOrder.total_amount ?? 0)) }}
+                  </p>
+                </div>
+
+                <div class="pt-1.5 border-t border-border/70 flex flex-col sm:flex-row sm:items-center xl:flex-col xl:items-stretch gap-1 sm:gap-4 xl:gap-0.5 text-[11px] text-muted-foreground">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <User class="w-3 h-3 text-muted-foreground shrink-0" />
                     <span class="font-semibold text-foreground truncate">{{ lastOrder.customer_name || 'Guest Customer' }}</span>
                   </div>
-                  <div class="flex items-center gap-2 min-w-0">
-                    <Mail class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <Mail class="w-3 h-3 text-muted-foreground shrink-0" />
                     <span class="truncate">{{ lastOrder.customer_email || 'No email provided' }}</span>
                   </div>
                 </div>
               </div>
 
               <div v-else class="flex-1 min-w-0">
-                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1">Last Order</p>
-                <p class="text-base font-display font-bold text-foreground">No orders yet</p>
-                <p class="text-xs text-muted-foreground mt-0.5">Details of the most recent order will appear here once an order is placed.</p>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Last Order</p>
+                <p class="text-sm font-display font-bold text-foreground">No orders yet</p>
+                <p class="text-[11px] text-muted-foreground mt-0.5 leading-snug">Most recent order details will appear here.</p>
               </div>
             </div>
           </UiCard>
