@@ -1235,7 +1235,7 @@ const handlePublishPost = async (post: BlogPostItem) => {
         </div>
       </div>
 
-      <UiCard class="p-0">
+      <UiCard class="p-0 rounded-xl overflow-hidden">
         <UiTable :columns="tableColumns" :data="postsList" :loading="isLoading">
           <template #cell-featured_image="{ item: post }">
             <img v-if="post.featured_image" :src="post.featured_image" :alt="post.featured_image_alt_text || post.title" class="w-12 h-12 object-cover rounded-lg" />

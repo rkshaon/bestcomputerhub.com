@@ -576,7 +576,7 @@ const submitUpdateKeywordRule = async () => {
     </div>
 
     <!-- Keyword Rules Table -->
-    <div class="bg-card border border-border rounded-2xl overflow-hidden shadow-2xs">
+    <div class="bg-card border border-border rounded-xl overflow-hidden shadow-2xs">
       <UiTable 
         :columns="keywordRuleColumns" 
         :data="keywordRulesData" 

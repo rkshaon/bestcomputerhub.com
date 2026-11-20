@@ -157,7 +157,7 @@ function adjustStock(amount: number) {
 
     <!-- Quick Stats Bento -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <UiCard v-for="stat in stats" :key="stat.label" class="flex items-center gap-6 p-8 group border-transparent hover:border-primary/20 transition-all duration-500 overflow-hidden relative">
+      <UiCard v-for="stat in stats" :key="stat.label" class="flex items-center gap-6 p-8 rounded-xl group border-transparent hover:border-primary/20 transition-all duration-500 overflow-hidden relative">
         <div class="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700">
            <component :is="iconMap[stat.iconKey as keyof typeof iconMap]" class="w-32 h-32 rotate-12" />
         </div>

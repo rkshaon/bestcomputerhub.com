@@ -820,7 +820,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
       <!-- Active Analytics row -->
       <div v-if="canViewSummary" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <!-- Total Products Card (Informational) -->
-        <UiCard class="flex items-center gap-3 p-3">
+        <UiCard class="flex items-center gap-3 p-3 rounded-xl">
           <div class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
             <Package class="w-4 h-4" />
           </div>
@@ -839,7 +839,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           @keydown.enter="handleSelectAllImages"
           @keydown.space.prevent="handleSelectAllImages"
           :class="[
-            'flex items-center justify-between gap-3 p-3 cursor-pointer transition-all select-none',
+            'flex items-center justify-between gap-3 p-3 rounded-xl cursor-pointer transition-all select-none',
             !isHighResolutionFilter && !isRatioMismatchFilter
               ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500/40 shadow-xs'
               : 'hover:border-emerald-500/40 hover:bg-muted/30'
@@ -871,7 +871,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           @keydown.enter="handleToggleHighResolution"
           @keydown.space.prevent="handleToggleHighResolution"
           :class="[
-            'flex items-center justify-between gap-3 p-3 cursor-pointer transition-all select-none',
+            'flex items-center justify-between gap-3 p-3 rounded-xl cursor-pointer transition-all select-none',
             isHighResolutionFilter
               ? 'ring-2 ring-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20 border-blue-500/40 shadow-xs'
               : 'hover:border-blue-500/40 hover:bg-muted/30'
@@ -903,7 +903,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           @keydown.enter="handleToggleRatioMismatch"
           @keydown.space.prevent="handleToggleRatioMismatch"
           :class="[
-            'flex items-center justify-between gap-3 p-3 cursor-pointer transition-all select-none',
+            'flex items-center justify-between gap-3 p-3 rounded-xl cursor-pointer transition-all select-none',
             isRatioMismatchFilter
               ? 'ring-2 ring-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20 border-amber-500/40 shadow-xs'
               : 'hover:border-amber-500/40 hover:bg-muted/30'

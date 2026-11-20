@@ -1404,7 +1404,7 @@ const handleScanCompleted = async () => {
       <!-- Summary Metrics Cards -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <!-- Total Scanned -->
-        <div class="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div class="flex items-center justify-between text-muted-foreground mb-3">
             <span class="text-[10px] font-bold uppercase tracking-widest">Total Scanned</span>
             <Layers class="w-4 h-4" />
@@ -1420,7 +1420,7 @@ const handleScanCompleted = async () => {
         </div>
 
         <!-- Clean Rate -->
-        <div class="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-3">
             <span class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Clean</span>
             <CheckCircle2 class="w-4 h-4" />
@@ -1436,7 +1436,7 @@ const handleScanCompleted = async () => {
         </div>
 
         <!-- Needs Review -->
-        <div class="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div class="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-3">
             <span class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Needs Review</span>
             <Info class="w-4 h-4" />
@@ -1452,7 +1452,7 @@ const handleScanCompleted = async () => {
         </div>
 
         <!-- High Risk -->
-        <div class="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div class="flex items-center justify-between text-orange-600 dark:text-orange-400 mb-3">
             <span class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">High Risk</span>
             <AlertTriangle class="w-4 h-4" />
@@ -1468,7 +1468,7 @@ const handleScanCompleted = async () => {
         </div>
 
         <!-- Critical -->
-        <div class="bg-card border border-rose-500/20 bg-rose-500/5 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between col-span-2 sm:col-span-1">
+        <div class="bg-card border border-rose-500/20 bg-rose-500/5 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between col-span-2 sm:col-span-1">
           <div class="flex items-center justify-between text-rose-600 dark:text-rose-400 mb-3">
             <span class="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400">Critical</span>
             <AlertOctagon class="w-4 h-4" />
@@ -1706,7 +1706,7 @@ const handleScanCompleted = async () => {
       </div>
 
       <!-- Main Scan Table -->
-      <div class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+      <div class="bg-card border border-border rounded-xl overflow-hidden shadow-xs">
         <UiTable 
           :columns="scanResultColumns" 
           :data="contentScansData"

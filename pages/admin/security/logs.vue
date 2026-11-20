@@ -164,7 +164,7 @@ const refreshLogs = async () => {
 
     <!-- Security Meta Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <UiCard class="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+      <UiCard class="p-6 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
         <div class="flex items-center gap-4 mb-4">
           <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 flex items-center justify-center">
             <ShieldCheck class="w-6 h-6" />
@@ -179,7 +179,7 @@ const refreshLogs = async () => {
         </div>
       </UiCard>
 
-      <UiCard class="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+      <UiCard class="p-6 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
         <div class="flex items-center gap-4 mb-4">
           <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-600 flex items-center justify-center">
             <Lock class="w-6 h-6" />
@@ -194,7 +194,7 @@ const refreshLogs = async () => {
         </div>
       </UiCard>
 
-      <UiCard class="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+      <UiCard class="p-6 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
         <div class="flex items-center gap-4 mb-4">
           <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 flex items-center justify-center">
             <Globe class="w-6 h-6" />

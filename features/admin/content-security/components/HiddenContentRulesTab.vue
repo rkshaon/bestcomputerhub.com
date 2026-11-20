@@ -551,7 +551,7 @@ const submitUpdateHiddenContentRule = async () => {
     </div>
 
     <!-- Hidden Content Rules Table -->
-    <div class="bg-card border border-border rounded-2xl overflow-hidden shadow-2xs">
+    <div class="bg-card border border-border rounded-xl overflow-hidden shadow-2xs">
       <UiTable 
         :columns="hiddenContentRuleColumns" 
         :data="hiddenContentRulesData" 

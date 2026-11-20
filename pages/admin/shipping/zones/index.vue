@@ -336,7 +336,7 @@ const tableColumns: UiTableColumn[] = [
       </div>
 
       <!-- Table Card -->
-      <UiCard class="overflow-hidden">
+      <UiCard class="overflow-hidden rounded-xl">
         <UiTable 
           :columns="tableColumns" 
           :data="zonesList" 

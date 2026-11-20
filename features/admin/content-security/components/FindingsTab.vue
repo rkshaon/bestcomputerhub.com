@@ -580,7 +580,7 @@ onMounted(() => {
     </div>
 
     <!-- Findings Table -->
-    <div class="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+    <div class="bg-card border border-border rounded-xl overflow-hidden shadow-xs">
       <UiTable 
         :columns="findingColumns" 
         :data="findingsData"

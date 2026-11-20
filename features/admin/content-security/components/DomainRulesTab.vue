@@ -579,7 +579,7 @@ const submitUpdateDomainRule = async () => {
     </div>
 
     <!-- Domain Rules Table -->
-    <div class="bg-card border border-border rounded-2xl overflow-hidden shadow-2xs">
+    <div class="bg-card border border-border rounded-xl overflow-hidden shadow-2xs">
       <UiTable 
         :columns="domainRuleColumns" 
         :data="domainRulesData" 

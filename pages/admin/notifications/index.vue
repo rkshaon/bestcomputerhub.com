@@ -187,7 +187,7 @@ const toggleReadStatus = (notification: Notification) => {
         { label: 'Unread Alerts', value: notifications.filter(n => !n.isRead).length, color: 'text-primary' },
         { label: 'Security Threats', value: notifications.filter(n => n.type === 'security').length, color: 'text-rose-500' },
         { label: 'Operational Tasks', value: notifications.filter(n => n.type === 'inventory').length, color: 'text-amber-500' }
-      ]" :key="stat.label" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-6 shadow-sm overflow-hidden relative group">
+      ]" :key="stat.label" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm overflow-hidden relative group">
         <div class="absolute -right-2 -bottom-2 w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full scale-0 group-hover:scale-100 transition-transform duration-500"></div>
         <div class="relative z-10 flex items-center justify-between">
           <div>
