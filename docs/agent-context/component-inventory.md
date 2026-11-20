@@ -87,6 +87,69 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<UiLoader>`
+- **Exact File Location**: `/components/ui/UiLoader.vue`
+- **Component Type**: Shared UI
+- **Scope**: Shared (Storefront & Admin)
+- **Purpose**: Generic reusable loading indicator displaying the round brand logo (`/favicon.svg`) with continuous CSS rotation around its center, adaptive sizing, `prefers-reduced-motion` support, and optional accessible status label.
+- **Routes/Pages Used**: Available globally via Nuxt auto-import (`<UiLoader />`) across Storefront and Admin contexts.
+- **Main Responsibilities**:
+  - Render `/favicon.svg` directly as an aspect-ratio-preserved square image (`width="200"`, `height="200"`, `aspect-square`, `object-contain`) with no decorative clipping or background overlays.
+  - Animate smooth CSS rotation (`1.4s linear infinite`, `transform-origin: center`) without JavaScript timers; stops rotation automatically under `prefers-reduced-motion: reduce`.
+  - Support adaptive default sizing (`size="auto"` scales via `clamp(1.75rem, 3.5vw, 3rem)` bounded by `max-w-full max-h-full`), preset sizes (`xs` `16px`, `sm` `20px`, `md` `32px`, `lg` `48px`, `xl` `64px`), Tailwind dimension class overrides (e.g. `w-10 h-10`), and numeric/CSS-length overrides (`:size="24"`, `size="2.5rem"`).
+  - Support container centering via `centered` (`flex w-full h-full items-center justify-center`) while keeping the default inline (`inline-flex`) so parents control layout, dimensions, and overlays.
+  - Provide accessible `role="status"` / `aria-live="polite"` labeling (`label` defaults to `'Loading...'`; screen-reader-only by default, or visibly rendered below the logo when `showLabel` is `true`; pass `label=""` inside buttons with their own status text).
+- **Props & Defaults**:
+  - `size?: 'auto' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | number | string` (default: `'auto'`)
+  - `centered?: boolean` (default: `false`)
+  - `label?: string` (default: `'Loading...'`)
+  - `showLabel?: boolean` (default: `false`)
+  - `class?: string` (default: `''`)
+- **Usage Examples**:
+  - **Full-page loading** (parent controls container height/overlay):
+    ```vue
+    <div class="min-h-[60vh] w-full flex items-center justify-center">
+      <UiLoader size="xl" show-label label="Loading page..." />
+    </div>
+    ```
+  - **Page or section loading**:
+    ```vue
+    <section class="py-16 flex items-center justify-center">
+      <UiLoader size="lg" show-label label="Loading section..." />
+    </section>
+    ```
+  - **Card or widget loading**:
+    ```vue
+    <UiCard padding="lg" class="h-48">
+      <UiLoader size="md" centered label="Loading widget..." />
+    </UiCard>
+    ```
+  - **Modal loading**:
+    ```vue
+    <UiAdminModal v-model="isOpen" title="Details">
+      <div class="py-10 flex items-center justify-center">
+        <UiLoader size="md" show-label label="Loading details..." />
+      </div>
+    </UiAdminModal>
+    ```
+  - **Inline / button loading**:
+    ```vue
+    <UiButton :disabled="isSubmitting" class="gap-2">
+      <UiLoader v-if="isSubmitting" size="xs" label="" />
+      <span>{{ isSubmitting ? 'Saving...' : 'Save' }}</span>
+    </UiButton>
+    ```
+- **What It Explicitly Does Not Own**: Fixed viewport positioning, full-screen backdrop overlays, or asynchronous request/loading state management.
+- **State Owned**: Computed size and label presentation state only (zero animation timers).
+- **Calls API**: No
+- **Related Composables/Services**: Uses `cn` utility (`/utils/index.ts`).
+- **Responsive Responsibility**: Adaptive default clamp scaling (`28px`–`48px`), `max-w-full max-h-full` containment, and `aspect-square` lock to prevent layout shifts.
+- **Reusability Level**: High
+- **Important Behavior to Preserve**: Pure CSS rotation of `/favicon.svg`, `prefers-reduced-motion` compliance, no forced overlay/fixed positioning, and valid `<span>` markup for inline/button contexts.
+- **Known Architectural Risks**: None.
+
+---
+
 ### `<UiBreadcrumbs>`
 - **Exact File Location**: `/components/ui/UiBreadcrumbs.vue`
 - **Component Type**: Shared UI / Navigation
