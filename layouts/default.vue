@@ -10,5 +10,6 @@
     <LayoutFooter />
     <CommerceCartDrawer />
     <LayoutBottomNav class="md:hidden" />
+    <LayoutNavigationLoader />
   </div>
 </template>

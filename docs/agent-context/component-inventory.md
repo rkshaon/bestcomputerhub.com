@@ -92,7 +92,7 @@ Components are classified using four standard metadata properties:
 - **Component Type**: Shared UI
 - **Scope**: Shared (Storefront & Admin)
 - **Purpose**: Generic reusable loading indicator displaying the round brand logo (`/favicon.svg`) with continuous CSS rotation around its center, adaptive sizing, `prefers-reduced-motion` support, and optional accessible status label.
-- **Routes/Pages Used**: Available globally via Nuxt auto-import (`<UiLoader />`) across Storefront and Admin contexts.
+- **Routes/Pages Used**: Mounted for storefront page navigation via `/components/layout/NavigationLoader.vue` (inside `/layouts/default.vue`), and available globally via Nuxt auto-import (`<UiLoader />`) across Storefront and Admin contexts.
 - **Main Responsibilities**:
   - Render `/favicon.svg` directly as an aspect-ratio-preserved square image (`width="200"`, `height="200"`, `aspect-square`, `object-contain`) with no decorative clipping or background overlays.
   - Animate smooth CSS rotation (`1.4s linear infinite`, `transform-origin: center`) without JavaScript timers; stops rotation automatically under `prefers-reduced-motion: reduce`.
@@ -546,6 +546,27 @@ Components are classified using four standard metadata properties:
 - **Responsive Responsibility**: Viewport fixed positioning overlay.
 - **Reusability Level**: Medium
 - **Important Behavior to Preserve**: Non-intrusive floating z-index layer.
+- **Known Architectural Risks**: None.
+
+---
+
+### `<LayoutNavigationLoader>`
+- **Exact File Location**: `/components/layout/NavigationLoader.vue`
+- **Component Type**: Layout / Navigation helper
+- **Scope**: Storefront
+- **Purpose**: Non-blocking storefront page-navigation loading indicator displaying `<UiLoader>` while destination routes (including async CMS pages at `/pages/[slug].vue`) resolve during client-side navigation.
+- **Routes/Pages Used**: All Storefront routes via `/layouts/default.vue` (and `/error.vue`).
+- **Main Responsibilities**:
+  - Subscribe to Nuxt's built-in navigation loading lifecycle via `useLoadingIndicator({ throttle: 0, hideDelay: 0, resetDelay: 0 })` (`page:loading:start`, `page:loading:end`, `vue:error`) plus `app:error` / `app:error:cleared` safety hooks.
+  - Render `<UiLoader size="sm" label="" />` inside a compact, non-blocking (`pointer-events-none`), fixed viewport-centered pill with zero layout shift and accessible `role="status"` / `aria-live="polite"` status text.
+  - Disappear immediately when navigation completes, redirects, cancels (`aborted`/`duplicated`), or errors.
+- **What It Explicitly Does Not Own**: Custom router state machines, button/card/modal API loading states, or duplicated progress bars (`<NuxtLoadingIndicator />` is not used).
+- **State Owned**: Reads `isLoading` from Nuxt's `useLoadingIndicator` singleton.
+- **Calls API**: No.
+- **Related Composables/Services**: `#app` (`useLoadingIndicator`, `useNuxtApp`), `<UiLoader>`.
+- **Responsive Responsibility**: Fixed centered non-blocking pill (`fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none`) clear of header, mobile bottom bar, and floating actions.
+- **Reusability Level**: High (Layout singleton).
+- **Important Behavior to Preserve**: Zero artificial throttle/hide delays, `pointer-events-none` non-blocking behavior, SSR/hydration safety, and immediate cleanup on errors/cancellations.
 - **Known Architectural Risks**: None.
 
 ---
