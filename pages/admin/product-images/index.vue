@@ -3,6 +3,7 @@ import { ref, computed, watch, reactive, onMounted, onUnmounted } from 'vue';
 import { useProductService } from '@/composables/useProductService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
+import { useProductImageReplace } from '@/composables/useProductImageReplace';
 import { toastError, toastSuccess, toastInfo, handleApiError } from '@/composables/useToast';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { useRoute, useRouter } from 'vue-router';
@@ -318,17 +319,37 @@ const closeCropModal = () => {
   modalState.closeModal();
 };
 
-const handleImageReplaced = async (updatedItem: ProductImage) => {
-  if (selectedImageToCrop.value?.image) {
-    delete imageMetadataCache[selectedImageToCrop.value.image];
+const refreshAfterImageReplacement = async (updatedItem: ProductImage, previousItem?: ProductImage | null) => {
+  const existingRow = updatedItem?.id !== undefined && updatedItem?.id !== null
+    ? images.value.find((img) => String(img.id) === String(updatedItem.id))
+    : null;
+  const oldImageUrl = previousItem?.image || existingRow?.image || selectedImageToCrop.value?.image;
+
+  if (oldImageUrl) {
+    delete imageMetadataCache[oldImageUrl];
   }
-  if (updatedItem.image) {
+  if (updatedItem?.image) {
     delete imageMetadataCache[updatedItem.image];
     fetchImageMetadata(updatedItem.image);
   }
   await Promise.all([fetchImages(), fetchProductImageSummary()]);
+};
+
+const handleImageReplaced = async (updatedItem: ProductImage) => {
+  await refreshAfterImageReplacement(updatedItem, selectedImageToCrop.value);
   await modalState.closeModal();
 };
+
+const {
+  canReplaceImage: canReplaceProductImage,
+  isReplacingImage,
+  replacingImageId,
+  replaceFileInput,
+  triggerReplaceImage,
+  onReplaceFileChange
+} = useProductImageReplace({
+  onSuccess: refreshAfterImageReplacement
+});
 
 const formatSize = (bytes?: number) => {
   if (bytes === undefined || isNaN(bytes)) return '—';
@@ -1494,7 +1515,21 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                 <Crop class="w-3.5 h-3.5" />
                 <span>Crop image</span>
               </UiButton>
-              <span v-if="!isHighResolutionImage(item.image) && !isNonSquareImage(item.image)" class="text-xs text-muted-foreground/40">—</span>
+              <UiButton
+                v-if="canReplaceProductImage && item.id !== undefined && item.id !== null"
+                variant="outline"
+                size="sm"
+                class="h-7 px-2.5 text-[11px] font-bold border-border bg-background text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/50 gap-1 cursor-pointer whitespace-nowrap"
+                :disabled="isReplacingImage"
+                @click="triggerReplaceImage(item)"
+                title="Direct replace image file"
+                aria-label="Direct replace image file"
+              >
+                <Loader2 v-if="isReplacingImage && replacingImageId === item.id" class="w-3.5 h-3.5 animate-spin text-primary" />
+                <RefreshCw v-else class="w-3.5 h-3.5" />
+                <span>{{ isReplacingImage && replacingImageId === item.id ? 'Replacing...' : 'Direct Replace' }}</span>
+              </UiButton>
+              <span v-if="!isHighResolutionImage(item.image) && !isNonSquareImage(item.image) && !(canReplaceProductImage && item.id !== undefined && item.id !== null)" class="text-xs text-muted-foreground/40">—</span>
             </div>
           </template>
         </UiTable>
@@ -1508,6 +1543,15 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
         />
       </div>
     </div>
+
+    <!-- Hidden input for direct image replacement -->
+    <input
+      type="file"
+      ref="replaceFileInput"
+      accept="image/jpeg,image/png,image/webp,image/gif"
+      class="hidden"
+      @change="onReplaceFileChange"
+    />
 
     <!-- Product Details Modal (Reused) -->
     <ProductDetailsModal
