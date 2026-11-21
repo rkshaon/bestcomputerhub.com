@@ -276,7 +276,7 @@ onUnmounted(() => {
 const tableColumns: UiTableColumn<ProductImage>[] = [
   { key: 'select', label: '', width: '40px', headerClass: 'px-2 py-3 text-center', cellClass: 'px-2 py-2.5 text-center' },
   { key: 'image', label: 'Image', width: '80px', headerClass: 'px-4 py-3 text-center', cellClass: 'px-4 py-2.5 text-center' },
-  { key: 'product', label: 'Product', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'product', label: 'Product', wrap: true, headerClass: 'px-4 py-3 min-w-[220px] max-w-[320px]', cellClass: 'px-4 py-2.5 min-w-[220px] max-w-[320px]' },
   { key: 'alt_text', label: 'Alt Text', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'resolution', label: 'Resolution', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'size', label: 'Size', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
@@ -1417,12 +1417,12 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
               v-if="getProductId(item)"
               type="button"
               @click.stop="openProductDetailsModal(getProductId(item)!)"
-              class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left truncate max-w-[200px] block cursor-pointer transition-colors relative z-10"
+              class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left whitespace-normal break-words leading-snug block cursor-pointer transition-colors relative z-10"
               :title="getProductName(item)"
             >
               {{ getProductName(item) }}
             </button>
-            <span v-else class="text-xs font-medium text-foreground truncate max-w-[200px] block">
+            <span v-else class="text-xs font-medium text-foreground whitespace-normal break-words leading-snug block">
               {{ getProductName(item) }}
             </span>
           </template>
