@@ -96,15 +96,9 @@ onMounted(() => {
       <div class="absolute inset-0 bg-primary/[0.02] pointer-events-none"></div>
       <div class="container mx-auto px-4 relative z-10">
         <div class="max-w-3xl space-y-4">
-          <div class="inline-flex items-center gap-2 bg-primary/10 text-primary px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
-            Best Computer Hub Journal
-          </div>
-          <h1 class="text-4xl md:text-6xl font-display font-extrabold tracking-tight leading-[0.95]">
-            Blog & <span class="text-primary italic">Tech Insights</span>.
+          <h1 class="text-4xl md:text-6xl font-display font-extrabold tracking-tight leading-[0.95] text-black dark:text-card-foreground">
+            Best Computer Hub Blogs
           </h1>
-          <p class="text-lg text-muted-foreground leading-relaxed max-w-xl">
-            Read the latest PC hardware reviews, gaming benchmarks, buying guides, and enterprise computing news.
-          </p>
         </div>
       </div>
     </section>
