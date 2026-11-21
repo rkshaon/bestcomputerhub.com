@@ -3,6 +3,7 @@
 import { ref, watch, onMounted } from 'vue';
 import { Calendar, User, ArrowRight, Search, FileText, AlertCircle, RefreshCw } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
+import { decodeHtmlEntities } from '@/utils';
 import { useBlogService } from '@/composables/useBlogService';
 import { extractErrorMessage } from '@/composables/useToast';
 import type { BlogPostItem } from '@/types';
@@ -167,7 +168,7 @@ onMounted(() => {
           <NuxtLink :to="`/blog/${post.slug}/`" class="block aspect-[16/10] overflow-hidden rounded-2xl bg-muted relative">
             <img 
               :src="post.featured_image || '/logo.png'" 
-              :alt="post.featured_image_alt_text || post.title"
+              :alt="post.featured_image_alt_text || decodeHtmlEntities(post.title)"
               :class="[
                 'w-full h-full group-hover:scale-105 transition-transform duration-500',
                 post.featured_image ? 'object-cover' : 'object-contain p-8 opacity-40'
@@ -200,7 +201,7 @@ onMounted(() => {
 
             <NuxtLink :to="`/blog/${post.slug}/`" class="block group/title">
               <h2 class="text-xl font-display font-bold leading-snug group-hover/title:text-primary transition-colors line-clamp-2">
-                {{ post.title }}
+                {{ decodeHtmlEntities(post.title) }}
               </h2>
             </NuxtLink>
 
