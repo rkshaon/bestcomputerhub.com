@@ -1,7 +1,7 @@
 <!-- File: /pages/blog/index.vue -->
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import { Calendar, User, ArrowRight, Search, FileText, AlertCircle, RefreshCw } from 'lucide-vue-next';
+import { Calendar, ArrowRight, Search, FileText, AlertCircle, RefreshCw } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { decodeHtmlEntities } from '@/utils';
 import { useBlogService } from '@/composables/useBlogService';
@@ -193,10 +193,6 @@ onMounted(() => {
                 <Calendar class="w-3.5 h-3.5 text-primary" /> 
                 {{ formatDate(post.published_at || post.created_at) }}
               </span>
-              <span v-if="post.author" class="flex items-center gap-1.5">
-                <User class="w-3.5 h-3.5 text-primary" /> 
-                {{ post.author.full_name || post.author.username }}
-              </span>
             </div>
 
             <NuxtLink :to="`/blog/${post.slug}/`" class="block group/title">
@@ -219,9 +215,6 @@ onMounted(() => {
 
           <!-- Card Footer -->
           <div class="pt-4 border-t flex items-center justify-between mt-auto">
-            <span class="text-xs font-medium text-muted-foreground">
-              By {{ post.author?.full_name || post.author?.username || 'Best Computer Hub' }}
-            </span>
             <NuxtLink 
               :to="`/blog/${post.slug}/`" 
               class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline group/link"
