@@ -1,12 +1,20 @@
 // File: /types/product.ts
 
+export interface ProductImageProductRef {
+  id: string | number;
+  name: string;
+  slug?: string;
+}
+
 export interface ProductImage {
   id?: string | number;
-  product?: string | number;
+  product?: ProductImageProductRef | string | number | null;
   image?: string;
   alt_text?: string;
   is_default?: boolean;
   display_order?: number;
+  width?: number;
+  height?: number;
   created_at?: string;
 }
 

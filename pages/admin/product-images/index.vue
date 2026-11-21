@@ -34,7 +34,7 @@ import UiTable from '@/components/ui/UiTable.vue';
 import type { UiTableColumn } from '@/components/ui/UiTable.vue';
 import UiButton from '@/components/ui/Button.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
-import type { ProductImage, Product, ProductImageSummaryResponse } from '@/types';
+import type { ProductImage, ProductImageProductRef, Product, ProductImageSummaryResponse } from '@/types';
 
 definePageMeta({
   layout: false
@@ -276,7 +276,7 @@ onUnmounted(() => {
 const tableColumns: UiTableColumn<ProductImage>[] = [
   { key: 'select', label: '', width: '40px', headerClass: 'px-2 py-3 text-center', cellClass: 'px-2 py-2.5 text-center' },
   { key: 'image', label: 'Image', width: '80px', headerClass: 'px-4 py-3 text-center', cellClass: 'px-4 py-2.5 text-center' },
-  { key: 'product', label: 'Product', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
+  { key: 'product', label: 'Product', wrap: true, headerClass: 'px-4 py-3 min-w-[220px] max-w-[320px]', cellClass: 'px-4 py-2.5 min-w-[220px] max-w-[320px]' },
   { key: 'alt_text', label: 'Alt Text', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'resolution', label: 'Resolution', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
   { key: 'size', label: 'Size', headerClass: 'px-4 py-3', cellClass: 'px-4 py-2.5' },
@@ -562,71 +562,51 @@ const clearImageSelection = () => {
   selectedImageIds.value = [];
 };
 
-const getProductId = (img: ProductImage): string | number | null => {
+const getProductRef = (img?: ProductImage | null): ProductImageProductRef | null => {
+  if (!img || !img.product || typeof img.product !== 'object') return null;
+  return img.product;
+};
+
+const getProductId = (img?: ProductImage | null): string | number | null => {
   if (!img) return null;
-  if ((img as any).product_id) return (img as any).product_id;
-  if (img.product !== undefined && img.product !== null && img.product !== '') {
-    if (typeof img.product === 'object' && img.product !== null) {
-      if ((img.product as any).id) return (img.product as any).id;
-      if ((img.product as any).slug) return (img.product as any).slug;
+  const prod = getProductRef(img);
+  if (prod) {
+    if (prod.id !== undefined && prod.id !== null && String(prod.id).trim() !== '') {
+      return prod.id;
     }
+    if (prod.slug && prod.slug.trim() !== '') {
+      return prod.slug.trim();
+    }
+    return null;
+  }
+  if (typeof img.product === 'string' || typeof img.product === 'number') {
     const val = String(img.product).trim();
-    for (const key of Object.keys(knownProductsMap)) {
-      const p = knownProductsMap[key];
-      if (p && (String(p.id) === val || p.slug === val || p.name.toLowerCase() === val.toLowerCase())) {
-        return p.id;
-      }
-    }
-    return val;
+    return val || null;
   }
-  if (img.alt_text) {
-    const alt = String(img.alt_text).trim().toLowerCase();
-    for (const key of Object.keys(knownProductsMap)) {
-      const p = knownProductsMap[key];
-      if (p && p.name && p.name.toLowerCase() === alt) {
-        return p.id;
-      }
-    }
-  }
-  const firstKey = Object.keys(knownProductsMap)[0];
-  if (firstKey && knownProductsMap[firstKey]) {
-    return knownProductsMap[firstKey].id;
-  }
-  return '1';
+  return null;
 };
 
-const getProductName = (img: ProductImage): string => {
+const getProductName = (img?: ProductImage | null): string => {
+  if (!img) return 'Unassigned';
+  const prod = getProductRef(img);
+  if (prod) {
+    if (prod.name && prod.name.trim() !== '') {
+      return decodeHtmlEntities(prod.name.trim());
+    }
+    if (prod.slug && prod.slug.trim() !== '') {
+      return prod.slug.trim();
+    }
+    if (prod.id !== undefined && prod.id !== null && String(prod.id).trim() !== '') {
+      return `Product #${prod.id}`;
+    }
+    return 'Unassigned';
+  }
   const prodId = getProductId(img);
-  if (prodId) {
-    const found = knownProductsMap[String(prodId)];
-    if (found && found.name) {
-      return decodeHtmlEntities(found.name);
-    }
+  if (prodId !== null) {
+    return `Product #${prodId}`;
   }
-  if (typeof img.product === 'object' && (img.product as any).name) {
-    return decodeHtmlEntities((img.product as any).name);
-  }
-  return img.alt_text || (prodId ? `Product #${prodId}` : 'Product Image');
+  return 'Unassigned';
 };
-
-const resolveImageProductDetails = async () => {
-  for (const img of images.value) {
-    const prodId = getProductId(img);
-    if (prodId && !knownProductsMap[String(prodId)]) {
-      try {
-        const prod = await productService.getProductDetails(String(prodId));
-        if (prod) {
-          if (prod.id) knownProductsMap[String(prod.id)] = prod;
-          if (prod.slug) knownProductsMap[String(prod.slug)] = prod;
-        }
-      } catch {}
-    }
-  }
-};
-
-watch(() => images.value, () => {
-  resolveImageProductDetails();
-}, { immediate: true, deep: true });
 
 const productDetailsModalState = useAdminModalState<Product>({
   modalParam: 'product_modal',
@@ -644,7 +624,7 @@ const viewingProduct = computed(() => productDetailsModalState.activeEntity.valu
 const canEditProductInImages = computed(() => hasPermission(['product_api.change_product', 'change_product']));
 
 const openProductDetailsModal = (productId: string | number) => {
-  if (!productId) return;
+  if (productId === undefined || productId === null || productId === '') return;
   productDetailsModalState.openView(productId);
 };
 
@@ -1271,7 +1251,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
               <div class="p-3 flex flex-col gap-1.5 flex-1 justify-between">
                 <div class="flex flex-col gap-0.5">
                   <button
-                    v-if="getProductId(img)"
+                    v-if="getProductId(img) !== null"
                     type="button"
                     @click.stop="openProductDetailsModal(getProductId(img)!)"
                     class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left line-clamp-2 leading-tight cursor-pointer transition-colors relative z-10"
@@ -1279,7 +1259,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
                   >
                     {{ getProductName(img) }}
                   </button>
-                  <span v-else class="text-xs font-bold text-foreground line-clamp-2 leading-tight">
+                  <span v-else class="text-xs font-medium text-muted-foreground line-clamp-2 leading-tight">
                     {{ getProductName(img) }}
                   </span>
                   <span v-if="img.alt_text && img.alt_text !== getProductName(img)" class="text-[10px] text-muted-foreground truncate" :title="img.alt_text">
@@ -1414,15 +1394,15 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
           
           <template #cell(product)="{ item }">
             <button
-              v-if="getProductId(item)"
+              v-if="getProductId(item) !== null"
               type="button"
               @click.stop="openProductDetailsModal(getProductId(item)!)"
-              class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left truncate max-w-[200px] block cursor-pointer transition-colors relative z-10"
+              class="text-xs font-bold text-foreground hover:text-primary hover:underline text-left whitespace-normal break-words leading-snug block cursor-pointer transition-colors relative z-10"
               :title="getProductName(item)"
             >
               {{ getProductName(item) }}
             </button>
-            <span v-else class="text-xs font-medium text-foreground truncate max-w-[200px] block">
+            <span v-else class="text-xs font-medium text-muted-foreground whitespace-normal break-words leading-snug block">
               {{ getProductName(item) }}
             </span>
           </template>

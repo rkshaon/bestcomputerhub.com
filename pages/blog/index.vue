@@ -1,8 +1,9 @@
 <!-- File: /pages/blog/index.vue -->
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import { Calendar, User, ArrowRight, Search, FileText, AlertCircle, RefreshCw } from 'lucide-vue-next';
+import { Calendar, ArrowRight, Search, FileText, AlertCircle, RefreshCw } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
+import { decodeHtmlEntities } from '@/utils';
 import { useBlogService } from '@/composables/useBlogService';
 import { extractErrorMessage } from '@/composables/useToast';
 import type { BlogPostItem } from '@/types';
@@ -96,15 +97,9 @@ onMounted(() => {
       <div class="absolute inset-0 bg-primary/[0.02] pointer-events-none"></div>
       <div class="container mx-auto px-4 relative z-10">
         <div class="max-w-3xl space-y-4">
-          <div class="inline-flex items-center gap-2 bg-primary/10 text-primary px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
-            Best Computer Hub Journal
-          </div>
-          <h1 class="text-4xl md:text-6xl font-display font-extrabold tracking-tight leading-[0.95]">
-            Blog & <span class="text-primary italic">Tech Insights</span>.
+          <h1 class="text-4xl md:text-6xl font-display font-extrabold tracking-tight leading-[0.95] text-black dark:text-card-foreground">
+            Best Computer Hub Blogs
           </h1>
-          <p class="text-lg text-muted-foreground leading-relaxed max-w-xl">
-            Read the latest PC hardware reviews, gaming benchmarks, buying guides, and enterprise computing news.
-          </p>
         </div>
       </div>
     </section>
@@ -173,7 +168,7 @@ onMounted(() => {
           <NuxtLink :to="`/blog/${post.slug}/`" class="block aspect-[16/10] overflow-hidden rounded-2xl bg-muted relative">
             <img 
               :src="post.featured_image || '/logo.png'" 
-              :alt="post.featured_image_alt_text || post.title"
+              :alt="post.featured_image_alt_text || decodeHtmlEntities(post.title)"
               :class="[
                 'w-full h-full group-hover:scale-105 transition-transform duration-500',
                 post.featured_image ? 'object-cover' : 'object-contain p-8 opacity-40'
@@ -198,15 +193,11 @@ onMounted(() => {
                 <Calendar class="w-3.5 h-3.5 text-primary" /> 
                 {{ formatDate(post.published_at || post.created_at) }}
               </span>
-              <span v-if="post.author" class="flex items-center gap-1.5">
-                <User class="w-3.5 h-3.5 text-primary" /> 
-                {{ post.author.full_name || post.author.username }}
-              </span>
             </div>
 
             <NuxtLink :to="`/blog/${post.slug}/`" class="block group/title">
               <h2 class="text-xl font-display font-bold leading-snug group-hover/title:text-primary transition-colors line-clamp-2">
-                {{ post.title }}
+                {{ decodeHtmlEntities(post.title) }}
               </h2>
             </NuxtLink>
 
@@ -224,9 +215,6 @@ onMounted(() => {
 
           <!-- Card Footer -->
           <div class="pt-4 border-t flex items-center justify-between mt-auto">
-            <span class="text-xs font-medium text-muted-foreground">
-              By {{ post.author?.full_name || post.author?.username || 'Best Computer Hub' }}
-            </span>
             <NuxtLink 
               :to="`/blog/${post.slug}/`" 
               class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline group/link"
