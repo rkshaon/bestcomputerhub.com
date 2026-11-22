@@ -243,6 +243,7 @@ export const useBlogService = () => {
         if (params.page_size !== undefined && params.page_size !== null) queryObj.page_size = params.page_size;
         if (params.search?.trim()) queryObj.search = params.search.trim();
         if (params.is_active !== undefined && params.is_active !== null) queryObj.is_active = params.is_active;
+        if (params.no_blog_post === true) queryObj.no_blog_post = 'true';
       }
 
       const data = await apiClient.request<PaginatedBlogTags | BlogTag[]>('/api/v1/blog/tags/', {

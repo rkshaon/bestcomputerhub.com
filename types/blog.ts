@@ -85,6 +85,7 @@ export interface BlogTag {
 
 export interface BlogTagQueryParams {
   is_active?: boolean;
+  no_blog_post?: boolean;
   page?: number;
   page_size?: number;
   search?: string;

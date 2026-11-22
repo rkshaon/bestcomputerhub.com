@@ -54,6 +54,7 @@ const statusFilter = ref<'all' | 'active' | 'inactive'>(
   (route.query.status as 'all' | 'active' | 'inactive') ||
   (route.query.is_active === 'true' ? 'active' : route.query.is_active === 'false' ? 'inactive' : 'all')
 );
+const noBlogPostFilter = ref(route.query.no_blog_post === 'true');
 
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
@@ -102,7 +103,8 @@ const fetchTags = async () => {
       page: currentPage.value,
       page_size: itemsPerPage.value,
       search: debouncedSearchQuery.value,
-      is_active: isActiveParam
+      is_active: isActiveParam,
+      ...(noBlogPostFilter.value ? { no_blog_post: true } : {})
     });
 
     tagsList.value = res.results || [];
@@ -259,7 +261,7 @@ const inactiveCount = computed(() => {
 });
 
 // Reset page on filter changes
-watch([debouncedSearchQuery, statusFilter, itemsPerPage], () => {
+watch([debouncedSearchQuery, statusFilter, noBlogPostFilter, itemsPerPage], () => {
   currentPage.value = 1;
   fetchTags();
 });
@@ -270,7 +272,7 @@ watch(currentPage, () => {
 });
 
 // Synchronize state to URL query params
-watch([searchQuery, statusFilter, currentPage, itemsPerPage], () => {
+watch([searchQuery, statusFilter, noBlogPostFilter, currentPage, itemsPerPage], () => {
   const query: Record<string, any> = { ...route.query };
 
   if (searchQuery.value) query.search = searchQuery.value;
@@ -278,6 +280,9 @@ watch([searchQuery, statusFilter, currentPage, itemsPerPage], () => {
 
   if (statusFilter.value !== 'all') query.status = statusFilter.value;
   else delete query.status;
+
+  if (noBlogPostFilter.value) query.no_blog_post = 'true';
+  else delete query.no_blog_post;
 
   if (currentPage.value !== 1) query.page = String(currentPage.value);
   else delete query.page;
@@ -295,6 +300,9 @@ watch(() => route.query, (newQuery) => {
 
   const newStatus = (newQuery.status as any) || (newQuery.is_active === 'true' ? 'active' : newQuery.is_active === 'false' ? 'inactive' : 'all');
   if (statusFilter.value !== newStatus) statusFilter.value = newStatus;
+
+  const newNoBlogPost = newQuery.no_blog_post === 'true';
+  if (noBlogPostFilter.value !== newNoBlogPost) noBlogPostFilter.value = newNoBlogPost;
 
   const newPage = newQuery.page ? parseInt(String(newQuery.page)) || 1 : 1;
   if (currentPage.value !== newPage) currentPage.value = newPage;
@@ -409,7 +417,24 @@ const tableColumns = computed<UiTableColumn<BlogTag>[]>(() => {
           />
         </div>
 
-        <div class="flex items-center gap-3 self-end sm:self-center">
+        <div class="flex flex-wrap items-center gap-3 self-end sm:self-center">
+          <!-- Boolean Filter: No Blog Posts -->
+          <button
+            type="button"
+            @click="noBlogPostFilter = !noBlogPostFilter"
+            :class="[
+              'h-9 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+              noBlogPostFilter
+                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
+                : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            ]"
+            :aria-pressed="noBlogPostFilter"
+            title="Filter to blog tags with no active blog posts"
+          >
+            <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="noBlogPostFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+            <span>No Blog Posts</span>
+          </button>
+
           <!-- Status Filter -->
           <div class="flex items-center gap-2 border-l border-border pl-3">
             <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Status:</span>
