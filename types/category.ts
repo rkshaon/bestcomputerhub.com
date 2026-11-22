@@ -39,6 +39,10 @@ export interface CategoryFilters {
   is_parent?: boolean;
   is_menu?: boolean;
   menu?: string;
+  no_subcategory?: boolean;
+  no_product?: boolean;
+  no_blog_post?: boolean;
+  no_supplier?: boolean;
 }
 
 export interface CategorySummaryResponse {

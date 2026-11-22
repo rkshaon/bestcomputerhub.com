@@ -122,6 +122,10 @@ export const useCategoryService = () => {
     const is_parent = filters.is_parent;
     const is_menu = filters.is_menu;
     const menu = filters.menu;
+    const no_subcategory = filters.no_subcategory;
+    const no_product = filters.no_product;
+    const no_blog_post = filters.no_blog_post;
+    const no_supplier = filters.no_supplier;
 
     if (checkMockMode()) {
       // Simulate artificial latency
@@ -220,6 +224,18 @@ export const useCategoryService = () => {
       }
       if (menu) {
         params.append('menu', menu);
+      }
+      if (no_subcategory !== undefined) {
+        params.append('no_subcategory', no_subcategory.toString());
+      }
+      if (no_product !== undefined) {
+        params.append('no_product', no_product.toString());
+      }
+      if (no_blog_post !== undefined) {
+        params.append('no_blog_post', no_blog_post.toString());
+      }
+      if (no_supplier !== undefined) {
+        params.append('no_supplier', no_supplier.toString());
       }
 
       const queryString = params.toString();

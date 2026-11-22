@@ -88,6 +88,14 @@ const canDeleteCategory = computed(() => hasPermission(['store.delete_category',
 const route = useRoute();
 const router = useRouter();
 
+type TriStateBooleanFilter = 'all' | 'true' | 'false';
+
+const parseTriStateQuery = (value: unknown): TriStateBooleanFilter => {
+  if (value === 'true') return 'true';
+  if (value === 'false') return 'false';
+  return 'all';
+};
+
 // State managers initialized from URL query parameters
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
@@ -95,10 +103,40 @@ const onlyParentsFilter = ref(route.query.is_parent === 'true');
 const onlyMenusFilter = ref(route.query.is_menu === 'true');
 const parentFilter = ref(route.query.parent ? String(route.query.parent) : 'all'); // 'all', 'none' (main level only), or specific category ID
 const menuFilter = ref(route.query.menu ? String(route.query.menu) : (route.query.is_menu === 'true' ? 'menu_only' : 'all')); // 'all', 'menu_only', or specific menu category ID
+const noSubcategoryFilter = ref<TriStateBooleanFilter>(parseTriStateQuery(route.query.no_subcategory));
+const noProductFilter = ref<TriStateBooleanFilter>(parseTriStateQuery(route.query.no_product));
+const noBlogPostFilter = ref<TriStateBooleanFilter>(parseTriStateQuery(route.query.no_blog_post));
+const noSupplierFilter = ref<TriStateBooleanFilter>(parseTriStateQuery(route.query.no_supplier));
 const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'order'); // 'order', '-order', 'name', '-name', 'slug', '-slug'
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
 const viewMode = ref<'grid' | 'list' | 'tree'>('list');
+
+const hasActiveFilters = computed(() => {
+  return Boolean(
+    searchQuery.value ||
+    onlyParentsFilter.value ||
+    onlyMenusFilter.value ||
+    parentFilter.value !== 'all' ||
+    menuFilter.value !== 'all' ||
+    noSubcategoryFilter.value !== 'all' ||
+    noProductFilter.value !== 'all' ||
+    noBlogPostFilter.value !== 'all' ||
+    noSupplierFilter.value !== 'all'
+  );
+});
+
+const clearAllFilters = () => {
+  searchQuery.value = '';
+  onlyParentsFilter.value = false;
+  onlyMenusFilter.value = false;
+  parentFilter.value = 'all';
+  menuFilter.value = 'all';
+  noSubcategoryFilter.value = 'all';
+  noProductFilter.value = 'all';
+  noBlogPostFilter.value = 'all';
+  noSupplierFilter.value = 'all';
+};
 
 // Infinite scroll options for Root / Parent categories filter (GET /api/v1/categories/?is_parent=true)
 const parentPagination = useInfinitePagination<Category>({
@@ -709,6 +747,18 @@ const fetchCategoriesPage = async () => {
     if (ordering.value && ordering.value !== 'order') {
       filters.ordering = ordering.value;
     }
+    if (noSubcategoryFilter.value !== 'all') {
+      filters.no_subcategory = noSubcategoryFilter.value === 'true';
+    }
+    if (noProductFilter.value !== 'all') {
+      filters.no_product = noProductFilter.value === 'true';
+    }
+    if (noBlogPostFilter.value !== 'all') {
+      filters.no_blog_post = noBlogPostFilter.value === 'true';
+    }
+    if (noSupplierFilter.value !== 'all') {
+      filters.no_supplier = noSupplierFilter.value === 'true';
+    }
 
     const response = await categoryService.getCategoriesList(filters);
     categoriesList.value = response.results;
@@ -773,12 +823,37 @@ onBeforeUnmount(() => {
 });
 
 // If searching or filtering, reset page index to 1
-watch([debouncedSearchQuery, onlyParentsFilter, onlyMenusFilter, parentFilter, menuFilter, ordering, itemsPerPage], () => {
+watch([
+  debouncedSearchQuery,
+  onlyParentsFilter,
+  onlyMenusFilter,
+  parentFilter,
+  menuFilter,
+  noSubcategoryFilter,
+  noProductFilter,
+  noBlogPostFilter,
+  noSupplierFilter,
+  ordering,
+  itemsPerPage
+], () => {
   currentPage.value = 1;
 });
 
 // Update URL parameters and fetch active page when parameters change
-watch([debouncedSearchQuery, onlyParentsFilter, onlyMenusFilter, parentFilter, menuFilter, ordering, currentPage, itemsPerPage], async () => {
+watch([
+  debouncedSearchQuery,
+  onlyParentsFilter,
+  onlyMenusFilter,
+  parentFilter,
+  menuFilter,
+  noSubcategoryFilter,
+  noProductFilter,
+  noBlogPostFilter,
+  noSupplierFilter,
+  ordering,
+  currentPage,
+  itemsPerPage
+], async () => {
   const query: Record<string, any> = { ...route.query };
 
   if (searchQuery.value) query.search = searchQuery.value;
@@ -810,6 +885,18 @@ watch([debouncedSearchQuery, onlyParentsFilter, onlyMenusFilter, parentFilter, m
   } else {
     delete query.menu;
   }
+
+  if (noSubcategoryFilter.value !== 'all') query.no_subcategory = noSubcategoryFilter.value;
+  else delete query.no_subcategory;
+
+  if (noProductFilter.value !== 'all') query.no_product = noProductFilter.value;
+  else delete query.no_product;
+
+  if (noBlogPostFilter.value !== 'all') query.no_blog_post = noBlogPostFilter.value;
+  else delete query.no_blog_post;
+
+  if (noSupplierFilter.value !== 'all') query.no_supplier = noSupplierFilter.value;
+  else delete query.no_supplier;
 
   if (ordering.value !== 'order') query.ordering = ordering.value;
   else delete query.ordering;
@@ -858,6 +945,30 @@ watch(() => route.query, async (newQuery) => {
     : (newQuery.is_menu === 'true' && !newOnlyMenus ? 'menu_only' : 'all');
   if (menuFilter.value !== newMenu) {
     menuFilter.value = newMenu;
+    needsFetch = true;
+  }
+
+  const newNoSubcategory = parseTriStateQuery(newQuery.no_subcategory);
+  if (noSubcategoryFilter.value !== newNoSubcategory) {
+    noSubcategoryFilter.value = newNoSubcategory;
+    needsFetch = true;
+  }
+
+  const newNoProduct = parseTriStateQuery(newQuery.no_product);
+  if (noProductFilter.value !== newNoProduct) {
+    noProductFilter.value = newNoProduct;
+    needsFetch = true;
+  }
+
+  const newNoBlogPost = parseTriStateQuery(newQuery.no_blog_post);
+  if (noBlogPostFilter.value !== newNoBlogPost) {
+    noBlogPostFilter.value = newNoBlogPost;
+    needsFetch = true;
+  }
+
+  const newNoSupplier = parseTriStateQuery(newQuery.no_supplier);
+  if (noSupplierFilter.value !== newNoSupplier) {
+    noSupplierFilter.value = newNoSupplier;
     needsFetch = true;
   }
 
@@ -1232,292 +1343,390 @@ watch(viewMode, () => {
     </div>
 
     <!-- Filter row -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs">
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-        <UiSearchInput 
-          v-model="searchQuery" 
-          placeholder="Search taxonomies by name, slug or description..." 
-          class="w-full sm:w-72"
-        />
+    <div class="bg-card border border-border px-3.5 py-2.5 rounded-xl shadow-xs space-y-2.5">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <UiSearchInput 
+            v-model="searchQuery" 
+            placeholder="Search taxonomies by name, slug or description..." 
+            class="w-full sm:w-72"
+          />
 
-        <!-- View Toggle Buttons -->
-        <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-lg border border-border/80">
-          <button
-            type="button"
-            @click="viewMode = 'grid'"
-            :class="[
-              'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
-              viewMode === 'grid'
-                ? 'bg-background text-primary shadow-2xs'
-                : 'text-muted-foreground hover:text-foreground'
-            ]"
-            title="Grid View"
-            aria-label="Grid view"
+          <!-- View Toggle Buttons -->
+          <div class="flex items-center self-start sm:self-auto bg-muted/60 p-1 rounded-lg border border-border/80">
+            <button
+              type="button"
+              @click="viewMode = 'grid'"
+              :class="[
+                'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
+                viewMode === 'grid'
+                  ? 'bg-background text-primary shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              ]"
+              title="Grid View"
+              aria-label="Grid view"
+            >
+              <LayoutGrid class="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              @click="viewMode = 'list'"
+              :class="[
+                'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
+                viewMode === 'list'
+                  ? 'bg-background text-primary shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              ]"
+              title="List View"
+              aria-label="List view"
+            >
+              <List class="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              @click="viewMode = 'tree'"
+              :class="[
+                'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
+                viewMode === 'tree'
+                  ? 'bg-background text-primary shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              ]"
+              title="Tree View"
+              aria-label="Tree view"
+            >
+              <FolderTree class="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+          <!-- Boolean Filters: Only Parents & Only Menus -->
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="onlyParentsFilter = !onlyParentsFilter"
+              :class="[
+                'h-9 px-3.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+                onlyParentsFilter
+                  ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
+                  : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              ]"
+              :aria-pressed="onlyParentsFilter"
+              title="Filter to root/parent categories only"
+            >
+              <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="onlyParentsFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+              <span>Only Parents</span>
+            </button>
+
+            <button
+              type="button"
+              @click="onlyMenusFilter = !onlyMenusFilter"
+              :class="[
+                'h-9 px-3.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+                onlyMenusFilter
+                  ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
+                  : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              ]"
+              :aria-pressed="onlyMenusFilter"
+              title="Filter to menu categories only"
+            >
+              <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="onlyMenusFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+              <span>Only Menus</span>
+            </button>
+          </div>
+
+          <!-- Parent grouping filter dropdown (Structural Level) -->
+          <div ref="parentDropdownRef" class="relative">
+            <div class="flex items-center gap-2 border-l border-border pl-3">
+              <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">Level:</span>
+              <button 
+                ref="parentDropdownTriggerRef"
+                type="button"
+                @click.stop="toggleParentDropdown"
+                :aria-expanded="isParentDropdownOpen"
+                class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[135px]"
+              >
+                <span class="truncate">{{ activeParentLabel }}</span>
+                <ChevronDown :class="['w-3.5 h-3.5 shrink-0 transition-transform duration-200', isParentDropdownOpen && 'rotate-180']" />
+              </button>
+            </div>
+
+            <!-- Parent Options Popover Menu -->
+            <div 
+              v-if="isParentDropdownOpen"
+              @click.stop
+              @keydown.esc.stop="closeParentDropdown(true)"
+              class="absolute right-0 sm:left-4 z-30 mt-2 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div class="max-h-52 overflow-y-auto space-y-1 p-0.5 scrollbar-thin">
+                <button
+                  type="button"
+                  @click="selectParent('all')"
+                  :class="[
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
+                    parentFilter === 'all' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
+                  ]"
+                >
+                  <span>All Levels</span>
+                  <span v-if="parentFilter === 'all'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                </button>
+
+                <button
+                  type="button"
+                  @click="selectParent('none')"
+                  :class="[
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
+                    parentFilter === 'none' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
+                  ]"
+                >
+                  <span>Main Categories Only</span>
+                  <span v-if="parentFilter === 'none'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                </button>
+
+                <div class="my-1 border-t border-border/60"></div>
+
+                <!-- Root category options from GET /api/v1/categories/?is_parent=true -->
+                <button
+                  v-for="parentCat in parentPagination.items.value"
+                  :key="parentCat.id"
+                  type="button"
+                  @click="selectParent(String(parentCat.id))"
+                  :class="[
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
+                    parentFilter === String(parentCat.id) ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                  ]"
+                >
+                  <span class="truncate">Sub of {{ decodeHtmlEntities(parentCat.name) }}</span>
+                  <span v-if="parentFilter === String(parentCat.id)" class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+                </button>
+
+                <!-- Infinite Scroll Sentinel for Root Filter -->
+                <UiInfiniteScroll
+                  :has-more="parentPagination.hasMore.value"
+                  :is-loading="parentPagination.isFetchingNextPage.value"
+                  :error="parentPagination.error.value"
+                  @load-more="parentPagination.loadNextPage"
+                  @retry="parentPagination.loadNextPage"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Menu Filter Dropdown (Menu Categories) -->
+          <div ref="menuDropdownRef" class="relative">
+            <div class="flex items-center gap-2 border-l border-border pl-3">
+              <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">Menu:</span>
+              <button 
+                ref="menuDropdownTriggerRef"
+                type="button"
+                @click.stop="toggleMenuDropdown"
+                :aria-expanded="isMenuDropdownOpen"
+                class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[135px]"
+              >
+                <span class="truncate">{{ activeMenuLabel }}</span>
+                <ChevronDown :class="['w-3.5 h-3.5 shrink-0 transition-transform duration-200', isMenuDropdownOpen && 'rotate-180']" />
+              </button>
+            </div>
+
+            <!-- Menu Options Popover Menu -->
+            <div 
+              v-if="isMenuDropdownOpen"
+              @click.stop
+              @keydown.esc.stop="closeMenuDropdown(true)"
+              class="absolute right-0 sm:left-4 z-30 mt-2 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div class="max-h-52 overflow-y-auto space-y-1 p-0.5 scrollbar-thin">
+                <button
+                  type="button"
+                  @click="selectMenu('all')"
+                  :class="[
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
+                    menuFilter === 'all' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
+                  ]"
+                >
+                  <span>All Categories</span>
+                  <span v-if="menuFilter === 'all'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                </button>
+
+                <button
+                  type="button"
+                  @click="selectMenu('menu_only')"
+                  :class="[
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
+                    menuFilter === 'menu_only' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
+                  ]"
+                >
+                  <span>In Menu Only</span>
+                  <span v-if="menuFilter === 'menu_only'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                </button>
+
+                <div class="my-1 border-t border-border/60"></div>
+
+                <!-- Menu category options from GET /api/v1/categories/?is_menu=true -->
+                <button
+                  v-for="menuCat in menuPagination.items.value"
+                  :key="menuCat.id"
+                  type="button"
+                  @click="selectMenu(String(menuCat.id))"
+                  :class="[
+                    'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
+                    menuFilter === String(menuCat.id) ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                  ]"
+                >
+                  <div class="flex flex-col min-w-0 pr-2">
+                    <span class="truncate font-semibold">{{ decodeHtmlEntities(menuCat.name) }}</span>
+                    <span class="text-[10px] text-muted-foreground font-mono truncate">/{{ menuCat.slug }}</span>
+                  </div>
+                  <span v-if="menuFilter === String(menuCat.id)" class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+                </button>
+
+                <!-- Infinite Scroll Sentinel for Menu Filter -->
+                <UiInfiniteScroll
+                  :has-more="menuPagination.hasMore.value"
+                  :is-loading="menuPagination.isFetchingNextPage.value"
+                  :error="menuPagination.error.value"
+                  @load-more="menuPagination.loadNextPage"
+                  @retry="menuPagination.loadNextPage"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 border-l border-border pl-3">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Order:</span>
+            <select 
+              v-model="ordering"
+              class="h-9 px-2.5 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
+            >
+              <option value="order">Priority (Asc)</option>
+              <option value="-order">Priority (Desc)</option>
+              <option value="name">Name (A-Z)</option>
+              <option value="-name">Name (Z-A)</option>
+              <option value="slug">Slug (A-Z)</option>
+              <option value="-slug">Slug (Z-A)</option>
+            </select>
+          </div>
+
+          <!-- Items per page selector (List view only) -->
+          <div v-if="viewMode === 'list'" class="flex items-center gap-1.5 border-l border-border pl-2.5">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
+            <select 
+              v-model="itemsPerPage"
+              class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
+            >
+              <option :value="5">5 / page</option>
+              <option :value="10">10 / page</option>
+              <option :value="25">25 / page</option>
+              <option :value="50">50 / page</option>
+              <option :value="100">100 / page</option>
+              <option :value="1000">1000 / page</option>
+            </select>
+          </div>
+          
+          <button 
+            @click="loadCategoriesGrid" 
+            class="h-9 w-9 flex items-center justify-center bg-background hover:bg-muted border border-input rounded-lg text-muted-foreground hover:text-primary transition-colors cursor-pointer shrink-0"
+            title="Force Sync Protocols"
+            aria-label="Refresh categories"
           >
-            <LayoutGrid class="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            @click="viewMode = 'list'"
-            :class="[
-              'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
-              viewMode === 'list'
-                ? 'bg-background text-primary shadow-2xs'
-                : 'text-muted-foreground hover:text-foreground'
-            ]"
-            title="List View"
-            aria-label="List view"
-          >
-            <List class="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            @click="viewMode = 'tree'"
-            :class="[
-              'h-7 w-7 rounded-md transition-all flex items-center justify-center cursor-pointer',
-              viewMode === 'tree'
-                ? 'bg-background text-primary shadow-2xs'
-                : 'text-muted-foreground hover:text-foreground'
-            ]"
-            title="Tree View"
-            aria-label="Tree view"
-          >
-            <FolderTree class="w-3.5 h-3.5" />
+            <RotateCcw class="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
-      
-      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
-        <!-- Boolean Filters: Only Parents & Only Menus -->
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            @click="onlyParentsFilter = !onlyParentsFilter"
-            :class="[
-              'h-9 px-3.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
-              onlyParentsFilter
-                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
-                : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            ]"
-            :aria-pressed="onlyParentsFilter"
-            title="Filter to root/parent categories only"
-          >
-            <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="onlyParentsFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
-            <span>Only Parents</span>
-          </button>
 
-          <button
-            type="button"
-            @click="onlyMenusFilter = !onlyMenusFilter"
-            :class="[
-              'h-9 px-3.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
-              onlyMenusFilter
-                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
-                : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            ]"
-            :aria-pressed="onlyMenusFilter"
-            title="Filter to menu categories only"
-          >
-            <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="onlyMenusFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
-            <span>Only Menus</span>
-          </button>
-        </div>
-
-        <!-- Parent grouping filter dropdown (Structural Level) -->
-        <div ref="parentDropdownRef" class="relative">
-          <div class="flex items-center gap-2 border-l border-border pl-3">
-            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">Level:</span>
-            <button 
-              ref="parentDropdownTriggerRef"
-              type="button"
-              @click.stop="toggleParentDropdown"
-              :aria-expanded="isParentDropdownOpen"
-              class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[135px]"
+      <!-- Boolean Relationship Filters (Three-state: All / Yes / No) -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border/60">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2">
+            <label for="filter-no-subcategory" class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
+              No Subcategories:
+            </label>
+            <select
+              id="filter-no-subcategory"
+              v-model="noSubcategoryFilter"
+              :class="[
+                'h-9 px-2.5 bg-background border rounded-lg outline-none text-xs font-semibold cursor-pointer transition-all focus:ring-2 focus:ring-ring/20',
+                noSubcategoryFilter !== 'all'
+                  ? 'border-primary text-primary bg-primary/5'
+                  : 'border-input text-foreground'
+              ]"
             >
-              <span class="truncate">{{ activeParentLabel }}</span>
-              <ChevronDown :class="['w-3.5 h-3.5 shrink-0 transition-transform duration-200', isParentDropdownOpen && 'rotate-180']" />
-            </button>
+              <option value="all">All</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
           </div>
 
-          <!-- Parent Options Popover Menu -->
-          <div 
-            v-if="isParentDropdownOpen"
-            @click.stop
-            @keydown.esc.stop="closeParentDropdown(true)"
-            class="absolute right-0 sm:left-4 z-30 mt-2 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
-          >
-            <div class="max-h-52 overflow-y-auto space-y-1 p-0.5 scrollbar-thin">
-              <button
-                type="button"
-                @click="selectParent('all')"
-                :class="[
-                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
-                  parentFilter === 'all' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
-                ]"
-              >
-                <span>All Levels</span>
-                <span v-if="parentFilter === 'all'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-              </button>
-
-              <button
-                type="button"
-                @click="selectParent('none')"
-                :class="[
-                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
-                  parentFilter === 'none' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
-                ]"
-              >
-                <span>Main Categories Only</span>
-                <span v-if="parentFilter === 'none'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-              </button>
-
-              <div class="my-1 border-t border-border/60"></div>
-
-              <!-- Root category options from GET /api/v1/categories/?is_parent=true -->
-              <button
-                v-for="parentCat in parentPagination.items.value"
-                :key="parentCat.id"
-                type="button"
-                @click="selectParent(String(parentCat.id))"
-                :class="[
-                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
-                  parentFilter === String(parentCat.id) ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                ]"
-              >
-                <span class="truncate">Sub of {{ decodeHtmlEntities(parentCat.name) }}</span>
-                <span v-if="parentFilter === String(parentCat.id)" class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
-              </button>
-
-              <!-- Infinite Scroll Sentinel for Root Filter -->
-              <UiInfiniteScroll
-                :has-more="parentPagination.hasMore.value"
-                :is-loading="parentPagination.isFetchingNextPage.value"
-                :error="parentPagination.error.value"
-                @load-more="parentPagination.loadNextPage"
-                @retry="parentPagination.loadNextPage"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Menu Filter Dropdown (Menu Categories) -->
-        <div ref="menuDropdownRef" class="relative">
-          <div class="flex items-center gap-2 border-l border-border pl-3">
-            <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">Menu:</span>
-            <button 
-              ref="menuDropdownTriggerRef"
-              type="button"
-              @click.stop="toggleMenuDropdown"
-              :aria-expanded="isMenuDropdownOpen"
-              class="h-9 px-3 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all flex items-center justify-between gap-1.5 min-w-[135px]"
+          <div class="flex items-center gap-2 sm:border-l sm:border-border sm:pl-3">
+            <label for="filter-no-product" class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
+              No Products:
+            </label>
+            <select
+              id="filter-no-product"
+              v-model="noProductFilter"
+              :class="[
+                'h-9 px-2.5 bg-background border rounded-lg outline-none text-xs font-semibold cursor-pointer transition-all focus:ring-2 focus:ring-ring/20',
+                noProductFilter !== 'all'
+                  ? 'border-primary text-primary bg-primary/5'
+                  : 'border-input text-foreground'
+              ]"
             >
-              <span class="truncate">{{ activeMenuLabel }}</span>
-              <ChevronDown :class="['w-3.5 h-3.5 shrink-0 transition-transform duration-200', isMenuDropdownOpen && 'rotate-180']" />
-            </button>
+              <option value="all">All</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
           </div>
 
-          <!-- Menu Options Popover Menu -->
-          <div 
-            v-if="isMenuDropdownOpen"
-            @click.stop
-            @keydown.esc.stop="closeMenuDropdown(true)"
-            class="absolute right-0 sm:left-4 z-30 mt-2 w-60 bg-card border border-border rounded-xl shadow-lg p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
-          >
-            <div class="max-h-52 overflow-y-auto space-y-1 p-0.5 scrollbar-thin">
-              <button
-                type="button"
-                @click="selectMenu('all')"
-                :class="[
-                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
-                  menuFilter === 'all' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
-                ]"
-              >
-                <span>All Categories</span>
-                <span v-if="menuFilter === 'all'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-              </button>
+          <div class="flex items-center gap-2 sm:border-l sm:border-border sm:pl-3">
+            <label for="filter-no-blog-post" class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
+              No Blog Posts:
+            </label>
+            <select
+              id="filter-no-blog-post"
+              v-model="noBlogPostFilter"
+              :class="[
+                'h-9 px-2.5 bg-background border rounded-lg outline-none text-xs font-semibold cursor-pointer transition-all focus:ring-2 focus:ring-ring/20',
+                noBlogPostFilter !== 'all'
+                  ? 'border-primary text-primary bg-primary/5'
+                  : 'border-input text-foreground'
+              ]"
+            >
+              <option value="all">All</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
 
-              <button
-                type="button"
-                @click="selectMenu('menu_only')"
-                :class="[
-                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between',
-                  menuFilter === 'menu_only' ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-foreground'
-                ]"
-              >
-                <span>In Menu Only</span>
-                <span v-if="menuFilter === 'menu_only'" class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-              </button>
-
-              <div class="my-1 border-t border-border/60"></div>
-
-              <!-- Menu category options from GET /api/v1/categories/?is_menu=true -->
-              <button
-                v-for="menuCat in menuPagination.items.value"
-                :key="menuCat.id"
-                type="button"
-                @click="selectMenu(String(menuCat.id))"
-                :class="[
-                  'w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between',
-                  menuFilter === String(menuCat.id) ? 'bg-primary/10 text-primary font-extrabold' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                ]"
-              >
-                <div class="flex flex-col min-w-0 pr-2">
-                  <span class="truncate font-semibold">{{ decodeHtmlEntities(menuCat.name) }}</span>
-                  <span class="text-[10px] text-muted-foreground font-mono truncate">/{{ menuCat.slug }}</span>
-                </div>
-                <span v-if="menuFilter === String(menuCat.id)" class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
-              </button>
-
-              <!-- Infinite Scroll Sentinel for Menu Filter -->
-              <UiInfiniteScroll
-                :has-more="menuPagination.hasMore.value"
-                :is-loading="menuPagination.isFetchingNextPage.value"
-                :error="menuPagination.error.value"
-                @load-more="menuPagination.loadNextPage"
-                @retry="menuPagination.loadNextPage"
-              />
-            </div>
+          <div class="flex items-center gap-2 sm:border-l sm:border-border sm:pl-3">
+            <label for="filter-no-supplier" class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
+              No Suppliers:
+            </label>
+            <select
+              id="filter-no-supplier"
+              v-model="noSupplierFilter"
+              :class="[
+                'h-9 px-2.5 bg-background border rounded-lg outline-none text-xs font-semibold cursor-pointer transition-all focus:ring-2 focus:ring-ring/20',
+                noSupplierFilter !== 'all'
+                  ? 'border-primary text-primary bg-primary/5'
+                  : 'border-input text-foreground'
+              ]"
+            >
+              <option value="all">All</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
           </div>
         </div>
 
-        <div class="flex items-center gap-2 border-l border-border pl-3">
-          <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Order:</span>
-          <select 
-            v-model="ordering"
-            class="h-9 px-2.5 bg-background border border-input rounded-lg outline-none text-[10px] font-bold uppercase tracking-wider cursor-pointer text-foreground focus:ring-2 focus:ring-ring/20 transition-all"
-          >
-            <option value="order">Priority (Asc)</option>
-            <option value="-order">Priority (Desc)</option>
-            <option value="name">Name (A-Z)</option>
-            <option value="-name">Name (Z-A)</option>
-            <option value="slug">Slug (A-Z)</option>
-            <option value="-slug">Slug (Z-A)</option>
-          </select>
-        </div>
-
-        <!-- Items per page selector (List view only) -->
-        <div v-if="viewMode === 'list'" class="flex items-center gap-1.5 border-l border-border pl-2.5">
-          <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hidden sm:inline">Show:</span>
-          <select 
-            v-model="itemsPerPage"
-            class="h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
-          >
-            <option :value="5">5 / page</option>
-            <option :value="10">10 / page</option>
-            <option :value="25">25 / page</option>
-            <option :value="50">50 / page</option>
-            <option :value="100">100 / page</option>
-            <option :value="1000">1000 / page</option>
-          </select>
-        </div>
-        
-        <button 
-          @click="loadCategoriesGrid" 
-          class="h-9 w-9 flex items-center justify-center bg-background hover:bg-muted border border-input rounded-lg text-muted-foreground hover:text-primary transition-colors cursor-pointer shrink-0"
-          title="Force Sync Protocols"
-          aria-label="Refresh categories"
+        <button
+          v-if="hasActiveFilters"
+          type="button"
+          @click="clearAllFilters"
+          class="h-9 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-1 cursor-pointer ml-auto"
+          title="Clear all filters"
         >
-          <RotateCcw class="w-3.5 h-3.5" />
+          <X class="w-3.5 h-3.5" />
+          <span>Clear Filters</span>
         </button>
       </div>
     </div>
