@@ -185,7 +185,7 @@ defineExpose({
         type="text" 
         placeholder="Search products, brands or models..." 
         aria-label="Search items"
-        class="w-full bg-background border border-input rounded-md outline-none h-10 md:h-11 text-sm pl-4 pr-16 transition-all duration-200 text-slate-900 placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+        class="w-full bg-background border border-input rounded-md md:rounded-xl outline-none h-10 md:h-11 text-sm pl-4 pr-16 transition-all duration-200 text-slate-900 placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
         @focus="handleInputFocus"
         @keyup.enter="handleSearchSubmit"
       />
@@ -201,7 +201,7 @@ defineExpose({
       <button 
         type="button"
         @click="handleSearchSubmit"
-        class="absolute right-0 top-0 bottom-0 w-11 md:w-12 bg-header-primary text-primary-foreground rounded-r-md rounded-l-none flex items-center justify-center hover:bg-header-primary/90 transition-colors cursor-pointer"
+        class="absolute right-0 top-0 bottom-0 w-11 md:w-12 bg-header-primary text-primary-foreground rounded-r-md md:rounded-r-xl rounded-l-none flex items-center justify-center hover:bg-header-primary/90 transition-colors cursor-pointer"
         aria-label="Search"
         title="Search"
       >

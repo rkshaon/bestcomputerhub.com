@@ -468,7 +468,7 @@ if (process.client) {
         <!-- Desktop Brand Wordmark Logo -->
         <NuxtLink 
           to="/" 
-          class="flex items-center justify-center shrink-0 group transition-all duration-300 h-11 pr-2 lg:pr-3"
+          class="flex items-center justify-center shrink-0 group transition-all duration-300 h-11 rounded-xl pr-2 lg:pr-3"
           aria-label="Best Computer Hub Home"
         >
           <img 
@@ -539,7 +539,7 @@ if (process.client) {
           <NuxtLink 
             v-if="isSuperAdmin" 
             to="/admin" 
-            class="hidden sm:flex items-center gap-1.5 h-11 px-3 hover:bg-header-primary/10 border border-header-primary/20 text-header-primary rounded-full transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
+            class="hidden sm:flex items-center gap-1.5 h-11 px-3 hover:bg-header-primary/10 border border-header-primary/20 text-header-primary rounded-xl transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
             title="Admin Protocol System"
           >
             <ShieldCheck class="w-4 h-4" />
@@ -610,7 +610,7 @@ if (process.client) {
           <!-- PC Builder -->
           <div 
             v-if="!isAuthRoute"
-            class="hidden sm:inline-flex items-center gap-1.5 h-11 px-3 rounded-full border border-header-border/60 text-header-muted-foreground text-xs font-semibold shrink-0 cursor-default"
+            class="hidden sm:inline-flex items-center gap-1.5 h-11 px-3 rounded-xl border border-header-border/60 text-header-muted-foreground text-xs font-semibold shrink-0 cursor-default"
             title="PC Builder"
             aria-label="PC Builder"
           >
@@ -636,7 +636,7 @@ if (process.client) {
           <NuxtLink 
             v-if="!isAuthRoute"
             to="/my-account/" 
-            class="hidden sm:inline-flex items-center gap-1.5 h-11 px-3 rounded-full border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0"
+            class="hidden sm:inline-flex items-center gap-1.5 h-11 px-3 rounded-xl border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0"
             title="Track Your Order"
             aria-label="Track Your Order"
           >
@@ -676,7 +676,7 @@ if (process.client) {
           <button 
             v-if="!isAuthRoute"
             @click="uiStore.toggleCart()" 
-            class="inline-flex items-center justify-center w-11 h-11 hover:bg-header-accent rounded-full transition-colors relative text-header-muted-foreground hover:text-header-foreground shrink-0"
+            class="inline-flex items-center justify-center w-11 h-11 hover:bg-header-accent rounded-xl transition-colors relative text-header-muted-foreground hover:text-header-foreground shrink-0"
             title="Shopping Bag"
             aria-label="Cart"
           >
@@ -692,7 +692,7 @@ if (process.client) {
           <!-- Relocated Login / Account Action -->
           <NuxtLink 
             :to="authStore.isLoggedIn ? '/my-account/' : '/login/'" 
-            class="hidden sm:inline-flex items-center gap-1.5 h-11 px-3 rounded-full border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0"
+            class="hidden sm:inline-flex items-center gap-1.5 h-11 px-3 rounded-xl border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0"
             :title="authStore.isLoggedIn ? 'Account Dashboard' : 'Login or Sign Up'"
             :aria-label="authStore.isLoggedIn ? 'Account Dashboard' : 'Login'"
           >
