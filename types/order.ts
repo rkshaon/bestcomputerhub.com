@@ -11,6 +11,7 @@ export type OrderStatus =
   | 'shipped'
   | 'out_of_delivery'
   | 'delivered'
+  | 'returned'
   | 'cancelled'
   | 'refunded';
 
@@ -46,14 +47,14 @@ export interface OrderShippingAddress {
 }
 
 export interface OrderStatusOption {
-  value: OrderStatus;
+  value: string;
   label: string;
 }
 
 export interface OrderStatusResponse {
   default: string;
   statuses: OrderStatusOption[];
-  transitions: Record<OrderStatus, OrderStatus[]>;
+  transitions: Record<string, string[]>;
 }
 
 export interface Order {

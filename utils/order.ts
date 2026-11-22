@@ -1,7 +1,7 @@
 // File: /utils/order.ts
 // Pure normalizers from the backend storefront order contract
 // (ZayrahLife-Backend/docs/checkout-api.md) to the frontend `Order` model.
-import type { Order, OrderItem, OrderStatus, OrderPaymentStatus } from '@/types/order';
+import type { Order, OrderItem, OrderStatus, OrderPaymentStatus, OrderStatusOption } from '@/types/order';
 import type {
   ApiMoney,
   BackendOrderDetail,
@@ -134,4 +134,68 @@ export function mapOrderSummary(raw: BackendOrderSummary): Order {
     status: normalizeOrderStatus(raw.status),
     paymentStatus: normalizePaymentStatus(raw.payment_status)
   };
+}
+
+/**
+ * Resolves available next status options for an order from `/api/v1/sales/statuses/`
+ * (`statuses` + `transitions`), preserving uppercase backend status values and
+ * handling every order state case-insensitively.
+ */
+export function getAvailableOrderStatusOptions(params: {
+  currentStatus: string;
+  statuses?: OrderStatusOption[];
+  transitions?: Record<string, string[]>;
+  fallbackNextStatuses?: OrderStatusOption[];
+}): OrderStatusOption[] {
+  const { currentStatus, statuses = [], transitions, fallbackNextStatuses = [] } = params;
+  const currentLower = String(currentStatus || '').trim().toLowerCase();
+
+  if (statuses.length > 0) {
+    if (transitions && Object.keys(transitions).length > 0) {
+      const transitionKey = Object.keys(transitions).find(
+        (key) => key.trim().toLowerCase() === currentLower
+      );
+      if (transitionKey) {
+        const allowedTargets = Array.isArray(transitions[transitionKey]) ? transitions[transitionKey] : [];
+        const allowedLower = new Set(allowedTargets.map((target) => String(target).trim().toLowerCase()));
+        const statusByLower = new Map(
+          statuses.map((option) => [
+            String(option.value).trim().toLowerCase(),
+            { ...option, value: String(option.value).trim().toUpperCase() }
+          ])
+        );
+
+        const matchedFromStatuses = statuses
+          .filter((option) => allowedLower.has(String(option.value).trim().toLowerCase()))
+          .map((option) => ({
+            ...option,
+            value: String(option.value).trim().toUpperCase()
+          }));
+
+        for (const target of allowedTargets) {
+          const targetLower = String(target).trim().toLowerCase();
+          if (!statusByLower.has(targetLower) && targetLower !== currentLower) {
+            matchedFromStatuses.push({
+              value: String(target).trim().toUpperCase(),
+              label: String(target)
+            });
+          }
+        }
+
+        return matchedFromStatuses;
+      }
+    }
+
+    return statuses
+      .filter((option) => String(option.value).trim().toLowerCase() !== currentLower)
+      .map((option) => ({
+        ...option,
+        value: String(option.value).trim().toUpperCase()
+      }));
+  }
+
+  return fallbackNextStatuses.map((option) => ({
+    ...option,
+    value: String(option.value).trim().toUpperCase()
+  }));
 }
