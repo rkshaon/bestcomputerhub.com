@@ -138,3 +138,64 @@ test('normalizes and maps RETURNED and CANCELLED order details cleanly', () => {
   assert.equal(mapped.status, 'returned');
   assert.equal(mapped.orderNumber, 'SALE-20261122-000042');
 });
+
+test('useSalesService.updateStatus sends POST to /api/v1/sales/{id}/update-status/ with uppercase status payload', async () => {
+  const { registerHooks } = await import('node:module');
+  const { pathToFileURL } = await import('node:url');
+  const path = await import('node:path');
+
+  const capturedRequests: Array<{ url: string; options: any }> = [];
+  (globalThis as any).__mockUseApiClient = () => ({
+    isLoading: { value: false },
+    errorMsg: { value: null },
+    request: async (url: string, options: any) => {
+      capturedRequests.push({ url, options });
+      if (url === '/api/v1/sales/pending-count/') {
+        return { pending_orders: 0 };
+      }
+      return { id: '42', status: options?.body?.status };
+    }
+  });
+
+  const utilsOrderUrl = pathToFileURL(path.resolve(process.cwd(), 'utils/order.ts')).href;
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === './useApiClient' && context.parentURL?.endsWith('/composables/useSalesService.ts')) {
+        return { url: 'mock:useApiClient', shortCircuit: true };
+      }
+      if (specifier === '@/utils/order') {
+        return { url: utilsOrderUrl, shortCircuit: true };
+      }
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'mock:useApiClient') {
+        return {
+          format: 'module',
+          source: 'export const useApiClient = () => globalThis.__mockUseApiClient();',
+          shortCircuit: true
+        };
+      }
+      return nextLoad(url, context);
+    }
+  });
+
+  try {
+    const salesServiceUrl = pathToFileURL(path.resolve(process.cwd(), 'composables/useSalesService.ts')).href;
+    const { useSalesService } = await import(`${salesServiceUrl}?t=${Date.now()}`);
+    const salesService = useSalesService();
+
+    await salesService.updateStatus('42', 'CANCELLED');
+    await salesService.updateStatus('42', 'cancelled');
+
+    const updateCalls = capturedRequests.filter((r) => r.url === '/api/v1/sales/42/update-status/');
+    assert.equal(updateCalls.length, 2);
+    assert.equal(updateCalls[0]!.options.method, 'POST');
+    assert.deepEqual(updateCalls[0]!.options.body, { status: 'CANCELLED' });
+    assert.equal(updateCalls[1]!.options.method, 'POST');
+    assert.deepEqual(updateCalls[1]!.options.body, { status: 'CANCELLED' });
+  } finally {
+    hooks.deregister();
+    delete (globalThis as any).__mockUseApiClient;
+  }
+});
