@@ -26,7 +26,8 @@ function getCustomerName(customer: BackendOrderDetail['customer']): string {
 
 /** Lower-cases a backend status (`OUT_OF_DELIVERY` → `out_of_delivery`). */
 export function normalizeOrderStatus(status: string | null | undefined): OrderStatus {
-  return String(status || 'PENDING').toLowerCase() as OrderStatus;
+  const normalized = String(status ?? '').trim().toLowerCase();
+  return (normalized || 'pending') as OrderStatus;
 }
 
 export function normalizePaymentStatus(status: string | null | undefined): OrderPaymentStatus {

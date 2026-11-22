@@ -1,9 +1,9 @@
 // File: /tests/order-status.test.ts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getAvailableOrderStatusOptions, mapOrderDetail, normalizeOrderStatus } from '../utils/order';
+import { getAvailableOrderStatusOptions, mapOrderDetail, mapOrderSummary, normalizeOrderStatus } from '../utils/order';
 import type { OrderStatusOption } from '../types/order';
-import type { BackendOrderDetail } from '../types/checkout';
+import type { BackendOrderDetail, BackendOrderSummary } from '../types/checkout';
 
 const ALL_BACKEND_STATUSES: OrderStatusOption[] = [
   { value: 'PENDING', label: 'Pending' },
@@ -160,7 +160,7 @@ test('useSalesService.updateStatus sends POST to /api/v1/sales/{id}/update-statu
   const utilsOrderUrl = pathToFileURL(path.resolve(process.cwd(), 'utils/order.ts')).href;
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
-      if (specifier === './useApiClient' && context.parentURL?.endsWith('/composables/useSalesService.ts')) {
+      if (specifier === './useApiClient' && context.parentURL?.includes('/composables/useSalesService.ts')) {
         return { url: 'mock:useApiClient', shortCircuit: true };
       }
       if (specifier === '@/utils/order') {
@@ -198,4 +198,68 @@ test('useSalesService.updateStatus sends POST to /api/v1/sales/{id}/update-statu
     hooks.deregister();
     delete (globalThis as any).__mockUseApiClient;
   }
+});
+
+test('mapOrderSummary normalizes whitespace/case and assigns orders accurately across Kanban columns', () => {
+  const summaries: BackendOrderSummary[] = [
+    {
+      id: 1,
+      invoice_number: 'SALE-001',
+      status: 'PENDING',
+      payment_status: 'UNPAID',
+      total_amount: '100.00',
+      item_count: 1,
+      created_at: '2026-11-22T06:00:00Z',
+      sale_date: '2026-11-22T06:00:00Z',
+      customer: { full_name: 'Alice', user: { username: 'alice' } }
+    },
+    {
+      id: 2,
+      invoice_number: 'SALE-002',
+      status: ' OUT_OF_DELIVERY ' as any,
+      payment_status: 'UNPAID',
+      total_amount: '200.00',
+      item_count: 2,
+      created_at: '2026-11-22T06:00:00Z',
+      sale_date: '2026-11-22T06:00:00Z',
+      customer: { full_name: 'Bob', user: { username: 'bob' } }
+    },
+    {
+      id: 3,
+      invoice_number: 'SALE-003',
+      status: 'delivered' as any,
+      payment_status: 'COLLECTED',
+      total_amount: '300.00',
+      item_count: 3,
+      created_at: '2026-11-22T06:00:00Z',
+      sale_date: '2026-11-22T06:00:00Z',
+      customer: { full_name: 'Carol', user: { username: 'carol' } }
+    }
+  ];
+
+  const mappedOrders = summaries.map(mapOrderSummary);
+  assert.deepEqual(
+    mappedOrders.map((o) => o.status),
+    ['pending', 'out_of_delivery', 'delivered']
+  );
+
+  const normalizeStatus = (status: string | null | undefined): string =>
+    String(status ?? '').trim().toLowerCase();
+
+  const statusesWithWhitespace: OrderStatusOption[] = ALL_BACKEND_STATUSES.map((s) =>
+    s.value === 'OUT_OF_DELIVERY' ? { ...s, value: ' OUT_OF_DELIVERY ' } : s
+  );
+
+  const columns = statusesWithWhitespace.map((status) => {
+    const columnStatus = normalizeStatus(status.value);
+    return {
+      ...status,
+      orders: mappedOrders.filter((o) => normalizeStatus(o.status) === columnStatus)
+    };
+  });
+
+  assert.equal(columns.find((c) => c.label === 'Pending')?.orders.length, 1);
+  assert.equal(columns.find((c) => c.label === 'Out for Delivery')?.orders.length, 1);
+  assert.equal(columns.find((c) => c.label === 'Delivered')?.orders.length, 1);
+  assert.equal(columns.find((c) => c.label === 'Cancelled')?.orders.length, 0);
 });
