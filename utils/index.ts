@@ -130,3 +130,87 @@ export function formatDate(dateString: string | null | undefined): string {
   const year = date.getFullYear();
   return `${day} ${month}, ${year}`;
 }
+
+export type RelativeTimeInput =
+  | string
+  | number
+  | Date
+  | null
+  | undefined;
+
+export interface FormatRelativeTimeOptions {
+  now?: number | Date;
+  fallback?: string;
+}
+
+const MS_PER_MINUTE = 60_000;
+const MS_PER_HOUR = 3_600_000;
+const MS_PER_DAY = 86_400_000;
+
+function parseRelativeTimeInput(value: RelativeTimeInput): number {
+  if (value === null || value === undefined) {
+    return NaN;
+  }
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : NaN;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return NaN;
+    }
+    return Date.parse(trimmed);
+  }
+  return NaN;
+}
+
+function resolveReferenceTime(nowOption: number | Date | undefined): number {
+  if (nowOption instanceof Date) {
+    const ms = nowOption.getTime();
+    if (Number.isFinite(ms)) {
+      return ms;
+    }
+  } else if (typeof nowOption === 'number' && Number.isFinite(nowOption)) {
+    return nowOption;
+  }
+  return Date.now();
+}
+
+export function formatRelativeTime(
+  value: RelativeTimeInput,
+  options?: FormatRelativeTimeOptions
+): string {
+  const fallback = options?.fallback ?? 'N/A';
+  const targetMs = parseRelativeTimeInput(value);
+  if (!Number.isFinite(targetMs)) {
+    return fallback;
+  }
+
+  const nowMs = resolveReferenceTime(options?.now);
+  const diffMs = nowMs - targetMs;
+
+  if (diffMs < 0) {
+    return 'Just now';
+  }
+
+  const diffMinutes = Math.floor(diffMs / MS_PER_MINUTE);
+  if (diffMinutes < 1) {
+    return 'Just now';
+  }
+
+  if (diffMinutes < 60) {
+    return diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
+  }
+
+  const diffHours = Math.floor(diffMs / MS_PER_HOUR);
+  if (diffHours < 24) {
+    return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+  }
+
+  const diffDays = Math.floor(diffMs / MS_PER_DAY);
+  return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+}
+

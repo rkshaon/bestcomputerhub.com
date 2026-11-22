@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import type { Order, OrderStatusResponse } from '@/types/order';
 import type { BackendOrderDetail } from '@/types/checkout';
+import type { SalesPerformanceReport } from '@/types/admin';
 import { mapOrderSummary, mapOrderDetail } from '@/utils/order';
 
 export const pendingOrdersCount = ref<number | null>(null);
@@ -100,9 +101,9 @@ export const useSalesService = () => {
     }
   };
 
-  const getSalesPerformance = async (days: number = 90): Promise<any> => {
+  const getSalesPerformance = async (days: number = 90): Promise<SalesPerformanceReport> => {
     try {
-      const response = await apiClient.request<any>('/api/v1/sales/reports/performance/', {
+      const response = await apiClient.request<{ data?: SalesPerformanceReport } & SalesPerformanceReport>('/api/v1/sales/reports/performance/', {
         method: 'GET',
         query: { days }
       });
