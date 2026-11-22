@@ -107,6 +107,52 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `formatDate`
+- **File Location**: `/utils/index.ts`
+- **Category**: Formatter
+- **Scope**: Shared (Storefront & Admin)
+- **Purpose**: Formats a date string into a concise `D Mon, YYYY` display string (e.g., `22 Nov, 2026`).
+- **Parameters & Return Value**:
+  - `dateString: string | null | undefined` — Parseable date or timestamp string.
+  - Returns `string` — Formatted date string (`D Mon, YYYY`), or `'N/A'` when missing or invalid.
+- **Files or Features Currently Using It**: `/pages/admin/index.vue` (via `formatSaleDate` fallback), `/pages/admin/orders/index.vue`.
+- **Side Effects**: None (Pure function).
+- **Accesses Browser State**: No.
+- **Performs Network Work**: No.
+
+---
+
+### `formatRelativeTime`
+- **File Location**: `/utils/index.ts`
+- **Category**: Formatter
+- **Scope**: Shared
+- **Purpose**: Formats an instant timestamp into deterministic, human-readable English relative time wording (`Just now`, `1 minute ago`, `5 minutes ago`, `1 hour ago`, `3 hours ago`, `1 day ago`, `4 days ago`) using floor-based elapsed units.
+- **Parameters & Return Value**:
+  - `value: RelativeTimeInput` (`string | number | Date | null | undefined`) — ISO 8601 timestamp string (including UTC `Z` or explicit timezone offsets), valid `Date` object, or finite epoch-millisecond number.
+  - `options?: FormatRelativeTimeOptions`:
+    - `now?: number | Date` — Optional reference time (defaults to `Date.now()` when omitted or invalid; enables deterministic testing and reactive clock updates).
+    - `fallback?: string` — Optional fallback returned for `null`, `undefined`, empty/whitespace strings, `NaN`, non-finite numbers, or unparseable inputs (defaults to `'N/A'`).
+  - Returns `string` — Formatted relative time string or configured fallback.
+- **Example Usage**:
+  ```ts
+  import { formatRelativeTime } from '@/utils';
+
+  formatRelativeTime('2026-11-22T06:22:24.771895Z'); // e.g. "5 minutes ago"
+  formatRelativeTime(timestamp, { now: currentNow.value, fallback: '' });
+  ```
+- **Files or Features Currently Using It**: `/pages/admin/index.vue` (Admin Dashboard Last Order card).
+- **Side Effects**: None (Pure, stateless function with no Vue/Nuxt imports or API calls).
+- **Accesses Browser State**: No.
+- **Performs Network Work**: No.
+- **Related Utilities**: `formatDate` (`/utils/index.ts`).
+- **Edge Cases & Behavior**:
+  - Thresholds: `0–59s` -> `'Just now'`, `1–59m` -> `'1 minute ago'` / `'N minutes ago'`, `1–23h` -> `'1 hour ago'` / `'N hours ago'`, `>= 1d` -> `'1 day ago'` / `'N days ago'`.
+  - Days is the largest supported unit (does not convert to weeks, months, or years).
+  - Future timestamps / negative elapsed diffs return `'Just now'` (never negative strings).
+  - Uses explicit English thresholds instead of `Intl.RelativeTimeFormat` for deterministic wording across SSR and browsers.
+
+---
+
 ### `isNonSquareAspect`, `isAspectRatioMismatch` & `isExceedingResolution`
 - **File Location**: `/utils/imageValidation.ts`
 - **Category**: Pure utility

@@ -1,6 +1,7 @@
 <!-- File: /pages/admin/index.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { useNow } from '@vueuse/core';
 import { 
   DollarSign, 
   ShoppingBag, 
@@ -10,13 +11,13 @@ import {
   Loader2,
   AlertCircle,
   Receipt,
-  Calendar,
+  Clock,
   User,
   Mail
 } from 'lucide-vue-next';
 import { useSalesService } from '@/composables/useSalesService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
-import { formatCurrency, formatDate } from '@/utils';
+import { formatCurrency, formatDate, formatRelativeTime } from '@/utils';
 import type { SalesPerformanceReport, SalesPerformanceLastOrder } from '@/types';
 import DashboardStatCard from '@/features/admin/components/DashboardStatCard.vue';
 import UiCard from '@/components/ui/UiCard.vue';
@@ -81,6 +82,8 @@ const todayOrders = computed<number>(() => {
 });
 const lastOrder = computed<SalesPerformanceLastOrder | null>(() => performanceData.value?.last_order ?? null);
 
+const currentNow = useNow({ interval: 60_000 });
+
 const formatSaleDate = (dateString: string | null | undefined): string => {
   if (!dateString) return 'N/A';
   const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString.trim());
@@ -94,6 +97,35 @@ const formatSaleDate = (dateString: string | null | undefined): string => {
     }
   }
   return formatDate(dateString);
+};
+
+const formatLastOrderTimestamp = (order: SalesPerformanceLastOrder): string => {
+  const relative = formatRelativeTime(order.created_at, {
+    now: currentNow.value,
+    fallback: '',
+  });
+  if (relative) {
+    return relative;
+  }
+  return formatSaleDate(order.sale_date);
+};
+
+const formatLastOrderTooltip = (order: SalesPerformanceLastOrder): string | undefined => {
+  if (typeof order.created_at === 'string' && order.created_at.trim()) {
+    const parsed = new Date(order.created_at.trim());
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+    }
+  }
+  const saleDateFallback = formatSaleDate(order.sale_date);
+  return saleDateFallback !== 'N/A' ? saleDateFallback : undefined;
 };
 
 const formatGrowth = (val: number | null | undefined) => {
@@ -226,9 +258,12 @@ const kpiCardLayoutClasses = {
               <div v-if="lastOrder" class="flex-1 min-w-0 space-y-1.5">
                 <div class="flex items-center justify-between gap-2">
                   <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Last Order</p>
-                  <span class="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground shrink-0">
-                    <Calendar class="w-3 h-3 text-muted-foreground shrink-0" />
-                    <span>{{ formatSaleDate(lastOrder.sale_date) }}</span>
+                  <span
+                    class="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground shrink-0"
+                    :title="formatLastOrderTooltip(lastOrder)"
+                  >
+                    <Clock class="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span>{{ formatLastOrderTimestamp(lastOrder) }}</span>
                   </span>
                 </div>
 

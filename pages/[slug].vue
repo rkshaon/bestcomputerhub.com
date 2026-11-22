@@ -293,27 +293,29 @@ if (cmsPage.value) {
 
 <template>
   <div v-if="cmsPage" class="min-h-screen bg-background text-foreground">
-    <div class="container mx-auto px-4 py-8 md:py-12 max-w-4xl space-y-6">
+    <div class="container mx-auto px-4 py-6 sm:py-8 space-y-6">
       <UiBreadcrumbs :items="breadcrumbs" />
 
-      <header class="border-b border-border pb-5">
-        <h1 class="text-[26px] font-display font-bold tracking-tight leading-tight text-foreground">
-          {{ decodeHtmlEntities(cmsPage.title) }}
-        </h1>
-      </header>
+      <article class="bg-card text-card-foreground border border-border/80 rounded-2xl p-6 sm:p-8 lg:p-10 shadow-sm space-y-6">
+        <header class="border-b border-border pb-5">
+          <h1 class="text-[26px] font-display font-bold tracking-tight leading-tight text-foreground">
+            {{ decodeHtmlEntities(cmsPage.title) }}
+          </h1>
+        </header>
 
-      <div v-if="richTextBlocks.length > 0" class="space-y-4">
-        <CmsRichTextSection
-          v-for="item in richTextBlocks"
-          :key="item.key"
-          :body="item.body"
-          :alignment="item.alignment"
-        />
-      </div>
+        <div v-if="richTextBlocks.length > 0" class="space-y-4">
+          <CmsRichTextSection
+            v-for="item in richTextBlocks"
+            :key="item.key"
+            :body="item.body"
+            :alignment="item.alignment"
+          />
+        </div>
 
-      <div v-else class="py-8 text-muted-foreground text-sm">
-        <p>No content is available for this page.</p>
-      </div>
+        <div v-else class="py-8 text-muted-foreground text-sm">
+          <p>No content is available for this page.</p>
+        </div>
+      </article>
     </div>
   </div>
 
