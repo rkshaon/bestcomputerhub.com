@@ -88,14 +88,6 @@ const canDeleteCategory = computed(() => hasPermission(['store.delete_category',
 const route = useRoute();
 const router = useRouter();
 
-type TriStateBooleanFilter = 'all' | 'true' | 'false';
-
-const parseTriStateQuery = (value: unknown): TriStateBooleanFilter => {
-  if (value === 'true') return 'true';
-  if (value === 'false') return 'false';
-  return 'all';
-};
-
 // State managers initialized from URL query parameters
 const searchQuery = ref(route.query.search ? String(route.query.search) : '');
 const debouncedSearchQuery = refDebounced(searchQuery, 300);
@@ -103,10 +95,10 @@ const onlyParentsFilter = ref(route.query.is_parent === 'true');
 const onlyMenusFilter = ref(route.query.is_menu === 'true');
 const parentFilter = ref(route.query.parent ? String(route.query.parent) : 'all'); // 'all', 'none' (main level only), or specific category ID
 const menuFilter = ref(route.query.menu ? String(route.query.menu) : (route.query.is_menu === 'true' ? 'menu_only' : 'all')); // 'all', 'menu_only', or specific menu category ID
-const noSubcategoryFilter = ref<TriStateBooleanFilter>(parseTriStateQuery(route.query.no_subcategory));
-const noProductFilter = ref<TriStateBooleanFilter>(parseTriStateQuery(route.query.no_product));
-const noBlogPostFilter = ref<TriStateBooleanFilter>(parseTriStateQuery(route.query.no_blog_post));
-const noSupplierFilter = ref<TriStateBooleanFilter>(parseTriStateQuery(route.query.no_supplier));
+const noSubcategoryFilter = ref(route.query.no_subcategory === 'true');
+const noProductFilter = ref(route.query.no_product === 'true');
+const noBlogPostFilter = ref(route.query.no_blog_post === 'true');
+const noSupplierFilter = ref(route.query.no_supplier === 'true');
 const ordering = ref(route.query.ordering ? String(route.query.ordering) : 'order'); // 'order', '-order', 'name', '-name', 'slug', '-slug'
 const currentPage = ref(route.query.page ? parseInt(String(route.query.page)) || 1 : 1);
 const itemsPerPage = ref(route.query.pageSize ? parseInt(String(route.query.pageSize)) || 10 : 10);
@@ -119,10 +111,10 @@ const hasActiveFilters = computed(() => {
     onlyMenusFilter.value ||
     parentFilter.value !== 'all' ||
     menuFilter.value !== 'all' ||
-    noSubcategoryFilter.value !== 'all' ||
-    noProductFilter.value !== 'all' ||
-    noBlogPostFilter.value !== 'all' ||
-    noSupplierFilter.value !== 'all'
+    noSubcategoryFilter.value ||
+    noProductFilter.value ||
+    noBlogPostFilter.value ||
+    noSupplierFilter.value
   );
 });
 
@@ -132,10 +124,10 @@ const clearAllFilters = () => {
   onlyMenusFilter.value = false;
   parentFilter.value = 'all';
   menuFilter.value = 'all';
-  noSubcategoryFilter.value = 'all';
-  noProductFilter.value = 'all';
-  noBlogPostFilter.value = 'all';
-  noSupplierFilter.value = 'all';
+  noSubcategoryFilter.value = false;
+  noProductFilter.value = false;
+  noBlogPostFilter.value = false;
+  noSupplierFilter.value = false;
 };
 
 // Infinite scroll options for Root / Parent categories filter (GET /api/v1/categories/?is_parent=true)
@@ -747,17 +739,17 @@ const fetchCategoriesPage = async () => {
     if (ordering.value && ordering.value !== 'order') {
       filters.ordering = ordering.value;
     }
-    if (noSubcategoryFilter.value !== 'all') {
-      filters.no_subcategory = noSubcategoryFilter.value === 'true';
+    if (noSubcategoryFilter.value) {
+      filters.no_subcategory = true;
     }
-    if (noProductFilter.value !== 'all') {
-      filters.no_product = noProductFilter.value === 'true';
+    if (noProductFilter.value) {
+      filters.no_product = true;
     }
-    if (noBlogPostFilter.value !== 'all') {
-      filters.no_blog_post = noBlogPostFilter.value === 'true';
+    if (noBlogPostFilter.value) {
+      filters.no_blog_post = true;
     }
-    if (noSupplierFilter.value !== 'all') {
-      filters.no_supplier = noSupplierFilter.value === 'true';
+    if (noSupplierFilter.value) {
+      filters.no_supplier = true;
     }
 
     const response = await categoryService.getCategoriesList(filters);
@@ -886,16 +878,16 @@ watch([
     delete query.menu;
   }
 
-  if (noSubcategoryFilter.value !== 'all') query.no_subcategory = noSubcategoryFilter.value;
+  if (noSubcategoryFilter.value) query.no_subcategory = 'true';
   else delete query.no_subcategory;
 
-  if (noProductFilter.value !== 'all') query.no_product = noProductFilter.value;
+  if (noProductFilter.value) query.no_product = 'true';
   else delete query.no_product;
 
-  if (noBlogPostFilter.value !== 'all') query.no_blog_post = noBlogPostFilter.value;
+  if (noBlogPostFilter.value) query.no_blog_post = 'true';
   else delete query.no_blog_post;
 
-  if (noSupplierFilter.value !== 'all') query.no_supplier = noSupplierFilter.value;
+  if (noSupplierFilter.value) query.no_supplier = 'true';
   else delete query.no_supplier;
 
   if (ordering.value !== 'order') query.ordering = ordering.value;
@@ -948,25 +940,25 @@ watch(() => route.query, async (newQuery) => {
     needsFetch = true;
   }
 
-  const newNoSubcategory = parseTriStateQuery(newQuery.no_subcategory);
+  const newNoSubcategory = newQuery.no_subcategory === 'true';
   if (noSubcategoryFilter.value !== newNoSubcategory) {
     noSubcategoryFilter.value = newNoSubcategory;
     needsFetch = true;
   }
 
-  const newNoProduct = parseTriStateQuery(newQuery.no_product);
+  const newNoProduct = newQuery.no_product === 'true';
   if (noProductFilter.value !== newNoProduct) {
     noProductFilter.value = newNoProduct;
     needsFetch = true;
   }
 
-  const newNoBlogPost = parseTriStateQuery(newQuery.no_blog_post);
+  const newNoBlogPost = newQuery.no_blog_post === 'true';
   if (noBlogPostFilter.value !== newNoBlogPost) {
     noBlogPostFilter.value = newNoBlogPost;
     needsFetch = true;
   }
 
-  const newNoSupplier = parseTriStateQuery(newQuery.no_supplier);
+  const newNoSupplier = newQuery.no_supplier === 'true';
   if (noSupplierFilter.value !== newNoSupplier) {
     noSupplierFilter.value = newNoSupplier;
     needsFetch = true;
@@ -1634,88 +1626,72 @@ watch(viewMode, () => {
         </div>
       </div>
 
-      <!-- Boolean Relationship Filters (Three-state: All / Yes / No) -->
-      <div class="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border/60">
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex items-center gap-2">
-            <label for="filter-no-subcategory" class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
-              No Subcategories:
-            </label>
-            <select
-              id="filter-no-subcategory"
-              v-model="noSubcategoryFilter"
-              :class="[
-                'h-9 px-2.5 bg-background border rounded-lg outline-none text-xs font-semibold cursor-pointer transition-all focus:ring-2 focus:ring-ring/20',
-                noSubcategoryFilter !== 'all'
-                  ? 'border-primary text-primary bg-primary/5'
-                  : 'border-input text-foreground'
-              ]"
-            >
-              <option value="all">All</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </div>
+      <!-- Boolean Relationship Toggle Filters -->
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-border/60">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            @click="noSubcategoryFilter = !noSubcategoryFilter"
+            :class="[
+              'h-9 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+              noSubcategoryFilter
+                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
+                : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            ]"
+            :aria-pressed="noSubcategoryFilter"
+            title="Filter to categories with no active subcategories"
+          >
+            <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="noSubcategoryFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+            <span>No Subcategories</span>
+          </button>
 
-          <div class="flex items-center gap-2 sm:border-l sm:border-border sm:pl-3">
-            <label for="filter-no-product" class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
-              No Products:
-            </label>
-            <select
-              id="filter-no-product"
-              v-model="noProductFilter"
-              :class="[
-                'h-9 px-2.5 bg-background border rounded-lg outline-none text-xs font-semibold cursor-pointer transition-all focus:ring-2 focus:ring-ring/20',
-                noProductFilter !== 'all'
-                  ? 'border-primary text-primary bg-primary/5'
-                  : 'border-input text-foreground'
-              ]"
-            >
-              <option value="all">All</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </div>
+          <button
+            type="button"
+            @click="noProductFilter = !noProductFilter"
+            :class="[
+              'h-9 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+              noProductFilter
+                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
+                : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            ]"
+            :aria-pressed="noProductFilter"
+            title="Filter to categories with no active products"
+          >
+            <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="noProductFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+            <span>No Products</span>
+          </button>
 
-          <div class="flex items-center gap-2 sm:border-l sm:border-border sm:pl-3">
-            <label for="filter-no-blog-post" class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
-              No Blog Posts:
-            </label>
-            <select
-              id="filter-no-blog-post"
-              v-model="noBlogPostFilter"
-              :class="[
-                'h-9 px-2.5 bg-background border rounded-lg outline-none text-xs font-semibold cursor-pointer transition-all focus:ring-2 focus:ring-ring/20',
-                noBlogPostFilter !== 'all'
-                  ? 'border-primary text-primary bg-primary/5'
-                  : 'border-input text-foreground'
-              ]"
-            >
-              <option value="all">All</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </div>
+          <button
+            type="button"
+            @click="noBlogPostFilter = !noBlogPostFilter"
+            :class="[
+              'h-9 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+              noBlogPostFilter
+                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
+                : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            ]"
+            :aria-pressed="noBlogPostFilter"
+            title="Filter to categories with no active blog posts"
+          >
+            <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="noBlogPostFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+            <span>No Blog Posts</span>
+          </button>
 
-          <div class="flex items-center gap-2 sm:border-l sm:border-border sm:pl-3">
-            <label for="filter-no-supplier" class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
-              No Suppliers:
-            </label>
-            <select
-              id="filter-no-supplier"
-              v-model="noSupplierFilter"
-              :class="[
-                'h-9 px-2.5 bg-background border rounded-lg outline-none text-xs font-semibold cursor-pointer transition-all focus:ring-2 focus:ring-ring/20',
-                noSupplierFilter !== 'all'
-                  ? 'border-primary text-primary bg-primary/5'
-                  : 'border-input text-foreground'
-              ]"
-            >
-              <option value="all">All</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </div>
+          <button
+            type="button"
+            @click="noSupplierFilter = !noSupplierFilter"
+            :class="[
+              'h-9 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer select-none',
+              noSupplierFilter
+                ? 'bg-primary/10 border-primary text-primary font-extrabold shadow-2xs'
+                : 'bg-background border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            ]"
+            :aria-pressed="noSupplierFilter"
+            title="Filter to categories with no active suppliers"
+          >
+            <span class="w-1.5 h-1.5 rounded-full transition-colors" :class="noSupplierFilter ? 'bg-primary' : 'bg-muted-foreground/40'"></span>
+            <span>No Suppliers</span>
+          </button>
         </div>
 
         <button

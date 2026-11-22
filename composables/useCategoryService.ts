@@ -225,17 +225,17 @@ export const useCategoryService = () => {
       if (menu) {
         params.append('menu', menu);
       }
-      if (no_subcategory !== undefined) {
-        params.append('no_subcategory', no_subcategory.toString());
+      if (no_subcategory === true) {
+        params.append('no_subcategory', 'true');
       }
-      if (no_product !== undefined) {
-        params.append('no_product', no_product.toString());
+      if (no_product === true) {
+        params.append('no_product', 'true');
       }
-      if (no_blog_post !== undefined) {
-        params.append('no_blog_post', no_blog_post.toString());
+      if (no_blog_post === true) {
+        params.append('no_blog_post', 'true');
       }
-      if (no_supplier !== undefined) {
-        params.append('no_supplier', no_supplier.toString());
+      if (no_supplier === true) {
+        params.append('no_supplier', 'true');
       }
 
       const queryString = params.toString();
