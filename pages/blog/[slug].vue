@@ -8,7 +8,6 @@ import {
   Share2, 
   Tag as TagIcon, 
   ChevronRight, 
-  User, 
   AlertCircle,
   RefreshCw,
   BookOpen,
@@ -17,7 +16,6 @@ import {
   Type,
   ThumbsUp,
   List,
-  Sparkles,
   ShoppingBag,
   ExternalLink,
   Laptop,
@@ -160,12 +158,6 @@ const formatDate = (dateString: string | null | undefined): string => {
     return 'Recently Published';
   }
 };
-
-// Display Name for Author
-const authorDisplayName = computed(() => {
-  if (!post.value?.author) return 'Best Computer Hub Editorial';
-  return post.value.author.full_name || post.value.author.username || 'Best Computer Hub Editorial';
-});
 
 // Estimated Reading Time
 const readingTime = computed(() => {
@@ -649,20 +641,8 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Author Bylines & Quick Share Toolbar -->
+          <!-- Quick Share Toolbar -->
           <div class="flex flex-wrap items-center justify-between gap-6 pt-6 border-t border-border/80">
-            <div class="flex items-center gap-3.5">
-              <div class="w-12 h-12 rounded-full bg-primary/10 text-primary border-2 border-primary/20 flex items-center justify-center font-bold text-base shadow-xs shrink-0">
-                {{ authorDisplayName.charAt(0).toUpperCase() }}
-              </div>
-              <div class="flex flex-col">
-                <span class="font-bold text-base leading-none text-foreground">{{ authorDisplayName }}</span>
-                <span class="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  <Sparkles class="w-3 h-3 text-primary" /> Hardware & Tech Specialist
-                </span>
-              </div>
-            </div>
-
             <div class="flex items-center gap-2">
               <button 
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-background hover:bg-muted text-xs font-bold text-foreground transition-all cursor-pointer shadow-xs"
@@ -855,27 +835,6 @@ onUnmounted(() => {
                   <ThumbsUp class="w-3.5 h-3.5" />
                   <span>{{ isLiked ? 'Helpful!' : 'Yes, Helpful' }}</span>
                 </UiButton>
-              </div>
-            </div>
-
-            <!-- Author Bio Spotlight Card -->
-            <div class="bg-card border rounded-[2rem] p-6 md:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6 shadow-xs relative overflow-hidden">
-              <div class="w-20 h-20 rounded-2xl bg-primary/10 text-primary border-2 border-primary/20 flex items-center justify-center font-bold text-2xl shadow-sm shrink-0">
-                {{ authorDisplayName.charAt(0).toUpperCase() }}
-              </div>
-              <div class="space-y-3 text-center sm:text-left flex-1 min-w-0">
-                <div class="space-y-1">
-                  <span class="text-[10px] font-bold uppercase tracking-widest text-primary">Written By</span>
-                  <h3 class="text-xl font-display font-bold text-foreground leading-none">{{ authorDisplayName }}</h3>
-                  <p class="text-xs text-muted-foreground font-medium">Hardware Specialist & Technical Reviewer at Best Computer Hub</p>
-                </div>
-                <p class="text-xs text-muted-foreground leading-relaxed">
-                  Covering desktop hardware architecture, GPU benchmarks, workstation performance tuning, and PC gaming component reviews in Bangladesh.
-                </p>
-                <NuxtLink to="/blog/" class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline pt-1">
-                  <span>View All Journal Articles</span>
-                  <ChevronRight class="w-3.5 h-3.5" />
-                </NuxtLink>
               </div>
             </div>
 
