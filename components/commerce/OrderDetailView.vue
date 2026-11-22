@@ -7,7 +7,8 @@ import {
   CreditCard,
   MapPin,
   Package,
-  AlertCircle
+  AlertCircle,
+  RefreshCcw
 } from 'lucide-vue-next';
 import { formatCurrency, cn, decodeHtmlEntities } from '@/utils';
 import type { Order } from '@/types/order';
@@ -28,6 +29,7 @@ const statusConfig = {
   shipped: { icon: Truck, color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'In Transit' },
   out_of_delivery: { icon: Truck, color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'Out for Delivery' },
   delivered: { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Delivered' },
+  returned: { icon: RefreshCcw, color: 'text-orange-600', bg: 'bg-orange-50', label: 'Returned' },
   cancelled: { icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50', label: 'Cancelled' },
   refunded: { icon: CreditCard, color: 'text-slate-600', bg: 'bg-slate-50', label: 'Refunded' },
 };

@@ -26,6 +26,9 @@ function handleDragLeave() {
   draggingOverColumn.value = null;
 }
 
+const normalizeStatus = (status: string | null | undefined): string =>
+  String(status ?? '').trim().toLowerCase();
+
 async function handleDrop(event: DragEvent, targetStatus: string) {
   draggingOverColumn.value = null;
   if (!canEdit.value) {
@@ -38,11 +41,11 @@ async function handleDrop(event: DragEvent, targetStatus: string) {
   const order = props.orders.find(o => o.id === orderId);
   if (!order) return;
 
-  const currentStatus = order.status.toLowerCase();
-  const newStatus = targetStatus.toLowerCase();
+  const currentStatus = normalizeStatus(order.status);
+  const newStatus = normalizeStatus(targetStatus);
 
   if (currentStatus === newStatus) return;
-  if (!getTransitionsForOrder(order.status).map(s => s.toLowerCase()).includes(newStatus)) {
+  if (!getTransitionsForOrder(order.status).map(s => normalizeStatus(s)).includes(newStatus)) {
     toastError('Invalid status transition');
     return;
   }
@@ -57,15 +60,19 @@ async function handleDrop(event: DragEvent, targetStatus: string) {
 
 
 const columns = computed(() => {
-  return props.statuses.map(status => ({
-    ...status,
-    orders: props.orders.filter(o => o.status === status.value.toLowerCase())
-  }));
+  return (props.statuses || []).map(status => {
+    const columnStatus = normalizeStatus(status.value);
+    return {
+      ...status,
+      orders: props.orders.filter(o => normalizeStatus(o.status) === columnStatus)
+    };
+  });
 });
 
 const getTransitionsForOrder = (status: string): string[] => {
   if (!props.transitions) return [];
-  const key = Object.keys(props.transitions).find(k => k.toLowerCase() === status.toLowerCase());
+  const normalized = normalizeStatus(status);
+  const key = Object.keys(props.transitions).find(k => normalizeStatus(k) === normalized);
   return (key ? props.transitions[key] : []) || [];
 };
 </script>

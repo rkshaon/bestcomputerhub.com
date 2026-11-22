@@ -3,7 +3,7 @@ import { ChevronLeft } from 'lucide-vue-next';
 import OrderDetailView from '@/components/commerce/OrderDetailView.vue';
 import AdminOrderActions from '@/components/admin/AdminOrderActions.vue';
 import { useSalesService } from '@/composables/useSalesService';
-import type { Order } from '@/types/order';
+import type { Order, OrderStatusOption } from '@/types/order';
 
 definePageMeta({
   layout: 'admin'
@@ -13,6 +13,8 @@ const route = useRoute();
 const orderId = route.params.id as string;
 const salesService = useSalesService();
 const order = ref<Order | null>(null);
+const statuses = ref<OrderStatusOption[]>([]);
+const transitions = ref<Record<string, string[]>>({});
 
 const fetchOrder = async () => {
   try {
@@ -23,7 +25,20 @@ const fetchOrder = async () => {
   }
 };
 
-onMounted(fetchOrder);
+const fetchStatuses = async () => {
+  try {
+    const data = await salesService.getStatuses();
+    statuses.value = Array.isArray(data?.statuses) ? data.statuses : [];
+    transitions.value = data?.transitions || {};
+  } catch (err) {
+    console.error('Failed to fetch order statuses:', err);
+  }
+};
+
+onMounted(() => {
+  fetchOrder();
+  fetchStatuses();
+});
 </script>
 
 <template>
@@ -39,7 +54,7 @@ onMounted(fetchOrder);
         <OrderDetailView :order="order" />
       </div>
       <div>
-        <AdminOrderActions :order="order" @updated="fetchOrder" />
+        <AdminOrderActions :order="order" :statuses="statuses" :transitions="transitions" @updated="fetchOrder" />
       </div>
     </div>
   </div>

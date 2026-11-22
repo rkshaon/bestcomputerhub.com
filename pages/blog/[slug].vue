@@ -470,7 +470,7 @@ onUnmounted(() => {
 
     <!-- Sticky Sub-Header Navigation Bar -->
     <div class="bg-card/80 backdrop-blur-md border-b sticky top-0 z-30 py-3 transition-colors">
-      <div class="container mx-auto px-4 max-w-7xl flex items-center justify-between gap-4">
+      <div class="container mx-auto px-4 flex items-center justify-between gap-4">
         <UiBreadcrumbs :items="breadcrumbItems" />
         
         <div class="flex items-center gap-3 shrink-0">
@@ -539,152 +539,9 @@ onUnmounted(() => {
 
     <!-- Article Content -->
     <template v-else>
-      <!-- Article Hero Header -->
-      <header class="bg-gradient-to-b from-card via-card to-background border-b py-12 md:py-16 relative overflow-hidden">
-        <div class="absolute inset-0 bg-primary/[0.02] pointer-events-none"></div>
-        
-        <div class="container mx-auto px-4 max-w-4xl relative z-10 text-left space-y-8">
-          
-          <!-- Categories & Reading Metadata Header -->
-          <div class="flex flex-wrap items-center gap-3">
-            <template v-if="post.categories && post.categories.length > 0">
-              <UiBadge 
-                v-for="cat in post.categories" 
-                :key="cat.id" 
-                variant="primary" 
-                size="sm"
-              >
-                {{ cat.name }}
-              </UiBadge>
-            </template>
-            <UiBadge v-else variant="primary" size="sm">
-              Hardware Insights
-            </UiBadge>
-
-            <div class="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">
-              <span class="flex items-center gap-1.5">
-                <Calendar class="w-3.5 h-3.5 text-primary" /> {{ formatDate(post.published_at) }}
-              </span>
-              <span class="flex items-center gap-1.5">
-                <Clock class="w-3.5 h-3.5 text-primary" /> {{ readingTime }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Main Article Title -->
-          <div class="relative group/edit">
-            <template v-if="editingField === 'title'">
-              <div class="flex items-center gap-2">
-                <input 
-                  v-model="editTitleValue"
-                  ref="titleInputRef"
-                  type="text"
-                  @blur="requestSave('title')"
-                  @keydown.enter="saveField('title')"
-                  @keydown.esc="cancelEditing"
-                  :disabled="isFieldSaving === 'title'"
-                  class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.12] w-full bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
-                />
-                <div v-if="isFieldSaving === 'title'" class="shrink-0">
-                  <Loader2 class="w-5 h-5 animate-spin text-primary" />
-                </div>
-              </div>
-            </template>
-            <template v-else>
-              <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.12] text-foreground flex items-center gap-2.5">
-                <span>{{ decodeHtmlEntities(post.title) }}</span>
-                <button 
-                  v-if="canEditBlogPostFromStorefront" 
-                  @click="startEditing('title')"
-                  class="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
-                  title="Edit Blog Title"
-                >
-                  <Edit2 class="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
-              </h1>
-            </template>
-          </div>
-
-          <!-- Article Subtitle / Excerpt Lead -->
-          <div v-if="'seo_description' in post" class="space-y-2">
-            <div class="flex items-center gap-2" v-if="canEditBlogPostFromStorefront">
-              <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Excerpt / SEO Description</span>
-              <button 
-                v-if="editingField !== 'seo_description'"
-                @click="startEditing('seo_description')"
-                class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                title="Edit SEO Description"
-              >
-                <Edit2 class="w-3 h-3" />
-              </button>
-              <div v-else-if="isFieldSaving === 'seo_description'" class="flex items-center gap-1 text-[10px] text-amber-500 font-bold uppercase tracking-wider">
-                <Loader2 class="w-3 h-3 animate-spin" /> Saving...
-              </div>
-            </div>
-
-            <div v-if="editingField === 'seo_description'" class="flex gap-2">
-              <textarea 
-                v-vmodel="editSeoDescValue"
-                v-model="editSeoDescValue"
-                @keydown.esc="cancelEditing"
-                @blur="requestSave('seo_description')"
-                :disabled="isFieldSaving === 'seo_description'"
-                rows="3"
-                class="w-full text-base bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
-                placeholder="Enter excerpt / SEO description..."
-              ></textarea>
-            </div>
-            <div v-else>
-              <p v-if="post.seo_description" class="text-lg md:text-xl text-muted-foreground font-normal leading-relaxed border-l-4 border-primary/80 pl-5 py-1 bg-muted/20 rounded-r-2xl">
-                {{ post.seo_description }}
-              </p>
-            </div>
-          </div>
-
-          <!-- Quick Share Toolbar -->
-          <div class="flex flex-wrap items-center justify-between gap-6 pt-6 border-t border-border/80">
-            <div class="flex items-center gap-2">
-              <button 
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-background hover:bg-muted text-xs font-bold text-foreground transition-all cursor-pointer shadow-xs"
-                title="Copy Article Link"
-                @click="copyToClipboard"
-              >
-                <Check v-if="isCopied" class="w-4 h-4 text-success" />
-                <Copy v-else class="w-4 h-4 text-primary" />
-                <span>{{ isCopied ? 'Link Copied!' : 'Copy Link' }}</span>
-              </button>
-
-              <button 
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-primary/20 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-all cursor-pointer shadow-xs"
-                title="Share Article"
-                @click="shareArticle"
-              >
-                <Share2 class="w-4 h-4" />
-                <span>Share</span>
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </header>
-
-      <!-- Featured Image Container -->
-      <div v-if="post.featured_image" class="container mx-auto px-4 max-w-5xl -mt-6 md:-mt-8 mb-12 relative z-20">
-        <div class="aspect-[16/9] md:aspect-[21/9] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-card border shadow-2xl relative group">
-          <img 
-            :src="post.featured_image" 
-            :alt="post.featured_image_alt_text || post.title"
-            class="w-full h-full object-cover"
-          />
-        </div>
-        <p v-if="post.featured_image_alt_text" class="text-xs text-center text-muted-foreground mt-3 font-mono">
-          Photo: {{ post.featured_image_alt_text }}
-        </p>
-      </div>
-
       <!-- Main Article Editorial Layout -->
-      <div class="container mx-auto px-4 max-w-7xl">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+      <div class="container mx-auto px-4 py-6 sm:py-8 space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-12 items-start">
           
           <!-- Desktop Floating Share Utility Bar (Left) -->
           <aside class="hidden lg:flex lg:col-span-1 flex-col items-center gap-4 sticky top-28 h-fit py-2">
@@ -729,8 +586,144 @@ onUnmounted(() => {
             </div>
           </aside>
 
-          <!-- Main Article Reading Column -->
-          <main class="lg:col-span-7 xl:col-span-8 min-w-0 space-y-12">
+          <!-- Unified Primary Blog Detail Card -->
+          <div class="lg:col-span-7 xl:col-span-8 min-w-0 bg-card text-card-foreground border border-border/80 rounded-2xl p-6 sm:p-8 lg:p-10 shadow-sm space-y-6">
+            <!-- Article Header -->
+            <header class="border-b border-border pb-6 text-left space-y-6">
+              <!-- Categories & Reading Metadata Header -->
+              <div class="flex flex-wrap items-center gap-3">
+                <template v-if="post.categories && post.categories.length > 0">
+                  <UiBadge 
+                    v-for="cat in post.categories" 
+                    :key="cat.id" 
+                    variant="primary" 
+                    size="sm"
+                  >
+                    {{ cat.name }}
+                  </UiBadge>
+                </template>
+                <UiBadge v-else variant="primary" size="sm">
+                  Hardware Insights
+                </UiBadge>
+
+                <div class="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">
+                  <span class="flex items-center gap-1.5">
+                    <Calendar class="w-3.5 h-3.5 text-primary" /> {{ formatDate(post.published_at) }}
+                  </span>
+                  <span class="flex items-center gap-1.5">
+                    <Clock class="w-3.5 h-3.5 text-primary" /> {{ readingTime }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Main Article Title -->
+              <div class="relative group/edit">
+                <template v-if="editingField === 'title'">
+                  <div class="flex items-center gap-2">
+                    <input 
+                      v-model="editTitleValue"
+                      ref="titleInputRef"
+                      type="text"
+                      @blur="requestSave('title')"
+                      @keydown.enter="saveField('title')"
+                      @keydown.esc="cancelEditing"
+                      :disabled="isFieldSaving === 'title'"
+                      class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.12] w-full bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
+                    />
+                    <div v-if="isFieldSaving === 'title'" class="shrink-0">
+                      <Loader2 class="w-5 h-5 animate-spin text-primary" />
+                    </div>
+                  </div>
+                </template>
+                <template v-else>
+                  <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.12] text-foreground flex items-center gap-2.5">
+                    <span>{{ decodeHtmlEntities(post.title) }}</span>
+                    <button 
+                      v-if="canEditBlogPostFromStorefront" 
+                      @click="startEditing('title')"
+                      class="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
+                      title="Edit Blog Title"
+                    >
+                      <Edit2 class="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                  </h1>
+                </template>
+              </div>
+
+              <!-- Article Subtitle / Excerpt Lead -->
+              <div v-if="'seo_description' in post" class="space-y-2">
+                <div class="flex items-center gap-2" v-if="canEditBlogPostFromStorefront">
+                  <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Excerpt / SEO Description</span>
+                  <button 
+                    v-if="editingField !== 'seo_description'"
+                    @click="startEditing('seo_description')"
+                    class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    title="Edit SEO Description"
+                  >
+                    <Edit2 class="w-3 h-3" />
+                  </button>
+                  <div v-else-if="isFieldSaving === 'seo_description'" class="flex items-center gap-1 text-[10px] text-amber-500 font-bold uppercase tracking-wider">
+                    <Loader2 class="w-3 h-3 animate-spin" /> Saving...
+                  </div>
+                </div>
+
+                <div v-if="editingField === 'seo_description'" class="flex gap-2">
+                  <textarea 
+                    v-vmodel="editSeoDescValue"
+                    v-model="editSeoDescValue"
+                    @keydown.esc="cancelEditing"
+                    @blur="requestSave('seo_description')"
+                    :disabled="isFieldSaving === 'seo_description'"
+                    rows="3"
+                    class="w-full text-base bg-background border border-input rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
+                    placeholder="Enter excerpt / SEO description..."
+                  ></textarea>
+                </div>
+                <div v-else>
+                  <p v-if="post.seo_description" class="text-lg md:text-xl text-muted-foreground font-normal leading-relaxed border-l-4 border-primary/80 pl-5 py-1 bg-muted/20 rounded-r-2xl">
+                    {{ post.seo_description }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Quick Share Toolbar -->
+              <div class="flex flex-wrap items-center justify-between gap-6 pt-6 border-t border-border/80">
+                <div class="flex items-center gap-2">
+                  <button 
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-background hover:bg-muted text-xs font-bold text-foreground transition-all cursor-pointer shadow-xs"
+                    title="Copy Article Link"
+                    @click="copyToClipboard"
+                  >
+                    <Check v-if="isCopied" class="w-4 h-4 text-success" />
+                    <Copy v-else class="w-4 h-4 text-primary" />
+                    <span>{{ isCopied ? 'Link Copied!' : 'Copy Link' }}</span>
+                  </button>
+
+                  <button 
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-primary/20 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-all cursor-pointer shadow-xs"
+                    title="Share Article"
+                    @click="shareArticle"
+                  >
+                    <Share2 class="w-4 h-4" />
+                    <span>Share</span>
+                  </button>
+                </div>
+              </div>
+            </header>
+
+            <!-- Featured Image Container -->
+            <div v-if="post.featured_image" class="space-y-3">
+              <div class="aspect-[16/9] md:aspect-[21/9] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-card border shadow-md relative group">
+                <img 
+                  :src="post.featured_image" 
+                  :alt="post.featured_image_alt_text || post.title"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <p v-if="post.featured_image_alt_text" class="text-xs text-center text-muted-foreground font-mono">
+                Photo: {{ post.featured_image_alt_text }}
+              </p>
+            </div>
             
             <!-- Table of Contents Callout (if article headings exist) -->
             <div v-if="tableOfContents.length > 0" class="bg-card border rounded-2xl p-6 space-y-4 shadow-xs">
@@ -864,7 +857,7 @@ onUnmounted(() => {
               </div>
             </div>
 
-          </main>
+          </div>
 
           <!-- Right Editorial Sidebar -->
           <aside class="lg:col-span-4 xl:col-span-3 space-y-8 sticky top-28">
@@ -974,7 +967,7 @@ onUnmounted(() => {
 
       <!-- Bottom Recommended Articles Grid -->
       <section v-if="footerGridPosts.length > 0" class="bg-card/60 border-t py-16 mt-20">
-        <div class="container mx-auto px-4 max-w-7xl space-y-10">
+        <div class="container mx-auto px-4 space-y-10">
           <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 border-b border-border pb-6">
             <div class="space-y-1">
               <span class="text-xs font-bold uppercase tracking-widest text-primary">More From The Hub</span>

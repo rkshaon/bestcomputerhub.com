@@ -20,11 +20,11 @@ const { canEditInModule } = useAdminPermissions();
 const canEdit = computed(() => canEditInModule('orders'));
 
 const filteredStatuses = computed(() => {
-  const currentStatusLower = props.order.status.toLowerCase();
-  const transitionsLower = props.transitions.map(t => t.toLowerCase());
+  const currentStatusLower = String(props.order.status ?? '').trim().toLowerCase();
+  const transitionsLower = props.transitions.map(t => String(t ?? '').trim().toLowerCase());
   
   return props.statuses.filter(s => {
-    const statusValueLower = s.value.toLowerCase();
+    const statusValueLower = String(s.value ?? '').trim().toLowerCase();
     return statusValueLower === currentStatusLower || transitionsLower.includes(statusValueLower);
   });
 });
@@ -32,7 +32,7 @@ const filteredStatuses = computed(() => {
 async function handleStatusChange(event: Event) {
   if (!canEdit.value) return;
   const newStatus = (event.target as HTMLSelectElement).value;
-  if (newStatus === props.order.status) return;
+  if (newStatus.trim().toLowerCase() === String(props.order.status ?? '').trim().toLowerCase()) return;
   isLoading.value = true;
   try {
     await props.updateStatus(props.order.id, newStatus);
@@ -75,7 +75,7 @@ function handleDragStart(event: DragEvent) {
     </NuxtLink>
     <div class="mt-4 pt-4 border-t border-border/60">
       <select 
-        :value="order.status.toUpperCase()" 
+        :value="String(order.status ?? '').trim().toUpperCase()" 
         :disabled="!canEdit || isLoading"
         @change="handleStatusChange"
         class="w-full h-8 text-xs font-bold uppercase tracking-widest bg-muted/50 border border-border rounded-lg outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"

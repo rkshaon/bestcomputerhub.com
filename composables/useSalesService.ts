@@ -67,9 +67,10 @@ export const useSalesService = () => {
 
   const updateStatus = async (saleId: string, status: string): Promise<Order> => {
     try {
+      const normalizedStatus = String(status).trim().toUpperCase();
       const data = await apiClient.request<Order>(`/api/v1/sales/${saleId}/update-status/`, {
         method: 'POST',
-        body: { status }
+        body: { status: normalizedStatus }
       });
       getPendingOrdersCount().catch(() => {});
       return data;

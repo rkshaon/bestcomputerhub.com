@@ -14,6 +14,7 @@ export type BackendOrderStatus =
   | 'SHIPPED'
   | 'OUT_OF_DELIVERY'
   | 'DELIVERED'
+  | 'RETURNED'
   | 'CANCELLED';
 
 export type BackendPaymentStatus = 'UNPAID' | 'COLLECTED';
