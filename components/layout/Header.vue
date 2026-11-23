@@ -445,7 +445,7 @@ if (process.client) {
             <Handbag class="w-5 h-5" />
             <span 
               v-if="cartStore.totalItems > 0" 
-              class="absolute -bottom-0.5 -right-0.5 bg-header-primary text-header-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
+              class="absolute -bottom-0.5 -right-0.5 bg-brand text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
             >
               {{ cartStore.totalItems }}
             </span>
@@ -539,7 +539,7 @@ if (process.client) {
           <NuxtLink 
             v-if="isSuperAdmin" 
             to="/admin" 
-            class="hidden sm:flex items-center gap-1.5 h-11 px-3 hover:bg-header-primary/10 border border-header-primary/20 text-header-primary rounded-xl transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
+            class="hidden sm:flex items-center gap-1.5 h-11 px-3 hover:bg-header-primary/10 border border-header-primary/20 text-brand rounded-xl transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
             title="Admin Protocol System"
           >
             <ShieldCheck class="w-4 h-4" />
@@ -550,7 +550,7 @@ if (process.client) {
           <NuxtLink 
             v-if="isSuperAdmin" 
             to="/admin" 
-            class="sm:hidden p-2 hover:bg-header-primary/10 text-header-primary rounded-full transition-colors shrink-0" 
+            class="sm:hidden p-2 hover:bg-header-primary/10 text-brand rounded-full transition-colors shrink-0" 
             title="Admin Protocol System"
           >
             <ShieldCheck class="w-5 h-5" />
@@ -590,7 +590,7 @@ if (process.client) {
               title="Flash Sale"
               aria-label="Flash Sale"
             >
-              <Zap class="w-3.5 h-3.5 text-header-primary shrink-0" />
+              <Zap class="w-3.5 h-3.5 text-brand shrink-0" />
               <span>Flash Sale</span>
             </NuxtLink>
 
@@ -614,7 +614,7 @@ if (process.client) {
             title="PC Builder"
             aria-label="PC Builder"
           >
-            <Cpu class="w-4 h-4 text-header-primary shrink-0" />
+            <Cpu class="w-4 h-4 text-brand shrink-0" />
             <span>PC Builder</span>
           </div>
 
@@ -628,7 +628,7 @@ if (process.client) {
             title="Compare products"
             aria-label="Compare products"
           >
-            <ArrowLeftRight class="w-4 h-4 text-header-primary shrink-0" />
+            <ArrowLeftRight class="w-4 h-4 text-brand shrink-0" />
             <span>Compare</span>
           </button>
 
@@ -640,7 +640,7 @@ if (process.client) {
             title="Track Your Order"
             aria-label="Track Your Order"
           >
-            <PackageSearch class="w-3.5 h-3.5 text-header-primary shrink-0" />
+            <PackageSearch class="w-3.5 h-3.5 text-brand shrink-0" />
             <span>Track Order</span>
           </NuxtLink>
 
@@ -653,7 +653,7 @@ if (process.client) {
             title="Blogs"
             aria-label="Blogs"
           >
-            <BookOpen class="w-3.5 h-3.5 text-header-primary shrink-0" />
+            <BookOpen class="w-3.5 h-3.5 text-brand shrink-0" />
             <span>Insights</span>
           </NuxtLink>
 
@@ -668,7 +668,7 @@ if (process.client) {
             title="Store Location"
             aria-label="Store Location on Google Maps"
           >
-            <MapPin class="w-3.5 h-3.5 text-header-primary shrink-0" />
+            <MapPin class="w-3.5 h-3.5 text-brand shrink-0" />
             <span>Store</span>
           </a>
 
@@ -683,7 +683,7 @@ if (process.client) {
             <Handbag class="w-5 h-5" />
             <span 
               v-if="cartStore.totalItems > 0" 
-              class="absolute -bottom-0.5 -right-0.5 bg-header-primary text-header-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
+              class="absolute -bottom-0.5 -right-0.5 bg-brand text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
             >
               {{ cartStore.totalItems }}
             </span>
@@ -696,7 +696,7 @@ if (process.client) {
             :title="authStore.isLoggedIn ? 'Account Dashboard' : 'Login or Sign Up'"
             :aria-label="authStore.isLoggedIn ? 'Account Dashboard' : 'Login'"
           >
-            <User class="w-4 h-4 text-header-primary shrink-0" />
+            <User class="w-4 h-4 text-brand shrink-0" />
             <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
           </NuxtLink>
 

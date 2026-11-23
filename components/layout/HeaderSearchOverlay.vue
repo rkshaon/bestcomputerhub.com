@@ -201,11 +201,11 @@ defineExpose({
       <button 
         type="button"
         @click="handleSearchSubmit"
-        class="absolute right-0 top-0 bottom-0 w-11 md:w-12 bg-header-primary text-primary-foreground rounded-r-md md:rounded-r-xl rounded-l-none flex items-center justify-center hover:bg-header-primary/90 transition-colors cursor-pointer"
+        class="absolute right-0 top-0 bottom-0 w-11 md:w-12 bg-brand text-primary-foreground rounded-r-md md:rounded-r-xl rounded-l-none flex items-center justify-center hover:bg-brand/90 transition-colors cursor-pointer"
         aria-label="Search"
         title="Search"
       >
-        <Search class="w-4 h-4 text-brand" />
+        <Search class="w-4 h-4" />
       </button>
     </div>
 
