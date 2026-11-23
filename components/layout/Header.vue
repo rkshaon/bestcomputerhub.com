@@ -485,7 +485,7 @@ if (process.client) {
         />
 
         <!-- Normal Header Actions -->
-        <div class="flex items-center gap-1 sm:gap-2 shrink-0 transition-opacity duration-200">
+        <div class="flex items-center gap-1 sm:gap-2 shrink-0 transition-opacity duration-200 md:translate-y-0.5">
           <!-- TEMPORARILY DISABLED: Storefront Theme Mode Selection (Desktop) -->
           <!-- Restore when storefront theme selection is required again. -->
           <!--
@@ -539,11 +539,11 @@ if (process.client) {
           <NuxtLink 
             v-if="isSuperAdmin" 
             to="/admin" 
-            class="hidden sm:flex items-center gap-1.5 h-11 px-3 hover:bg-header-primary/10 border border-header-primary/20 text-brand rounded-xl transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
+            class="hidden sm:flex items-center gap-1.5 h-6 px-2.5 hover:bg-header-primary/10 border border-header-primary/20 text-brand rounded-xl transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
             title="Admin Protocol System"
           >
-            <ShieldCheck class="w-4 h-4" />
-            <span class="text-[9px] font-extrabold uppercase tracking-widest">Admin</span>
+            <ShieldCheck class="w-3.5 h-3.5" />
+            <span class="text-[9px] font-extrabold uppercase tracking-widest leading-none">Admin</span>
           </NuxtLink>
 
           <!-- Mobile Admin Panel Button (Super Admin Exclusive, visible on small viewports) -->
@@ -610,11 +610,11 @@ if (process.client) {
           <!-- PC Builder -->
           <div 
             v-if="!isAuthRoute"
-            class="hidden sm:inline-flex items-center gap-1.5 h-11 px-3 rounded-xl border border-header-border/60 text-header-muted-foreground text-xs font-semibold shrink-0 cursor-default"
+            class="hidden sm:inline-flex items-center gap-1.5 h-6 px-2.5 rounded-xl border border-header-border/60 text-header-muted-foreground text-xs font-semibold leading-none shrink-0 cursor-default"
             title="PC Builder"
             aria-label="PC Builder"
           >
-            <Cpu class="w-4 h-4 text-brand shrink-0" />
+            <Cpu class="w-3.5 h-3.5 text-brand shrink-0" />
             <span>PC Builder</span>
           </div>
 
@@ -636,7 +636,7 @@ if (process.client) {
           <NuxtLink 
             v-if="!isAuthRoute"
             to="/my-account/" 
-            class="hidden sm:inline-flex items-center gap-1.5 h-11 px-3 rounded-xl border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0"
+            class="hidden sm:inline-flex items-center gap-1.5 h-6 px-2.5 rounded-xl border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold leading-none transition-all shrink-0"
             title="Track Your Order"
             aria-label="Track Your Order"
           >
@@ -676,14 +676,14 @@ if (process.client) {
           <button 
             v-if="!isAuthRoute"
             @click="uiStore.toggleCart()" 
-            class="inline-flex items-center justify-center w-11 h-11 hover:bg-header-accent rounded-xl transition-colors relative text-header-muted-foreground hover:text-header-foreground shrink-0"
+            class="inline-flex items-center justify-center w-6 h-6 hover:bg-header-accent rounded-xl transition-colors relative text-header-muted-foreground hover:text-header-foreground shrink-0"
             title="Shopping Bag"
             aria-label="Cart"
           >
-            <Handbag class="w-5 h-5" />
+            <Handbag class="w-4 h-4" />
             <span 
               v-if="cartStore.totalItems > 0" 
-              class="absolute -bottom-0.5 -right-0.5 bg-brand text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
+              class="absolute -bottom-1 -right-1 bg-brand text-primary-foreground text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center shadow-xs"
             >
               {{ cartStore.totalItems }}
             </span>
@@ -692,11 +692,11 @@ if (process.client) {
           <!-- Relocated Login / Account Action -->
           <NuxtLink 
             :to="authStore.isLoggedIn ? '/my-account/' : '/login/'" 
-            class="hidden sm:inline-flex items-center gap-1.5 h-11 px-3 rounded-xl border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold transition-all shrink-0"
+            class="hidden sm:inline-flex items-center gap-1.5 h-6 px-2.5 rounded-xl border border-header-border/60 hover:border-header-primary/40 hover:bg-header-accent text-header-muted-foreground hover:text-header-foreground text-xs font-semibold leading-none transition-all shrink-0"
             :title="authStore.isLoggedIn ? 'Account Dashboard' : 'Login or Sign Up'"
             :aria-label="authStore.isLoggedIn ? 'Account Dashboard' : 'Login'"
           >
-            <User class="w-4 h-4 text-brand shrink-0" />
+            <User class="w-3.5 h-3.5 text-brand shrink-0" />
             <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
           </NuxtLink>
 
