@@ -47,6 +47,14 @@ export interface UpdateUserPayload {
   groups?: number[];
 }
 
+export interface UpdateSelfProfilePayload {
+  first_name?: string | null;
+  middle_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  username?: string;
+}
+
 export interface ChangePasswordPayload {
   old_password: string;
   new_password: string;

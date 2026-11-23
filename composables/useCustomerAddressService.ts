@@ -16,6 +16,7 @@ export const useCustomerAddressService = () => {
   const isLoading = ref(false);
   const isCreating = ref(false);
   const isUpdating = ref(false);
+  const isDeleting = ref(false);
   const errorMsg = ref<string | null>(null);
 
   /**
@@ -120,13 +121,50 @@ export const useCustomerAddressService = () => {
     }
   };
 
+  /**
+   * Fetches full details for a single saved address via GET /api/v1/customer-addresses/{id}/
+   */
+  const getCustomerAddress = async (id: number): Promise<CustomerAddress> => {
+    errorMsg.value = null;
+    try {
+      return await apiClient.request<CustomerAddress>(`/api/v1/customer-addresses/${id}/`, {
+        method: 'GET'
+      });
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to load address details.');
+      throw err;
+    }
+  };
+
+  /**
+   * Deletes a saved address via DELETE /api/v1/customer-addresses/{id}/
+   */
+  const deleteCustomerAddress = async (id: number): Promise<void> => {
+    isDeleting.value = true;
+    errorMsg.value = null;
+
+    try {
+      await apiClient.request(`/api/v1/customer-addresses/${id}/`, {
+        method: 'DELETE'
+      });
+      isDeleting.value = false;
+    } catch (err: any) {
+      errorMsg.value = extractErrorMessage(err, 'Failed to delete address.');
+      isDeleting.value = false;
+      throw err;
+    }
+  };
+
   return {
     getCustomerAddresses,
+    getCustomerAddress,
     createCustomerAddress,
     updateCustomerAddress,
+    deleteCustomerAddress,
     isLoading,
     isCreating,
     isUpdating,
+    isDeleting,
     errorMsg
   };
 };

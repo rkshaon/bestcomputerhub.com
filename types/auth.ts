@@ -3,7 +3,13 @@
 export interface User {
   id: string | number;
   name: string;
+  full_name?: string;
+  first_name?: string;
+  middle_name?: string;
+  last_name?: string;
+  username?: string;
   email: string;
+  email_verified?: boolean;
   avatar?: string;
   phone?: string;
   role?: string;
@@ -13,7 +19,7 @@ export interface User {
   is_staff?: boolean;
   is_superuser?: boolean;
   is_superadmin?: boolean;
-  joinedAt: string;
+  joinedAt?: string;
 }
 
 export interface UserEntity {
@@ -67,8 +73,12 @@ export interface UserProfileResponse {
   user_id?: string | number;
   username?: string;
   full_name?: string;
+  first_name?: string | null;
+  middle_name?: string | null;
+  last_name?: string | null;
   name?: string;
-  email: string;
+  email: string | null;
+  email_verified?: boolean;
   avatar?: string;
   phone?: string;
   role?: string;

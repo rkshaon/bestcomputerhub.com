@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload, ChangePasswordPayload, ChangeUserPasswordPayload, ChangeUsernamePayload, ChangeEmailPayload } from '@/types';
+import type { UserItem, PaginatedUsers, CreateUserPayload, UpdateUserPayload, UpdateSelfProfilePayload, ChangePasswordPayload, ChangeUserPasswordPayload, ChangeUsernamePayload, ChangeEmailPayload, UserProfileResponse } from '@/types';
 
 const usersCache = ref<UserItem[]>([]);
 const totalCount = ref<number>(0);
@@ -213,11 +213,11 @@ export const useUserService = () => {
   };
 
   // 9. Update Self Profile (PATCH /api/v1/users/me/)
-  const updateSelfProfile = async (payload: Partial<UpdateUserPayload>): Promise<UserItem> => {
+  const updateSelfProfile = async (payload: UpdateSelfProfilePayload): Promise<UserProfileResponse> => {
     isSubmitting.value = true;
     errorMsg.value = null;
     try {
-      const updated = await apiClient.request<UserItem>('/api/v1/users/me/', {
+      const updated = await apiClient.request<UserProfileResponse>('/api/v1/users/me/', {
         method: 'PATCH',
         body: payload
       });

@@ -110,9 +110,18 @@ export const useAuthStore = defineStore('auth', {
             throw new Error('Empty user profile returned from /api/v1/users/me/');
           }
 
-          const emailStr = profile.email || profile.username || '';
+          const emailStr = profile.email || '';
           const emailPrefix = emailStr.split('@')[0];
-          const nameStr = profile.full_name || profile.name || profile.username || (emailPrefix ? emailPrefix.toUpperCase() : 'USER');
+          const fullNameFromParts = [profile.first_name, profile.middle_name, profile.last_name]
+            .map((part) => (part || '').trim())
+            .filter(Boolean)
+            .join(' ');
+          const nameStr =
+            profile.full_name ||
+            fullNameFromParts ||
+            profile.name ||
+            profile.username ||
+            (emailPrefix ? emailPrefix.toUpperCase() : 'USER');
           const userIdStr = profile.id || profile.user_id || '';
 
           const rolesList = profile.roles || [];
@@ -127,7 +136,13 @@ export const useAuthStore = defineStore('auth', {
           const mappedUser: User = {
             id: userIdStr,
             name: nameStr,
+            full_name: profile.full_name || fullNameFromParts || undefined,
+            first_name: profile.first_name ?? '',
+            middle_name: profile.middle_name ?? '',
+            last_name: profile.last_name ?? '',
+            username: profile.username ?? '',
             email: emailStr,
+            email_verified: typeof profile.email_verified === 'boolean' ? profile.email_verified : undefined,
             avatar: profile.avatar || undefined,
             phone: profile.phone || undefined,
             role: roleVal,
@@ -137,7 +152,7 @@ export const useAuthStore = defineStore('auth', {
             is_staff: isStaff,
             is_superuser: isSuperuser,
             is_superadmin: isSuperadmin,
-            joinedAt: profile.joinedAt || profile.created_at || profile.date_joined || new Date().toISOString()
+            joinedAt: profile.joinedAt || profile.created_at || profile.date_joined || undefined
           };
 
           this.user = mappedUser;

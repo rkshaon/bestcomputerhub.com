@@ -3,14 +3,14 @@ import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
 import { useToast } from './useToast';
 
+const email = ref<string>('');
+const emailVerified = ref<boolean | null>(null);
+const loadingStatus = ref(false);
+const loadingResend = ref(false);
+
 export const useEmailVerification = () => {
   const apiClient = useApiClient();
   const { toastSuccess, handleApiError } = useToast();
-  
-  const email = ref<string>('');
-  const emailVerified = ref<boolean | null>(null);
-  const loadingStatus = ref(false);
-  const loadingResend = ref(false);
 
   const fetchStatus = async () => {
     loadingStatus.value = true;
@@ -37,5 +37,10 @@ export const useEmailVerification = () => {
     }
   };
 
-  return { email, emailVerified, loadingStatus, loadingResend, fetchStatus, resendEmail };
+  const resetStatus = () => {
+    email.value = '';
+    emailVerified.value = null;
+  };
+
+  return { email, emailVerified, loadingStatus, loadingResend, fetchStatus, resendEmail, resetStatus };
 };
