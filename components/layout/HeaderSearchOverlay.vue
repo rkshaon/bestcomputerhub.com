@@ -185,7 +185,7 @@ defineExpose({
         type="text" 
         placeholder="Search products, brands or models..." 
         aria-label="Search items"
-        class="w-full bg-background border border-input rounded-md md:rounded-xl outline-none h-10 md:h-6 text-sm md:text-xs md:py-0 pl-4 pr-16 transition-all duration-200 text-slate-900 placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+        class="w-full bg-background border border-input rounded-md md:rounded-xl outline-none h-10 md:h-[30px] text-sm md:text-xs md:py-0 pl-4 pr-16 md:pr-[72px] transition-all duration-200 text-slate-900 placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
         @focus="handleInputFocus"
         @keyup.enter="handleSearchSubmit"
       />
@@ -193,7 +193,7 @@ defineExpose({
         v-if="searchQueryModel" 
         type="button" 
         @click="handleClear"
-        class="absolute right-14 md:right-10 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 md:p-0 md:w-5 md:h-5 md:flex md:items-center md:justify-center rounded hover:bg-muted/50 cursor-pointer z-10"
+        class="absolute right-14 md:right-11 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 md:p-0 md:w-6 md:h-6 md:flex md:items-center md:justify-center rounded hover:bg-muted/50 cursor-pointer z-10"
         aria-label="Clear search text"
       >
         <X class="w-4 h-4 md:w-3.5 md:h-3.5" />
@@ -201,11 +201,11 @@ defineExpose({
       <button 
         type="button"
         @click="handleSearchSubmit"
-        class="absolute right-0 top-0 bottom-0 w-11 md:w-9 bg-brand text-primary-foreground rounded-r-md md:rounded-r-xl rounded-l-none flex items-center justify-center hover:bg-brand/90 transition-colors cursor-pointer"
+        class="absolute right-0 top-0 bottom-0 w-11 md:w-10 bg-brand text-primary-foreground rounded-r-md md:rounded-r-xl rounded-l-none flex items-center justify-center hover:bg-brand/90 transition-colors cursor-pointer"
         aria-label="Search"
         title="Search"
       >
-        <Search class="w-4 h-4 md:w-3.5 md:h-3.5" />
+        <Search class="w-4 h-4" />
       </button>
     </div>
 
