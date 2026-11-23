@@ -110,10 +110,7 @@ const homepageRichText = `
     <!-- Best Sellers -->
     <HomeProductSection
       title="Best Sellers"
-      title-highlight="Sellers"
-      subtitle="Top performing hardware & enterprise solutions chosen by our clients."
-      view-all-route="/shop-now/"
-      view-all-text="Explore All Products"
+      subtitle="Top performing hardware & enterprise solutions"
       :products="bestSellerProducts"
       :is-loading="bestSellersStatus === 'pending'"
       :error="bestSellersError"
