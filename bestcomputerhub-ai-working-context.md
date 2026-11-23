@@ -8,36 +8,35 @@
 >
 > It is **not** an agent-specific instruction file and does not describe
 > any current task. Use it as shared context when understanding a
-> request and, when asked, preparing a focused prompt for an
-> implementation or audit agent.
+> request or when asked to prepare, refine, or review a focused prompt
+> for an implementation or audit agent.
 
 ------------------------------------------------------------------------
 
 ## 1. Your role when helping with this project
 
-Act as a careful technical partner and prompt-preparation assistant.
+Act as a careful technical partner. Depending on what the user asks for,
+you may explain, investigate, audit, plan, or help prepare, refine, or
+review a focused prompt for an implementation or audit agent.
 
-The user will describe a task, bug, feature, or area they want
-inspected. Your job is to understand the actual request, apply the
-project context and working preferences below, and help prepare a clear,
-actionable prompt for the appropriate coding or audit tool.
-
-The user may ask you to prepare either:
+The user may write prompts themselves or ask you to prepare, refine, or
+review them. Do not treat AI-generated prompts as mandatory. When asked
+to prepare a prompt, distinguish clearly between:
 
 -   **Implementation prompts** --- for a bug fix, UI change, feature, or
     other code modification.
--   **Audit/inspection prompts** --- to understand existing code,
-    behavior, architecture, data flow, APIs, performance, or risks
+-   **Audit/inspection prompts** --- read-only inspection of existing
+    code, behavior, architecture, data flow, APIs, performance, or risks
     without changing anything.
+-   **Diagnostic-only prompts** --- targeted investigation and evidence
+    collection to establish a root cause without changing behavior or
+    code.
 
 Do not assume every request requires implementation. Respect the
-requested activity: explain, investigate, audit, plan, or prepare a
-prompt as requested.
-
-Do not pretend that you have inspected the repository, run tests, or
-verified an API unless you actually have access to the relevant
-evidence. Distinguish confirmed project facts from assumptions and
-agent-reported results.
+requested activity and do not pretend that you have inspected the
+repository, run tests, or verified an API unless you actually have
+access to the relevant evidence. Distinguish confirmed repository facts
+from external assumptions and agent-reported results.
 
 ------------------------------------------------------------------------
 
@@ -46,127 +45,139 @@ agent-reported results.
 **Project:** Best Computer Hub\
 **Production website:** `https://bestcomputerhub.com`
 
-Best Computer Hub is an e-commerce platform with a storefront and an
-Admin Panel. It is a custom application, not a WordPress-based
-storefront. The project has been migrated/developed around a Nuxt
-frontend and a Django-based backend.
+Best Computer Hub is an e-commerce platform with a storefront, customer
+account area, and Admin Panel. It is a custom application replacing a
+legacy WordPress/WooCommerce storefront, built around a decoupled Nuxt
+frontend repository and a separate Django REST Framework (DRF) backend
+repository.
 
-High-level responsibilities:
+High-level ownership:
 
--   **Nuxt frontend:** storefront experience, customer account area,
-    Admin Panel UI, routing, client-side state, and presentation.
--   **Django backend:** authoritative business data, authentication,
-    permissions, APIs, commerce operations, and CMS functionality.
--   **Wagtail:** CMS capabilities within the Django backend.
--   **PostgreSQL:** primary relational database.
--   **Redis and Celery:** supporting infrastructure for
-    asynchronous/background work.
+-   **Nuxt frontend (this repository):** storefront experience, SSR/SEO,
+    customer account area, Admin Panel UI, routing, client-side state,
+    and presentation.
+-   **Django / DRF backend (separate repository):** authoritative
+    business data, authentication, RBAC permissions, commerce APIs,
+    PostgreSQL persistence, and CMS content (including Wagtail
+    rich-text/StreamField payloads consumed by the frontend).
 
-The backend is the source of truth. The frontend must consume the actual
+The backend is the single source of truth for commerce rules, pricing,
+stock, permissions, and order state. The frontend must consume real
 backend contracts and must not invent data or assume unsupported
-capabilities.
-
-The project is developed as a **modular monolith**. Prefer clear module
-and responsibility boundaries within the existing architecture over
-introducing separate services or unnecessary architectural layers.
+capabilities. Prefer clear module and responsibility boundaries within
+the existing architecture over introducing unnecessary layers.
 
 ------------------------------------------------------------------------
 
 ## 3. Technology stack
 
-Use the following as the known project baseline. Always inspect the
-current repository configuration and documentation before relying on
-exact versions or assuming a dependency is still in use.
+Use the following as the known baseline. Always inspect `package.json`,
+`pnpm-lock.yaml`, and repository docs before relying on exact versions
+or installed packages.
 
-### Frontend
+### Frontend (verified in this repository)
 
--   Nuxt 4
--   Vue 3
--   TypeScript
--   Pinia
--   Tailwind CSS
--   pnpm
--   Nuxt file-based routing
--   Shared Vue components, composables, stores, services, API client,
+-   Nuxt 4 (`nuxt`) & Vue 3 (`vue`)
+-   TypeScript (strict mode enabled in `nuxt.config.ts`)
+-   Pinia (`@pinia/nuxt`, `pinia`) & VueUse (`@vueuse/core`,
+    `@vueuse/nuxt`)
+-   Tailwind CSS 3 (`tailwindcss` + `@nuxtjs/tailwindcss`) with semantic
+    design tokens
+-   `lucide-vue-next` (exclusive icon library)
+-   `pnpm` (exclusive package manager)
+-   Nuxt file-based routing, shared Vue components, composables, domain
+    service composables (`use*Service.ts`), centralized `useApiClient`,
     and typed API/domain models
 
-### Backend
+### Backend (external repository context)
 
--   Python
--   Django
--   Django REST Framework
--   Wagtail CMS (project context has referenced Wagtail 7.4.4)
--   PostgreSQL
--   Redis
--   Celery
+-   Django and Django REST Framework (confirmed API backend; `README.md`
+    also references PostgreSQL and external API docs, and frontend CMS
+    utilities consume Wagtail rich-text/StreamField data).
+-   Other backend implementation details sometimes discussed in project
+    context (such as Python runtime details, exact Wagtail version,
+    Redis, Celery, or internal modular-monolith structure) live in the
+    separate backend repository and cannot be verified from this
+    frontend repository alone. Verify them in the backend codebase or
+    API documentation before relying on them.
 
-### Important versioning rule
+### Package manager and versioning rule
 
-Do not infer exact package versions from this context. Read the relevant
-manifests and lockfiles (`package.json`, `pnpm-lock.yaml`, Python
-dependency files, and project configuration) when exact versions matter.
-Do not change dependencies or lockfiles unless the task explicitly
-requires it.
+-   Use **`pnpm` exclusively** for frontend package management. Never use
+    `npm` or `yarn`, and never generate or commit `package-lock.json`.
+-   Do not infer exact package versions from this document; read
+    `package.json` and `pnpm-lock.yaml` directly when versions matter.
+-   Do not modify dependencies or `pnpm-lock.yaml` unless explicitly
+    justified and authorized by the task.
 
 ------------------------------------------------------------------------
 
 ## 4. Architecture and code organization
 
-### Frontend request/data flow
+### Frontend dependency flow
 
-The established conceptual flow is:
+The established dependency direction (per `AGENTS.md` and
+`docs/agent-context/architecture.md`) is:
 
-`Page / Route → Component → Store or Composable → Service → API Client → Django REST API`
+`Page (/pages/) → Feature / Component (/features/, /components/) → Store / Composable (/stores/, /composables/) → Domain Service (/composables/use*Service.ts) → useApiClient (/composables/useApiClient.ts) → Django REST Framework`
 
 Responsibilities should remain clear:
 
--   **Pages/routes:** route-level composition, page state, and
-    orchestration.
--   **Components:** reusable presentation and interaction with
-    well-defined responsibilities.
--   **Stores:** shared application state, especially state that must
-    persist or be coordinated across pages/components.
--   **Composables:** reusable Vue logic and stateful behavior.
--   **Services:** API/domain operations and mapping where that is the
-    established pattern.
--   **API client:** centralized request handling, authentication,
-    errors, and API configuration.
--   **Types:** shared TypeScript contracts and domain models.
+-   **Pages (`/pages/`):** route parameters, SSR-sensitive data loading,
+    SEO metadata, route-level error/404 handling, and page composition.
+-   **Components (`/components/`):** domain-agnostic UI primitives
+    (`/components/ui/`), layout shells/navigation (`/components/layout/`),
+    and commerce presentation (`/components/commerce/`).
+-   **Features (`/features/`):** larger domain-specific modules with
+    tightly coupled components (e.g., admin dashboard widgets).
+-   **Stores (`/stores/`):** cross-component client state (auth, cart,
+    UI drawers) without replacing backend calculations.
+-   **Composables (`/composables/`):** reusable reactive Vue logic,
+    permissions, pagination helpers, and domain services.
+-   **Domain services (`/composables/use*Service.ts`):** entity-specific
+    API calls and response mapping. There is no `/services/` directory.
+-   **API client (`/composables/useApiClient.ts`):** centralized HTTP
+    transport, auth headers, token refresh, and standardized network
+    error handling.
+-   **Types (`/types/`):** shared TypeScript API and domain contracts.
 
-Do not bypass existing layers casually. Before adding logic, find the
-existing service, store, composable, component, or API-client path that
-already owns that responsibility.
+Do not bypass existing layers casually. Before adding logic, inspect the
+existing service composable, store, composable, component, or utility
+that already owns that responsibility.
 
 ### Backend
 
-The backend is a Django/DRF modular monolith. Follow the architecture
-and conventions documented in the backend repository. Existing project
-discussions have used explicit routing, dependency, service, and
-repository boundaries in relevant backend areas; do not impose that
-pattern on every module without checking its actual implementation and
-documentation.
+The backend lives in a separate Django/DRF repository. Follow the
+architecture and conventions documented in that backend repository rather
+than imposing unverified patterns on modules you have not inspected.
 
 ### File organization
 
-The frontend uses conventional Nuxt directories, including:
+Confirmed top-level frontend directories include:
 
--   `pages/` --- file-based routes.
--   `components/` --- shared and domain-specific Vue components.
--   `layouts/` --- shared page shells.
--   `middleware/` --- route/authentication guards.
+-   `pages/` --- Nuxt file-based routes.
+-   `components/` --- `ui/`, `layout/`, and `commerce/` components.
+-   `features/` --- domain-specific feature modules.
+-   `layouts/` --- shared page shells (e.g., default, admin).
+-   `middleware/` --- route and authentication guards.
 -   `stores/` --- Pinia stores.
--   `composables/` --- reusable Vue logic.
--   `services` / service composables --- API and domain operations,
-    following the existing local convention.
--   `types/` --- TypeScript interfaces and domain/API types.
--   `utils/` --- focused shared utility functions.
+-   `composables/` --- reusable Vue logic, `useApiClient.ts`, and domain
+    services (`use*Service.ts`).
+-   `types/` --- TypeScript interfaces and domain/API contracts.
+-   `utils/` --- pure shared utility functions and mappers.
+-   `constants/` --- shared static constants.
+-   `plugins/` --- Nuxt plugins.
+-   `assets/` --- CSS entry points and semantic theme tokens.
+-   `server/` --- Nuxt server API routes (such as sitemap URL sources).
 -   `public/` --- static public assets.
--   `docs/` --- project context, design-system, API, routing, SEO, and
-    other documentation.
+-   `tests/` --- unit tests executed with Node's built-in test runner.
+-   `mock/` --- isolated mock/demo fixtures only (never production
+    fallbacks).
+-   `docs/` --- architecture, API, routing, SEO, design-system, and
+    inventory documentation.
 
-This is a conceptual directory guide, not permission to create new
-directories or reorganize files. Inspect the actual repository before
-editing.
+This is a directory guide, not permission to create new directories or
+reorganize files. Inspect the actual repository before editing.
 
 ------------------------------------------------------------------------
 
@@ -178,23 +189,30 @@ conventions when the project already defines its own rules.
 At the start of an implementation or audit, inspect:
 
 1.  `AGENTS.md` --- primary repository-level working instructions.
-2.  The relevant project context documents under `docs/agent-context/`.
-3.  The relevant design-system documentation when changing UI.
-4.  The relevant API documentation and verified backend contract when
-    changing data behavior.
-5.  The relevant routing documentation when changing routes or
-    navigation.
-6.  Any domain-specific documentation, skills, or instructions relevant
-    to the task.
-7.  The actual implementation and nearby examples.
+2.  Relevant context under `docs/agent-context/` (especially
+    `architecture.md`, `api-conventions.md`, `ecommerce-domain.md`,
+    `design-system.md`, `seo-strategy.md`, `disabled-features.md`).
+3.  `docs/agent-context/component-inventory.md` and
+    `docs/agent-context/utility-inventory.md` before creating or
+    modifying reusable components, composables, or utilities (and keep
+    them synchronized when reusable code is added or substantially
+    changed).
+4.  `docs/api/endpoints.md` and `docs/routing/routes.md` when working on
+    API integrations, routes, or navigation.
+5.  Any applicable workflow documentation or skills present in the
+    workspace, plus the actual existing implementation and tests.
 
-Known documentation locations include:
+Authoritative documentation locations in this repository:
 
 -   `AGENTS.md`
--   `docs/agent-context/`
+-   `docs/agent-context/architecture.md`
+-   `docs/agent-context/api-conventions.md`
 -   `docs/agent-context/ecommerce-domain.md`
 -   `docs/agent-context/design-system.md`
 -   `docs/agent-context/seo-strategy.md`
+-   `docs/agent-context/component-inventory.md`
+-   `docs/agent-context/utility-inventory.md`
+-   `docs/agent-context/disabled-features.md`
 -   `docs/api/endpoints.md`
 -   `docs/routing/routes.md`
 
@@ -206,10 +224,11 @@ relevant set rather than mechanically loading every document.
 Use this order of evidence:
 
 1.  Explicit user decisions and constraints.
-2.  Current repository instructions and authoritative project
-    documentation.
+2.  Current repository instructions (`AGENTS.md`) and authoritative
+    project documentation.
 3.  Actual code and tests.
-4.  Verified backend API/OpenAPI contracts.
+4.  Verified backend API/OpenAPI contracts (documented externally; see
+    `README.md`).
 5.  Reasonable framework conventions, only where the project has no
     established rule.
 
@@ -219,8 +238,8 @@ authoritative for the requested task. Ask the user only when the
 conflict materially blocks a safe decision.
 
 Do not invent endpoints, fields, permissions, data relationships, or
-capabilities. Verify them in the API documentation, OpenAPI schema,
-backend implementation, or existing service code.
+capabilities. Verify them in `docs/api/endpoints.md`, existing service
+composables, or the backend repository / external API documentation.
 
 ------------------------------------------------------------------------
 
@@ -297,55 +316,71 @@ explicitly.
 
 ## 7. Coding and UI conventions
 
-The exact conventions must be confirmed in `AGENTS.md`, the
-design-system documentation, and nearby code.
+Confirm exact rules in `AGENTS.md`, `docs/agent-context/design-system.md`,
+`docs/agent-context/api-conventions.md`, and nearby code.
 
 General expectations:
 
--   Use TypeScript types that match real API/domain data.
--   Avoid `any` and unsafe casts unless the existing contract genuinely
-    requires them and the reason is clear.
--   Follow existing Vue/Nuxt composition and naming patterns.
--   Reuse shared UI components and design tokens/classes.
--   Follow the project's Tailwind and responsive design conventions.
--   Keep accessibility in mind: labels, button names, keyboard behavior,
-    and semantic elements.
--   Handle loading, success, empty, and error states honestly.
--   Do not show fake values, fake dates, placeholder metrics, or
-    misleading controls.
--   Do not expose internal/admin-only information in customer-facing UI.
--   Do not add a visual control unless it has a real, supported action.
--   Avoid changing the design beyond what the task requires.
+-   Use strict TypeScript contracts in `/types/` matching real API/domain
+    data; avoid `any`.
+-   Reuse shared UI components and semantic Tailwind CSS 3 design tokens
+    (`bg-background`, `bg-card`, `text-foreground`, `border-border`,
+    etc.); do not use inline `style=""` attributes or arbitrary custom
+    CSS files.
+-   Use `lucide-vue-next` exclusively for icons.
+-   Keep accessibility in mind: explicit `alt` attributes on every
+    `<img>` (descriptive text for informative images, `alt=""` for
+    decorative images), semantic HTML, labels, and keyboard behavior.
+-   Handle loading, success, empty, and error states honestly; never
+    show fake values, placeholder metrics, or dead controls.
+-   Do not create temporary `.py`, `.sh`, or scratch analysis scripts in
+    the workspace.
+-   Avoid changing UI design beyond what the task requires.
 
 ### Routing and URLs
 
--   Frontend storefront routes generally use trailing slashes as
-    required by project SEO/routing conventions.
--   API endpoints use the `/api/v1/` prefix.
+-   Public storefront routes, links, navigation paths, and breadcrumbs
+    must **strictly** terminate with a trailing slash `/` (`AGENTS.md`
+    §9, `docs/agent-context/seo-strategy.md`).
 -   Check `docs/routing/routes.md`, `AGENTS.md`, and existing route
     definitions before changing links or route behavior.
--   Preserve canonical URL and redirect behavior. SEO-sensitive route
-    changes require particular care.
+-   Preserve SSR, canonical URLs, and legacy WordPress redirect behavior.
 
-### API and data integrity
+### API, state, and data integrity
 
 -   Backend data and verified API contracts are authoritative.
--   Use existing API services and the centralized API client.
--   Do not fabricate missing fields or infer that a field exists because
-    a similar endpoint has it.
--   Do not silently substitute mock data when a live request fails.
--   Preserve pagination, filtering, ordering, permission, and
-    response-envelope conventions already used by the project.
--   When an API contract is unclear, inspect the OpenAPI schema and
-    backend implementation rather than guessing.
+-   All DRF endpoints use the `/api/v1/` prefix and must **strictly**
+    terminate with a trailing slash `/`.
+-   Route HTTP calls through `/composables/use*Service.ts` and
+    `useApiClient`, and process errors centrally via `useApiClient` and
+    `useToast` (`handleApiError` / `extractErrorMessage`) without
+    exposing raw URLs or status strings.
+-   Debounce user-driven search/filter queries (300ms via
+    `refDebounced` at the query/component layer, never inside
+    `useApiClient`) and fetch auxiliary data on demand.
+-   Preserve `PaginatedResponse<T>` and `next`-cursor pagination
+    patterns; do not substitute mock data when live requests fail.
+-   When an API contract is unclear, check `docs/api/endpoints.md`, the
+    external API docs (`README.md`), or the backend implementation
+    rather than guessing.
+
+### Admin Panel and RBAC (apply only when working on Admin Panel tasks)
+
+-   Keep admin authorization triple-gated via `useAdminPermissions()`
+    (authenticated + Owner/Staff + specific permission from
+    `GET /api/v1/users/me/`); never infer roles client-side.
+-   Reuse the shared admin infrastructure defined in `AGENTS.md` §11
+    (`<UiTable />`, `<UiPagination />` with the standard page-size
+    selector, `useInfinitePagination` + `<UiInfiniteScroll />`, and
+    URL-driven modals via `useAdminModalState` + `<UiAdminModal />`).
 
 ------------------------------------------------------------------------
 
 ## 8. How to prepare prompts for implementation agents
 
-When the user asks you to prepare an implementation prompt, produce a
-**short, precise, scope-controlled instruction** that an implementation
-agent can execute without guessing.
+When asked to prepare, refine, or review an implementation prompt, keep
+it **short, precise, unambiguous, and task-specific** so an agent can
+execute without guessing. (The user may also write prompts directly.)
 
 The prompt should normally follow this structure:
 
@@ -475,27 +510,26 @@ change.
 
 ## 11. Verification and completion reports
 
-For implementation prompts, ask for verification appropriate to the
-changed area.
+For implementation prompts, ask only for verification checks that
+actually exist and meaningfully validate the changed area.
 
-Frontend checks may include:
+Confirmed frontend repository checks (`package.json` and `/tests/`):
 
--   TypeScript/Nuxt typecheck.
--   Production build.
--   Relevant tests.
--   Linting, if configured and relevant.
--   `git diff --check`.
+-   **Typecheck:** `pnpm type-check` or `pnpm lint` (both scripts run
+    `nuxt typecheck`; there is no separate ESLint/linter script in
+    `package.json`).
+-   **Production build:** `pnpm build` (runs `nuxt build`).
+-   **Unit tests:** `pnpm exec tsx --test tests/*.test.ts` (or
+    `./node_modules/.bin/tsx --test tests/*.test.ts`), running the
+    `/tests/` suite on Node's built-in `node:test` runner.
+-   **Diff hygiene (in git clones):** `git diff --check` when working
+    inside a git checkout.
 
-Backend checks may include:
+For backend tasks, use only the tests, static checks, migrations, and
+API validation commands configured in the backend repository.
 
--   Focused tests for the changed behavior.
--   Relevant broader test suite when appropriate.
--   Linting/static checks configured by the repository.
--   Migration checks when models or schema change.
--   API/OpenAPI validation when contracts change.
-
-Do not blindly require every possible check for every small task. Choose
-checks that meaningfully validate the change.
+Do not claim unavailable scripts or tools exist, and do not blindly
+require every check for a small or read-only task.
 
 The completion report should state:
 
@@ -589,7 +623,7 @@ allows.
 ``` text
 Task: [One-sentence requested outcome.]
 
-First read `AGENTS.md` and the relevant project context/design-system/API documentation. Inspect the existing implementation before editing.
+First read `AGENTS.md` and the relevant project context/design-system/API/inventory documentation. Inspect the existing implementation before editing.
 
 Scope:
 - [Exact route/component/files/API.]
@@ -601,9 +635,9 @@ Required change:
 Must remain unchanged:
 - [Relevant existing behavior, API, routing, permissions, responsive behavior, etc.]
 
-Reuse existing project services, components, types, and patterns. Make only the necessary changes. No unrelated refactoring, redesign, or overengineering.
+Reuse existing composables/services, components, types, and patterns. Make only the necessary changes. No unrelated refactoring, redesign, or overengineering.
 
-Verify with [relevant checks] and report exact files changed and results.
+Verify with [relevant checks, e.g. pnpm type-check, pnpm build, tsx --test] and report exact files changed and results.
 ```
 
 ### B. Bug investigation and fix
@@ -613,7 +647,7 @@ Task: Diagnose and fix [specific observed issue].
 
 First read `AGENTS.md` and relevant project documentation. Inspect the exact code path before editing.
 
-Location: [Route/component/service/API.]
+Location: [Route/component/composable/API.]
 
 Actual behavior: [Observed result.]
 Expected behavior: [Correct result.]
