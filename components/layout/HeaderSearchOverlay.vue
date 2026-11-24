@@ -193,7 +193,7 @@ defineExpose({
         v-if="searchQueryModel" 
         type="button" 
         @click="handleClear"
-        class="absolute right-12 md:right-11 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 md:p-0 md:w-6 md:h-6 md:flex md:items-center md:justify-center rounded hover:bg-muted/50 cursor-pointer z-10"
+        class="absolute right-12 md:right-[47px] top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 md:p-0 md:w-6 md:h-6 md:flex md:items-center md:justify-center rounded hover:bg-muted/50 cursor-pointer z-10"
         aria-label="Clear search text"
       >
         <X class="w-4 h-4 md:w-3.5 md:h-3.5" />
@@ -201,7 +201,7 @@ defineExpose({
       <button 
         type="button"
         @click="handleSearchSubmit"
-        class="shrink-0 w-11 md:w-10 h-10 md:h-[30px] border-0 outline-none bg-brand text-primary-foreground rounded-r-md md:rounded-r-xl rounded-l-none flex items-center justify-center hover:bg-brand/90 transition-colors cursor-pointer"
+        class="shrink-0 w-11 md:w-[43px] h-10 md:h-[30px] appearance-none border-0 border-none border-transparent outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none bg-brand text-primary-foreground rounded-r-md md:rounded-r-xl rounded-l-none flex items-center justify-center hover:bg-brand/90 transition-colors cursor-pointer"
         aria-label="Search"
         title="Search"
       >
