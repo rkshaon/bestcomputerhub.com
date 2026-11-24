@@ -731,9 +731,8 @@ if (process.client) {
             <NuxtLink 
               :to="categoryService.getCategoryUrl(cat, allCategories)" 
               :class="cn(
-                'relative flex items-center font-semibold tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-header-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-header-primary after:transition-all after:duration-200',
-                isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
-                activeMegaMenuId === String(cat.id) ? 'text-header-primary font-semibold after:opacity-100' : 'text-header-foreground/85 after:opacity-0 hover:after:opacity-100'
+                'relative flex items-center text-xs font-semibold leading-none tracking-normal transition-colors whitespace-nowrap py-1.5 px-0.5 hover:text-header-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-header-primary after:transition-all after:duration-200',
+                activeMegaMenuId === String(cat.id) ? 'text-header-primary after:opacity-100' : 'text-header-foreground/85 after:opacity-0 hover:after:opacity-100'
               )"
             >
               {{ decodeHtmlEntities(cat.name) }}
@@ -762,9 +761,8 @@ if (process.client) {
           <button
             type="button"
             :class="cn(
-              'relative flex items-center gap-1 font-semibold transition-colors whitespace-nowrap py-1.5 px-1.5 hover:text-header-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-header-primary rounded-md cursor-pointer',
-              isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]'),
-              isMoreOpen || (typeof activeMegaMenuId === 'string' && activeMegaMenuId.startsWith('more-')) ? 'text-header-primary font-semibold' : 'text-header-foreground/85'
+              'relative flex items-center gap-1 text-xs font-semibold leading-none transition-colors whitespace-nowrap py-1.5 px-1.5 hover:text-header-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-header-primary rounded-md cursor-pointer',
+              isMoreOpen || (typeof activeMegaMenuId === 'string' && activeMegaMenuId.startsWith('more-')) ? 'text-header-primary' : 'text-header-foreground/85'
             )"
             :aria-expanded="isMoreOpen"
             aria-label="More categories"
@@ -798,7 +796,7 @@ if (process.client) {
                 <NuxtLink
                   :to="categoryService.getCategoryUrl(cat, allCategories)"
                   :class="cn(
-                    'flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+                    'flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold leading-none transition-all cursor-pointer',
                     activeMegaMenuId === 'more-' + cat.id ? 'bg-header-primary/10 text-header-primary' : 'hover:bg-header-muted/80 text-header-card-foreground/90 hover:text-header-primary'
                   )"
                   @click="isMoreOpen = false; activeMegaMenuId = null"
@@ -834,13 +832,12 @@ if (process.client) {
           v-for="(cat, idx) in categories" 
           :key="cat.id" 
           :ref="el => setMeasureItemRef(el, idx)"
-          class="font-semibold py-1.5 px-0.5 whitespace-nowrap"
-          :class="isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]')"
+          class="text-xs font-semibold leading-none py-1.5 px-0.5 whitespace-nowrap"
         >
           {{ decodeHtmlEntities(cat.name) }}
         </div>
 
-        <div ref="measureMoreRef" class="font-semibold py-1.5 px-1.5 flex items-center gap-1 whitespace-nowrap" :class="isNavUltraCompact ? 'text-[11px]' : (isNavCompact ? 'text-xs' : 'text-xs lg:text-[13px]')">
+        <div ref="measureMoreRef" class="text-xs font-semibold leading-none py-1.5 px-1.5 flex items-center gap-1 whitespace-nowrap">
           <span>More</span>
           <ChevronDown class="w-3.5 h-3.5" />
         </div>
