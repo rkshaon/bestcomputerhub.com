@@ -263,3 +263,78 @@ test('mapOrderSummary normalizes whitespace/case and assigns orders accurately a
   assert.equal(columns.find((c) => c.label === 'Delivered')?.orders.length, 1);
   assert.equal(columns.find((c) => c.label === 'Cancelled')?.orders.length, 0);
 });
+
+test('mapOrderDetail preserves real product slugs from order items and omits slug when unavailable', () => {
+  const rawDetail: BackendOrderDetail = {
+    id: 77,
+    invoice_number: 'SALE-20261125-000077',
+    status: 'CONFIRMED',
+    payment_status: 'UNPAID',
+    channel: 'WEBSITE',
+    customer: { id: 9, user: { id: 9, username: 'bob' }, full_name: 'Bob' },
+    items: [
+      {
+        id: 101,
+        product_variant: {
+          id: 501,
+          sku: 'GPU-4070',
+          name: 'RTX 4070',
+          product: 'ASUS RTX 4070',
+          product_slug: 'asus-rtx-4070'
+        },
+        product_name: 'ASUS RTX 4070',
+        quantity: 1,
+        unit_price: '85000.00',
+        line_total: '85000.00'
+      },
+      {
+        id: 102,
+        product_variant: {
+          id: 502,
+          sku: 'RAM-32GB',
+          name: '32GB DDR5',
+          product: { id: 88, name: 'Corsair 32GB DDR5', slug: 'corsair-32gb-ddr5' }
+        },
+        product_name: 'Corsair 32GB DDR5',
+        quantity: 2,
+        unit_price: '12000.00',
+        line_total: '24000.00'
+      },
+      {
+        id: 103,
+        product_variant: {
+          id: 503,
+          sku: 'LEGACY-SKU',
+          name: 'Legacy Item',
+          product: 'Legacy Item'
+        },
+        product_name: 'Legacy Item',
+        quantity: 1,
+        unit_price: '500.00',
+        line_total: '500.00'
+      }
+    ],
+    shipping_address: null,
+    subtotal_amount: '109500.00',
+    discount_amount: '0.00',
+    tax_amount: '0.00',
+    shipping_amount: '0.00',
+    total_amount: '109500.00',
+    shipping_method: null,
+    notes: '',
+    created_at: '2026-11-25T10:00:00Z',
+    updated_at: '2026-11-25T10:00:00Z',
+    allowed_next_statuses: [],
+    account: null,
+    accounting_transaction: null,
+    return_transaction: null,
+    collection_transaction: null
+  };
+
+  const mapped = mapOrderDetail(rawDetail);
+  assert.equal(mapped.items.length, 3);
+  assert.equal(mapped.items[0]!.product.slug, 'asus-rtx-4070');
+  assert.equal(mapped.items[1]!.product.name, 'Corsair 32GB DDR5');
+  assert.equal(mapped.items[1]!.product.slug, 'corsair-32gb-ddr5');
+  assert.equal(mapped.items[2]!.product.slug, undefined);
+});

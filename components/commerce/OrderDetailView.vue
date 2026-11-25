@@ -11,11 +11,18 @@ import {
   RefreshCcw
 } from 'lucide-vue-next';
 import { formatCurrency, cn, decodeHtmlEntities } from '@/utils';
-import type { Order } from '@/types/order';
+import type { Order, OrderItem } from '@/types/order';
 
 const props = defineProps<{
   order: Order;
 }>();
+
+const getProductUrl = (item: OrderItem): string | null => {
+  const rawSlug = item.product?.slug;
+  if (typeof rawSlug !== 'string') return null;
+  const cleanSlug = rawSlug.trim().replace(/^\/+|\/+$/g, '');
+  return cleanSlug ? `/product/${cleanSlug}/` : null;
+};
 
 defineEmits<{
   (e: 'cancel'): void;
@@ -63,7 +70,18 @@ const currentStatus = computed(() => {
           <Package class="w-6 h-6 text-muted-foreground" />
         </div>
         <div class="flex-grow">
-          <p class="font-bold text-sm">{{ decodeHtmlEntities(item.product?.name || 'Product') }}</p>
+          <p class="font-bold text-sm">
+            <NuxtLink
+              v-if="getProductUrl(item)"
+              :to="getProductUrl(item)!"
+              class="hover:text-primary hover:underline transition-colors"
+            >
+              {{ decodeHtmlEntities(item.product?.name || 'Product') }}
+            </NuxtLink>
+            <template v-else>
+              {{ decodeHtmlEntities(item.product?.name || 'Product') }}
+            </template>
+          </p>
           <p class="text-xs text-muted-foreground">SKU: {{ item.sku || 'N/A' }} | Qty: {{ item.quantity }}</p>
         </div>
         <div class="text-right">

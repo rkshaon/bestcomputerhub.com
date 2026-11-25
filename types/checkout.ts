@@ -92,17 +92,28 @@ export interface BackendOrderSummary {
   customer: { full_name?: string; user: { username: string } } | null;
 }
 
+export interface BackendOrderItemProductRef {
+  id?: number | string;
+  name?: string | null;
+  slug?: string | null;
+}
+
 export interface BackendOrderItemVariant {
   id: number;
   sku: string;
   name: string | null;
-  product: string | null;
+  product: string | BackendOrderItemProductRef | null;
+  slug?: string | null;
+  product_slug?: string | null;
 }
 
 export interface BackendOrderItem {
   id: number;
   product_variant: BackendOrderItemVariant;
   product_name: string;
+  product_slug?: string | null;
+  slug?: string | null;
+  product?: BackendOrderItemProductRef | string | null;
   quantity: number;
   unit_price: ApiMoney;
   line_total: ApiMoney;

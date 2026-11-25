@@ -24,6 +24,7 @@ export interface OrderItem {
   product: {
     id: string;
     name: string;
+    slug?: string;
     price: number;
     images: string[];
   };
