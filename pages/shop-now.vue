@@ -22,6 +22,15 @@ const route = useRoute();
 const router = useRouter();
 
 
+const validOrderingValues = ['price_low', 'price_high', 'popularity', 'rating', 'latest', 'name_asc', 'name_desc'];
+const legacySortMap: Record<string, string> = {
+  'price-low-high': 'price_low',
+  'price-high-low': 'price_high',
+  newest: 'latest'
+};
+const rawInitialSort = ((route.query.ordering || route.query.sort) as string) || '';
+const normalizedInitialSort = legacySortMap[rawInitialSort] || rawInitialSort;
+
 // Filters State
 const filters = ref({
   query: (route.query.q as string) || '',
@@ -29,7 +38,7 @@ const filters = ref({
   brand: (route.query.brand as string) || (route.query.brands as string) || '',
   minPrice: Number(route.query.minPrice) || 0,
   maxPrice: Number(route.query.maxPrice) || 10000,
-  sort: (route.query.sort as string) || 'featured'
+  sort: validOrderingValues.includes(normalizedInitialSort) ? normalizedInitialSort : 'price_high'
 });
 
 const dynamicTitle = computed(() => {
@@ -81,6 +90,7 @@ const fetchProducts = async () => {
       brand: filters.value.brand,
       minPrice: filters.value.minPrice,
       maxPrice: filters.value.maxPrice,
+      ordering: filters.value.sort,
       sort: filters.value.sort,
       page: currentPage.value,
       page_size: 20
@@ -90,13 +100,18 @@ const fetchProducts = async () => {
     totalPages.value = res.pages;
   } catch {
     // Fallback sync query
+    const fallbackSort = filters.value.sort === 'price_high'
+      ? 'price-high-low'
+      : filters.value.sort === 'price_low'
+        ? 'price-low-high'
+        : filters.value.sort;
     const fallbackProducts = productService.getProducts({
       query: filters.value.query,
       category: filters.value.category,
       brand: filters.value.brand,
       minPrice: filters.value.minPrice,
       maxPrice: filters.value.maxPrice,
-      sort: filters.value.sort
+      sort: fallbackSort
     });
     loadedProducts.value = fallbackProducts;
     totalCount.value = fallbackProducts.length;
@@ -133,7 +148,7 @@ const updateRoute = () => {
       brand: filters.value.brand || undefined,
       minPrice: filters.value.minPrice > 0 ? filters.value.minPrice : undefined,
       maxPrice: filters.value.maxPrice < 10000 ? filters.value.maxPrice : undefined,
-      sort: filters.value.sort !== 'featured' ? filters.value.sort : undefined
+      ordering: filters.value.sort !== 'price_high' ? filters.value.sort : undefined
     }
   });
 };
@@ -165,7 +180,7 @@ const clearFilters = () => {
     brand: '',
     minPrice: 0,
     maxPrice: 10000,
-    sort: 'featured'
+    sort: 'price_high'
   };
 };
 
@@ -231,11 +246,15 @@ const activeFiltersCount = computed(() => {
               <select 
                 v-model="filters.sort"
                 class="appearance-none h-full bg-muted/50 border rounded-xl pl-4 pr-10 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold cursor-pointer"
+                aria-label="Sort products"
               >
-                <option value="featured">Featured First</option>
-                <option value="price-low-high">Price: Low to High</option>
-                <option value="price-high-low">Price: High to Low</option>
-                <option value="rating">Highest Rated</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+                <option value="popularity">Popularity</option>
+                <option value="rating">Rating</option>
+                <option value="latest">Latest</option>
+                <option value="name_asc">Name: A to Z</option>
+                <option value="name_desc">Name: Z to A</option>
               </select>
               <ChevronDown class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             </div>
