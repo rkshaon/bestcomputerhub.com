@@ -81,6 +81,20 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
+### `formatDecimalCurrency`
+- **File Location**: `/utils/index.ts`
+- **Category**: Formatter
+- **Scope**: Shared (Storefront & Admin)
+- **Purpose**: Formats decimal monetary strings or finite numbers into `Tk X,XXX.XX` without floating-point precision loss or `NaN` output.
+- **Parameters & Return Value**:
+  - `value: string | number | null | undefined` — Decimal string or finite number.
+  - `options?: { fallback?: string }` — Fallback string when empty or invalid (defaults to `'Tk 0.00'`).
+  - Returns `string` — Formatted currency string preserving at least 2 fractional digits and full decimal precision.
+- **Files or Features Currently Using It**: `<TrackOrderDetails>` (`/track-order/`).
+- **Side Effects**: None (Pure function).
+
+---
+
 ### `decodeHtmlEntities`
 - **File Location**: `/utils/index.ts`
 - **Category**: Normalizer / HTML utility
@@ -119,6 +133,16 @@ When selecting or implementing helper functions, agents must respect these struc
 - **Side Effects**: None (Pure function).
 - **Accesses Browser State**: No.
 - **Performs Network Work**: No.
+
+---
+
+### `formatCalendarDate` & `formatDateTime`
+- **File Location**: `/utils/index.ts`
+- **Category**: Formatter
+- **Scope**: Shared (Storefront & Admin)
+- **Purpose**: `formatCalendarDate` formats `YYYY-MM-DD` date strings without local-timezone day-shift bugs; `formatDateTime` formats ISO date-time strings into `D Mon, YYYY, H:MM AM/PM` (`'N/A'` when missing or invalid).
+- **Files or Features Currently Using It**: `<TrackOrderDetails>`.
+- **Side Effects**: None (Pure functions).
 
 ---
 
@@ -685,6 +709,7 @@ When selecting or implementing helper functions, agents must respect these struc
 | `useCustomerAddressService` | Customer Addresses | `/api/v1/customer-addresses/` | Paginated saved-address list (`getCustomerAddresses`), single address detail (`getCustomerAddress`), create (`createCustomerAddress`), partial update (`updateCustomerAddress`, PATCH), and delete (`deleteCustomerAddress`, DELETE). Typed by `CustomerAddress` / `CreateCustomerAddressPayload` / `UpdateCustomerAddressPayload`. |
 | `useCheckoutService` | Checkout | `/api/v1/checkout/validate/`, `/api/v1/checkout/confirm/`, `/api/v1/orders/{id}/` | `validateCheckout` returns the backend `CheckoutValidateResponse` (`is_valid`, `cart`, `pricing`, `shipping`, `errors`) — the only source of checkout totals; `createOrder` posts `CheckoutConfirmPayload` (address, method, `idempotency_key`, optional `notes`; COD only, key also sent as `Idempotency-Key` header) and returns the mapped `Order`; `generateIdempotencyKey` (one UUID per attempt). Contracts in `/types/checkout.ts`, mapping via `/utils/order.ts`. |
 | `useOrderService` | Customer Orders | `/api/v1/orders/`, `/api/v1/orders/{id}/`, `/api/v1/orders/{id}/cancel/` | Unpaginated own-order list (`mapOrderSummary`), order detail (`mapOrderDetail`), cancel (returns `{ id, status, message }`; callers refetch the order). |
+| `useSalesService` | Sales & Public Order Tracking | `/api/v1/sales/`, `/api/v1/sales/{id}/`, `/api/v1/sales/statuses/`, `/api/v1/sales/track/{invoice_number}/` | Admin sales management and public unauthenticated invoice tracking (`trackOrderByInvoice` with `isPublic: true` and `mapTrackedOrder` validation/normalization). |
 | `useShippingService` | Shipping Configuration & Storefront Options | `/api/v1/shipping/methods/`, `/api/v1/shipping/zones/`, `/api/v1/shipping/zones/available/`, `/api/v1/shipping/rates/`, `/api/v1/shipping/options/` | Admin CRUD for methods, zones and rates; storefront `getAvailableZones()` (active delivery areas, unpaginated `AvailableShippingZone[]`) and `getShippingOptions(addressId)` (typed `ShippingOptionsResponse`: resolved `zone`, `cart_subtotal`, priced `options[]` — all charges computed by the backend; throws on 400 so the backend message can be shown). |
 | `useOrderNotificationService` | Order Notification Recipients (admin) | `/api/v1/email/order-notification-recipients/` | Paginated recipient list (`search`, `is_active`, `page`, `page_size`), create, PATCH update (incl. pause/resume via `is_active`), delete (backend soft delete). The backend decides when alerts are sent (sale created on any channel; customer or staff cancellation). Typed by `/types/order-notification.ts`. |
 | `useCmsService` | Public & Admin CMS Operations | `/api/v1/cms/pages/`, `/api/v1/cms/pages/{slug}/`, `/api/v1/cms/public/navigation/{key}/`, `/api/v1/cms/*` | Direct public CMS page lookup (`getPublicPageBySlug`, `isPublic: true`) backed by a client-only 1-hour (3,600,000 ms) in-memory cache (`/utils/cmsPageCache.ts`) with in-flight deduplication and SSR hydration seeding (`seedPublicPageCache`), plus public navigation, sections, revisions, media, redirects, and sitemap operations. |

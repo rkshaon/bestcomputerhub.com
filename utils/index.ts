@@ -49,6 +49,56 @@ export function formatCurrency(value: number): string {
   })}`;
 }
 
+export interface FormatDecimalCurrencyOptions {
+  fallback?: string;
+}
+
+/**
+ * Formats a decimal monetary string or number into `Tk X,XXX.XX` without
+ * floating-point precision loss or `NaN` output.
+ */
+export function formatDecimalCurrency(
+  value: string | number | null | undefined,
+  options: FormatDecimalCurrencyOptions = {}
+): string {
+  const fallback = options.fallback ?? 'Tk 0.00';
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  let raw = '';
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return fallback;
+    }
+    raw = String(value);
+  } else if (typeof value === 'string') {
+    raw = value.trim();
+  } else {
+    return fallback;
+  }
+
+  if (!raw) {
+    return fallback;
+  }
+
+  const match = raw.match(/^([+-])?(?:(\d+)(?:\.(\d*))?|\.(\d+))$/);
+  if (!match) {
+    return fallback;
+  }
+
+  const sign = match[1] === '-' ? '-' : '';
+  const rawInt = match[2] ?? '0';
+  const rawFrac = match[3] ?? match[4] ?? '';
+
+  const normalizedInt = rawInt.replace(/^0+(?=\d)/, '') || '0';
+  const paddedFrac = rawFrac.length >= 2 ? rawFrac : rawFrac.padEnd(2, '0');
+  const isAllZero = normalizedInt === '0' && /^0+$/.test(paddedFrac);
+  const groupedInt = normalizedInt.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  return `${isAllZero ? '' : sign}Tk ${groupedInt}.${paddedFrac}`;
+}
+
 const HTML_ENTITIES: Record<string, string> = {
   '&amp;': '&',
   '&lt;': '<',
@@ -129,6 +179,53 @@ export function formatDate(dateString: string | null | undefined): string {
   const month = date.toLocaleString('en-US', { month: 'short' });
   const year = date.getFullYear();
   return `${day} ${month}, ${year}`;
+}
+
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+/**
+ * Formats a `YYYY-MM-DD` calendar date without local-timezone day shifts,
+ * falling back to `formatDate` for full date-time strings.
+ */
+export function formatCalendarDate(dateString: string | null | undefined): string {
+  if (!dateString || typeof dateString !== 'string') return 'N/A';
+  const trimmed = dateString.trim();
+  if (!trimmed) return 'N/A';
+
+  const dateOnlyMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnlyMatch) {
+    const year = Number(dateOnlyMatch[1]);
+    const monthIndex = Number(dateOnlyMatch[2]) - 1;
+    const day = Number(dateOnlyMatch[3]);
+    const monthName = SHORT_MONTHS[monthIndex];
+    if (monthName && day >= 1 && day <= 31) {
+      return `${day} ${monthName}, ${year}`;
+    }
+    return 'N/A';
+  }
+
+  return formatDate(trimmed);
+}
+
+/**
+ * Formats an ISO timestamp string into `D Mon, YYYY, H:MM AM/PM`, returning `'N/A'` if invalid.
+ */
+export function formatDateTime(dateString: string | null | undefined): string {
+  if (!dateString || typeof dateString !== 'string') return 'N/A';
+  const trimmed = dateString.trim();
+  if (!trimmed) return 'N/A';
+  const date = new Date(trimmed);
+  if (isNaN(date.getTime())) return 'N/A';
+
+  const day = date.getDate();
+  const month = date.toLocaleString('en-US', { month: 'short' });
+  const year = date.getFullYear();
+  const time = date.toLocaleString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+  return `${day} ${month}, ${year}, ${time}`;
 }
 
 export type RelativeTimeInput =

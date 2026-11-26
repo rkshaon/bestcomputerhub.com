@@ -635,7 +635,7 @@ if (process.client) {
           <!-- Track Your Order -->
           <NuxtLink 
             v-if="!isAuthRoute"
-            to="/my-account/" 
+            to="/track-order/" 
             class="hidden sm:inline-flex items-center gap-1.5 h-[30px] px-3 rounded-xl border border-header-primary/40 bg-header-accent text-header-foreground hover:border-header-primary/70 hover:bg-header-accent/80 hover:text-header-foreground text-xs font-semibold leading-none transition-all shrink-0"
             title="Track Your Order"
             aria-label="Track Your Order"
@@ -687,11 +687,11 @@ if (process.client) {
           <button 
             v-if="!isAuthRoute"
             @click="uiStore.toggleCart()" 
-            class="inline-flex items-center justify-center w-[30px] h-[30px] bg-header-accent text-header-foreground hover:bg-header-accent/80 hover:text-header-foreground rounded-xl transition-colors relative shrink-0"
+            class="inline-flex items-center justify-center w-[30px] h-[30px] rounded-xl border border-header-primary/40 bg-header-accent text-header-foreground hover:border-header-primary/70 hover:bg-header-accent/80 hover:text-header-foreground text-xs font-semibold leading-none transition-all relative shrink-0"
             title="Shopping Bag"
             aria-label="Cart"
           >
-            <Handbag class="w-4 h-4 text-header-foreground" />
+            <Handbag class="w-4 h-4 text-header-foreground shrink-0" />
             <span 
               v-if="cartStore.totalItems > 0" 
               class="absolute -bottom-0.5 -right-0.5 bg-brand text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"

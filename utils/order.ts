@@ -1,7 +1,15 @@
 // File: /utils/order.ts
 // Pure normalizers from the backend storefront order contract
 // (ZayrahLife-Backend/docs/checkout-api.md) to the frontend `Order` model.
-import type { Order, OrderItem, OrderStatus, OrderPaymentStatus, OrderStatusOption } from '@/types/order';
+import type {
+  Order,
+  OrderItem,
+  OrderStatus,
+  OrderPaymentStatus,
+  OrderStatusOption,
+  TrackedOrder,
+  TrackedOrderItem
+} from '@/types/order';
 import type {
   ApiMoney,
   BackendOrderDetail,
@@ -251,4 +259,131 @@ export function getAvailableOrderStatusOptions(params: {
     ...option,
     value: String(option.value).trim().toUpperCase()
   }));
+}
+
+function normalizeDecimalString(value: unknown, fallback = '0.00'): string {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? String(value) : fallback;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(trimmed)) {
+      return trimmed;
+    }
+  }
+  return fallback;
+}
+
+/** Checks whether a decimal string or number represents a value strictly greater than zero. */
+export function isPositiveDecimalString(value: string | number | null | undefined): boolean {
+  if (value === null || value === undefined) return false;
+  const raw = typeof value === 'number' ? (Number.isFinite(value) ? String(value) : '') : String(value).trim();
+  if (!raw) return false;
+  const match = raw.match(/^([+-])?(?:(\d+)(?:\.(\d*))?|\.(\d+))$/);
+  if (!match || match[1] === '-') return false;
+  const intDigits = match[2] ?? '0';
+  const fracDigits = match[3] ?? match[4] ?? '';
+  return /[1-9]/.test(intDigits) || /[1-9]/.test(fracDigits);
+}
+
+/** Extracts a human-readable shipping method label from `shipping_method_snapshot`. */
+export function extractShippingMethodSnapshotLabel(snapshot: unknown): string | null {
+  if (typeof snapshot === 'string') {
+    const trimmed = snapshot.trim();
+    return trimmed || null;
+  }
+  if (snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)) {
+    const record = snapshot as Record<string, unknown>;
+    for (const key of ['name', 'title', 'label', 'code']) {
+      const candidate = record[key];
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+  }
+  return null;
+}
+
+function formatFallbackStatusLabel(status: string | null | undefined): string {
+  const cleaned = String(status ?? '').trim();
+  if (!cleaned) return 'Pending';
+  return cleaned
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+/**
+ * Validates and normalizes `GET /api/v1/sales/track/{invoice_number}/` responses.
+ * Throws an error with `isUnexpectedPayload = true` on empty or malformed payloads.
+ */
+export function mapTrackedOrder(raw: unknown, requestedInvoice?: string): TrackedOrder {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    const err = new Error('Received an unexpected order tracking response.') as Error & { isUnexpectedPayload?: boolean };
+    err.isUnexpectedPayload = true;
+    throw err;
+  }
+
+  const record = raw as Record<string, unknown>;
+  const hasInvoice = typeof record.invoice_number === 'string' && record.invoice_number.trim().length > 0;
+  const hasStatusLabel = typeof record.status_label === 'string' && record.status_label.trim().length > 0;
+  const hasStatus = typeof record.status === 'string' && record.status.trim().length > 0;
+  const hasItems = Array.isArray(record.items);
+
+  if (!hasItems || (!hasInvoice && !hasStatusLabel && !hasStatus)) {
+    const err = new Error('Received an unexpected order tracking response.') as Error & { isUnexpectedPayload?: boolean };
+    err.isUnexpectedPayload = true;
+    throw err;
+  }
+
+  const items: TrackedOrderItem[] = (record.items as unknown[]).map((rawItem) => {
+    const item = rawItem && typeof rawItem === 'object' && !Array.isArray(rawItem)
+      ? (rawItem as Record<string, unknown>)
+      : {};
+    const productName = typeof item.product_name === 'string' && item.product_name.trim()
+      ? item.product_name.trim()
+      : 'Product';
+    const variantName = typeof item.variant_name === 'string' && item.variant_name.trim()
+      ? item.variant_name.trim()
+      : null;
+    const sku = typeof item.sku === 'string' && item.sku.trim() ? item.sku.trim() : 'N/A';
+    const parsedQty = typeof item.quantity === 'number' ? item.quantity : Number(item.quantity);
+    const quantity = Number.isFinite(parsedQty) && parsedQty >= 0 ? Math.trunc(parsedQty) : 0;
+
+    return {
+      productName,
+      variantName,
+      sku,
+      quantity,
+      unitPrice: normalizeDecimalString(item.unit_price),
+      lineTotal: normalizeDecimalString(item.line_total)
+    };
+  });
+
+  const rawStatus = typeof record.status === 'string' ? record.status.trim() : '';
+  const status = normalizeOrderStatus(rawStatus);
+  const statusLabel = typeof record.status_label === 'string' && record.status_label.trim()
+    ? record.status_label.trim()
+    : formatFallbackStatusLabel(rawStatus);
+  const invoiceNumber = typeof record.invoice_number === 'string' && record.invoice_number.trim()
+    ? record.invoice_number.trim()
+    : (requestedInvoice?.trim() || 'N/A');
+
+  return {
+    invoiceNumber,
+    saleDate: typeof record.sale_date === 'string' ? record.sale_date.trim() : '',
+    createdAt: typeof record.created_at === 'string' ? record.created_at.trim() : '',
+    status,
+    rawStatus: rawStatus || status.toUpperCase(),
+    statusLabel,
+    subtotalAmount: normalizeDecimalString(record.subtotal_amount),
+    discountAmount: normalizeDecimalString(record.discount_amount),
+    taxAmount: normalizeDecimalString(record.tax_amount),
+    shippingAmount: normalizeDecimalString(record.shipping_amount),
+    totalAmount: normalizeDecimalString(record.total_amount),
+    shippingMethodLabel: extractShippingMethodSnapshotLabel(record.shipping_method_snapshot),
+    items
+  };
 }
