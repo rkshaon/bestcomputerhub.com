@@ -180,21 +180,6 @@ const activeFiltersCount = computed(() => {
 
 <template>
   <div class="min-h-screen pb-20">
-    <!-- Header -->
-    <section class="bg-black text-white pt-32 pb-20 relative overflow-hidden">
-      <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.1),transparent_50%)]"></div>
-      <div class="container mx-auto px-4 relative">
-        <div class="max-w-3xl space-y-4">
-          <h1 class="text-4xl md:text-6xl font-display font-extrabold tracking-tight">
-            Enterprise <span class="italic text-primary">Catalog</span>
-          </h1>
-          <p class="text-lg text-white/50 max-w-xl">
-            Explore our curated selection of high-performance hardware, ranging from semiconductor components to full server architectures.
-          </p>
-        </div>
-      </div>
-    </section>
-
     <!-- Toolbar -->
     <div class="sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-b py-4">
       <div class="container mx-auto px-4">
