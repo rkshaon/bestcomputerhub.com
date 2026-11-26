@@ -1,0 +1,98 @@
+# Best Computer Hub
+
+> Best Computer Hub (Best Computer Hub Ltd) is a technology retailer and IT solutions provider in Bangladesh (established 2024), offering authentic laptops, desktop and gaming PCs, computer components, monitors, printers, enterprise and home networking equipment, surveillance systems, smart TVs, eReaders, and gadgets with nationwide delivery across all 64 districts.
+
+- **Website**: https://bestcomputerhub.com/
+- **Customer Support Email**: support@bestcomputerhub.com
+- **Phone / Hotline**: (+880) 1794062601, (+880) 1783553844, (+880) 1714111479 (Repair Hub phone hours: 10:00 AM – 7:00 PM)
+- **Office Address**: 74/1 (1st Floor), Rajonigondha Bhaban, Science Laboratory Road, Dhanmondi, Dhaka 1205, Bangladesh
+- **Repair Hub Address**: GM Plaza, Level-1, 93 New Elephant Road, Dhaka-1205, Bangladesh
+- **Business Registration**: Trade License TRAD/DSCC/034174/2023 | TIN 645229471858 | VAT BIN 006098335-0201 | Member of Dhaka Chamber of Commerce & Industry (DCCI)
+- **Payment Options**: Cash on Delivery (selected areas), bKash, Nagad, Rocket, Bank Transfer, Visa, and Mastercard; Credit Card EMI via SSLCOMMERZ for eligible orders of BDT 5,000 and above (up to 36 months depending on participating bank)
+
+## Storefront & Catalog
+
+- [Home](https://bestcomputerhub.com/): Storefront overview, featured hardware categories, best sellers, and brand showcase.
+- [Shop All Products](https://bestcomputerhub.com/shop-now/): Full searchable and filterable product catalog with category, manufacturer, price range, and sorting controls.
+- [Blog & Tech Insights](https://bestcomputerhub.com/blog/): Hardware reviews, product overviews, and buying guides.
+- [XML Sitemap](https://bestcomputerhub.com/sitemap.xml): Canonical index of all public products, categories, brands, blog posts, and informational pages.
+
+## Product Categories
+
+### Primary Navigation Categories
+
+- [Brand Laptop & PC](https://bestcomputerhub.com/product-category/brand-laptop-pc/): Laptops, Desktop PCs, All-in-One PCs, Mini PCs, and official accessories.
+- [Gaming Component](https://bestcomputerhub.com/product-category/gaming-component/): Gaming laptops, gaming desktop components, gaming peripherals, and sound systems.
+- [PC Component](https://bestcomputerhub.com/product-category/pc-component/): Processors, motherboards, graphics cards, monitors, desktop/laptop RAM, SSDs, hard drives, power supplies, casings, coolers, keyboards, mice, UPS & IPS, and office equipment.
+- [Networking Component](https://bestcomputerhub.com/product-category/networking-component/): Wi-Fi routers, broadband routers, managed and PoE switches, access points, firewalls, OLTs/ONUs, fiber optics, and passive networking accessories.
+- [Surveillance & Security](https://bestcomputerhub.com/product-category/surveillance-security/): CCTV and IP cameras, DVR/NVR/XVR recorders, access control systems, home security, and digital lockers.
+- [Server, Storage & Software](https://bestcomputerhub.com/product-category/server-storage/): Enterprise servers, server racks, NAS/SAN storage, cloud and backup solutions, licensed operating systems, office suites, and antivirus software.
+- [Gadget](https://bestcomputerhub.com/product-category/gadget/): Smartphones and tablets, smart watches, earbuds, headphones, power banks, drones, E Ink eReaders, portable power stations, solar panels/inverters, and content creator gear.
+- [Smart Home Appliance](https://bestcomputerhub.com/product-category/smart-home-appliance/): Smart TVs, air conditioners, smart home IoT devices, voice assistants, smart displays, rechargeable fans, and air humidifiers.
+- [Convenience Hub](https://bestcomputerhub.com/product-category/convenience-hub/): Healthcare, grooming, kids zone, pet zone, vehicle, and lifestyle electronics.
+
+### Popular Product Subcategories
+
+- [Laptops](https://bestcomputerhub.com/product-category/laptop-brand-laptop-pc/): Student, business, creator, workstation, and gaming laptops.
+- [Desktop PCs](https://bestcomputerhub.com/product-category/desktop-pc/): Branded and custom desktop computers.
+- [Monitors](https://bestcomputerhub.com/product-category/monitor/): Gaming, curved, 4K, ultrawide, and professional displays.
+- [Processors](https://bestcomputerhub.com/product-category/processor/): Intel and AMD desktop processors.
+- [Graphics Cards](https://bestcomputerhub.com/product-category/graphics-processing-unit/): Discrete GPUs for gaming, rendering, and workstations.
+- [Printers](https://bestcomputerhub.com/product-category/printer/): Laser, inkjet, and office printing hardware.
+- [Wi-Fi Routers](https://bestcomputerhub.com/product-category/wi-fi-router/): Home, Wi-Fi 6, mesh, and high-coverage wireless routers.
+- [UPS & IPS](https://bestcomputerhub.com/product-category/ups-ips/): Offline, online, and line-interactive power backup systems.
+- [Smart TVs](https://bestcomputerhub.com/product-category/smart-tv/): Android TV, Google TV, 4K, OLED, and QLED televisions.
+- [eReaders](https://bestcomputerhub.com/product-category/ereader/): Amazon Kindle, BOOX, and digital E Ink reading devices.
+
+## Featured Brands
+
+- [Apple](https://bestcomputerhub.com/brand/apple/): MacBooks, iMacs, iPads, AirPods, Apple Watches, and official accessories.
+- [ASUS](https://bestcomputerhub.com/brand/asus/): Laptops, motherboards, graphics cards, monitors, and networking hardware.
+- [HP](https://bestcomputerhub.com/brand/hp/): Laptops, desktop PCs, printers, and office equipment.
+- [Dell](https://bestcomputerhub.com/brand/dell/): Business and consumer laptops, desktops, and monitors.
+- [Lenovo](https://bestcomputerhub.com/brand/lenovo/): Consumer, business, and workstation laptops and tablets.
+- [MSI](https://bestcomputerhub.com/brand/msi/): Gaming laptops, motherboards, GPUs, monitors, and PC components.
+- [Samsung](https://bestcomputerhub.com/brand/samsung/): Monitors, SSDs, smart TVs, and mobile devices.
+- [Logitech](https://bestcomputerhub.com/brand/logitech/): Keyboards, mice, headsets, webcams, and conference systems.
+- [Cisco](https://bestcomputerhub.com/brand/cisco/): Enterprise switches, access points, and networking hardware.
+- [MikroTik](https://bestcomputerhub.com/brand/mikrotik/): ISP routers, switches, and wireless networking gear.
+- [TP-Link](https://bestcomputerhub.com/brand/tp-link/): Home and SMB Wi-Fi routers, access points, and switches.
+- [Hikvision](https://bestcomputerhub.com/brand/hikvision/): CCTV cameras, IP cameras, NVRs, and security systems.
+
+## Services & Company Information
+
+- [About Us](https://bestcomputerhub.com/about-us/): Company overview, trade license, retail and corporate IT procurement services, and supported brands.
+- [Repair Hub](https://bestcomputerhub.com/repair-hub/): Hardware diagnostics and repair services for laptops, desktops, printers, CCTV cameras, monitors, and Smart TVs in Dhaka with a 7-day service warranty.
+- [EMI Information](https://bestcomputerhub.com/emi-information/): Credit card Equal Monthly Installment (EMI) terms, minimum BDT 5,000 eligibility, up to 36-month tenures, and participating banks via SSLCOMMERZ.
+- [Our Certifications](https://bestcomputerhub.com/our-certifications/): Recognition of membership in the Dhaka Chamber of Commerce & Industry (DCCI).
+
+## Customer Policies & Legal
+
+- [Warranty Policy](https://bestcomputerhub.com/warranty-policy/): Manufacturer/brand warranty handling, invoice requirements, 7–15 working day standard turnaround (longer if imported parts are needed), and warranty exclusions.
+- [Return, Refund & After-Sales Policy](https://bestcomputerhub.com/return-refund-policy/): 7-day return/replacement eligibility for online orders, 24-hour reporting window for defects/wrong items/transit damage, 3–7 business day refund processing, and non-returnable exclusions.
+- [Delivery Policy](https://bestcomputerhub.com/delivery-policy/): Nationwide delivery terms across Bangladesh, 1–3 working day typical delivery timeframe, Cash on Delivery rules, and outside-Dhaka courier terms.
+- [Terms & Conditions](https://bestcomputerhub.com/terms-conditions/): Storefront purchase terms, pricing and stock availability disclaimers, and warranty facilitation scope.
+- [Disclaimer](https://bestcomputerhub.com/disclaimer/): Registered legal business identity (Trade License, TIN, VAT BIN), product listing accuracy, and pricing disclaimers.
+- [Digital Commerce Service Policy](https://bestcomputerhub.com/digital-ecom-2021/): Compliance statement for Bangladesh Digital Commerce Operation Guidelines 2021, accepted payment methods, pricing rules, and 1–5 business day delivery policy.
+
+## Optional
+
+### Selected Buying Guides & Product Reviews
+
+- [Apple MacBook Buying Guide: Specs, Prices, and Tips](https://bestcomputerhub.com/blog/apple-macbook-buying-guide/): Overview of MacBook configurations, specifications, and purchasing considerations.
+- [Laptop Prices in BD 2026 – Best Deals on Gaming & Budget Laptops](https://bestcomputerhub.com/blog/laptop-prices-in-bd-2026/): Guide to gaming and budget laptop options in Bangladesh.
+- [Complete Guide to Choosing the Right Solar Panel in Bangladesh 2026](https://bestcomputerhub.com/blog/solar-panel-in-bangladesh/): Practical guidance on selecting solar panels for power backup needs.
+- [Affordable Mini UPS in 2026 – Home & Office Internet Backup](https://bestcomputerhub.com/blog/affordable-mini-ups-in-2026/): Guide to Mini UPS backup options for routers and home/office connectivity.
+- [Best TP-Link Router Models for Fast and Secure Home & Business Wi-Fi in 2026](https://bestcomputerhub.com/blog/best-tp-link-router-models-in-2026/): Comparison of TP-Link wireless router models for home and SMB networks.
+- [Affordable ISP Routing: Best Mikrotik Routers for Reliable Network Performance in 2026](https://bestcomputerhub.com/blog/best-mikrotik-routers/): Overview of MikroTik routing hardware for ISP and enterprise networks.
+- [Best QNAP NAS Storage Solutions for Small Business and Home Users in 2026](https://bestcomputerhub.com/blog/best-qnap-nas-storage-solutions/): Guide to QNAP network-attached storage systems.
+- [Kobo eReaders Review 2026: Clara BW, Clara Colour, and Libra Colour Comparison](https://bestcomputerhub.com/blog/kobo-ereaders-review/): Feature comparison of Kobo E Ink eReaders.
+- [Amazon Kindle E-Reader Price & Review in Bangladesh 2026](https://bestcomputerhub.com/blog/amazon-kindle-e-reader-price/): Overview and review of Amazon Kindle models available in Bangladesh.
+
+### Official Social Profiles
+
+- [Facebook](https://www.facebook.com/bestcomputerhubltd)
+- [X / Twitter](https://x.com/bestcomhubltd)
+- [LinkedIn](https://www.linkedin.com/company/best-computer-hub-ltd/home/)
+- [Instagram](https://www.instagram.com/bestcomputerhubltd)
+- [YouTube](https://www.youtube.com/@bestcomputerhubltd)
