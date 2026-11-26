@@ -635,7 +635,7 @@ if (process.client) {
           <!-- Track Your Order -->
           <NuxtLink 
             v-if="!isAuthRoute"
-            to="/my-account/" 
+            to="/track-order/" 
             class="hidden sm:inline-flex items-center gap-1.5 h-[30px] px-3 rounded-xl border border-header-primary/40 bg-header-accent text-header-foreground hover:border-header-primary/70 hover:bg-header-accent/80 hover:text-header-foreground text-xs font-semibold leading-none transition-all shrink-0"
             title="Track Your Order"
             aria-label="Track Your Order"

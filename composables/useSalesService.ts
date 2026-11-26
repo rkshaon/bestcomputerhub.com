@@ -1,10 +1,10 @@
 // File: /composables/useSalesService.ts
 import { ref } from 'vue';
 import { useApiClient } from './useApiClient';
-import type { Order, OrderStatusResponse } from '@/types/order';
+import type { Order, OrderStatusResponse, BackendSaleTrackingResponse, TrackedOrder } from '@/types/order';
 import type { BackendOrderDetail } from '@/types/checkout';
 import type { SalesPerformanceReport } from '@/types/admin';
-import { mapOrderSummary, mapOrderDetail } from '@/utils/order';
+import { mapOrderSummary, mapOrderDetail, mapTrackedOrder } from '@/utils/order';
 
 export const pendingOrdersCount = ref<number | null>(null);
 
@@ -114,6 +114,27 @@ export const useSalesService = () => {
     }
   };
 
+  const trackOrderByInvoice = async (
+    invoiceNumber: string,
+    options: { signal?: AbortSignal } = {}
+  ): Promise<TrackedOrder> => {
+    const normalizedInvoice = String(invoiceNumber ?? '').trim();
+    if (!normalizedInvoice) {
+      throw new Error('Invoice number is required.');
+    }
+
+    const data = await apiClient.request<BackendSaleTrackingResponse>(
+      `/api/v1/sales/track/${encodeURIComponent(normalizedInvoice)}/`,
+      {
+        method: 'GET',
+        isPublic: true,
+        ...(options.signal ? { signal: options.signal } : {})
+      }
+    );
+
+    return mapTrackedOrder(data, normalizedInvoice);
+  };
+
   return {
     getSales,
     getStatuses,
@@ -123,6 +144,7 @@ export const useSalesService = () => {
     markPaid,
     getSalesSummary,
     getSalesPerformance,
+    trackOrderByInvoice,
     pendingOrdersCount,
     isLoading: apiClient.isLoading,
     errorMsg: apiClient.errorMsg

@@ -661,6 +661,22 @@ Components are classified using four standard metadata properties:
 
 ---
 
+### `<TrackOrderDetails>`
+- **Exact File Location**: `/components/commerce/TrackOrderDetails.vue`
+- **Component Type**: Domain component / Data-display
+- **Scope**: Storefront (Public)
+- **Purpose**: Renders verified public order tracking details (`Order Information`, responsive `Order Items`, and `Order Summary`) from `GET /api/v1/sales/track/{invoice_number}/`.
+- **Routes/Pages Used**: Track Your Order (`/track-order/`).
+- **Main Responsibilities**:
+  - Render invoice number, authoritative `statusLabel` + `status`, `saleDate`, `createdAt`, and optional `shippingMethodLabel`.
+  - Render product items in a desktop table and mobile stacked cards with decoded product names, optional `variantName`, `sku`, `quantity`, `unitPrice`, and `lineTotal`.
+  - Format decimal string monetary fields losslessly via `formatDecimalCurrency`.
+- **What It Explicitly Does Not Own**: API fetching, URL query synchronization, or fabricated delivery timelines.
+- **Calls API**: No (receives `TrackedOrder` prop).
+- **Related Composables/Services**: `formatDecimalCurrency`, `formatCalendarDate`, `formatDateTime`, `decodeHtmlEntities`, `isPositiveDecimalString`.
+
+---
+
 ### `<HeroSection>`
 - **Exact File Location**: `/components/home/HeroSection.vue`
 - **Component Type**: Domain / Home feature

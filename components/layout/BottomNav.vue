@@ -32,7 +32,7 @@ const isVisible = computed(() => {
 const isHomeActive = computed(() => route.path === '/');
 const isAccountActive = computed(() => route.path.startsWith('/my-account') || route.path.startsWith('/login'));
 const isCartActive = computed(() => uiStore.isCartOpen || route.path.startsWith('/cart'));
-const isTrackActive = computed(() => route.path.startsWith('/my-account'));
+const isTrackActive = computed(() => route.path.startsWith('/track-order'));
 
 const accountLink = computed(() => {
   return authStore.isLoggedIn ? '/my-account/' : '/login/';
@@ -148,7 +148,7 @@ const handleMenuClick = () => {
 
       <!-- 7. Track Order -->
       <NuxtLink
-        to="/my-account/"
+        to="/track-order/"
         class="flex flex-col items-center justify-center h-full w-full py-1 px-0.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-header-primary"
         :class="isTrackActive ? 'text-header-primary font-semibold' : 'text-header-muted-foreground hover:text-header-foreground'"
         title="Track Order"
