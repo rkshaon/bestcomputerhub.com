@@ -326,7 +326,7 @@ const childSubmenuStyle = computed<Record<string, string>>(() => {
                 'flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold leading-none transition-colors select-none cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-header-primary',
                 activeItemId === String(item.id)
                   ? 'bg-header-primary/10 text-header-primary font-bold'
-                  : 'text-header-card-foreground/85 hover:bg-header-muted/70 hover:text-header-card-foreground'
+                  : 'text-header-foreground hover:bg-header-muted/70 hover:text-header-card-foreground'
               )"
               @focus="handleItemEnter(item, $event)"
               @click="handleLinkClick"
