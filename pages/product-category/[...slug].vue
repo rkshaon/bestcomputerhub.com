@@ -1314,9 +1314,9 @@ const resetFilters = () => {
           <!-- Grid of Products / Skeletons -->
           <div 
             v-if="isProductsLoading" 
-            class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            class="grid gap-3 sm:gap-6 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           >
-            <div v-for="i in 10" :key="i" class="bg-card rounded-2xl border p-6 space-y-4 animate-pulse">
+            <div v-for="i in 10" :key="i" class="bg-card rounded-2xl border p-3 sm:p-6 space-y-4 animate-pulse">
               <div class="aspect-video bg-muted rounded-xl w-full"></div>
               <div class="space-y-2">
                 <div class="h-4 bg-muted rounded w-1/3"></div>
@@ -1330,7 +1330,7 @@ const resetFilters = () => {
           </div>
 
           <div v-else-if="products.length > 0">
-            <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div class="grid gap-3 sm:gap-6 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               <CommerceProductCard
                 v-for="(product, index) in products"
                 :key="product.id"
