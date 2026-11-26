@@ -614,7 +614,7 @@ if (process.client) {
             title="PC Builder"
             aria-label="PC Builder"
           >
-            <Cpu class="w-4 h-4 text-brand shrink-0" />
+            <Cpu class="w-4 h-4 text-header-foreground shrink-0" />
             <span>PC Builder</span>
           </div>
 
@@ -640,7 +640,7 @@ if (process.client) {
             title="Track Your Order"
             aria-label="Track Your Order"
           >
-            <PackageSearch class="w-4 h-4 text-brand shrink-0" />
+            <PackageSearch class="w-4 h-4 text-header-foreground shrink-0" />
             <span>Track Order</span>
           </NuxtLink>
 
@@ -679,7 +679,7 @@ if (process.client) {
             :title="authStore.isLoggedIn ? 'Account Dashboard' : 'Login or Sign Up'"
             :aria-label="authStore.isLoggedIn ? 'Account Dashboard' : 'Login'"
           >
-            <User class="w-4 h-4 text-brand shrink-0" />
+            <User class="w-4 h-4 text-header-foreground shrink-0" />
             <span>{{ authStore.isLoggedIn ? (authStore.user?.name || 'Account') : 'Hello, Login' }}</span>
           </NuxtLink>
 
@@ -691,7 +691,7 @@ if (process.client) {
             title="Shopping Bag"
             aria-label="Cart"
           >
-            <Handbag class="w-4 h-4" />
+            <Handbag class="w-4 h-4 text-header-foreground" />
             <span 
               v-if="cartStore.totalItems > 0" 
               class="absolute -bottom-0.5 -right-0.5 bg-brand text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs"
