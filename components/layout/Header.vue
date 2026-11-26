@@ -539,11 +539,11 @@ if (process.client) {
           <NuxtLink 
             v-if="isSuperAdmin" 
             to="/admin" 
-            class="hidden sm:flex items-center gap-1.5 h-[30px] px-3 bg-header-primary/10 hover:bg-header-primary/20 border border-header-primary/20 text-brand rounded-xl transition-all duration-300 hover:scale-[1.02] mr-1 shrink-0" 
+            class="hidden sm:inline-flex items-center gap-1.5 h-[30px] px-3 rounded-xl border border-header-primary/40 bg-header-accent text-header-foreground hover:border-header-primary/70 hover:bg-header-accent/80 hover:text-header-foreground text-xs font-semibold leading-none transition-all shrink-0" 
             title="Admin Protocol System"
           >
-            <ShieldCheck class="w-4 h-4" />
-            <span class="text-[9px] font-extrabold uppercase tracking-widest leading-none">Admin</span>
+            <ShieldCheck class="w-4 h-4 text-header-foreground shrink-0" />
+            <span>Admin</span>
           </NuxtLink>
 
           <!-- Mobile Admin Panel Button (Super Admin Exclusive, visible on small viewports) -->
