@@ -34,22 +34,74 @@ export function normalizePaymentStatus(status: string | null | undefined): Order
   return String(status || 'UNPAID').toLowerCase() as OrderPaymentStatus;
 }
 
+function normalizeSlug(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const cleaned = value.trim().replace(/^\/+|\/+$/g, '');
+  return cleaned || undefined;
+}
+
+function extractOrderItemProductName(item: BackendOrderItem): string {
+  const variantProduct = item.product_variant?.product;
+  if (typeof variantProduct === 'string' && variantProduct.trim()) {
+    return variantProduct;
+  }
+  if (
+    variantProduct &&
+    typeof variantProduct === 'object' &&
+    typeof variantProduct.name === 'string' &&
+    variantProduct.name.trim()
+  ) {
+    return variantProduct.name;
+  }
+  if (item.product_variant?.name) {
+    return item.product_variant.name;
+  }
+  if (
+    item.product &&
+    typeof item.product === 'object' &&
+    typeof item.product.name === 'string' &&
+    item.product.name.trim()
+  ) {
+    return item.product.name;
+  }
+  return item.product_name;
+}
+
+function extractOrderItemProductSlug(item: BackendOrderItem): string | undefined {
+  const variantProduct = item.product_variant?.product;
+  const nestedVariantProductSlug =
+    variantProduct && typeof variantProduct === 'object' ? variantProduct.slug : undefined;
+  const nestedItemProductSlug =
+    item.product && typeof item.product === 'object' ? item.product.slug : undefined;
+
+  return (
+    normalizeSlug(item.product_slug) ||
+    normalizeSlug(item.product_variant?.product_slug) ||
+    normalizeSlug(nestedVariantProductSlug) ||
+    normalizeSlug(nestedItemProductSlug) ||
+    normalizeSlug(item.slug) ||
+    normalizeSlug(item.product_variant?.slug)
+  );
+}
+
 function mapOrderItem(item: BackendOrderItem): OrderItem {
   const unitPrice = toMoney(item.unit_price);
   const variantId = item.product_variant?.id;
+  const slug = extractOrderItemProductSlug(item);
   return {
     id: String(item.id),
     productId: variantId !== undefined && variantId !== null ? String(variantId) : '',
     product: {
       id: variantId !== undefined && variantId !== null ? String(variantId) : '',
-      name: item.product_variant.product || item.product_variant.name || item.product_name,
+      name: extractOrderItemProductName(item),
+      ...(slug ? { slug } : {}),
       price: unitPrice,
       images: []
     },
     quantity: item.quantity,
     price: unitPrice,
     lineTotal: toMoney(item.line_total),
-    sku: item.product_variant.sku || undefined
+    sku: item.product_variant?.sku || undefined
   };
 }
 
