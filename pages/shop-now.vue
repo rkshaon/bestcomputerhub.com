@@ -21,6 +21,7 @@ const { trackViewItemList } = useAnalytics();
 const route = useRoute();
 const router = useRouter();
 
+
 // Filters State
 const filters = ref({
   query: (route.query.q as string) || '',
@@ -82,7 +83,7 @@ const fetchProducts = async () => {
       maxPrice: filters.value.maxPrice,
       sort: filters.value.sort,
       page: currentPage.value,
-      page_size: 12
+      page_size: 20
     });
     loadedProducts.value = res.results;
     totalCount.value = res.count;
