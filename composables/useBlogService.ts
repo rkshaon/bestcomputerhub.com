@@ -15,7 +15,9 @@ import type {
   UpdateBlogTagPayload,
   PaginatedBlogTags,
   BlogPostQueryParams,
-  PaginatedBlogPosts
+  PaginatedBlogPosts,
+  MostViewedBlogPostQueryParams,
+  PaginatedMostViewedBlogPosts
 } from '@/types';
 
 const isLoading = ref(false);
@@ -79,6 +81,35 @@ export const useBlogService = () => {
     }
 
     const data = await apiClient.request<PaginatedBlogCategories>('/api/v1/blog/posts/categories/', {
+      method: 'GET',
+      params: queryObj
+    });
+
+    const results = Array.isArray(data?.results) ? data.results : [];
+    const count = typeof data?.count === 'number' ? data.count : results.length;
+
+    return {
+      count,
+      next: data?.next ?? null,
+      previous: data?.previous ?? null,
+      results
+    };
+  };
+
+  /**
+   * Fetch paginated list of most viewed blog posts (GET /api/v1/blog/posts/most-viewed/)
+   * Avoids module-level singleton loading/error refs so callers remain independent.
+   */
+  const getMostViewedBlogPosts = async (
+    params?: MostViewedBlogPostQueryParams
+  ): Promise<PaginatedMostViewedBlogPosts> => {
+    const queryObj: Record<string, number> = {};
+    if (params) {
+      if (params.page !== undefined && params.page !== null) queryObj.page = params.page;
+      if (params.page_size !== undefined && params.page_size !== null) queryObj.page_size = params.page_size;
+    }
+
+    const data = await apiClient.request<PaginatedMostViewedBlogPosts>('/api/v1/blog/posts/most-viewed/', {
       method: 'GET',
       params: queryObj
     });
@@ -490,6 +521,7 @@ export const useBlogService = () => {
   return {
     getBlogPosts,
     getBlogCategories,
+    getMostViewedBlogPosts,
     getBlogPost,
     updateBlogPost,
     assignBlogPostCategories,

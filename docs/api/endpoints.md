@@ -5,8 +5,8 @@ This document serves as the authoritative inventory of all API operations for th
 ## Summary Statistics
 | Metric | Value |
 |---|---|
-| Total Unique Operations | 162 |
-| GET | 73 |
+| Total Unique Operations | 163 |
+| GET | 74 |
 | POST | 68 |
 | PATCH | 16 |
 | DELETE | 5 |
@@ -60,6 +60,7 @@ This document serves as the authoritative inventory of all API operations for th
 | `/api/v1/blog/posts/` | GET | Blog | `useBlogService` |
 | `/api/v1/blog/posts/{id}/` | GET | Blog | `useBlogService` |
 | `/api/v1/blog/posts/categories/` | GET | Blog | `useBlogService` |
+| `/api/v1/blog/posts/most-viewed/` | GET | Blog | `useBlogService` |
 | `/api/v1/blog/posts/{id}/categories/` | POST | Blog | `useBlogService` |
 | `/api/v1/blog/posts/{blogPostId}/categories/{categoryId}/` | DELETE | Blog | `useBlogService` |
 | `/api/v1/blog/posts/{id}/` | PATCH | Blog | `useBlogService` |
@@ -428,6 +429,12 @@ This document serves as the authoritative inventory of all API operations for th
 - **Method**: `GET`
 - **Request Parameters**: `page` (number, optional), `page_size` (number, optional)
 - **Response Structure**: `PaginatedBlogCategories` (`{ count: number, next: string | null, previous: string | null, results: BlogCategory[] }`, where `BlogCategory` has `{ id: number, name: string, slug: string, blog_post_count: number }`)
+
+#### List Most Viewed Blog Posts
+- **Endpoint**: `/api/v1/blog/posts/most-viewed/`
+- **Method**: `GET`
+- **Request Parameters**: `page` (number, optional), `page_size` (number, optional)
+- **Response Structure**: `PaginatedMostViewedBlogPosts` (`{ count: number, next: string | null, previous: string | null, results: MostViewedBlogPost[] }`, where `MostViewedBlogPost` has `{ id: number, slug: string, name: string, view_count: number }`)
 
 ## 4. Type Coverage Analysis
 - Most operations are strongly typed via interfaces in `/types/`.

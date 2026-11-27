@@ -88,6 +88,25 @@ export interface PaginatedBlogPosts {
   results: BlogPostItem[];
 }
 
+export interface MostViewedBlogPost {
+  id: number;
+  slug: string;
+  name: string;
+  view_count: number;
+}
+
+export interface MostViewedBlogPostQueryParams {
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedMostViewedBlogPosts {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: MostViewedBlogPost[];
+}
+
 export interface BlogTag {
   id: number;
   name: string;

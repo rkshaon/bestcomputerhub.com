@@ -3,13 +3,13 @@
 import { computed, ref, watch } from 'vue';
 import { useAsyncData, useHead, useRoute, useRouter, useRuntimeConfig, useSeoMeta } from '#app';
 import { useSiteConfig } from '#imports';
-import { Calendar, ArrowRight, Search, FileText, AlertCircle, RefreshCw, FolderOpen } from 'lucide-vue-next';
+import { Calendar, ArrowRight, Search, FileText, AlertCircle, RefreshCw, FolderOpen, TrendingUp, Eye } from 'lucide-vue-next';
 import { refDebounced } from '@vueuse/core';
 import { decodeHtmlEntities } from '@/utils';
 import { resolveOriginFromUrl } from '@/utils/cms';
 import { useBlogService } from '@/composables/useBlogService';
 import { extractErrorMessage } from '@/composables/useToast';
-import type { PaginatedBlogCategories, PaginatedBlogPosts } from '@/types';
+import type { PaginatedBlogCategories, PaginatedBlogPosts, PaginatedMostViewedBlogPosts } from '@/types';
 import UiBadge from '@/components/ui/UiBadge.vue';
 import UiButton from '@/components/ui/Button.vue';
 import UiPagination from '@/components/ui/UiPagination.vue';
@@ -109,6 +109,21 @@ const {
     })
 );
 
+// Independent SSR-compatible fetch for top 5 most viewed blogs in the sidebar.
+const {
+  data: mostViewedResponse,
+  status: mostViewedStatus,
+  error: mostViewedError,
+  refresh: refreshMostViewed
+} = await useAsyncData<PaginatedMostViewedBlogPosts>(
+  'blog-sidebar-most-viewed',
+  () =>
+    blogService.getMostViewedBlogPosts({
+      page: 1,
+      page_size: 5
+    })
+);
+
 const posts = computed(() => postsResponse.value?.results || []);
 const totalCount = computed(() => postsResponse.value?.count || 0);
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize.value)));
@@ -124,6 +139,14 @@ const isCategoriesLoading = computed(() => categoriesStatus.value === 'pending')
 const categoriesErrorMessage = computed(() =>
   categoriesError.value
     ? extractErrorMessage(categoriesError.value, 'Failed to load blog categories.')
+    : null
+);
+
+const mostViewedPosts = computed(() => (mostViewedResponse.value?.results || []).slice(0, 5));
+const isMostViewedLoading = computed(() => mostViewedStatus.value === 'pending');
+const mostViewedErrorMessage = computed(() =>
+  mostViewedError.value
+    ? extractErrorMessage(mostViewedError.value, 'Failed to load most viewed blogs.')
     : null
 );
 
@@ -362,10 +385,10 @@ const clearSearch = () => {
         <!-- Right: Blog Discovery Sidebar -->
         <aside
           aria-label="Blog discovery sidebar"
-          class="w-full lg:w-80 xl:w-[340px] shrink-0 lg:sticky lg:top-28 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6"
+          class="w-full lg:w-80 xl:w-[340px] shrink-0 lg:self-start grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6"
         >
-          <!-- Top Categories Widget -->
-          <section class="bg-card border border-border rounded-[2rem] p-6 space-y-5 shadow-sm md:col-span-2 lg:col-span-1">
+          <!-- Widget 1: Top Categories -->
+          <section class="bg-card border border-border rounded-[2rem] p-6 space-y-5 shadow-sm">
             <div class="flex items-center justify-between gap-3 border-b border-border pb-4">
               <div class="flex items-center gap-2.5">
                 <FolderOpen class="w-4 h-4 text-primary shrink-0" />
@@ -379,7 +402,7 @@ const clearSearch = () => {
             </div>
 
             <!-- Categories Loading State -->
-            <div v-if="isCategoriesLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 animate-pulse">
+            <div v-if="isCategoriesLoading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-2 animate-pulse">
               <div
                 v-for="i in 6"
                 :key="i"
@@ -400,7 +423,7 @@ const clearSearch = () => {
             </div>
 
             <!-- Categories List -->
-            <ul v-else-if="topCategories.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
+            <ul v-else-if="topCategories.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-2">
               <li
                 v-for="cat in topCategories"
                 :key="cat.id"
@@ -430,6 +453,65 @@ const clearSearch = () => {
                 <ArrowRight class="w-3.5 h-3.5" />
               </NuxtLink>
             </div>
+          </section>
+
+          <!-- Widget 2: Most Viewed Blogs -->
+          <section class="bg-card border border-border rounded-[2rem] p-6 space-y-5 shadow-sm">
+            <div class="flex items-center justify-between gap-3 border-b border-border pb-4">
+              <div class="flex items-center gap-2.5">
+                <TrendingUp class="w-4 h-4 text-primary shrink-0" />
+                <h2 class="text-[18px] font-display font-bold text-foreground leading-tight">
+                  Most Viewed Blogs
+                </h2>
+              </div>
+              <UiBadge v-if="!isMostViewedLoading && mostViewedPosts.length > 0" variant="primary" size="xs">
+                Top {{ mostViewedPosts.length }}
+              </UiBadge>
+            </div>
+
+            <!-- Most Viewed Loading State -->
+            <div v-if="isMostViewedLoading" class="space-y-2 animate-pulse">
+              <div
+                v-for="i in 5"
+                :key="i"
+                class="h-12 rounded-xl bg-muted/70 border border-border/40"
+              ></div>
+            </div>
+
+            <!-- Most Viewed Error State (Isolated from Main Listing & Categories) -->
+            <div v-else-if="mostViewedErrorMessage" class="bg-destructive/10 border border-destructive/20 text-destructive rounded-xl p-4 space-y-3">
+              <div class="flex items-start gap-2.5">
+                <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
+                <p class="text-xs font-medium leading-relaxed">{{ mostViewedErrorMessage }}</p>
+              </div>
+              <UiButton variant="outline" size="sm" class="w-full rounded-xl gap-1.5" @click="refreshMostViewed()">
+                <RefreshCw class="w-3.5 h-3.5" />
+                Retry Most Viewed
+              </UiButton>
+            </div>
+
+            <!-- Most Viewed Compact Vertical List -->
+            <ul v-else-if="mostViewedPosts.length > 0" class="space-y-2">
+              <li v-for="item in mostViewedPosts" :key="item.id">
+                <NuxtLink
+                  :to="`/blog/${item.slug}/`"
+                  class="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-muted/40 border border-border/60 hover:border-primary/50 hover:bg-muted/70 flex items-center justify-between gap-3 transition-colors group"
+                >
+                  <span class="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                    {{ decodeHtmlEntities(item.name) }}
+                  </span>
+                  <span class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground tabular-nums shrink-0">
+                    <Eye class="w-3.5 h-3.5 text-muted-foreground/80" aria-hidden="true" />
+                    <span>{{ (item.view_count ?? 0).toLocaleString() }}</span>
+                  </span>
+                </NuxtLink>
+              </li>
+            </ul>
+
+            <!-- Most Viewed Empty State -->
+            <p v-else class="text-xs text-muted-foreground py-2 text-center">
+              No most viewed blogs available.
+            </p>
           </section>
         </aside>
       </div>
