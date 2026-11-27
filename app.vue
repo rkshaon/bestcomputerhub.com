@@ -43,7 +43,6 @@ onMounted(() => {
       <NuxtPage />
     </NuxtLayout>
     <LayoutFloatingActions />
-    <LayoutBackToTop />
     <Toaster position="top-center" :richColors="true" :closeButton="true" />
   </div>
 </template>

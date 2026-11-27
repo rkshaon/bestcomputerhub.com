@@ -5,8 +5,8 @@ This document serves as the authoritative inventory of all API operations for th
 ## Summary Statistics
 | Metric | Value |
 |---|---|
-| Total Unique Operations | 161 |
-| GET | 72 |
+| Total Unique Operations | 162 |
+| GET | 73 |
 | POST | 68 |
 | PATCH | 16 |
 | DELETE | 5 |
@@ -59,6 +59,7 @@ This document serves as the authoritative inventory of all API operations for th
 | `/api/v1/placements/{id}/` | DELETE | Banners | `useBannerService` |
 | `/api/v1/blog/posts/` | GET | Blog | `useBlogService` |
 | `/api/v1/blog/posts/{id}/` | GET | Blog | `useBlogService` |
+| `/api/v1/blog/posts/categories/` | GET | Blog | `useBlogService` |
 | `/api/v1/blog/posts/{id}/categories/` | POST | Blog | `useBlogService` |
 | `/api/v1/blog/posts/{blogPostId}/categories/{categoryId}/` | DELETE | Blog | `useBlogService` |
 | `/api/v1/blog/posts/{id}/` | PATCH | Blog | `useBlogService` |
@@ -419,6 +420,14 @@ This document serves as the authoritative inventory of all API operations for th
 - **Query Parameters**: `ids` (string), `is_menu` (boolean)
 - **Response Structure**: `CategoryChildrenApiItem[]` or `{ results: CategoryChildrenApiItem[] }`
 - **Normalization**: Maps backend item to frontend `Category` model.
+
+### Domain: Blog (`useBlogService`)
+
+#### List Blog Categories
+- **Endpoint**: `/api/v1/blog/posts/categories/`
+- **Method**: `GET`
+- **Request Parameters**: `page` (number, optional), `page_size` (number, optional)
+- **Response Structure**: `PaginatedBlogCategories` (`{ count: number, next: string | null, previous: string | null, results: BlogCategory[] }`, where `BlogCategory` has `{ id: number, name: string, slug: string, blog_post_count: number }`)
 
 ## 4. Type Coverage Analysis
 - Most operations are strongly typed via interfaces in `/types/`.

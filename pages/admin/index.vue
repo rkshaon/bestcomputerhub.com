@@ -7,9 +7,9 @@ import {
   ShoppingBag, 
   ShoppingCart,
   TrendingUp,
-  Download,
   Loader2,
   AlertCircle,
+  ShieldAlert,
   Receipt,
   Clock,
   User,
@@ -17,13 +17,20 @@ import {
 } from 'lucide-vue-next';
 import { useSalesService } from '@/composables/useSalesService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
+import { extractErrorMessage } from '@/composables/useToast';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/utils';
+import {
+  toMoney,
+  calculateDeliveredRevenuePercentage,
+  formatDeliveredRevenuePercentage,
+  normalizeComparisonGrowth
+} from '@/utils/order';
 import type { SalesPerformanceReport, SalesPerformanceLastOrder } from '@/types';
 import DashboardStatCard from '@/features/admin/components/DashboardStatCard.vue';
 import UiCard from '@/components/ui/UiCard.vue';
 
 definePageMeta({
-  layout: 'admin'
+  layout: false
 });
 
 const salesService = useSalesService();
@@ -53,7 +60,7 @@ const fetchPerformance = async () => {
     const data = await salesService.getSalesPerformance(performanceDays.value);
     performanceData.value = data;
   } catch (err: any) {
-    performanceError.value = err.message || 'Failed to load sales performance report.';
+    performanceError.value = extractErrorMessage(err, 'Failed to load sales performance report.');
   } finally {
     isPerformanceLoading.value = false;
   }
@@ -71,8 +78,39 @@ onMounted(() => {
   }
 });
 
-const overview = computed(() => performanceData.value?.overview || { total_orders: 0, total_revenue: 0, average_order_value: 0 });
-const comparison = computed(() => performanceData.value?.comparison || { order_growth_percentage: 0, revenue_growth_percentage: 0 });
+const overview = computed(() => performanceData.value?.overview ?? null);
+const totalRevenueAmount = computed(() => toMoney(overview.value?.total_revenue));
+const deliveredOrderAmount = computed(() => toMoney(overview.value?.delivered_order_amount));
+const deliveredRevenuePercentageValue = computed(() =>
+  calculateDeliveredRevenuePercentage(overview.value?.delivered_order_amount, overview.value?.total_revenue)
+);
+const deliveredRevenuePercentage = computed(() =>
+  formatDeliveredRevenuePercentage(overview.value?.delivered_order_amount, overview.value?.total_revenue)
+);
+const deliveredRevenueWatermarkColorClass = computed(() => {
+  const pct = deliveredRevenuePercentageValue.value;
+  if (pct > 75) {
+    return 'text-green-700/[0.18] dark:text-green-400/[0.18]';
+  }
+  if (pct > 50) {
+    return 'text-yellow-600/[0.22] dark:text-yellow-400/[0.18]';
+  }
+  return 'text-red-700/[0.18] dark:text-red-400/[0.18]';
+});
+const deliveredRevenueWatermarkSizeClass = computed(() => {
+  const length = deliveredRevenuePercentage.value.length;
+  if (length <= 3) return 'text-[length:min(92cqh,40cqw)]';
+  if (length === 4) return 'text-[length:min(92cqh,31cqw)]';
+  return 'text-[length:min(92cqh,26cqw)]';
+});
+const averageOrderValueAmount = computed(() => toMoney(overview.value?.average_order_value));
+const totalOrdersCount = computed<number>(() => {
+  const raw = overview.value?.total_orders;
+  if (raw === null || raw === undefined) return 0;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+});
+const comparison = computed(() => performanceData.value?.comparison ?? null);
 const dailyTrend = computed(() => performanceData.value?.daily_trend || []);
 const todayOrders = computed<number>(() => {
   const raw = performanceData.value?.today_orders;
@@ -128,9 +166,8 @@ const formatLastOrderTooltip = (order: SalesPerformanceLastOrder): string | unde
   return saleDateFallback !== 'N/A' ? saleDateFallback : undefined;
 };
 
-const formatGrowth = (val: number | null | undefined) => {
-  if (val === null || val === undefined) return undefined;
-  return Number(val);
+const formatGrowth = (val: number | string | null | undefined) => {
+  return normalizeComparisonGrowth(val);
 };
 
 const getTrendPoints = (metric: 'revenue' | 'orders') => {
@@ -155,30 +192,23 @@ const kpiCardLayoutClasses = {
   iconBoxClass: 'w-12 h-12 xl:w-9 xl:h-9 rounded-xl',
   iconClass: 'w-6 h-6 xl:w-5 xl:h-5',
   valueClass: 'text-2xl sm:text-3xl xl:text-xl',
-  sparklineClass: 'hidden sm:block xl:hidden',
 };
 </script>
 
 <template>
-  <div class="space-y-8 animate-in fade-in duration-700">
-    <!-- Header Section -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-3xl font-display font-extrabold tracking-tight">System Overview</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium italic">Command Center: Best Computer Hub Control v4.2.1</p>
+  <NuxtLayout name="admin">
+    <template #header-title>
+      <div class="flex items-center gap-2">
+        <span class="text-muted-foreground/40 font-light select-none">/</span>
+        <h1 class="text-2xl sm:text-[26px] font-display font-extrabold tracking-tight text-foreground">
+          System Overview
+        </h1>
       </div>
-      <div class="flex items-center gap-3">
-        <button class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
-          <Download class="w-4 h-4" /> Export Report
-        </button>
-        <button class="bg-primary text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95">
-          <TrendingUp class="w-4 h-4" /> Optimization Pulse
-        </button>
-      </div>
-    </div>
+    </template>
 
-    <!-- Sales Performance Report Section -->
-    <div v-if="canViewSalesPerformance" class="space-y-6">
+    <div class="space-y-6 animate-in fade-in duration-700">
+      <!-- Sales Performance Report Section -->
+      <div v-if="canViewSalesPerformance" class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-border rounded-2xl p-6 shadow-sm">
         <div>
           <h2 class="text-xl font-display font-black tracking-tight">Sales Performance Report</h2>
@@ -220,23 +250,45 @@ const kpiCardLayoutClasses = {
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.4fr)] gap-3">
           <DashboardStatCard 
             label="Total Revenue"
-            :value="formatCurrency(Number(overview.total_revenue))"
+            :value="formatCurrency(totalRevenueAmount)"
             :icon="DollarSign"
-            :trend="formatGrowth(comparison.revenue_growth_percentage)"
+            :trend="formatGrowth(comparison?.revenue_growth_percentage)"
             color="bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600"
             v-bind="kpiCardLayoutClasses"
-          />
+          >
+            <template #background>
+              <div class="w-full h-full flex items-end justify-end pr-3 sm:pr-4 xl:pr-2.5 [container-type:size]">
+                <span
+                  :class="[
+                    'font-display font-black leading-none tracking-tighter whitespace-nowrap translate-y-[0.1em] transition-colors duration-300',
+                    deliveredRevenueWatermarkSizeClass,
+                    deliveredRevenueWatermarkColorClass
+                  ]"
+                >
+                  {{ deliveredRevenuePercentage }}
+                </span>
+              </div>
+            </template>
+            <template #footer>
+              <div class="pt-2 border-t border-border/70 text-[11px] xl:text-[10px]">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-muted-foreground font-medium">Delivered</span>
+                  <span class="font-bold text-foreground tabular-nums">{{ formatCurrency(deliveredOrderAmount) }}</span>
+                </div>
+              </div>
+            </template>
+          </DashboardStatCard>
           <DashboardStatCard 
             label="Total Orders"
-            :value="overview.total_orders?.toLocaleString() || 0"
+            :value="totalOrdersCount.toLocaleString()"
             :icon="ShoppingBag"
-            :trend="formatGrowth(comparison.order_growth_percentage)"
+            :trend="formatGrowth(comparison?.order_growth_percentage)"
             color="bg-blue-100 dark:bg-blue-950/30 text-blue-600"
             v-bind="kpiCardLayoutClasses"
           />
           <DashboardStatCard 
             label="Average Order Value"
-            :value="formatCurrency(Number(overview.average_order_value))"
+            :value="formatCurrency(averageOrderValueAmount)"
             :icon="TrendingUp"
             color="bg-amber-100 dark:bg-amber-950/30 text-amber-600"
             v-bind="kpiCardLayoutClasses"
@@ -275,7 +327,7 @@ const kpiCardLayoutClasses = {
                     #{{ lastOrder.id }}
                   </NuxtLink>
                   <p class="text-xl sm:text-2xl xl:text-lg font-display font-black tracking-tight text-foreground">
-                    {{ formatCurrency(Number(lastOrder.total_amount ?? 0)) }}
+                    {{ formatCurrency(toMoney(lastOrder.total_amount)) }}
                   </p>
                 </div>
 
@@ -366,7 +418,22 @@ const kpiCardLayoutClasses = {
           </div>
         </UiCard>
       </template>
-    </div>
+      </div>
 
-  </div>
+      <!-- Permission Fallback -->
+      <UiCard v-else class="p-6 rounded-xl border border-border">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+            <ShieldAlert class="w-5 h-5" />
+          </div>
+          <div class="space-y-1">
+            <h2 class="text-base font-display font-bold text-foreground">Sales Performance Restricted</h2>
+            <p class="text-xs text-muted-foreground leading-relaxed">
+              Sales revenue and order analytics are unavailable for your current role. Use the navigation menu to access your permitted modules.
+            </p>
+          </div>
+        </div>
+      </UiCard>
+    </div>
+  </NuxtLayout>
 </template>

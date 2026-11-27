@@ -17,11 +17,55 @@ import type {
   BackendOrderSummary
 } from '@/types/checkout';
 
-/** Converts a backend money value (number or decimal string) to a number. */
+/** Converts a backend money value (number or decimal string) to a finite number. */
 export function toMoney(value: ApiMoney | null | undefined): number {
   if (value === null || value === undefined || value === '') return 0;
-  const parsed = Number(value);
+  if (typeof value !== 'number' && typeof value !== 'string') return 0;
+  const parsed = typeof value === 'string' ? Number(value.trim()) : value;
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/**
+ * Calculates the percentage of total revenue represented by delivered orders:
+ * `delivered_order_amount / total_revenue * 100`.
+ * Safely handles string/number/missing inputs and prevents division by zero or non-finite results.
+ */
+export function calculateDeliveredRevenuePercentage(
+  deliveredOrderAmount: number | string | null | undefined,
+  totalRevenue: number | string | null | undefined
+): number {
+  const total = toMoney(totalRevenue);
+  if (total <= 0) return 0;
+  const delivered = toMoney(deliveredOrderAmount);
+  const rawPercentage = (delivered / total) * 100;
+  if (!Number.isFinite(rawPercentage)) return 0;
+  const rounded = Math.round(rawPercentage * 10) / 10;
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+
+/** Formats the delivered revenue percentage as a clean display string (e.g., `75%`, `33.3%`, `0%`). */
+export function formatDeliveredRevenuePercentage(
+  deliveredOrderAmount: number | string | null | undefined,
+  totalRevenue: number | string | null | undefined
+): string {
+  return `${calculateDeliveredRevenuePercentage(deliveredOrderAmount, totalRevenue)}%`;
+}
+
+/**
+ * Normalizes a percentage comparison metric (`number | string | null | undefined`) for badge display.
+ * Returns `undefined` when missing/empty/non-finite so unavailable comparisons are not shown as `+0%`,
+ * while preserving legitimate numeric `0` values.
+ */
+export function normalizeComparisonGrowth(
+  value: number | string | null | undefined
+): number | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value !== 'number' && typeof value !== 'string') return undefined;
+  const trimmed = typeof value === 'string' ? value.trim() : value;
+  if (trimmed === '') return undefined;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) return undefined;
+  return Object.is(parsed, -0) ? 0 : parsed;
 }
 
 function getCustomerName(customer: BackendOrderDetail['customer']): string {

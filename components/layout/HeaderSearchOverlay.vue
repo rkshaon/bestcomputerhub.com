@@ -87,13 +87,14 @@ watch(debouncedSearchQuery, async (newQuery) => {
   }
 
   const requestId = ++currentRequestId;
+  const HEADER_SEARCH_LIMIT = 10;
   isSearching.value = true;
   searchError.value = null;
 
   try {
     const res = await productService.getProductsList({
       search: trimmed,
-      page_size: 6
+      page_size: HEADER_SEARCH_LIMIT
     });
 
     // Discard stale in-flight responses if a newer search was triggered
@@ -101,7 +102,7 @@ watch(debouncedSearchQuery, async (newQuery) => {
       return;
     }
 
-    searchResults.value = res?.results || [];
+    searchResults.value = (res?.results || []).slice(0, HEADER_SEARCH_LIMIT);
     totalResultCount.value = typeof res?.count === 'number' ? res.count : searchResults.value.length;
   } catch (err: any) {
     if (requestId !== currentRequestId) {
@@ -254,7 +255,7 @@ defineExpose({
         </div>
 
         <!-- Populated Results Grid -->
-        <div v-else-if="searchResults.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        <div v-else-if="searchResults.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <NuxtLink
             v-for="product in searchResults"
             :key="product.id"

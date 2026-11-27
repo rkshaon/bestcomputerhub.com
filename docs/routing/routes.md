@@ -17,7 +17,7 @@ For architectural principles, dependency hierarchy, and global e-commerce domain
 
 ## 2. Route Inventory
 
-*Total registered routes: 73 (based on `.vue` file enumeration in `/pages/`).*
+*Total registered routes: 74 (based on `.vue` file enumeration in `/pages/`).*
 
 ### 2.1 Storefront Routes
 | Route | Component Path | Layout | Middleware | Auth | Permission |
@@ -25,6 +25,7 @@ For architectural principles, dependency hierarchy, and global e-commerce domain
 | `/` | `/pages/index.vue` | default | - | Public | None |
 | `/shop-now/` | `/pages/shop-now.vue` | default | - | Public | None |
 | `/blog/` | `/pages/blog/index.vue` | default | - | Public | None |
+| `/blog/categories/` | `/pages/blog/categories/index.vue` | default | - | Public | None |
 | `/blog/[slug]/` | `/pages/blog/[slug].vue` | default | - | Public | None |
 | `/product/[slug]/` | `/pages/product/[slug].vue` | default | - | Public | None |
 | `/cart/` | `/pages/cart.vue` | default | - | Public | None |

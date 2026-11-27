@@ -189,34 +189,60 @@ const footerSections = computed<FooterSectionColumn[]>(() => {
     links: col.children
   }));
 });
+
+const getResponsiveColumnAlignClass = (alignClass: FooterSectionColumn['alignClass']): string => {
+  if (alignClass === 'text-center') return 'text-left lg:text-center';
+  if (alignClass === 'text-right') return 'text-left lg:text-right';
+  return 'text-left';
+};
 </script>
 
 <template>
-  <footer v-if="!isAuthRoute" class="bg-header text-header-foreground border-header-border pt-8 sm:pt-10 md:pt-12 pb-20 md:pb-8 border-t">
+  <footer v-if="!isAuthRoute" class="bg-header text-header-foreground border-header-border pt-7 sm:pt-9 lg:pt-12 pb-[calc(8.5rem_+_env(safe-area-inset-bottom,0px))] md:pb-8 border-t">
     <div class="container mx-auto px-4">
-      <div class="w-full lg:w-[90%] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 sm:mb-10">
+      <div class="w-full lg:w-[90%] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-x-8 sm:gap-y-7 lg:gap-8 mb-6 sm:mb-8 lg:mb-10">
         <!-- Brand -->
-        <div class="space-y-4 sm:space-y-6 text-left">
-          <div class="space-y-3 sm:space-y-4">
+        <div class="space-y-4 lg:space-y-6 text-left">
+          <div class="space-y-2 lg:space-y-4">
             <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-header-foreground">We're Here to Help</h4>
-            <div class="flex flex-col gap-2.5 sm:gap-3 text-header-muted-foreground text-xs sm:text-sm">
-              <div class="flex items-center gap-3">
-                <Phone class="w-4 h-4 text-header-primary shrink-0" />
-                <a href="tel:+8801794062601" class="hover:text-header-primary transition-colors">(+880) 1794062601</a>
+            <div class="flex flex-col gap-0.5 lg:gap-3 text-header-muted-foreground text-xs sm:text-sm">
+              <div>
+                <a
+                  href="tel:+8801794062601"
+                  class="inline-flex items-center gap-3 min-h-[40px] py-1.5 pr-2 lg:min-h-0 lg:py-0 lg:pr-0 text-header-foreground/90 lg:text-header-muted-foreground hover:text-header-primary transition-colors"
+                >
+                  <Phone class="w-4 h-4 text-header-primary shrink-0" />
+                  <span>(+880) 1794062601</span>
+                </a>
               </div>
-              <div class="flex items-center gap-3">
-                <Phone class="w-4 h-4 text-header-primary shrink-0" />
-                <a href="tel:+8801783553844" class="hover:text-header-primary transition-colors">(+880) 1783553844</a>
+              <div>
+                <a
+                  href="tel:+8801783553844"
+                  class="inline-flex items-center gap-3 min-h-[40px] py-1.5 pr-2 lg:min-h-0 lg:py-0 lg:pr-0 text-header-foreground/90 lg:text-header-muted-foreground hover:text-header-primary transition-colors"
+                >
+                  <Phone class="w-4 h-4 text-header-primary shrink-0" />
+                  <span>(+880) 1783553844</span>
+                </a>
               </div>
-              <div class="flex items-center gap-3">
-                <Phone class="w-4 h-4 text-header-primary shrink-0" />
-                <a href="tel:+8801714111479" class="hover:text-header-primary transition-colors">(+880) 1714111479</a>
+              <div>
+                <a
+                  href="tel:+8801714111479"
+                  class="inline-flex items-center gap-3 min-h-[40px] py-1.5 pr-2 lg:min-h-0 lg:py-0 lg:pr-0 text-header-foreground/90 lg:text-header-muted-foreground hover:text-header-primary transition-colors"
+                >
+                  <Phone class="w-4 h-4 text-header-primary shrink-0" />
+                  <span>(+880) 1714111479</span>
+                </a>
               </div>
-              <div class="flex items-center gap-3">
-                <Mail class="w-4 h-4 text-header-primary shrink-0" />
-                <a href="mailto:support@bestcomputerhub.com" class="hover:text-header-primary transition-colors">support@bestcomputerhub.com</a>
+              <div>
+                <a
+                  href="mailto:support@bestcomputerhub.com"
+                  class="inline-flex items-center gap-3 min-h-[40px] py-1.5 pr-2 lg:min-h-0 lg:py-0 lg:pr-0 text-header-foreground/90 lg:text-header-muted-foreground hover:text-header-primary transition-colors"
+                >
+                  <Mail class="w-4 h-4 text-header-primary shrink-0" />
+                  <span>support@bestcomputerhub.com</span>
+                </a>
               </div>
-              <div class="flex items-start gap-3">
+              <div class="flex items-start gap-3 pt-1.5 lg:pt-0 pr-14 sm:pr-0">
                 <MapPin class="w-4 h-4 text-header-primary mt-0.5 shrink-0" />
                 <span>74/1 (1st Floor), Rajonigondha Bhaban, Science Laboratory Road, Dhanmondi, Dhaka 1205, Bangladesh</span>
               </div>
@@ -244,7 +270,7 @@ const footerSections = computed<FooterSectionColumn[]>(() => {
         <div
           v-for="section in footerSections"
           :key="section.id"
-          :class="['space-y-3 sm:space-y-4 px-0', section.alignClass]"
+          :class="['space-y-1.5 sm:space-y-2 lg:space-y-4 px-0', getResponsiveColumnAlignClass(section.alignClass)]"
         >
           <h4 class="font-bold text-xs sm:text-sm uppercase tracking-widest text-header-foreground px-0 mx-0">{{ section.title }}</h4>
           <FooterNavList
@@ -276,8 +302,8 @@ const footerSections = computed<FooterSectionColumn[]>(() => {
       -->
 
       <!-- Bottom Bar -->
-      <div class="pt-6 sm:pt-8 border-t border-header-border flex flex-col md:flex-row justify-center items-center gap-6">
-        <div class="flex flex-wrap justify-center gap-6 text-xs font-medium text-header-muted-foreground">
+      <div class="pt-5 sm:pt-6 lg:pt-8 border-t border-header-border flex flex-col md:flex-row justify-center items-center gap-6">
+        <div class="flex flex-wrap justify-center gap-6 text-xs font-medium text-header-muted-foreground text-center">
           <span>&copy; {{ currentYear }}, Best Technology BD. All Rights Reserved.</span>
         </div>
       </div>
