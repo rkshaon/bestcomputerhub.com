@@ -257,10 +257,10 @@ const kpiCardLayoutClasses = {
             v-bind="kpiCardLayoutClasses"
           >
             <template #background>
-              <div class="w-full h-full flex items-center justify-end pr-3 sm:pr-4 xl:pr-2.5 [container-type:size]">
+              <div class="w-full h-full flex items-end justify-end pr-3 sm:pr-4 xl:pr-2.5 [container-type:size]">
                 <span
                   :class="[
-                    'font-display font-black leading-none tracking-tighter whitespace-nowrap transition-colors duration-300',
+                    'font-display font-black leading-none tracking-tighter whitespace-nowrap translate-y-[0.1em] transition-colors duration-300',
                     deliveredRevenueWatermarkSizeClass,
                     deliveredRevenueWatermarkColorClass
                   ]"
