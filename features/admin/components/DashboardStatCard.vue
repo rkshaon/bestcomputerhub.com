@@ -19,13 +19,21 @@ interface Props {
 const props = defineProps<Props>();
 
 defineSlots<{
+  background?: () => unknown;
   footer?: () => unknown;
 }>();
 </script>
 
 <template>
-  <UiCard :class="cn('flex flex-col justify-center gap-2.5 p-5 sm:p-6 xl:p-3 rounded-xl', cardClass)">
-    <div class="flex items-center gap-3 w-full">
+  <UiCard :class="cn('relative overflow-hidden flex flex-col justify-center gap-2.5 p-5 sm:p-6 xl:p-3 rounded-xl', cardClass)">
+    <div
+      v-if="$slots.background"
+      aria-hidden="true"
+      class="pointer-events-none select-none absolute inset-0 z-0 overflow-hidden"
+    >
+      <slot name="background" />
+    </div>
+    <div class="relative z-10 flex items-center gap-3 w-full">
       <div :class="cn('w-12 h-12 xl:w-9 xl:h-9 rounded-xl flex items-center justify-center shrink-0', color || 'bg-primary/10 text-primary', iconBoxClass)">
         <component :is="icon" :class="cn('w-6 h-6 xl:w-5 xl:h-5', iconClass)" />
       </div>
@@ -49,7 +57,7 @@ defineSlots<{
         </div>
       </div>
     </div>
-    <div v-if="$slots.footer" class="w-full">
+    <div v-if="$slots.footer" class="relative z-10 w-full">
       <slot name="footer" />
     </div>
   </UiCard>

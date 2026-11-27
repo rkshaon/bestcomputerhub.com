@@ -19,7 +19,12 @@ import { useSalesService } from '@/composables/useSalesService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { extractErrorMessage } from '@/composables/useToast';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/utils';
-import { toMoney, formatDeliveredRevenuePercentage, normalizeComparisonGrowth } from '@/utils/order';
+import {
+  toMoney,
+  calculateDeliveredRevenuePercentage,
+  formatDeliveredRevenuePercentage,
+  normalizeComparisonGrowth
+} from '@/utils/order';
 import type { SalesPerformanceReport, SalesPerformanceLastOrder } from '@/types';
 import DashboardStatCard from '@/features/admin/components/DashboardStatCard.vue';
 import UiCard from '@/components/ui/UiCard.vue';
@@ -76,9 +81,28 @@ onMounted(() => {
 const overview = computed(() => performanceData.value?.overview ?? null);
 const totalRevenueAmount = computed(() => toMoney(overview.value?.total_revenue));
 const deliveredOrderAmount = computed(() => toMoney(overview.value?.delivered_order_amount));
+const deliveredRevenuePercentageValue = computed(() =>
+  calculateDeliveredRevenuePercentage(overview.value?.delivered_order_amount, overview.value?.total_revenue)
+);
 const deliveredRevenuePercentage = computed(() =>
   formatDeliveredRevenuePercentage(overview.value?.delivered_order_amount, overview.value?.total_revenue)
 );
+const deliveredRevenueWatermarkColorClass = computed(() => {
+  const pct = deliveredRevenuePercentageValue.value;
+  if (pct > 75) {
+    return 'text-green-700/[0.18] dark:text-green-400/[0.18]';
+  }
+  if (pct > 50) {
+    return 'text-yellow-600/[0.22] dark:text-yellow-400/[0.18]';
+  }
+  return 'text-red-700/[0.18] dark:text-red-400/[0.18]';
+});
+const deliveredRevenueWatermarkSizeClass = computed(() => {
+  const length = deliveredRevenuePercentage.value.length;
+  if (length <= 3) return 'text-[length:min(112cqh,48cqw)]';
+  if (length === 4) return 'text-[length:min(112cqh,38cqw)]';
+  return 'text-[length:min(112cqh,32cqw)]';
+});
 const averageOrderValueAmount = computed(() => toMoney(overview.value?.average_order_value));
 const totalOrdersCount = computed<number>(() => {
   const raw = overview.value?.total_orders;
@@ -232,15 +256,24 @@ const kpiCardLayoutClasses = {
             color="bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600"
             v-bind="kpiCardLayoutClasses"
           >
+            <template #background>
+              <div class="w-full h-full flex items-center justify-center [container-type:size]">
+                <span
+                  :class="[
+                    'font-display font-black leading-none tracking-tighter whitespace-nowrap transition-colors duration-300',
+                    deliveredRevenueWatermarkSizeClass,
+                    deliveredRevenueWatermarkColorClass
+                  ]"
+                >
+                  {{ deliveredRevenuePercentage }}
+                </span>
+              </div>
+            </template>
             <template #footer>
-              <div class="pt-2 border-t border-border/70 space-y-1 text-[11px] xl:text-[10px]">
+              <div class="pt-2 border-t border-border/70 text-[11px] xl:text-[10px]">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-muted-foreground font-medium">Delivered Amount</span>
+                  <span class="text-muted-foreground font-medium">Delivered</span>
                   <span class="font-bold text-foreground tabular-nums">{{ formatCurrency(deliveredOrderAmount) }}</span>
-                </div>
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-muted-foreground font-medium">Delivered Revenue</span>
-                  <span class="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ deliveredRevenuePercentage }}</span>
                 </div>
               </div>
             </template>

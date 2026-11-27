@@ -93,6 +93,9 @@ test('DashboardStatCard, admin layout, and Admin Dashboard SFCs compile cleanly 
   assert.doesNotMatch(cardSource, /sparklineClass/);
   assert.match(cardSource, /v-if="typeof trend === 'number' && Number\.isFinite\(trend\)"/);
   assert.match(cardSource, /trend > 0/);
+  assert.match(cardSource, /v-if="\$slots\.background"/);
+  assert.match(cardSource, /<slot name="background" \/>/);
+  assert.match(cardSource, /relative z-10/);
   assert.match(cardSource, /v-if="\$slots\.footer"/);
   assert.match(cardSource, /<slot name="footer" \/>/);
 
@@ -129,11 +132,111 @@ test('DashboardStatCard, admin layout, and Admin Dashboard SFCs compile cleanly 
   assert.match(pageSource, /Sales Performance Restricted/);
   assert.match(pageSource, /label="Total Revenue"/);
   assert.match(pageSource, /:value="formatCurrency\(totalRevenueAmount\)"/);
-  assert.match(pageSource, /Delivered Amount/);
+  assert.match(pageSource, /<template #background>/);
+  assert.doesNotMatch(pageSource, /Delivered Amount/);
+  assert.doesNotMatch(pageSource, /Delivered Revenue/);
+  assert.match(pageSource, />Delivered<\/span>/);
   assert.match(pageSource, /formatCurrency\(deliveredOrderAmount\)/);
-  assert.match(pageSource, /Delivered Revenue/);
-  assert.match(pageSource, /deliveredRevenuePercentage/);
+  assert.match(pageSource, /calculateDeliveredRevenuePercentage\(overview\.value\?\.delivered_order_amount,\s*overview\.value\?\.total_revenue\)/);
   assert.match(pageSource, /formatDeliveredRevenuePercentage\(overview\.value\?\.delivered_order_amount,\s*overview\.value\?\.total_revenue\)/);
+  assert.match(pageSource, /if \(pct > 75\)/);
+  assert.match(pageSource, /if \(pct > 50\)/);
+  assert.equal((pageSource.match(/<template #background>/g) || []).length, 1);
+});
+
+test('Total Revenue KPI card renders oversized watermark behind content with accurate green/yellow/red boundaries', async () => {
+  const { createSSRApp, defineComponent, h } = await import('vue');
+  const { renderToString } = await import('vue/server-renderer');
+  const { compileScript } = await import('@vue/compiler-sfc');
+  const { DollarSign } = await import('lucide-vue-next');
+  const { cn } = await import('../utils/index');
+
+  const cardPath = resolve('features/admin/components/DashboardStatCard.vue');
+  const cardSource = readFileSync(cardPath, 'utf8');
+  const cardParsed = parse(cardSource, { filename: cardPath });
+  const cardScript = compileScript(cardParsed.descriptor, { id: 'stat-card-ssr', inlineTemplate: false });
+  const cardRenderFn = new Function('Vue', compileTemplate({
+    source: cardParsed.descriptor.template!.content,
+    filename: cardPath,
+    id: 'stat-card-ssr',
+    compilerOptions: { mode: 'function', bindingMetadata: cardScript.bindings }
+  }).code)(await import('vue'));
+
+  const uiCardStub = defineComponent({
+    setup(_, { slots, attrs }) {
+      return () => h('div', { class: attrs.class }, slots.default?.());
+    }
+  });
+
+  const StatCardHost = defineComponent({
+    props: ['label', 'value', 'icon', 'trend', 'color', 'cardClass', 'iconBoxClass', 'iconClass', 'valueClass'],
+    setup(props) {
+      return { ...props, cn, UiCard: uiCardStub };
+    },
+    render: cardRenderFn
+  });
+
+  const colorForPercentage = (pct: number) => {
+    if (pct > 75) return 'text-green-700/[0.18] dark:text-green-400/[0.18]';
+    if (pct > 50) return 'text-yellow-600/[0.22] dark:text-yellow-400/[0.18]';
+    return 'text-red-700/[0.18] dark:text-red-400/[0.18]';
+  };
+
+  const cases: Array<{ delivered: number; total: number; expectedPct: string; expectedClass: string }> = [
+    { delivered: 99900, total: 100000, expectedPct: '99.9%', expectedClass: 'text-green-700/[0.18]' },
+    { delivered: 75100, total: 100000, expectedPct: '75.1%', expectedClass: 'text-green-700/[0.18]' },
+    { delivered: 75000, total: 100000, expectedPct: '75%', expectedClass: 'text-yellow-600/[0.22]' },
+    { delivered: 60000, total: 100000, expectedPct: '60%', expectedClass: 'text-yellow-600/[0.22]' },
+    { delivered: 50100, total: 100000, expectedPct: '50.1%', expectedClass: 'text-yellow-600/[0.22]' },
+    { delivered: 50000, total: 100000, expectedPct: '50%', expectedClass: 'text-red-700/[0.18]' },
+    { delivered: 35000, total: 100000, expectedPct: '35%', expectedClass: 'text-red-700/[0.18]' },
+    { delivered: 0, total: 0, expectedPct: '0%', expectedClass: 'text-red-700/[0.18]' },
+  ];
+
+  for (const testCase of cases) {
+    const pctNum = calculateDeliveredRevenuePercentage(testCase.delivered, testCase.total);
+    const pctText = formatDeliveredRevenuePercentage(testCase.delivered, testCase.total);
+    const colorClass = colorForPercentage(pctNum);
+    assert.equal(pctText, testCase.expectedPct);
+    assert.ok(colorClass.includes(testCase.expectedClass));
+
+    const app = createSSRApp({
+      render: () => h(
+        StatCardHost,
+        {
+          label: 'Total Revenue',
+          value: formatCurrency(testCase.total),
+          icon: DollarSign,
+          color: 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600'
+        },
+        {
+          background: () => h('div', { class: 'w-full h-full flex items-center justify-center [container-type:size]' }, [
+            h('span', { class: colorClass }, pctText)
+          ]),
+          footer: () => h('div', { class: 'pt-2 border-t border-border/70' }, [
+            h('span', 'Delivered'),
+            h('span', formatCurrency(testCase.delivered))
+          ])
+        }
+      )
+    });
+    app.component('UiCard', uiCardStub);
+    const html = await renderToString(app);
+
+    assert.ok(html.includes('aria-hidden="true"'));
+    assert.ok(html.includes('z-0') && html.includes('z-10'));
+    assert.ok(html.indexOf(pctText) < html.indexOf('Total Revenue'), 'Watermark must precede foreground content in stacking order');
+    assert.ok(html.includes(testCase.expectedClass), `Expected ${testCase.expectedClass} for ${pctText}`);
+    assert.ok(html.includes('Delivered'));
+  }
+
+  // Cards omitting #background render no watermark wrapper
+  const plainCardApp = createSSRApp({
+    render: () => h(StatCardHost, { label: 'Total Orders', value: '42', icon: DollarSign })
+  });
+  plainCardApp.component('UiCard', uiCardStub);
+  const plainHtml = await renderToString(plainCardApp);
+  assert.equal(plainHtml.includes('z-0'), false);
 });
 
 test('useSalesService.getPendingOrdersCount preserves null on error and distinguishes genuine zero', async () => {

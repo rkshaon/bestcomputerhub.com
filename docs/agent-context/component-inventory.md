@@ -1176,7 +1176,7 @@ Components are classified using four standard metadata properties:
 - **Scope**: Admin
 - **Purpose**: Metric summary card for Admin Dashboard metric indicators (Total Sales, Total Orders, Total Products, Active Customers).
 - **Routes/Pages Used**: Admin Dashboard (`/admin/`).
-- **Main Responsibilities**: Render metric title, icon, formatted value, trend percentage badge (increase/decrease arrow and semantic background), and optional `#footer` slot for compact secondary breakdown rows (such as Delivered Amount and Delivered Revenue percentage on the Total Revenue card).
+- **Main Responsibilities**: Render metric title, icon, formatted value, trend percentage badge (increase/decrease arrow and semantic background), optional `#background` decorative slot layered behind foreground content, and optional `#footer` slot for compact secondary breakdown rows (such as Delivered amount on the Total Revenue card).
 - **What It Explicitly Does Not Own**: Analytics data fetching.
 - **State Owned**: None (receives metric props).
 - **Calls API**: No
