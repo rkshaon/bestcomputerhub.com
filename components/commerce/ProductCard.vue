@@ -1,5 +1,6 @@
 <!-- File: /components/commerce/ProductCard.vue -->
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Star, ShoppingCart, Package } from 'lucide-vue-next';
 import type { Product } from '@/types';
 import { formatCurrency, decodeHtmlEntities } from '@/utils';
@@ -26,6 +27,8 @@ const props = withDefaults(
 const cartStore = useCartStore();
 const { trackSelectItem } = useAnalytics();
 
+const productUrl = computed(() => `/product/${props.product.slug}/`);
+
 const handleSelect = () => {
   if (props.listId) trackSelectItem(props.listId, props.listName || props.listId, props.product, props.listIndex);
 };
@@ -34,7 +37,12 @@ const handleSelect = () => {
 <template>
   <div class="group relative bg-card border rounded-2xl overflow-hidden hover:shadow-2xl hover:border-primary/20 transition-all duration-300">
     <!-- Image -->
-    <div class="aspect-square overflow-hidden bg-muted/30 relative flex items-center justify-center">
+    <NuxtLink
+      :to="productUrl"
+      :aria-label="decodeHtmlEntities(product.name)"
+      class="aspect-square overflow-hidden bg-muted/30 relative flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      @click="handleSelect"
+    >
       <img 
         v-if="product.images && product.images.length > 0 && product.images[0]"
         :src="product.images[0]" 
@@ -52,7 +60,7 @@ const handleSelect = () => {
         <span v-if="product.isNew" class="bg-primary text-primary-foreground px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">New</span>
         <span v-if="product.onSale" class="bg-destructive text-destructive-foreground px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Sale</span>
       </div>
-    </div>
+    </NuxtLink>
 
     <!-- Content -->
     <div class="p-2.5 sm:p-3.5">
@@ -64,7 +72,7 @@ const handleSelect = () => {
         </div>
       </div>
 
-      <NuxtLink :to="`/product/${product.slug}/`" class="block group/link" @click="handleSelect">
+      <NuxtLink :to="productUrl" class="block group/link" @click="handleSelect">
         <h3 class="font-bold text-xs sm:text-sm line-clamp-2 min-h-[32px] sm:min-h-[36px] group-hover/link:text-primary transition-colors mb-2 sm:mb-3 leading-snug">
           {{ decodeHtmlEntities(product.name) }}
         </h3>
@@ -77,14 +85,18 @@ const handleSelect = () => {
       />
 
       <div class="flex items-center justify-between gap-1">
-        <div class="flex flex-col min-w-0">
+        <NuxtLink
+          :to="productUrl"
+          class="flex flex-col min-w-0 group/price focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+          @click="handleSelect"
+        >
           <span v-if="product.originalPrice" class="text-[10px] sm:text-xs text-muted-foreground line-through decoration-destructive/30 truncate">
             {{ formatCurrency(product.originalPrice) }}
           </span>
-          <span class="font-display font-bold text-sm sm:text-base text-primary truncate">
+          <span class="font-display font-bold text-sm sm:text-base text-primary group-hover/price:text-primary-hover transition-colors truncate">
             {{ formatCurrency(product.price) }}
           </span>
-        </div>
+        </NuxtLink>
         
         <UiButton size="icon" variant="primary" @click="cartStore.addToCart(product)" class="rounded-xl h-8 w-8 sm:h-9 sm:w-9 shrink-0" title="Add to cart" aria-label="Add to cart">
           <ShoppingCart class="w-4 h-4" />

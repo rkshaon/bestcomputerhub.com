@@ -602,18 +602,18 @@ Components are classified using four standard metadata properties:
 - **Purpose**: Standardized product card item for listings, search results, category pages, and home showcases.
 - **Routes/Pages Used**: Homepage (`/`), Product Catalog (`/products`), Category pages (`/product-category/.../`), Brand pages (`/brand/[slug]/`), Offers (`/offers/`), New Arrivals (`/new-arrivals/`).
 - **Main Responsibilities**:
-  - Render product primary image with hover secondary image cross-fade transition.
-  - Render brand name, formatted title with `decodeHtmlEntities`, rating badge, regular price and sale price comparison via `formatCurrency`.
+  - Render product primary image with hover secondary image cross-fade transition inside an independent product detail `<NuxtLink>`.
+  - Render brand name, formatted title with `decodeHtmlEntities` (independent `<NuxtLink>`), rating badge, and regular/sale price comparison via `formatCurrency` (independent `<NuxtLink>`).
   - Render stock availability badge.
-  - Provide "Add to Cart" quick action button.
-  - Optional analytics list context (`listId`, `listName`, `listIndex` props): when `listId` is set, clicking the product link sends GA4 `select_item` via `useAnalytics`.
+  - Provide independent "Add to Cart" quick action button outside navigation links.
+  - Optional analytics list context (`listId`, `listName`, `listIndex` props): when `listId` is set, clicking the product image, name, or price link sends GA4 `select_item` via `useAnalytics`.
 - **What It Explicitly Does Not Own**: Global cart persistence logic (delegates to `useCartStore`).
 - **State Owned**: Active image index on hover, adding-to-cart spinner state.
 - **Calls API**: No direct API call (delegates to stores).
 - **Related Composables/Services**: `useCartStore`, `formatCurrency`, `decodeHtmlEntities`.
 - **Responsive Responsibility**: Aspect-square image container (`aspect-square`), flexible grid child, touch-friendly CTA buttons.
 - **Reusability Level**: High
-- **Important Behavior to Preserve**: Must format prices using `formatCurrency`, decode HTML entities in title, and preserve trailing slash link URLs (`/product/${product.slug}/`).
+- **Important Behavior to Preserve**: Must keep image, name, and price as independent `<NuxtLink>` elements to `/product/${product.slug}/` (never wrap the entire card or nest interactive buttons inside links), format prices using `formatCurrency`, decode HTML entities in title, and preserve trailing slash link URLs (`/product/${product.slug}/`).
 - **Known Architectural Risks**: None.
 
 ---
