@@ -501,15 +501,15 @@ Components are classified using four standard metadata properties:
 - **Component Type**: Layout UI helper
 - **Scope**: Storefront
 - **Purpose**: Floating scroll-to-top button trigger.
-- **Routes/Pages Used**: Storefront default layout (`/layouts/default.vue`).
-- **Main Responsibilities**: Monitor window scroll position (Y > 300px) and smoothly scroll window to top upon click.
-- **What It Explicitly Does Not Own**: Page layout or viewport scrolling implementation.
-- **State Owned**: `isVisible` scroll listener flag.
+- **Routes/Pages Used**: Storefront routes (composed inside `<LayoutFloatingActions>` mounted in `/app.vue`). Hidden on `/admin/*`.
+- **Main Responsibilities**: Monitor window scroll position (`Y > 200px` below `768px`, `Y > 400px` at `>= 768px`) and smoothly scroll window to top upon click.
+- **What It Explicitly Does Not Own**: Page layout, mobile fixed-container stacking (owned by `<FloatingActions>`), or viewport scrolling implementation.
+- **State Owned**: `isScrolled` and route-aware `isVisible` computed flag.
 - **Calls API**: No
-- **Related Composables/Services**: Window scroll event listeners.
-- **Responsive Responsibility**: Fixed floating position (`bottom-6 right-6`).
+- **Related Composables/Services**: Window scroll and resize event listeners.
+- **Responsive Responsibility**: Normal flex-item inside `<FloatingActions>`'s shared fixed container below `md` (`< 768px`, `48px × 48px` circular icon button) so Call & WhatsApp shift upward naturally when visible; independently fixed (`md:fixed md:bottom-6 md:right-6 md:z-40`) pill with `"Return to Top"` label at `md+` (`>= 768px`).
 - **Reusability Level**: High
-- **Important Behavior to Preserve**: Smooth window scroll behavior (`window.scrollTo({ top: 0, behavior: 'smooth' })`).
+- **Important Behavior to Preserve**: Smooth window scroll behavior (`window.scrollTo({ top: 0, behavior: 'smooth' })`) and alignment with the `md` (`768px`) `<BottomNav>` breakpoint.
 - **Known Architectural Risks**: None.
 
 ---
@@ -525,7 +525,7 @@ Components are classified using four standard metadata properties:
 - **State Owned**: None (delegates to `useUIStore`, `useAuthStore`, and `useCartStore`).
 - **Calls API**: No.
 - **Related Composables/Services**: `useUIStore`, `useAuthStore`, `useCartStore`, `useToast`.
-- **Responsive Responsibility**: Fixed viewport bottom bar on mobile (`fixed bottom-0 left-0 right-0 z-40 md:hidden`), hidden on tablet/desktop.
+- **Responsive Responsibility**: Fixed viewport bottom bar on mobile (`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 md:hidden pb-[env(safe-area-inset-bottom,0px)]`), hidden on tablet/desktop.
 - **Reusability Level**: High (Layout singleton).
 - **Important Behavior to Preserve**: Disabled non-interactive state for PC Builder until page exists; mobile drawer toggle for Menu; cart badge count.
 - **Known Architectural Risks**: None.
@@ -536,16 +536,16 @@ Components are classified using four standard metadata properties:
 - **Exact File Location**: `/components/layout/FloatingActions.vue`
 - **Component Type**: Layout UI helper
 - **Scope**: Storefront
-- **Purpose**: Quick support access overlay widget (WhatsApp, Live Chat).
-- **Routes/Pages Used**: Storefront default layout.
-- **Main Responsibilities**: Render floating quick-action buttons for direct customer communication.
-- **What It Explicitly Does Not Own**: Support ticket storage.
-- **State Owned**: Toggle menu state.
+- **Purpose**: Coordinated floating quick-action overlay combining Call, WhatsApp, and `<BackToTop>` mounted in `/app.vue`.
+- **Routes/Pages Used**: Storefront routes (hidden on `/admin/*`; Call & WhatsApp hidden on `/login` and `/login/`, preserved on `/signup` and `/signup/`).
+- **Main Responsibilities**: Render direct Call (`tel:`) and WhatsApp actions and compose `<BackToTop>` cleanly without mobile button overlap.
+- **What It Explicitly Does Not Own**: Scroll tracking or back-to-top visibility state (delegated to `<BackToTop>`).
+- **State Owned**: Route-based visibility computed flags (`showFloatingContainer`, `showContactActions`).
 - **Calls API**: No
-- **Related Composables/Services**: None.
-- **Responsive Responsibility**: Viewport fixed positioning overlay.
+- **Related Composables/Services**: `STORE_CONTACT` constants, `<BackToTop>`.
+- **Responsive Responsibility**: Single shared `fixed` vertical stack above `<BottomNav>` below `md` (`< 768px`, `bottom-[calc(5rem_+_env(safe-area-inset-bottom,0px))] right-4 z-40`, compact short-landscape spacing for `max-height: 480px`), dissolving via `md:contents` at `>= 768px` so Call & WhatsApp remain independently fixed at `md:bottom-24 md:right-6 md:z-50` while `<BackToTop>` remains independently fixed at `md:bottom-6 md:right-6 md:z-40`.
 - **Reusability Level**: Medium
-- **Important Behavior to Preserve**: Non-intrusive floating z-index layer.
+- **Important Behavior to Preserve**: Non-blocking container (`pointer-events-none` on wrapper, `pointer-events-auto` on buttons), upward stack flow when `<BackToTop>` appears on mobile, static desktop positioning, and intentional `/admin` + `/login` route hiding.
 - **Known Architectural Risks**: None.
 
 ---
