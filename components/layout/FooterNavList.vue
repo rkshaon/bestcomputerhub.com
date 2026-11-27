@@ -104,6 +104,7 @@ const getResolvedLink = (item: FooterNavLinkItem) => {
         :items="item.children"
         :depth="depth + 1"
         :align-class="alignClass"
+        :current-origin="currentOrigin"
       />
     </li>
   </ul>
