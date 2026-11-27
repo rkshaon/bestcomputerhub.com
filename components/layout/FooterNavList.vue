@@ -1,7 +1,7 @@
 <!-- File: /components/layout/FooterNavList.vue -->
 <script setup lang="ts">
 import { computed } from 'vue';
-import { normalizeCmsPath } from '@/utils/cms';
+import { resolveNavigationLink, resolveOriginFromUrl } from '@/utils/cms';
 
 export interface FooterNavLinkItem {
   id: string | number;
@@ -16,9 +16,26 @@ const props = withDefaults(defineProps<{
   items: FooterNavLinkItem[];
   depth?: number;
   alignClass?: 'text-left' | 'text-center' | 'text-right';
+  currentOrigin?: string;
 }>(), {
   depth: 0,
   alignClass: 'text-center'
+});
+
+const requestUrl = useRequestURL();
+const runtimeConfig = useRuntimeConfig();
+const siteConfig = useSiteConfig();
+
+const resolvedCurrentOrigin = computed(() => {
+  if (props.currentOrigin !== undefined) {
+    return resolveOriginFromUrl(props.currentOrigin);
+  }
+  const fromRequest = resolveOriginFromUrl(requestUrl.origin);
+  if (fromRequest) return fromRequest;
+  const publicCfg = runtimeConfig.public as Record<string, any>;
+  const fromAppUrl = resolveOriginFromUrl(publicCfg?.appUrl);
+  if (fromAppUrl) return fromAppUrl;
+  return resolveOriginFromUrl((siteConfig as Record<string, any>)?.url);
 });
 
 const MAX_RENDER_DEPTH = 5;
@@ -50,56 +67,8 @@ const staticTextClass = computed(() => {
   return 'inline-flex items-center py-1.5 lg:inline-block lg:py-0 text-[11px] sm:text-xs text-header-muted-foreground/75 lg:text-header-muted-foreground/85 cursor-default px-0 mx-0';
 });
 
-const getSafeSlugPath = (rawSlug: string | null | undefined): string | null => {
-  if (typeof rawSlug !== 'string') return null;
-  const trimmed = rawSlug.trim();
-  if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('\\')) return null;
-  const cleaned = trimmed.replace(/^\/+|\/+$/g, '');
-  if (!cleaned) return null;
-  const collapsed = cleaned.replace(/[\u0000-\u0020]+/g, '').toLowerCase();
-  if (/^[a-z][a-z0-9+.-]*:/.test(collapsed)) return null;
-  return normalizeCmsPath(cleaned);
-};
-
-const getSafeUrl = (rawUrl: string | null | undefined): string | null => {
-  if (!rawUrl || typeof rawUrl !== 'string') return null;
-  const trimmed = rawUrl.trim();
-  if (!trimmed || trimmed === '#') return null;
-
-  const collapsed = trimmed.replace(/[\u0000-\u0020]+/g, '').toLowerCase();
-  if (
-    collapsed.startsWith('//') ||
-    collapsed.startsWith('/\\') ||
-    collapsed.startsWith('\\')
-  ) {
-    return null;
-  }
-
-  const schemeMatch = collapsed.match(/^([a-z][a-z0-9+.-]*):/);
-  if (schemeMatch && schemeMatch[1]) {
-    return ['http', 'https', 'mailto', 'tel'].includes(schemeMatch[1]) ? trimmed : null;
-  }
-
-  if (!trimmed.startsWith('/') && !trimmed.startsWith('?') && !trimmed.startsWith('#')) {
-    return `/${trimmed}`;
-  }
-
-  return trimmed;
-};
-
-const isExternalUrl = (url: string): boolean => {
-  return /^(https?:|mailto:|tel:)/i.test(url);
-};
-
-const getResolvedLink = (item: FooterNavLinkItem): { href: string; external: boolean } | null => {
-  const slugPath = getSafeSlugPath(item.slug);
-  if (slugPath) {
-    return { href: slugPath, external: false };
-  }
-
-  const safeUrl = getSafeUrl(item.url);
-  if (!safeUrl) return null;
-  return { href: safeUrl, external: isExternalUrl(safeUrl) };
+const getResolvedLink = (item: FooterNavLinkItem) => {
+  return resolveNavigationLink(item, { currentOrigin: resolvedCurrentOrigin.value });
 };
 </script>
 

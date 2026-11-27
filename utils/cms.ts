@@ -53,6 +53,168 @@ export function resolveOriginFromUrl(urlStr: string | null | undefined): string 
   }
 }
 
+export interface NavigationLinkInput {
+  url?: string | null;
+  slug?: string | null;
+}
+
+export interface ResolvedNavigationLink {
+  href: string;
+  external: boolean;
+}
+
+export interface ResolveNavigationLinkOptions {
+  currentOrigin?: string | null;
+}
+
+const CONTROL_CHAR_OR_BACKSLASH_RE = /[\u0000-\u001f\u007f\\]/;
+const SCHEME_PREFIX_RE = /^([a-z][a-z0-9+.-]*):/;
+
+function resolveSafeCmsSlugPath(rawSlug: string | null | undefined): string | null {
+  if (typeof rawSlug !== 'string') return null;
+  const trimmed = rawSlug.trim();
+  if (!trimmed || CONTROL_CHAR_OR_BACKSLASH_RE.test(trimmed)) return null;
+  if (trimmed.replace(/\s+/g, '').startsWith('//')) return null;
+  const cleaned = trimmed.replace(/^\/+|\/+$/g, '');
+  if (!cleaned) return null;
+  const collapsed = cleaned.replace(/[\u0000-\u0020]+/g, '').toLowerCase();
+  if (SCHEME_PREFIX_RE.test(collapsed)) return null;
+  return normalizeCmsPath(cleaned);
+}
+
+/**
+ * Validates an Admin CMS Navigation external/custom link target.
+ * Accepts root-relative internal paths (e.g. `/blog/`, `/blog?category=news#latest`)
+ * and absolute HTTP/HTTPS URLs, while rejecting protocol-relative URLs,
+ * backslashes, control characters, and unsupported URI schemes.
+ */
+export function isValidNavigationTargetUrl(value: string | null | undefined): boolean {
+  if (!value || typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  if (!trimmed || CONTROL_CHAR_OR_BACKSLASH_RE.test(trimmed)) {
+    return false;
+  }
+
+  if (trimmed.startsWith('/')) {
+    const collapsed = trimmed.replace(/\s+/g, '');
+    if (collapsed.startsWith('//')) {
+      return false;
+    }
+    try {
+      const parsed = new URL(trimmed, 'https://placeholder.invalid');
+      return parsed.origin === 'https://placeholder.invalid';
+    } catch {
+      return false;
+    }
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && Boolean(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Normalizes an internal navigation path to include leading and trailing slashes
+ * while preserving query strings (`?...`) and hash fragments (`#...`).
+ */
+export function normalizeInternalNavigationPath(rawPath: string): string {
+  const trimmed = rawPath.trim();
+  if (!trimmed) return '/';
+  if (trimmed.startsWith('#') || trimmed.startsWith('?')) {
+    return trimmed;
+  }
+
+  const hashIndex = trimmed.indexOf('#');
+  const beforeHash = hashIndex >= 0 ? trimmed.slice(0, hashIndex) : trimmed;
+  const hash = hashIndex >= 0 ? trimmed.slice(hashIndex) : '';
+  const queryIndex = beforeHash.indexOf('?');
+  const pathname = queryIndex >= 0 ? beforeHash.slice(0, queryIndex) : beforeHash;
+  const search = queryIndex >= 0 ? beforeHash.slice(queryIndex) : '';
+
+  return `${normalizeCmsPath(pathname)}${search}${hash}`;
+}
+
+/**
+ * Resolves a CMS or external navigation link into a safe href and classifies
+ * whether it should render as an internal `<NuxtLink>` or an external `<a>`.
+ * Same-origin HTTP/HTTPS URLs are converted to normalized internal paths.
+ */
+export function resolveNavigationLink(
+  item: NavigationLinkInput,
+  options: ResolveNavigationLinkOptions = {}
+): ResolvedNavigationLink | null {
+  const slugPath = resolveSafeCmsSlugPath(item.slug);
+  if (slugPath) {
+    return { href: slugPath, external: false };
+  }
+
+  const rawUrl = item.url;
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const trimmed = rawUrl.trim();
+  if (!trimmed || trimmed === '#' || CONTROL_CHAR_OR_BACKSLASH_RE.test(trimmed)) {
+    return null;
+  }
+
+  const collapsed = trimmed.replace(/[\u0000-\u0020]+/g, '').toLowerCase();
+  if (
+    collapsed.startsWith('//') ||
+    collapsed.startsWith('/\\') ||
+    collapsed.startsWith('\\')
+  ) {
+    return null;
+  }
+
+  const schemeMatch = collapsed.match(SCHEME_PREFIX_RE);
+  if (schemeMatch && schemeMatch[1]) {
+    const scheme = schemeMatch[1];
+    if (scheme === 'mailto' || scheme === 'tel') {
+      return { href: trimmed, external: true };
+    }
+    if (scheme !== 'http' && scheme !== 'https') {
+      return null;
+    }
+
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return null;
+      }
+      const currentOrigin = resolveOriginFromUrl(options.currentOrigin);
+      if (currentOrigin && parsed.origin === currentOrigin && !parsed.username && !parsed.password) {
+        return {
+          href: `${normalizeCmsPath(parsed.pathname)}${parsed.search}${parsed.hash}`,
+          external: false
+        };
+      }
+      return { href: trimmed, external: true };
+    } catch {
+      return null;
+    }
+  }
+
+  if (trimmed.startsWith('#') || trimmed.startsWith('?')) {
+    return { href: trimmed, external: false };
+  }
+
+  const candidatePath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  try {
+    const parsed = new URL(candidatePath, 'https://placeholder.invalid');
+    if (parsed.origin !== 'https://placeholder.invalid') {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  return {
+    href: normalizeInternalNavigationPath(candidatePath),
+    external: false
+  };
+}
+
 export interface SanitizeCmsHtmlOptions {
   mediaOrigin?: string;
 }

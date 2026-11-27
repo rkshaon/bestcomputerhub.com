@@ -133,8 +133,14 @@ const normalizeNavNode = (
     .map(child => normalizeNavNode(child, nextVisited))
     .filter((child): child is FooterNavLinkItem => child !== null);
 
-  const resolvedSlug = normalizeSlug(candidate.slug);
-  const rawUrl = typeof candidate.url === 'string' && candidate.url.trim() ? candidate.url.trim() : null;
+  const isExplicitExternal = candidate.link_type === 'EXTERNAL';
+  const resolvedSlug = isExplicitExternal ? null : normalizeSlug(candidate.slug);
+  const primaryUrl = typeof candidate.url === 'string' && candidate.url.trim() ? candidate.url.trim() : null;
+  const fallbackExternalUrl =
+    typeof candidate.external_url === 'string' && candidate.external_url.trim()
+      ? candidate.external_url.trim()
+      : null;
+  const rawUrl = primaryUrl ?? fallbackExternalUrl;
   const resolvedUrl = resolvedSlug ? normalizeCmsPath(resolvedSlug) : rawUrl;
 
   return {

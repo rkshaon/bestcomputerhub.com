@@ -26,7 +26,7 @@ import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { useAdminModalState } from '@/composables/useAdminModalState';
 import { useInfinitePagination } from '@/composables/useInfinitePagination';
 import { toastSuccess, toastError, extractErrorMessage, handleApiError } from '@/composables/useToast';
-import { normalizeCmsPath } from '@/utils/cms';
+import { isValidNavigationTargetUrl, normalizeCmsPath } from '@/utils/cms';
 import type {
   CmsNavigationMenu,
   CmsNavigationItem,
@@ -1036,15 +1036,6 @@ const closeItemModal = () => {
   pageSearchQuery.value = '';
 };
 
-const isValidHttpUrl = (value: string): boolean => {
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
-};
-
 const validateItemForm = (): boolean => {
   if (!itemForm.value.label.trim()) {
     itemFormError.value = 'Item label is required.';
@@ -1062,8 +1053,8 @@ const validateItemForm = (): boolean => {
       itemFormError.value = 'External URL is required.';
       return false;
     }
-    if (!isValidHttpUrl(trimmedUrl)) {
-      itemFormError.value = 'External URL must be a valid http:// or https:// URL.';
+    if (!isValidNavigationTargetUrl(trimmedUrl)) {
+      itemFormError.value = 'Enter an internal path starting with / (e.g. /blog/) or a valid http:// or https:// URL.';
       return false;
     }
   }
@@ -1993,12 +1984,12 @@ onMounted(async () => {
             <input
               id="nav-item-external-url"
               v-model="itemForm.external_url"
-              type="url"
-              placeholder="https://example.com/support"
+              type="text"
+              placeholder="/blog/ or https://example.com/support"
               class="w-full h-10 px-3 rounded-xl border border-input bg-background font-mono text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             <p class="text-[11px] text-muted-foreground">
-              Enter an absolute HTTP or HTTPS URL (for example, <span class="font-mono">https://...</span>).
+              Enter an internal path starting with <span class="font-mono">/</span> (for example, <span class="font-mono">/blog/</span>) or a full external URL (for example, <span class="font-mono">https://example.com/support</span>).
             </p>
           </div>
 
