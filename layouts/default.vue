@@ -15,7 +15,7 @@ const isAuthRoute = computed(() => {
     <LayoutHeader />
     
     <main
-      class="flex-grow pt-24 md:pt-0"
+      class="flex-grow"
       :class="isAuthRoute ? 'pb-[calc(4.5rem_+_env(safe-area-inset-bottom,0px))] md:pb-0' : ''"
     >
       <slot />
