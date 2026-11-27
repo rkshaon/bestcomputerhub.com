@@ -154,7 +154,7 @@ onMounted(() => {
                 class="rounded-full flex-1 h-12 font-bold"
                 @click="addToCart(product)"
               >
-                Add to Cart
+                Buy Now
               </UiButton>
               <NuxtLink 
                 :to="`/product/${product.slug}/`"

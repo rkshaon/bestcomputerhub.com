@@ -98,7 +98,7 @@ const handleSelect = () => {
           </span>
         </NuxtLink>
         
-        <UiButton size="icon" variant="primary" @click="cartStore.addToCart(product)" class="rounded-xl h-8 w-8 sm:h-9 sm:w-9 shrink-0" title="Add to cart" aria-label="Add to cart">
+        <UiButton size="icon" variant="primary" @click="cartStore.addToCart(product)" class="rounded-xl h-8 w-8 sm:h-9 sm:w-9 shrink-0" title="Buy Now" aria-label="Buy Now">
           <ShoppingCart class="w-4 h-4" />
         </UiButton>
       </div>

@@ -108,6 +108,8 @@ const addToCart = (product: any) => {
                 <UiButton 
                   size="sm"
                   class="rounded-full h-10 w-10 p-0"
+                  title="Buy Now"
+                  aria-label="Buy Now"
                   @click="addToCart(product)"
                 >
                   <ShoppingCart class="w-4 h-4" />

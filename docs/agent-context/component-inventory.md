@@ -605,7 +605,7 @@ Components are classified using four standard metadata properties:
   - Render product primary image with hover secondary image cross-fade transition inside an independent product detail `<NuxtLink>`.
   - Render brand name, formatted title with `decodeHtmlEntities` (independent `<NuxtLink>`), rating badge, and regular/sale price comparison via `formatCurrency` (independent `<NuxtLink>`).
   - Render stock availability badge.
-  - Provide independent "Add to Cart" quick action button outside navigation links.
+  - Provide independent "Buy Now" quick action button outside navigation links.
   - Optional analytics list context (`listId`, `listName`, `listIndex` props): when `listId` is set, clicking the product image, name, or price link sends GA4 `select_item` via `useAnalytics`.
 - **What It Explicitly Does Not Own**: Global cart persistence logic (delegates to `useCartStore`).
 - **State Owned**: Active image index on hover, adding-to-cart spinner state.
@@ -626,7 +626,7 @@ Components are classified using four standard metadata properties:
 - **Routes/Pages Used**: Product detail page (`/product/[slug]/`).
 - **Main Responsibilities**:
   - Render product thumbnail image, brand name, formatted title with `decodeHtmlEntities`, and prices via `formatCurrency`.
-  - Provide quick "Add to Cart" action button.
+  - Provide quick "Buy Now" action button.
 - **What It Explicitly Does Not Own**: Cart state logic (delegates to `useCartStore`).
 - **State Owned**: None.
 - **Calls API**: No.

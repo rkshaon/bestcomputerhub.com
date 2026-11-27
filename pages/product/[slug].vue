@@ -1033,7 +1033,7 @@ const handleFocusOut = (event: FocusEvent, field: 'short_description' | 'descrip
                 class="h-10 sm:h-11 w-full sm:w-auto sm:flex-grow px-4 sm:px-6 gap-2 rounded-xl text-sm sm:text-base font-bold"
               >
                 <ShoppingCart class="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                {{ isItemInCart ? 'Add More to Cart' : 'Add to Cart' }}
+                {{ isItemInCart ? 'Add More to Cart' : 'Buy Now' }}
               </UiButton>
             </div>
 

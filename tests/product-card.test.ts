@@ -8,7 +8,7 @@ import { renderToString } from 'vue/server-renderer';
 import { parse, compileTemplate, compileScript } from '@vue/compiler-sfc';
 import * as ts from 'typescript';
 
-test('ProductCard.vue compiles cleanly and renders independent links for image, name, and price with separate Add to Cart button', async () => {
+test('ProductCard.vue compiles cleanly and renders independent links for image, name, and price with separate Buy Now button', async () => {
   const filePath = path.resolve(process.cwd(), 'components/commerce/ProductCard.vue');
   const source = await fs.readFile(filePath, 'utf8');
 
@@ -87,9 +87,9 @@ test('ProductCard.vue compiles cleanly and renders independent links for image, 
   assert.ok(linkTargets.every((target) => target.includes('productUrl')), `All 3 links must reuse productUrl, got: ${JSON.stringify(linkTargets)}`);
   assert.ok(linkClickHandlers.every((handler) => handler.includes('handleSelect')), 'All 3 links must invoke handleSelect');
   assert.equal(hasNestedLinkInLink, false, 'Links must not be nested inside each other');
-  assert.equal(buttonCount, 1, 'Expected 1 independent Add to Cart button');
-  assert.equal(hasNestedButtonInLink, false, 'Add to Cart button must NOT be nested inside a NuxtLink');
-  assert.ok(buttonClickHandlers[0]?.includes('addToCart'), 'Add to Cart button must retain cartStore.addToCart handler');
+  assert.equal(buttonCount, 1, 'Expected 1 independent Buy Now button');
+  assert.equal(hasNestedButtonInLink, false, 'Buy Now button must NOT be nested inside a NuxtLink');
+  assert.ok(buttonClickHandlers[0]?.includes('addToCart'), 'Buy Now button must retain cartStore.addToCart handler');
 
   const compiledTemplateFn = compileTemplate({
     source: descriptor.template.content,
@@ -168,6 +168,8 @@ test('ProductCard.vue compiles cleanly and renders independent links for image, 
   assert.equal(hrefs.length, 3, `Expected 3 rendered <a> tags, got ${hrefs.length}`);
   assert.ok(hrefs.every((href) => href === '/product/asus-rog-strix-gaming-monitor/'));
   assert.ok(html.includes('<button type="button"'));
+  assert.ok(html.includes('title="Buy Now"'));
+  assert.ok(html.includes('aria-label="Buy Now"'));
   assert.ok(html.includes('Tk 45,000'));
   assert.ok(html.includes('Tk 49,500'));
   assert.equal(selectCount, 0);

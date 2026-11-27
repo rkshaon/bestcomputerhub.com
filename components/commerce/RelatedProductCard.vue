@@ -72,8 +72,8 @@ const cartStore = useCartStore();
           variant="primary" 
           @click="cartStore.addToCart(product)" 
           class="rounded-lg shrink-0 h-7 w-7 sm:h-8 sm:w-8" 
-          title="Add to cart" 
-          aria-label="Add to cart"
+          title="Buy Now" 
+          aria-label="Buy Now"
         >
           <ShoppingCart class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </UiButton>
