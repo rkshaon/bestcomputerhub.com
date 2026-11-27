@@ -466,7 +466,7 @@ Components are classified using four standard metadata properties:
 - **State Owned**: Cached `footerNavItems` async data and computed normalized `footerSections`.
 - **Calls API**: Yes (`cmsService.getPublicNavigation('footer')`, `isPublic: true`).
 - **Related Composables/Services**: `useCmsService`, `<FooterNavList>`.
-- **Responsive Responsibility**: 4-column balanced responsive grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`) occupying 90% width centered horizontally on desktop (`w-full lg:w-[90%] mx-auto`) with compact navigation columns and full width on smaller screens.
+- **Responsive Responsibility**: 4-column balanced responsive grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`) left-aligned across mobile/tablet (`< lg`) with desktop-only center/right column alignment (`lg:text-center`, `lg:text-right`), occupying 90% width centered horizontally on desktop (`w-full lg:w-[90%] mx-auto`), safe-area-aware mobile bottom padding clearing `<BottomNav>` + `<BackToTop>`, and compact 40px+ contact link touch targets on `< lg`.
 - **Reusability Level**: High (Singleton layout component)
 - **Important Behavior to Preserve**: Trailing slash storefront URL targets, exact fallback columns on API error/empty response, and unchanged static Column 1 layout.
 - **Known Architectural Risks**: None.
@@ -484,7 +484,7 @@ Components are classified using four standard metadata properties:
 - **State Owned**: Computed alignment/list classes.
 - **Calls API**: No.
 - **Related Composables/Services**: None.
-- **Responsive Responsibility**: Preserves existing compact vertical spacing and typography scale (`text-xs sm:text-sm` for root links, `text-[11px] sm:text-xs` for nested children).
+- **Responsive Responsibility**: Left-aligned with `40px`+ touch targets and clear clickable link vs. non-clickable text differentiation below `lg` (`< 1024px`), preserving compact typography and alignment on desktop (`lg+`).
 - **Reusability Level**: Medium
 - **Important Behavior to Preserve**: Safe URL validation and `rel="noopener noreferrer"` on `open_in_new_tab`.
 - **Known Architectural Risks**: None.
@@ -525,7 +525,7 @@ Components are classified using four standard metadata properties:
 - **State Owned**: None (delegates to `useUIStore`, `useAuthStore`, and `useCartStore`).
 - **Calls API**: No.
 - **Related Composables/Services**: `useUIStore`, `useAuthStore`, `useCartStore`, `useToast`.
-- **Responsive Responsibility**: Fixed viewport bottom bar on mobile (`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 md:hidden pb-[env(safe-area-inset-bottom,0px)]`), hidden on tablet/desktop.
+- **Responsive Responsibility**: Full-width fixed viewport bottom bar on mobile (`fixed bottom-0 inset-x-0 w-full z-50 md:hidden pb-[env(safe-area-inset-bottom,0px)]`) with centered `max-w-lg` 7-column grid, hidden on tablet/desktop.
 - **Reusability Level**: High (Layout singleton).
 - **Important Behavior to Preserve**: Disabled non-interactive state for PC Builder until page exists; mobile drawer toggle for Menu; cart badge count.
 - **Known Architectural Risks**: None.
@@ -543,7 +543,7 @@ Components are classified using four standard metadata properties:
 - **State Owned**: Route-based visibility computed flags (`showFloatingContainer`, `showContactActions`).
 - **Calls API**: No
 - **Related Composables/Services**: `STORE_CONTACT` constants, `<BackToTop>`.
-- **Responsive Responsibility**: Single shared `fixed` vertical stack above `<BottomNav>` below `md` (`< 768px`, `bottom-[calc(5rem_+_env(safe-area-inset-bottom,0px))] right-4 z-40`, compact short-landscape spacing for `max-height: 480px`), dissolving via `md:contents` at `>= 768px` so Call & WhatsApp remain independently fixed at `md:bottom-24 md:right-6 md:z-50` while `<BackToTop>` remains independently fixed at `md:bottom-6 md:right-6 md:z-40`.
+- **Responsive Responsibility**: Single shared `fixed` vertical stack above `<BottomNav>` below `md` (`< 768px`, `bottom-[calc(5rem_+_env(safe-area-inset-bottom,0px))] right-4 z-40`, compact short-landscape spacing for `max-height: 480px`), automatically hiding Call & WhatsApp via `IntersectionObserver` when `<footer>` is visible below `lg` (`< 1024px`), and dissolving via `md:contents` at `>= 768px` so Call & WhatsApp remain independently fixed at `md:bottom-24 md:right-6 md:z-50` while `<BackToTop>` remains independently fixed at `md:bottom-6 md:right-6 md:z-40`.
 - **Reusability Level**: Medium
 - **Important Behavior to Preserve**: Non-blocking container (`pointer-events-none` on wrapper, `pointer-events-auto` on buttons), upward stack flow when `<BackToTop>` appears on mobile, static desktop positioning, and intentional `/admin` + `/login` route hiding.
 - **Known Architectural Risks**: None.

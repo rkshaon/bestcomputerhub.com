@@ -1,6 +1,6 @@
 <!-- File: /components/layout/FloatingActions.vue -->
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useRoute } from '#app';
 import { Phone } from 'lucide-vue-next';
 import { STORE_CONTACT } from '@/constants/contact';
@@ -10,9 +10,60 @@ const route = useRoute();
 
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
 const isLoginRoute = computed(() => route.path === '/login' || route.path === '/login/');
+const isCompactViewport = ref(false);
+const isFooterVisible = ref(false);
 
 const showFloatingContainer = computed(() => !isAdminRoute.value);
-const showContactActions = computed(() => !isAdminRoute.value && !isLoginRoute.value);
+const showContactActions = computed(
+  () => !isAdminRoute.value && !isLoginRoute.value && !(isCompactViewport.value && isFooterVisible.value)
+);
+
+let footerObserver: IntersectionObserver | null = null;
+
+const updateViewport = () => {
+  if (!import.meta.client) return;
+  isCompactViewport.value = window.innerWidth < 1024;
+};
+
+const observeFooter = () => {
+  if (!import.meta.client) return;
+  footerObserver?.disconnect();
+  footerObserver = null;
+
+  const footerEl = document.querySelector('footer');
+  if (!footerEl || typeof IntersectionObserver === 'undefined') {
+    isFooterVisible.value = false;
+    return;
+  }
+
+  footerObserver = new IntersectionObserver(
+    (entries) => {
+      isFooterVisible.value = entries.some((entry) => entry.isIntersecting);
+    },
+    { threshold: 0 }
+  );
+  footerObserver.observe(footerEl);
+};
+
+onMounted(() => {
+  updateViewport();
+  window.addEventListener('resize', updateViewport);
+  observeFooter();
+});
+
+watch(
+  () => route.path,
+  async () => {
+    await nextTick();
+    observeFooter();
+  }
+);
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateViewport);
+  footerObserver?.disconnect();
+  footerObserver = null;
+});
 </script>
 
 <template>

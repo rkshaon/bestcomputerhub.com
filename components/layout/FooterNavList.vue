@@ -25,22 +25,29 @@ const MAX_RENDER_DEPTH = 5;
 
 const listClass = computed(() => {
   if (props.depth === 0) {
-    return 'space-y-2.5 sm:space-y-3 px-0 mx-0 list-none';
+    return 'space-y-0.5 lg:space-y-3 px-0 pr-14 sm:pr-0 mx-0 list-none';
   }
   if (props.alignClass === 'text-right') {
-    return 'mt-1.5 space-y-1.5 pr-3 border-r border-header-border/60 list-none';
+    return 'mt-1 lg:mt-1.5 space-y-0.5 lg:space-y-1.5 pl-3 lg:pl-0 lg:pr-3 border-l lg:border-l-0 lg:border-r border-header-border/60 list-none';
   }
   if (props.alignClass === 'text-left') {
-    return 'mt-1.5 space-y-1.5 pl-3 border-l border-header-border/60 list-none';
+    return 'mt-1 lg:mt-1.5 space-y-0.5 lg:space-y-1.5 pl-3 border-l border-header-border/60 list-none';
   }
-  return 'mt-1.5 space-y-1.5 px-0 mx-0 list-none opacity-90';
+  return 'mt-1 lg:mt-1.5 space-y-0.5 lg:space-y-1.5 pl-3 lg:pl-0 border-l lg:border-l-0 border-header-border/60 lg:opacity-90 list-none';
 });
 
-const itemTextClass = computed(() => {
+const linkClass = computed(() => {
   if (props.depth === 0) {
-    return 'inline-block text-xs sm:text-sm text-header-muted-foreground transition-colors px-0 mx-0';
+    return 'inline-flex items-center min-h-[40px] py-2 pr-2 lg:inline-block lg:min-h-0 lg:py-0 lg:pr-0 text-xs sm:text-sm text-header-foreground/90 lg:text-header-muted-foreground underline decoration-header-border/70 underline-offset-4 lg:no-underline hover:text-header-primary transition-colors px-0 mx-0';
   }
-  return 'inline-block text-[11px] sm:text-xs text-header-muted-foreground/85 transition-colors px-0 mx-0';
+  return 'inline-flex items-center min-h-[40px] py-1.5 pr-2 lg:inline-block lg:min-h-0 lg:py-0 lg:pr-0 text-[11px] sm:text-xs text-header-foreground/85 lg:text-header-muted-foreground/85 underline decoration-header-border/60 underline-offset-4 lg:no-underline hover:text-header-primary transition-colors px-0 mx-0';
+});
+
+const staticTextClass = computed(() => {
+  if (props.depth === 0) {
+    return 'inline-flex items-center py-2 lg:inline-block lg:py-0 text-xs sm:text-sm text-header-muted-foreground/80 lg:text-header-muted-foreground cursor-default px-0 mx-0';
+  }
+  return 'inline-flex items-center py-1.5 lg:inline-block lg:py-0 text-[11px] sm:text-xs text-header-muted-foreground/75 lg:text-header-muted-foreground/85 cursor-default px-0 mx-0';
 });
 
 const getSafeSlugPath = (rawSlug: string | null | undefined): string | null => {
@@ -105,7 +112,7 @@ const getResolvedLink = (item: FooterNavLinkItem): { href: string; external: boo
           :href="getResolvedLink(item)!.href"
           :target="item.open_in_new_tab ? '_blank' : undefined"
           :rel="item.open_in_new_tab ? 'noopener noreferrer' : undefined"
-          :class="[itemTextClass, 'hover:text-header-primary']"
+          :class="linkClass"
         >
           {{ item.label }}
         </a>
@@ -114,12 +121,12 @@ const getResolvedLink = (item: FooterNavLinkItem): { href: string; external: boo
           :to="getResolvedLink(item)!.href"
           :target="item.open_in_new_tab ? '_blank' : undefined"
           :rel="item.open_in_new_tab ? 'noopener noreferrer' : undefined"
-          :class="[itemTextClass, 'hover:text-header-primary']"
+          :class="linkClass"
         >
           {{ item.label }}
         </NuxtLink>
       </template>
-      <span v-else :class="itemTextClass">
+      <span v-else :class="staticTextClass">
         {{ item.label }}
       </span>
 
