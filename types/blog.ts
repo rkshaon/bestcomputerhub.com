@@ -11,6 +11,19 @@ export interface BlogCategory {
   id: number;
   name: string;
   slug: string;
+  blog_post_count: number;
+}
+
+export interface BlogCategoryQueryParams {
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedBlogCategories {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: BlogCategory[];
 }
 
 // Mock interface for existing storefront blog

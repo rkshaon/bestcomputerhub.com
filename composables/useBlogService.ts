@@ -3,7 +3,20 @@ import { ref } from 'vue';
 import { blogPosts } from '@/mock/data';
 import { useApiClient } from './useApiClient';
 import { extractErrorMessage } from './useToast';
-import type { BlogPost, BlogPostItem, BlogCategory, BlogTag, BlogTagQueryParams, CreateBlogTagPayload, UpdateBlogTagPayload, PaginatedBlogTags, BlogPostQueryParams, PaginatedBlogPosts } from '@/types';
+import type {
+  BlogPost,
+  BlogPostItem,
+  BlogCategory,
+  BlogCategoryQueryParams,
+  PaginatedBlogCategories,
+  BlogTag,
+  BlogTagQueryParams,
+  CreateBlogTagPayload,
+  UpdateBlogTagPayload,
+  PaginatedBlogTags,
+  BlogPostQueryParams,
+  PaginatedBlogPosts
+} from '@/types';
 
 const isLoading = ref(false);
 const errorMsg = ref<string | null>(null);
@@ -52,6 +65,33 @@ export const useBlogService = () => {
     } finally {
       isLoading.value = false;
     }
+  };
+
+  /**
+   * Fetch paginated list of blog categories (GET /api/v1/blog/posts/categories/)
+   * Avoids module-level singleton loading/error refs so callers remain independent.
+   */
+  const getBlogCategories = async (params?: BlogCategoryQueryParams): Promise<PaginatedBlogCategories> => {
+    const queryObj: Record<string, number> = {};
+    if (params) {
+      if (params.page !== undefined && params.page !== null) queryObj.page = params.page;
+      if (params.page_size !== undefined && params.page_size !== null) queryObj.page_size = params.page_size;
+    }
+
+    const data = await apiClient.request<PaginatedBlogCategories>('/api/v1/blog/posts/categories/', {
+      method: 'GET',
+      params: queryObj
+    });
+
+    const results = Array.isArray(data?.results) ? data.results : [];
+    const count = typeof data?.count === 'number' ? data.count : results.length;
+
+    return {
+      count,
+      next: data?.next ?? null,
+      previous: data?.previous ?? null,
+      results
+    };
   };
 
   /**
@@ -449,6 +489,7 @@ export const useBlogService = () => {
 
   return {
     getBlogPosts,
+    getBlogCategories,
     getBlogPost,
     updateBlogPost,
     assignBlogPostCategories,

@@ -68,6 +68,7 @@ export default defineNuxtConfig({
       { loc: '/', priority: 1.0, changefreq: 'daily' },
       { loc: '/shop-now/', priority: 0.9, changefreq: 'daily' },
       { loc: '/blog/', priority: 0.7, changefreq: 'weekly' },
+      { loc: '/blog/categories/', priority: 0.6, changefreq: 'weekly' },
       { loc: '/about-us/', priority: 0.5, changefreq: 'yearly' },
       { loc: '/privacy-policy/', priority: 0.3, changefreq: 'yearly' },
       { loc: '/return-refund-after-sales-policy/', priority: 0.4, changefreq: 'yearly' },
