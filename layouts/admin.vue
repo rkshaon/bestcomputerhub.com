@@ -22,7 +22,6 @@ import {
   X,
   ShieldCheck,
   ShieldAlert,
-  Search,
   User as UserIcon,
   Moon,
   Sun,
@@ -318,13 +317,6 @@ const breadcrumbs = computed(() => {
           >
             <Menu class="w-6 h-6" />
           </button>
-
-          <!-- Search Bar (Placeholder) -->
-          <div class="hidden sm:flex items-center gap-2 bg-muted border border-input rounded-full px-4 py-1.5 w-64 lg:w-96">
-            <Search class="w-4 h-4 text-muted-foreground" />
-            <input type="text" placeholder="Search operations..." class="bg-transparent border-none outline-none text-xs w-full focus:ring-0" />
-            <div class="text-[10px] font-bold text-muted-foreground px-1.5 py-0.5 rounded bg-background border border-border">⌘K</div>
-          </div>
         </div>
 
         <div class="flex items-center gap-3">

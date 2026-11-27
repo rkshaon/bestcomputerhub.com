@@ -8,7 +8,8 @@ import { formatCurrency } from '../utils/index';
 import {
   toMoney,
   calculateDeliveredRevenuePercentage,
-  formatDeliveredRevenuePercentage
+  formatDeliveredRevenuePercentage,
+  normalizeComparisonGrowth
 } from '../utils/order';
 
 test('toMoney parses numeric strings and numbers safely while rejecting invalid values', () => {
@@ -59,7 +60,25 @@ test('formatDeliveredRevenuePercentage and formatCurrency render clean dashboard
   assert.equal(formatCurrency(toMoney('Infinity')), 'Tk 0');
 });
 
-test('DashboardStatCard compiles with optional #footer slot and Admin Dashboard renders delivered revenue breakdown', () => {
+test('normalizeComparisonGrowth distinguishes legitimate numeric zero from missing or invalid values', () => {
+  assert.equal(normalizeComparisonGrowth(0), 0);
+  assert.equal(normalizeComparisonGrowth('0'), 0);
+  assert.equal(normalizeComparisonGrowth('0.0'), 0);
+  assert.equal(normalizeComparisonGrowth(-0), 0);
+  assert.equal(normalizeComparisonGrowth(12.5), 12.5);
+  assert.equal(normalizeComparisonGrowth('-4.2'), -4.2);
+
+  assert.equal(normalizeComparisonGrowth(undefined), undefined);
+  assert.equal(normalizeComparisonGrowth(null), undefined);
+  assert.equal(normalizeComparisonGrowth(''), undefined);
+  assert.equal(normalizeComparisonGrowth('   '), undefined);
+  assert.equal(normalizeComparisonGrowth('invalid'), undefined);
+  assert.equal(normalizeComparisonGrowth(NaN), undefined);
+  assert.equal(normalizeComparisonGrowth(Infinity), undefined);
+  assert.equal(normalizeComparisonGrowth(-Infinity), undefined);
+});
+
+test('DashboardStatCard, admin layout, and Admin Dashboard SFCs compile cleanly without removed placeholders', () => {
   const cardSource = readFileSync(resolve('features/admin/components/DashboardStatCard.vue'), 'utf8');
   const cardParsed = parse(cardSource);
   assert.ok(cardParsed.descriptor.template, 'DashboardStatCard.vue should have a template');
@@ -69,8 +88,25 @@ test('DashboardStatCard compiles with optional #footer slot and Admin Dashboard 
     id: 'DashboardStatCard.vue'
   });
   assert.equal(cardCompiled.errors.length, 0);
+  assert.doesNotMatch(cardSource, /defaultSeries/);
+  assert.doesNotMatch(cardSource, /getSparklinePath/);
+  assert.doesNotMatch(cardSource, /sparklineClass/);
+  assert.match(cardSource, /v-if="typeof trend === 'number' && Number\.isFinite\(trend\)"/);
+  assert.match(cardSource, /trend > 0/);
   assert.match(cardSource, /v-if="\$slots\.footer"/);
   assert.match(cardSource, /<slot name="footer" \/>/);
+
+  const layoutSource = readFileSync(resolve('layouts/admin.vue'), 'utf8');
+  const layoutParsed = parse(layoutSource);
+  assert.ok(layoutParsed.descriptor.template, 'layouts/admin.vue should have a template');
+  const layoutCompiled = compileTemplate({
+    source: layoutParsed.descriptor.template.content,
+    filename: 'layouts/admin.vue',
+    id: 'layouts/admin.vue'
+  });
+  assert.equal(layoutCompiled.errors.length, 0);
+  assert.doesNotMatch(layoutSource, /Search operations\.\.\./);
+  assert.doesNotMatch(layoutSource, /⌘K/);
 
   const pageSource = readFileSync(resolve('pages/admin/index.vue'), 'utf8');
   const pageParsed = parse(pageSource);
@@ -82,11 +118,92 @@ test('DashboardStatCard compiles with optional #footer slot and Admin Dashboard 
   });
   assert.equal(pageCompiled.errors.length, 0);
 
+  assert.doesNotMatch(pageSource, /v4\.2\.1/);
+  assert.doesNotMatch(pageSource, /Optimization Pulse/);
+  assert.doesNotMatch(pageSource, /Export Report/);
+  assert.match(pageSource, /<template #header-title>/);
+  assert.match(pageSource, /System Overview/);
+  assert.match(pageSource, /extractErrorMessage\(err,\s*'Failed to load sales performance report\.'\)/);
+  assert.match(pageSource, /formatCurrency\(averageOrderValueAmount\)/);
+  assert.match(pageSource, /formatCurrency\(toMoney\(lastOrder\.total_amount\)\)/);
+  assert.match(pageSource, /Sales Performance Restricted/);
   assert.match(pageSource, /label="Total Revenue"/);
   assert.match(pageSource, /:value="formatCurrency\(totalRevenueAmount\)"/);
   assert.match(pageSource, /Delivered Amount/);
   assert.match(pageSource, /formatCurrency\(deliveredOrderAmount\)/);
   assert.match(pageSource, /Delivered Revenue/);
   assert.match(pageSource, /deliveredRevenuePercentage/);
-  assert.match(pageSource, /formatDeliveredRevenuePercentage\(overview\.value\.delivered_order_amount,\s*overview\.value\.total_revenue\)/);
+  assert.match(pageSource, /formatDeliveredRevenuePercentage\(overview\.value\?\.delivered_order_amount,\s*overview\.value\?\.total_revenue\)/);
+});
+
+test('useSalesService.getPendingOrdersCount preserves null on error and distinguishes genuine zero', async () => {
+  const { registerHooks } = await import('node:module');
+  const { pathToFileURL } = await import('node:url');
+  const path = await import('node:path');
+
+  let nextBehavior: 'zero' | 'five' | 'malformed' | 'error' = 'five';
+  (globalThis as any).__mockPendingClient = () => ({
+    isLoading: { value: false },
+    errorMsg: { value: null },
+    request: async () => {
+      if (nextBehavior === 'error') {
+        throw new Error('Network unavailable');
+      }
+      if (nextBehavior === 'malformed') {
+        return { data: 'Success (Simulated Mode)' };
+      }
+      if (nextBehavior === 'zero') {
+        return { data: { pending_orders: 0 } };
+      }
+      return { pending_orders: 5 };
+    }
+  });
+
+  const utilsOrderUrl = pathToFileURL(path.resolve(process.cwd(), 'utils/order.ts')).href;
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === './useApiClient' && context.parentURL?.includes('/composables/useSalesService.ts')) {
+        return { url: 'mock:useApiClientPending', shortCircuit: true };
+      }
+      if (specifier === '@/utils/order') {
+        return { url: utilsOrderUrl, shortCircuit: true };
+      }
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'mock:useApiClientPending') {
+        return {
+          format: 'module',
+          source: 'export const useApiClient = () => globalThis.__mockPendingClient();',
+          shortCircuit: true
+        };
+      }
+      return nextLoad(url, context);
+    }
+  });
+
+  try {
+    const salesServiceUrl = pathToFileURL(path.resolve(process.cwd(), 'composables/useSalesService.ts')).href;
+    const { useSalesService, pendingOrdersCount } = await import(`${salesServiceUrl}?t=${Date.now()}`);
+    const salesService = useSalesService();
+
+    nextBehavior = 'five';
+    assert.equal(await salesService.getPendingOrdersCount(), 5);
+    assert.equal(pendingOrdersCount.value, 5);
+
+    nextBehavior = 'error';
+    await assert.rejects(() => salesService.getPendingOrdersCount(), /Network unavailable/);
+    assert.equal(pendingOrdersCount.value, null);
+
+    nextBehavior = 'zero';
+    assert.equal(await salesService.getPendingOrdersCount(), 0);
+    assert.equal(pendingOrdersCount.value, 0);
+
+    nextBehavior = 'malformed';
+    assert.equal(await salesService.getPendingOrdersCount(), null);
+    assert.equal(pendingOrdersCount.value, null);
+  } finally {
+    hooks.deregister();
+    delete (globalThis as any).__mockPendingClient;
+  }
 });

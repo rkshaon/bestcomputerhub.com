@@ -51,6 +51,23 @@ export function formatDeliveredRevenuePercentage(
   return `${calculateDeliveredRevenuePercentage(deliveredOrderAmount, totalRevenue)}%`;
 }
 
+/**
+ * Normalizes a percentage comparison metric (`number | string | null | undefined`) for badge display.
+ * Returns `undefined` when missing/empty/non-finite so unavailable comparisons are not shown as `+0%`,
+ * while preserving legitimate numeric `0` values.
+ */
+export function normalizeComparisonGrowth(
+  value: number | string | null | undefined
+): number | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value !== 'number' && typeof value !== 'string') return undefined;
+  const trimmed = typeof value === 'string' ? value.trim() : value;
+  if (trimmed === '') return undefined;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) return undefined;
+  return Object.is(parsed, -0) ? 0 : parsed;
+}
+
 function getCustomerName(customer: BackendOrderDetail['customer']): string {
   if (!customer) return 'Guest';
   if (customer.full_name && customer.full_name.trim()) return customer.full_name.trim();

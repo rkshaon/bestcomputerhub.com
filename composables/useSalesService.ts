@@ -36,21 +36,21 @@ export const useSalesService = () => {
     }
   };
 
-  const getPendingOrdersCount = async (): Promise<number> => {
+  const getPendingOrdersCount = async (): Promise<number | null> => {
     try {
       const response = await apiClient.request<any>('/api/v1/sales/pending-count/', {
         method: 'GET'
       });
-      const count = typeof response?.data?.pending_orders === 'number'
-        ? response.data.pending_orders
-        : (typeof response?.pending_orders === 'number' ? response.pending_orders : 0);
-      pendingOrdersCount.value = count;
-      return count;
-    } catch {
-      if (pendingOrdersCount.value === null) {
-        pendingOrdersCount.value = 0;
+      const rawCount = response?.data?.pending_orders ?? response?.pending_orders;
+      if (typeof rawCount !== 'number' || !Number.isFinite(rawCount)) {
+        pendingOrdersCount.value = null;
+        return null;
       }
-      return pendingOrdersCount.value || 0;
+      pendingOrdersCount.value = rawCount;
+      return rawCount;
+    } catch (err: any) {
+      pendingOrdersCount.value = null;
+      throw err;
     }
   };
 
