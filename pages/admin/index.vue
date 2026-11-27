@@ -99,9 +99,9 @@ const deliveredRevenueWatermarkColorClass = computed(() => {
 });
 const deliveredRevenueWatermarkSizeClass = computed(() => {
   const length = deliveredRevenuePercentage.value.length;
-  if (length <= 3) return 'text-[length:min(112cqh,48cqw)]';
-  if (length === 4) return 'text-[length:min(112cqh,38cqw)]';
-  return 'text-[length:min(112cqh,32cqw)]';
+  if (length <= 3) return 'text-[length:min(92cqh,40cqw)]';
+  if (length === 4) return 'text-[length:min(92cqh,31cqw)]';
+  return 'text-[length:min(92cqh,26cqw)]';
 });
 const averageOrderValueAmount = computed(() => toMoney(overview.value?.average_order_value));
 const totalOrdersCount = computed<number>(() => {
