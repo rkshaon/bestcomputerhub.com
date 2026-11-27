@@ -81,8 +81,8 @@ test('ProductCard.vue compiles cleanly and renders independent links for image, 
 
   walk(templateAst, false);
 
-  const rootEl = templateAst.children.find((c: any) => c.type === 1);
-  assert.equal(rootEl?.tag, 'div', 'Root wrapper of ProductCard must remain a <div>, not a link');
+  const rootEl = templateAst.children.find((c) => c.type === 1 && 'tag' in c);
+  assert.equal(rootEl && 'tag' in rootEl ? rootEl.tag : undefined, 'div', 'Root wrapper of ProductCard must remain a <div>, not a link');
   assert.equal(linkTargets.length, 3, `Expected 3 independent NuxtLinks (image, name, price), found ${linkTargets.length}`);
   assert.ok(linkTargets.every((target) => target.includes('productUrl')), `All 3 links must reuse productUrl, got: ${JSON.stringify(linkTargets)}`);
   assert.ok(linkClickHandlers.every((handler) => handler.includes('handleSelect')), 'All 3 links must invoke handleSelect');
