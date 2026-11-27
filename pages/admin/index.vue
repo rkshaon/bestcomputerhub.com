@@ -18,6 +18,7 @@ import {
 import { useSalesService } from '@/composables/useSalesService';
 import { useAdminPermissions } from '@/composables/useAdminPermissions';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/utils';
+import { toMoney, formatDeliveredRevenuePercentage } from '@/utils/order';
 import type { SalesPerformanceReport, SalesPerformanceLastOrder } from '@/types';
 import DashboardStatCard from '@/features/admin/components/DashboardStatCard.vue';
 import UiCard from '@/components/ui/UiCard.vue';
@@ -71,7 +72,12 @@ onMounted(() => {
   }
 });
 
-const overview = computed(() => performanceData.value?.overview || { total_orders: 0, total_revenue: 0, average_order_value: 0 });
+const overview = computed(() => performanceData.value?.overview || { total_orders: 0, total_revenue: 0, delivered_order_amount: 0, average_order_value: 0 });
+const totalRevenueAmount = computed(() => toMoney(overview.value.total_revenue));
+const deliveredOrderAmount = computed(() => toMoney(overview.value.delivered_order_amount));
+const deliveredRevenuePercentage = computed(() =>
+  formatDeliveredRevenuePercentage(overview.value.delivered_order_amount, overview.value.total_revenue)
+);
 const comparison = computed(() => performanceData.value?.comparison || { order_growth_percentage: 0, revenue_growth_percentage: 0 });
 const dailyTrend = computed(() => performanceData.value?.daily_trend || []);
 const todayOrders = computed<number>(() => {
@@ -220,12 +226,25 @@ const kpiCardLayoutClasses = {
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.4fr)] gap-3">
           <DashboardStatCard 
             label="Total Revenue"
-            :value="formatCurrency(Number(overview.total_revenue))"
+            :value="formatCurrency(totalRevenueAmount)"
             :icon="DollarSign"
             :trend="formatGrowth(comparison.revenue_growth_percentage)"
             color="bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600"
             v-bind="kpiCardLayoutClasses"
-          />
+          >
+            <template #footer>
+              <div class="pt-2 border-t border-border/70 space-y-1 text-[11px] xl:text-[10px]">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-muted-foreground font-medium">Delivered Amount</span>
+                  <span class="font-bold text-foreground tabular-nums">{{ formatCurrency(deliveredOrderAmount) }}</span>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-muted-foreground font-medium">Delivered Revenue</span>
+                  <span class="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ deliveredRevenuePercentage }}</span>
+                </div>
+              </div>
+            </template>
+          </DashboardStatCard>
           <DashboardStatCard 
             label="Total Orders"
             :value="overview.total_orders?.toLocaleString() || 0"

@@ -277,15 +277,17 @@ When selecting or implementing helper functions, agents must respect these struc
 
 ---
 
-### `mapOrderDetail`, `mapOrderSummary`, `toMoney`, `normalizeOrderStatus`, `normalizePaymentStatus` & `getAvailableOrderStatusOptions`
+### `mapOrderDetail`, `mapOrderSummary`, `toMoney`, `calculateDeliveredRevenuePercentage`, `formatDeliveredRevenuePercentage`, `normalizeOrderStatus`, `normalizePaymentStatus` & `getAvailableOrderStatusOptions`
 - **File Location**: `/utils/order.ts`
 - **Category**: Normalizer / Mapper
-- **Scope**: Storefront & Admin orders (Checkout success screen, `/my-account/` order history, `/my-account/orders/[id]/`, `/admin/orders/[id]`)
-- **Purpose**: Converts the backend storefront order contract (`BackendOrderDetail`, `BackendOrderSummary` in `/types/checkout.ts`, documented in `ZayrahLife-Backend/docs/checkout-api.md`) into the frontend `Order` model: `invoice_number` → `orderNumber`, backend `pricing.*` → `subtotal` / `shippingCharge` / `totalAmount`, address and method snapshots, and upper-case statuses (`OUT_OF_DELIVERY`) → lower-case `OrderStatus` (`out_of_delivery`). `getAvailableOrderStatusOptions` resolves valid next order status options from `GET /api/v1/sales/statuses/` (`statuses` and `transitions`) case-insensitively while preserving uppercase backend `value` strings.
+- **Scope**: Storefront & Admin orders (Checkout success screen, `/my-account/` order history, `/my-account/orders/[id]/`, `/admin/`, `/admin/orders/[id]`)
+- **Purpose**: Converts the backend storefront order contract (`BackendOrderDetail`, `BackendOrderSummary` in `/types/checkout.ts`, documented in `ZayrahLife-Backend/docs/checkout-api.md`) into the frontend `Order` model: `invoice_number` → `orderNumber`, backend `pricing.*` → `subtotal` / `shippingCharge` / `totalAmount`, address and method snapshots, and upper-case statuses (`OUT_OF_DELIVERY`) → lower-case `OrderStatus` (`out_of_delivery`). `getAvailableOrderStatusOptions` resolves valid next order status options from `GET /api/v1/sales/statuses/` (`statuses` and `transitions`) case-insensitively while preserving uppercase backend `value` strings. Also provides safe delivered revenue percentage calculation (`calculateDeliveredRevenuePercentage`) and formatting (`formatDeliveredRevenuePercentage`) for the Admin Sales Performance report.
 - **Parameters & Return Value**:
   - `mapOrderDetail(raw: BackendOrderDetail): Order` — full order with items, address snapshot, pricing and `allowedNextStatuses`.
   - `mapOrderSummary(raw: BackendOrderSummary): Order` — list row; `items` is empty and `itemCount` carries `item_count`.
-  - `toMoney(value: number | string | null | undefined): number` — parses DRF decimal strings or JSON numbers, `0` when absent.
+  - `toMoney(value: number | string | null | undefined): number` — parses DRF decimal strings or JSON numbers safely into finite numbers, `0` when absent or invalid.
+  - `calculateDeliveredRevenuePercentage(deliveredOrderAmount, totalRevenue): number` — computes `(delivered / total) * 100` rounded to 1 decimal place (`0` when `total <= 0` or inputs are invalid).
+  - `formatDeliveredRevenuePercentage(deliveredOrderAmount, totalRevenue): string` — returns formatted percentage string (e.g., `'75%'`, `'33.3%'`, `'0%'`).
   - `normalizeOrderStatus(status)`, `normalizePaymentStatus(status)` — lower-case the backend enums.
   - `getAvailableOrderStatusOptions(params)` — returns `OrderStatusOption[]` with uppercase `value` strings for the current order state.
 - **Example Usage**:
@@ -295,7 +297,7 @@ When selecting or implementing helper functions, agents must respect these struc
   const data = await apiClient.request<BackendOrderDetail>(`/api/v1/orders/${id}/`);
   const order = mapOrderDetail(data);
   ```
-- **Files or Features Currently Using It**: `useCheckoutService`, `useOrderService`, `useSalesService`, `AdminOrderActions`.
+- **Files or Features Currently Using It**: `useCheckoutService`, `useOrderService`, `useSalesService`, `AdminOrderActions`, `/pages/admin/index.vue`.
 - **Side Effects**: None (Pure functions).
 - **Accesses Browser State**: No.
 - **Performs Network Work**: No.

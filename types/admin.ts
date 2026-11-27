@@ -41,6 +41,7 @@ export interface SalesPerformanceLastOrder {
 export interface SalesPerformanceOverview {
   total_orders: number;
   total_revenue: number | string;
+  delivered_order_amount?: number | string | null;
   average_order_value: number | string;
 }
 
